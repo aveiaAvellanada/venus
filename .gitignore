@@ -3,6 +3,10 @@
 # dependencies
 node_modules/
 
+# agent skills (installed locally, not part of the app)
+.agents/
+.claude/skills/
+
 # Expo
 .expo/
 dist/

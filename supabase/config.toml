@@ -1,0 +1,7 @@
+# Configuración del proyecto Supabase para Venus.
+# El project_id (ref) enlaza la CLI con el proyecto remoto "venus".
+project_id = "xqspsaghukeynlizbjvc"
+
+[db]
+# Versión mayor de Postgres del proyecto remoto.
+major_version = 17

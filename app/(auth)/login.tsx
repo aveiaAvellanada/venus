@@ -14,13 +14,19 @@ export default function Login() {
     if (!usuario || pin.length < 4) return
     setCargando(true)
     setError(null)
-    const res = await iniciarSesion(usuario.email, pin)
-    setCargando(false)
-    if (res.error) {
-      setError(res.error)
+    try {
+      const res = await iniciarSesion(usuario.email, pin)
+      if (res.error) {
+        setError(res.error)
+        setPin('')
+      }
+      // Si entra bien, onAuthStateChange + (auth)/_layout redirigen a "/".
+    } catch {
+      setError('No se pudo conectar. Intenta de nuevo.')
       setPin('')
+    } finally {
+      setCargando(false)
     }
-    // Si entra bien, onAuthStateChange + (auth)/_layout redirigen a "/".
   }
 
   if (!usuario) {
@@ -58,10 +64,12 @@ export default function Login() {
         {cargando ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Entrar</Text>}
       </Pressable>
       <Pressable
+        style={styles.linkBtn}
         onPress={() => {
           setUsuario(null)
           setPin('')
           setError(null)
+          setCargando(false)
         }}
       >
         <Text style={styles.link}>← Cambiar usuario</Text>
@@ -85,4 +93,5 @@ const styles = StyleSheet.create({
   btnDisabled: { opacity: 0.5 },
   error: { color: '#D20F39', fontSize: 16, textAlign: 'center' },
   link: { color: '#1E66F5', fontSize: 16, textAlign: 'center', marginTop: 8 },
+  linkBtn: { paddingVertical: 16, alignItems: 'center' },
 })

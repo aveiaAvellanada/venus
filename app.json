@@ -2,6 +2,7 @@
   "expo": {
     "name": "Venus",
     "slug": "Venus",
+    "scheme": "venus",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,7 +23,8 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-router"
     ]
   }
 }

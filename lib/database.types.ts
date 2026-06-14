@@ -991,6 +991,7 @@ export type Database = {
       }
       ventas: {
         Row: {
+          cambio: number
           cancelacion_motivo: string | null
           cliente_apellido: string | null
           cliente_nombre: string | null
@@ -1000,6 +1001,7 @@ export type Database = {
           corregida: boolean
           corregida_por: string | null
           created_at: string
+          efectivo_recibido: number | null
           estado: string
           id: string
           monto_pagado: number
@@ -1011,6 +1013,7 @@ export type Database = {
           vendedor_id: string | null
         }
         Insert: {
+          cambio?: number
           cancelacion_motivo?: string | null
           cliente_apellido?: string | null
           cliente_nombre?: string | null
@@ -1020,6 +1023,7 @@ export type Database = {
           corregida?: boolean
           corregida_por?: string | null
           created_at?: string
+          efectivo_recibido?: number | null
           estado?: string
           id?: string
           monto_pagado?: number
@@ -1031,6 +1035,7 @@ export type Database = {
           vendedor_id?: string | null
         }
         Update: {
+          cambio?: number
           cancelacion_motivo?: string | null
           cliente_apellido?: string | null
           cliente_nombre?: string | null
@@ -1040,6 +1045,7 @@ export type Database = {
           corregida?: boolean
           corregida_por?: string | null
           created_at?: string
+          efectivo_recibido?: number | null
           estado?: string
           id?: string
           monto_pagado?: number
@@ -1072,7 +1078,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      registrar_venta: {
+        Args: {
+          p_cliente_apellido?: string
+          p_cliente_nombre?: string
+          p_cliente_telefono?: string
+          p_efectivo_recibido?: number
+          p_items: Json
+          p_pagos: Json
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

@@ -27,7 +27,10 @@ async function fetchPerfil(userId: string): Promise<Perfil | null> {
     .select('id, nombre, rol, activo')
     .eq('id', userId)
     .single()
-  if (error || !data) return null
+  if (error || !data) {
+    if (error) console.error('fetchPerfil error:', error.message)
+    return null
+  }
   return { id: data.id, nombre: data.nombre, rol: data.rol as Rol, activo: data.activo }
 }
 
@@ -38,16 +41,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let montado = true
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!montado) return
-      setSession(data.session)
-      if (data.session) setPerfil(await fetchPerfil(data.session.user.id))
-      setCargando(false)
-    })
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, nuevaSesion) => {
+    // onAuthStateChange emite INITIAL_SESSION al suscribirse (sesión cacheada, sin red),
+    // así que es la única fuente de verdad: evita el doble fetch y la condición de carrera.
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, nuevaSesion) => {
       if (!montado) return
       setSession(nuevaSesion)
       setPerfil(nuevaSesion ? await fetchPerfil(nuevaSesion.user.id) : null)
+      if (event === 'INITIAL_SESSION') setCargando(false)
     })
     return () => {
       montado = false

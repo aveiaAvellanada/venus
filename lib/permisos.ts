@@ -5,10 +5,11 @@ export interface Modulo {
   titulo: string
   icono: string
   roles: Rol[]
+  ruta?: string
 }
 
 export const MODULOS: Modulo[] = [
-  { id: 'ventas',             titulo: 'Ventas',             icono: '🛒', roles: ['dueno', 'empleado'] },
+  { id: 'ventas',             titulo: 'Ventas',             icono: '🛒', roles: ['dueno', 'empleado'], ruta: '/ventas' },
   { id: 'inventario-calzado', titulo: 'Inventario calzado', icono: '👟', roles: ['dueno', 'empleado'] },
   { id: 'inventario-varios',  titulo: 'Productos varios',   icono: '📦', roles: ['dueno', 'empleado'] },
   { id: 'recibir-mercancia',  titulo: 'Recibir mercancía',  icono: '📥', roles: ['dueno', 'empleado'] },

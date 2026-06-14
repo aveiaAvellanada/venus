@@ -1,9 +1,18 @@
+import { useCallback } from 'react'
 import { Stack } from 'expo-router'
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { AuthProvider, useAuth } from '../lib/auth'
 
 function Navegacion() {
   const { cargando, session, perfil, cerrarSesion } = useAuth()
+
+  const salir = useCallback(async () => {
+    try {
+      await cerrarSesion()
+    } catch {
+      Alert.alert('Error', 'No se pudo cerrar sesión. Intenta de nuevo.')
+    }
+  }, [cerrarSesion])
 
   if (cargando) {
     return (
@@ -16,13 +25,6 @@ function Navegacion() {
   // Fail-closed: hay sesión pero no se pudo cargar el perfil. No montamos la app;
   // ofrecemos cerrar sesión para volver al login (evita el loop de redirección).
   if (session && !perfil) {
-    async function salir() {
-      try {
-        await cerrarSesion()
-      } catch {
-        // Si falla, el usuario sigue en esta pantalla y puede reintentar.
-      }
-    }
     return (
       <View style={styles.centro}>
         <Text style={styles.titulo}>No pudimos cargar tu perfil</Text>

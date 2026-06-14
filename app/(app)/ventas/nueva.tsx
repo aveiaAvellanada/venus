@@ -130,7 +130,15 @@ export default function NuevaVenta() {
   if (etapa === 'cobrar') {
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingTop: 56, gap: 16 }}>
-        <Pressable onPress={() => setEtapa('carrito')} hitSlop={16}>
+        <Pressable
+          onPress={() => {
+            setMetodos([])
+            setMontos({ efectivo: '', nequi: '', daviplata: '' })
+            setRecibido('')
+            setEtapa('carrito')
+          }}
+          hitSlop={16}
+        >
           <Text style={styles.volver}>← Carrito</Text>
         </Pressable>
         <Text style={styles.totalGrande}>{pesos(total)}</Text>
@@ -229,23 +237,25 @@ export default function NuevaVenta() {
       </ScrollView>
 
       <View style={styles.carrito}>
-        {items.map(i => (
-          <View key={`${i.producto.tipo}-${i.producto.id}`} style={styles.itemCarrito}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.itemTitulo}>{i.producto.titulo}</Text>
-              <Text style={styles.itemSub}>{pesos(i.subtotal)}</Text>
+        <ScrollView style={styles.carritoLista}>
+          {items.map(i => (
+            <View key={`${i.producto.tipo}-${i.producto.id}`} style={styles.itemCarrito}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.itemTitulo}>{i.producto.titulo}</Text>
+                <Text style={styles.itemSub}>{pesos(i.subtotal)}</Text>
+              </View>
+              <Pressable hitSlop={12} style={styles.step}
+                onPress={() => dispatch({ tipo: 'cambiarCantidad', id: i.producto.id, cantidad: i.cantidad - 1 })}>
+                <Text style={styles.stepText}>−</Text>
+              </Pressable>
+              <Text style={styles.cantidad}>{i.cantidad}</Text>
+              <Pressable hitSlop={12} style={styles.step}
+                onPress={() => dispatch({ tipo: 'agregar', producto: i.producto })}>
+                <Text style={styles.stepText}>+</Text>
+              </Pressable>
             </View>
-            <Pressable hitSlop={12} style={styles.step}
-              onPress={() => dispatch({ tipo: 'cambiarCantidad', id: i.producto.id, cantidad: i.cantidad - 1 })}>
-              <Text style={styles.stepText}>−</Text>
-            </Pressable>
-            <Text style={styles.cantidad}>{i.cantidad}</Text>
-            <Pressable hitSlop={12} style={styles.step}
-              onPress={() => dispatch({ tipo: 'agregar', producto: i.producto })}>
-              <Text style={styles.stepText}>+</Text>
-            </Pressable>
-          </View>
-        ))}
+          ))}
+        </ScrollView>
 
         <Pressable
           style={[styles.primario, items.length === 0 && styles.deshab]}
@@ -272,7 +282,8 @@ const styles = StyleSheet.create({
   resultadoSub: { fontSize: 13, color: '#888', marginTop: 2 },
   resultadoPrecio: { fontSize: 16, fontWeight: '700' },
   carrito: { borderTopWidth: 1, borderTopColor: '#DDD', padding: 20, gap: 10 },
-  itemCarrito: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  carritoLista: { maxHeight: 220 },
+  itemCarrito: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 },
   itemTitulo: { fontSize: 16, fontWeight: '600' },
   itemSub: { fontSize: 13, color: '#666', marginTop: 2 },
   step: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#EFF5FF', alignItems: 'center', justifyContent: 'center' },

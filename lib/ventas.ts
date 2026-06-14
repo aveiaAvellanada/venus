@@ -26,7 +26,7 @@ export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
     .select('id, descripcion, referencia, talla, color, precio_venta, stock_actual')
     .eq('activo', true)
     .gt('stock_actual', 0)
-    .limit(20)
+    .limit(10)
   if (termino) {
     calzadoQ = calzadoQ.or(
       `descripcion.ilike.${like},referencia.ilike.${like},talla.ilike.${like},color.ilike.${like}`,
@@ -38,7 +38,7 @@ export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
     .select('id, nombre, unidad_medida, precio_venta, stock_actual')
     .eq('activo', true)
     .gt('stock_actual', 0)
-    .limit(20)
+    .limit(10)
   if (termino) variosQ = variosQ.ilike('nombre', like)
 
   const [calzado, varios] = await Promise.all([calzadoQ, variosQ])

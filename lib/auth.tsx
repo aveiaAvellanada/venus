@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react'
 import { Redirect } from 'expo-router'
-import type { Session } from '@supabase/supabase-js'
+import { isAuthRetryableFetchError, type Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import { puedeAcceder, type Rol } from './permisos'
 
@@ -31,6 +31,8 @@ async function fetchPerfil(userId: string): Promise<Perfil | null> {
     if (error) console.error('fetchPerfil error:', error.message)
     return null
   }
+  // Fail-closed: una cuenta desactivada no obtiene acceso (igual que perfil nulo).
+  if (data.activo === false) return null
   return { id: data.id, nombre: data.nombre, rol: data.rol as Rol, activo: data.activo }
 }
 
@@ -61,7 +63,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   async function iniciarSesion(email: string, pin: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password: pin })
-    if (error) return { error: 'PIN incorrecto. Intenta de nuevo.' }
+    if (error) {
+      // Distinguir fallo de red de credenciales inválidas: con datos apagados no es un PIN malo.
+      if (isAuthRetryableFetchError(error)) {
+        return { error: 'Sin conexión. Verifica tu internet e intenta de nuevo.' }
+      }
+      return { error: 'PIN incorrecto. Intenta de nuevo.' }
+    }
     return { error: null }
   }
 

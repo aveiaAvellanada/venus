@@ -15,7 +15,7 @@ export default function ModuloPlaceholder() {
       <Text style={styles.icono}>{modulo?.icono ?? '❓'}</Text>
       <Text style={styles.titulo}>{modulo?.titulo ?? 'Módulo'}</Text>
       <Text style={styles.sub}>En construcción</Text>
-      <Pressable style={styles.btn} onPress={() => router.back()}>
+      <Pressable style={styles.btn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
         <Text style={styles.btnText}>← Volver</Text>
       </Pressable>
     </View>

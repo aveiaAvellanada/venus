@@ -45,8 +45,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
     // así que es la única fuente de verdad: evita el doble fetch y la condición de carrera.
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, nuevaSesion) => {
       if (!montado) return
+      // Resolver el perfil ANTES de comitear la sesión, para que session y perfil
+      // queden siempre consistentes (sin un render intermedio session-sí/perfil-no).
+      const nuevoPerfil = nuevaSesion ? await fetchPerfil(nuevaSesion.user.id) : null
+      if (!montado) return
       setSession(nuevaSesion)
-      setPerfil(nuevaSesion ? await fetchPerfil(nuevaSesion.user.id) : null)
+      setPerfil(nuevoPerfil)
       if (event === 'INITIAL_SESSION') setCargando(false)
     })
     return () => {
@@ -82,7 +86,8 @@ export function useAuth(): AuthState {
 // La pantalla lo llama incondicionalmente al inicio y renderiza el resultado.
 export function useRequireModulo(id: string) {
   const { perfil } = useAuth()
-  if (perfil && !puedeAcceder(perfil.rol, id)) {
+  // Fail-closed: sin perfil (o sin permiso) no se accede al módulo.
+  if (!perfil || !puedeAcceder(perfil.rol, id)) {
     return <Redirect href="/" />
   }
   return null

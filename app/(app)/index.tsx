@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useAuth } from '../../lib/auth'
 import { modulosPara } from '../../lib/permisos'
 
@@ -9,11 +9,19 @@ export default function Home() {
   if (!perfil) return null
   const modulos = modulosPara(perfil.rol)
 
+  async function salir() {
+    try {
+      await cerrarSesion()
+    } catch {
+      Alert.alert('Error', 'No se pudo cerrar sesión. Intenta de nuevo.')
+    }
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.saludo}>Hola, {perfil.nombre.split(' ')[0]}</Text>
-        <Pressable onPress={cerrarSesion} hitSlop={12}>
+        <Pressable onPress={salir} hitSlop={16}>
           <Text style={styles.salir}>Salir</Text>
         </Pressable>
       </View>

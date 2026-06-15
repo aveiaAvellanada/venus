@@ -50,11 +50,11 @@ En SP-2 eliminamos los triggers del historial para facilitar la migración. Ahor
 
 **Files:** `app/(app)/inventario/calzado/index.tsx`, `app/(app)/inventario/calzado/[id].tsx`
 
-- [ ] **Step 1:** Crear el layout general si no existe.
-- [ ] **Step 2:** Pantalla `index.tsx`: Implementar FlatList con la función `listarCalzado`. Añadir barra superior con filtro por Categoría (scroll horizontal de chips).
-- [ ] **Step 3:** Pantalla `[id].tsx` (Detalle): Mostrar imagen, datos y botón de Editar.
-- [ ] **Step 4:** Control de permisos: Si el usuario es empleado, ocultar el botón "Nuevo" y "Editar". Si el usuario es dueño, mostrar la fila de "Costo de compra".
-- [ ] **Step 5:** Typecheck y Commit.
+- [x] **Step 1:** Crear el layout general si no existe.
+- [x] **Step 2:** Pantalla `index.tsx`: Implementar FlatList con la función `listarCalzado`. Añadir barra superior con filtro por Categoría (scroll horizontal de chips).
+- [x] **Step 3:** Pantalla `[id].tsx` (Detalle): Mostrar imagen, datos y botón de Editar.
+- [x] **Step 4:** Control de permisos: Si el usuario es empleado, ocultar el botón "Nuevo" y "Editar". Si el usuario es dueño, mostrar la fila de "Costo de compra".
+- [x] **Step 5:** Typecheck y Commit.
 
 ---
 

@@ -739,10 +739,10 @@ Expected: termina con `T9_OK_ROLLBACK`.
 - [ ] **Step 3: Verificación manual en Expo Go (opcional)** — DIFERIDA al usuario (login Sandra PIN 4321 → 11 tiles; Camilo → 7 tiles con Devoluciones placeholder).
 Login como Sandra (`sandracardona.venus2026@gmail.com`, PIN `4321`) → debe ver 11 tiles (incluye proveedores y gastos fijos, NO balance ni empleados). Login como Camilo → 7 tiles operativos (incluye Devoluciones, que abre el placeholder "En construcción").
 
-- [ ] **Step 4: Solicitar code review** del branch (skill `requesting-code-review`) y decidir merge a `main` con el usuario.
+- [x] **Step 4: Solicitar code review** del branch — hecho. Veredicto: listo para merge, sin issues críticos. Acción tomada: endurecer `created_by` (migración `20260615200000`, trigger incondicional en INSERT, verificado contra falsificación) + nota de PIN en el seed. Mergeado a `main` con `--no-ff`.
 
 ---
 
 ## Cierre
-- [ ] Todos los tasks completos; `tsc` y `npm test` verdes; smoke tests RLS en verde.
-- [ ] SP-1 mergeado. Continúa **SP-2** (Granja sin stock + precio mín/máx) con su propio spec → plan.
+- [x] Todos los tasks completos; `tsc` (exit 0) y `npm test` (20/20) verdes; smoke tests RLS en verde (T1–T6, T9 + HARDEN).
+- [x] SP-1 mergeado a `main` (`--no-ff`). Pendiente opcional: verificación manual en Expo Go (login Sandra) y `git push` cuando el usuario lo indique. Continúa **SP-2** (Granja sin stock + precio mín/máx) con su propio spec → plan.

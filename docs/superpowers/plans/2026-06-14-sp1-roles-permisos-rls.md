@@ -615,7 +615,7 @@ git commit -m "feat(db): RLS ventas/caja/users con nivel admin"
 
 **Files:** Create `supabase/seeds/sandra_admin.sql`; Modify `lib/usuarios.ts`
 
-- [ ] **Step 1: Escribir el seed** `supabase/seeds/sandra_admin.sql` con EXACTAMENTE (idempotente; PIN temporal `4321` a cambiar al primer ingreso):
+- [x] **Step 1: Escribir el seed** `supabase/seeds/sandra_admin.sql` con EXACTAMENTE (idempotente; PIN temporal `4321` a cambiar al primer ingreso):
 ```sql
 -- Seed Sandra Cardona como admin. Idempotente. Mismo patrón usado para los otros usuarios.
 -- auth.identities.email es columna generada: NO insertarla.
@@ -648,7 +648,7 @@ end $$;
 ```
 > Nota para quien ejecute: confirmar que las columnas de `auth.users`/`auth.identities` coinciden con cómo se sembraron los usuarios existentes (mismo proyecto, misma versión de GoTrue). Si la inserción en `auth.users` falla por una columna requerida adicional, replicar exactamente el INSERT que funcionó para Camilo/Beatriz.
 
-- [ ] **Step 2: Aplicar el seed** vía MCP `supabase.execute_sql` (`project_id: "xqspsaghukeynlizbjvc"`) con el contenido del seed. Expected: sin error.
+- [x] **Step 2: Aplicar el seed** vía MCP `supabase.execute_sql` (`project_id: "xqspsaghukeynlizbjvc"`) con el contenido del seed. Expected: sin error. — Aplicado sin error (columnas auth.users validadas ya en T5/T6).
 
 - [ ] **Step 3: Verificar**
 ```sql
@@ -657,9 +657,11 @@ from public.users u
 left join auth.users a on a.id = u.id
 where u.email = 'sandracardona.venus2026@gmail.com';
 ```
-Expected: una fila `Sandra Cardona | admin | true | true`.
+Expected: una fila `Sandra Cardona | admin | true | true`. — VERIFICADO.
 
-- [ ] **Step 4: Agregar Sandra al picker** — en `lib/usuarios.ts`, reemplazar el arreglo `USUARIOS` por:
+- [x] **Step 3: Verificar** — `Sandra Cardona | admin | true | true` (una fila).
+
+- [x] **Step 4: Agregar Sandra al picker** — en `lib/usuarios.ts`, reemplazar el arreglo `USUARIOS` por:
 ```ts
 export const USUARIOS: UsuarioPicker[] = [
   { nombre: 'Andrés Artunduaga', email: 'venusdelcaqueta@gmail.com' },
@@ -669,7 +671,7 @@ export const USUARIOS: UsuarioPicker[] = [
 ]
 ```
 
-- [ ] **Step 5: Typecheck y commit**
+- [x] **Step 5: Typecheck y commit** — tsc exit 0 (limpio con `env.d.ts`); commit `83b90c1`.
 Run: `npx tsc --noEmit` (Expected: sin errores)
 ```bash
 git add supabase/seeds/sandra_admin.sql lib/usuarios.ts
@@ -682,17 +684,17 @@ git commit -m "feat: seed de Sandra como admin y picker actualizado"
 
 **Files:** Modify `lib/database.types.ts`
 
-- [ ] **Step 1: Generar tipos** con MCP `supabase.generate_typescript_types` (`project_id: "xqspsaghukeynlizbjvc"`) y sobrescribir `lib/database.types.ts` con el resultado completo.
+- [x] **Step 1: Generar tipos** con MCP `supabase.generate_typescript_types` (`project_id: "xqspsaghukeynlizbjvc"`) y sobrescribir `lib/database.types.ts` con el resultado completo. — 1486 líneas, PostgrestVersion 14.5.
 
-- [ ] **Step 2: Verificar columnas de auditoría**
+- [x] **Step 2: Verificar columnas de auditoría** — `created_by`/`updated_by` presentes en `productos_calzado`, `ventas`, `cierres_caja`, etc. (130 coincidencias, con FKs).
 Run: `grep -n "created_by\|updated_by" lib/database.types.ts | head`
 Expected: aparecen `created_by`/`updated_by` en varias tablas (p. ej. `productos_calzado`, `ventas`).
 
-- [ ] **Step 3: Typecheck**
+- [x] **Step 3: Typecheck** — tsc exit 0.
 Run: `npx tsc --noEmit`
 Expected: sin errores. (Las consultas existentes en `lib/ventas.ts` no seleccionan las columnas nuevas, así que no se rompen.)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit** — `6766832`
 ```bash
 git add lib/database.types.ts
 git commit -m "chore(types): regenerar tras roles y auditoría SP-1"
@@ -704,7 +706,7 @@ git commit -m "chore(types): regenerar tras roles y auditoría SP-1"
 
 **Files:** ninguno (verificación).
 
-- [ ] **Step 1: Suite completa**
+- [x] **Step 1: Suite completa** — tsc exit 0; 20/20 tests (`carrito` + `permisos`).
 Run: `npx tsc --noEmit && npm test`
 Expected: tsc limpio; todos los tests pasan (`carrito` + `permisos`).
 
@@ -732,7 +734,9 @@ end $$;
 ```
 Expected: termina con `T9_OK_ROLLBACK`.
 
-- [ ] **Step 3: Verificación manual en Expo Go (opcional)**
+- [x] **Step 2: Recap RLS por rol** — PASÓ (`T9_OK_ROLLBACK`; admin/Sandra edita `productos_varios` y NO ve costos). Advisor de seguridad: solo WARN esperados (4 políticas inventario `true` por diseño `to authenticated`; `registrar_venta` SECURITY DEFINER y leaked-password preexistentes). Sin errores de RLS.
+
+- [ ] **Step 3: Verificación manual en Expo Go (opcional)** — DIFERIDA al usuario (login Sandra PIN 4321 → 11 tiles; Camilo → 7 tiles con Devoluciones placeholder).
 Login como Sandra (`sandracardona.venus2026@gmail.com`, PIN `4321`) → debe ver 11 tiles (incluye proveedores y gastos fijos, NO balance ni empleados). Login como Camilo → 7 tiles operativos (incluye Devoluciones, que abre el placeholder "En construcción").
 
 - [ ] **Step 4: Solicitar code review** del branch (skill `requesting-code-review`) y decidir merge a `main` con el usuario.

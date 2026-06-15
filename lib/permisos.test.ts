@@ -34,4 +34,8 @@ describe('permisos', () => {
     const ids = MODULOS.map(m => m.id)
     expect(new Set(ids).size).toBe(ids.length)
   })
+
+  test('el módulo ventas apunta a su ruta dedicada', () => {
+    expect(MODULOS.find(m => m.id === 'ventas')?.ruta).toBe('/ventas')
+  })
 })

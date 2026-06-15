@@ -27,7 +27,7 @@ export default function Home() {
       </View>
       <ScrollView contentContainerStyle={styles.grid}>
         {modulos.map(m => (
-          <Pressable key={m.id} style={styles.tile} onPress={() => router.push(`/modulo/${m.id}`)}>
+          <Pressable key={m.id} style={styles.tile} onPress={() => router.push(m.ruta ?? `/modulo/${m.id}`)}>
             <Text style={styles.icono}>{m.icono}</Text>
             <Text style={styles.tileText}>{m.titulo}</Text>
           </Pressable>

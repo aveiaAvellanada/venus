@@ -74,7 +74,7 @@ En SP-2 eliminamos los triggers del historial para facilitar la migración. Ahor
 
 **Files:** `app/(app)/inventario/granja/index.tsx`, `app/(app)/inventario/granja/editor.tsx`
 
-- [ ] **Step 1:** Pantalla `index.tsx` para Granja: Búsqueda simple, listado de productos mostrando precio sugerido y unidad de medida. Sin indicador de stock.
-- [ ] **Step 2:** Pantalla `editor.tsx`: Formulario ultracompacto (Nombre, Unidad, Precio sugerido, Proveedor).
-- [ ] **Step 3:** Test manual/visual.
-- [ ] **Step 4:** Typecheck, Suite completa de tests locales y Commit final de SP-3.
+- [x] **Step 1:** Pantalla `index.tsx` para Granja: Búsqueda simple, listado de productos mostrando precio sugerido y unidad de medida. Sin indicador de stock.
+- [x] **Step 2:** Pantalla `editor.tsx`: Formulario ultracompacto (Nombre, Unidad, Precio sugerido, Proveedor).
+- [x] **Step 3:** Test manual/visual.
+- [x] **Step 4:** Typecheck, Suite completa de tests locales y Commit final de SP-3.

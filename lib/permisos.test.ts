@@ -1,41 +1,52 @@
 import { MODULOS, modulosPara, puedeAcceder } from './permisos'
 
 describe('permisos', () => {
-  test('el dueño ve los 13 módulos', () => {
-    expect(modulosPara('dueno')).toHaveLength(13)
+  test('el dueño ve los 14 módulos', () => {
+    expect(modulosPara('dueno')).toHaveLength(14)
   })
 
-  test('el empleado ve exactamente 5 módulos', () => {
-    const ids = modulosPara('empleado').map(m => m.id).sort()
-    expect(ids).toEqual(
-      ['cierre-caja', 'inventario-calzado', 'inventario-varios', 'recibir-mercancia', 'ventas'].sort()
-    )
-  })
-
-  test('el empleado NO ve módulos financieros', () => {
-    const idsEmpleado = modulosPara('empleado').map(m => m.id)
-    for (const prohibido of ['balance', 'reportes', 'gastos-fijos', 'gastos-variables', 'analisis-ia', 'proveedores']) {
-      expect(idsEmpleado).not.toContain(prohibido)
+  test('el admin ve 11 módulos (todos menos los del dueño)', () => {
+    const ids = modulosPara('admin').map(m => m.id)
+    expect(ids).toHaveLength(11)
+    for (const prohibido of ['gestion-empleado', 'balance', 'analisis-ia']) {
+      expect(ids).not.toContain(prohibido)
     }
   })
 
-  test('puedeAcceder respeta el mapa', () => {
-    expect(puedeAcceder('empleado', 'ventas')).toBe(true)
-    expect(puedeAcceder('empleado', 'cierre-caja')).toBe(true)
-    expect(puedeAcceder('empleado', 'balance')).toBe(false)
-    expect(puedeAcceder('dueno', 'balance')).toBe(true)
+  test('el empleado ve exactamente los 7 módulos operativos', () => {
+    const ids = modulosPara('empleado').map(m => m.id).sort()
+    expect(ids).toEqual(
+      ['caja', 'devoluciones', 'gastos-variables', 'granja', 'inventario-calzado', 'recibir-mercancia', 'ventas'].sort()
+    )
   })
 
-  test('puedeAcceder con id inexistente es false', () => {
-    expect(puedeAcceder('dueno', 'no-existe')).toBe(false)
+  test('solo el dueño ve finanzas y gestión', () => {
+    for (const id of ['balance', 'gestion-empleado', 'analisis-ia']) {
+      expect(puedeAcceder('dueno', id)).toBe(true)
+      expect(puedeAcceder('admin', id)).toBe(false)
+      expect(puedeAcceder('empleado', id)).toBe(false)
+    }
+  })
+
+  test('admin gestiona proveedores, gastos fijos, reportes y carga inicial; el empleado no', () => {
+    for (const id of ['proveedores', 'gastos-fijos', 'reportes', 'carga-inicial']) {
+      expect(puedeAcceder('admin', id)).toBe(true)
+      expect(puedeAcceder('empleado', id)).toBe(false)
+    }
+  })
+
+  test('devoluciones es visible para los tres roles', () => {
+    expect(puedeAcceder('dueno', 'devoluciones')).toBe(true)
+    expect(puedeAcceder('admin', 'devoluciones')).toBe(true)
+    expect(puedeAcceder('empleado', 'devoluciones')).toBe(true)
+  })
+
+  test('ventas conserva su ruta dedicada', () => {
+    expect(MODULOS.find(m => m.id === 'ventas')?.ruta).toBe('/ventas')
   })
 
   test('no hay ids de módulo duplicados', () => {
     const ids = MODULOS.map(m => m.id)
     expect(new Set(ids).size).toBe(ids.length)
-  })
-
-  test('el módulo ventas apunta a su ruta dedicada', () => {
-    expect(MODULOS.find(m => m.id === 'ventas')?.ruta).toBe('/ventas')
   })
 })

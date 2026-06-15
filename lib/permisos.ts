@@ -1,4 +1,4 @@
-export type Rol = 'dueno' | 'empleado'
+export type Rol = 'dueno' | 'admin' | 'empleado'
 
 export interface Modulo {
   id: string
@@ -8,20 +8,25 @@ export interface Modulo {
   ruta?: string
 }
 
+const TODOS: Rol[] = ['dueno', 'admin', 'empleado']
+const STAFF_ADMIN: Rol[] = ['dueno', 'admin']
+const SOLO_DUENO: Rol[] = ['dueno']
+
 export const MODULOS: Modulo[] = [
-  { id: 'ventas',             titulo: 'Ventas',             icono: '🛒', roles: ['dueno', 'empleado'], ruta: '/ventas' },
-  { id: 'inventario-calzado', titulo: 'Inventario calzado', icono: '👟', roles: ['dueno', 'empleado'] },
-  { id: 'inventario-varios',  titulo: 'Productos varios',   icono: '📦', roles: ['dueno', 'empleado'] },
-  { id: 'recibir-mercancia',  titulo: 'Recibir mercancía',  icono: '📥', roles: ['dueno', 'empleado'] },
-  { id: 'cierre-caja',        titulo: 'Cierre de caja',     icono: '🧾', roles: ['dueno', 'empleado'] },
-  { id: 'proveedores',        titulo: 'Proveedores',        icono: '🚚', roles: ['dueno'] },
-  { id: 'gestion-empleado',   titulo: 'Empleado',           icono: '👤', roles: ['dueno'] },
-  { id: 'reportes',           titulo: 'Reportes',           icono: '📊', roles: ['dueno'] },
-  { id: 'analisis-ia',        titulo: 'Análisis IA',        icono: '🤖', roles: ['dueno'] },
-  { id: 'gastos-fijos',       titulo: 'Gastos fijos',       icono: '📌', roles: ['dueno'] },
-  { id: 'gastos-variables',   titulo: 'Gastos variables',   icono: '💸', roles: ['dueno'] },
-  { id: 'balance',            titulo: 'Balance',            icono: '⚖️', roles: ['dueno'] },
-  { id: 'carga-inicial',      titulo: 'Carga inicial',      icono: '📷', roles: ['dueno'] },
+  { id: 'ventas',             titulo: 'Ventas',             icono: '🛒', roles: TODOS, ruta: '/ventas' },
+  { id: 'devoluciones',       titulo: 'Devoluciones',       icono: '↩️', roles: TODOS },
+  { id: 'inventario-calzado', titulo: 'Inventario calzado', icono: '👟', roles: TODOS },
+  { id: 'granja',             titulo: 'Granja',             icono: '🥚', roles: TODOS },
+  { id: 'recibir-mercancia',  titulo: 'Recibir mercancía',  icono: '📥', roles: TODOS },
+  { id: 'caja',               titulo: 'Caja',               icono: '🧾', roles: TODOS },
+  { id: 'gastos-variables',   titulo: 'Gastos variables',   icono: '💸', roles: TODOS },
+  { id: 'proveedores',        titulo: 'Proveedores',        icono: '🚚', roles: STAFF_ADMIN },
+  { id: 'gastos-fijos',       titulo: 'Gastos fijos',       icono: '📌', roles: STAFF_ADMIN },
+  { id: 'reportes',           titulo: 'Reportes',           icono: '📊', roles: STAFF_ADMIN },
+  { id: 'carga-inicial',      titulo: 'Carga inicial',      icono: '📷', roles: STAFF_ADMIN },
+  { id: 'gestion-empleado',   titulo: 'Empleados',          icono: '👤', roles: SOLO_DUENO },
+  { id: 'balance',            titulo: 'Balance',            icono: '⚖️', roles: SOLO_DUENO },
+  { id: 'analisis-ia',        titulo: 'Análisis IA',        icono: '🤖', roles: SOLO_DUENO },
 ]
 
 export const modulosPara = (rol: Rol): Modulo[] =>

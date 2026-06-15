@@ -20,6 +20,7 @@ export type Database = {
           cerrado_por: string | null
           cierre_at: string | null
           created_at: string
+          created_by: string | null
           diferencia: number | null
           diferencia_nota: string | null
           efectivo_contado: number | null
@@ -33,12 +34,14 @@ export type Database = {
           total_nequi: number
           total_ventas: number
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           apertura_at?: string | null
           cerrado_por?: string | null
           cierre_at?: string | null
           created_at?: string
+          created_by?: string | null
           diferencia?: number | null
           diferencia_nota?: string | null
           efectivo_contado?: number | null
@@ -52,12 +55,14 @@ export type Database = {
           total_nequi?: number
           total_ventas?: number
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           apertura_at?: string | null
           cerrado_por?: string | null
           cierre_at?: string | null
           created_at?: string
+          created_by?: string | null
           diferencia?: number | null
           diferencia_nota?: string | null
           efectivo_contado?: number | null
@@ -71,11 +76,26 @@ export type Database = {
           total_nequi?: number
           total_ventas?: number
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "cierres_caja_cerrado_por_fkey"
             columns: ["cerrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cierres_caja_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cierres_caja_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -183,6 +203,7 @@ export type Database = {
           compra_id: string
           costo_unitario: number | null
           created_at: string
+          created_by: string | null
           descripcion: string
           id: string
           producto_calzado_id: string | null
@@ -190,6 +211,7 @@ export type Database = {
           subtotal: number | null
           talla: string | null
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           cantidad: number
@@ -197,6 +219,7 @@ export type Database = {
           compra_id: string
           costo_unitario?: number | null
           created_at?: string
+          created_by?: string | null
           descripcion: string
           id?: string
           producto_calzado_id?: string | null
@@ -204,6 +227,7 @@ export type Database = {
           subtotal?: number | null
           talla?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           cantidad?: number
@@ -211,6 +235,7 @@ export type Database = {
           compra_id?: string
           costo_unitario?: number | null
           created_at?: string
+          created_by?: string | null
           descripcion?: string
           id?: string
           producto_calzado_id?: string | null
@@ -218,6 +243,7 @@ export type Database = {
           subtotal?: number | null
           talla?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -228,10 +254,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "compra_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "compra_items_producto_calzado_id_fkey"
             columns: ["producto_calzado_id"]
             isOneToOne: false
             referencedRelation: "productos_calzado"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compra_items_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -240,6 +280,7 @@ export type Database = {
         Row: {
           condicion_pago: string | null
           created_at: string
+          created_by: string | null
           estado: string
           fecha_vencimiento: string | null
           id: string
@@ -251,10 +292,12 @@ export type Database = {
           saldo_pendiente: number
           total: number | null
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           condicion_pago?: string | null
           created_at?: string
+          created_by?: string | null
           estado?: string
           fecha_vencimiento?: string | null
           id?: string
@@ -266,10 +309,12 @@ export type Database = {
           saldo_pendiente?: number
           total?: number | null
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           condicion_pago?: string | null
           created_at?: string
+          created_by?: string | null
           estado?: string
           fecha_vencimiento?: string | null
           id?: string
@@ -281,8 +326,16 @@ export type Database = {
           saldo_pendiente?: number
           total?: number | null
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "compras_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "compras_proveedor_id_fkey"
             columns: ["proveedor_id"]
@@ -300,6 +353,13 @@ export type Database = {
           {
             foreignKeyName: "compras_revisada_por_fkey"
             columns: ["revisada_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compras_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -461,43 +521,65 @@ export type Database = {
           alerta_dias_antes: number
           beneficiario: string | null
           created_at: string
+          created_by: string | null
           dia_pago: number | null
           id: string
           monto_aproximado: number
           nombre: string
           notas: string | null
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           activo?: boolean
           alerta_dias_antes?: number
           beneficiario?: string | null
           created_at?: string
+          created_by?: string | null
           dia_pago?: number | null
           id?: string
           monto_aproximado: number
           nombre: string
           notas?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           activo?: boolean
           alerta_dias_antes?: number
           beneficiario?: string | null
           created_at?: string
+          created_by?: string | null
           dia_pago?: number | null
           id?: string
           monto_aproximado?: number
           nombre?: string
           notas?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "gastos_fijos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gastos_fijos_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gastos_fijos_pagos: {
         Row: {
           comprobante_url: string | null
           created_at: string
+          created_by: string | null
           fecha_pago: string
           gasto_fijo_id: string
           id: string
@@ -505,10 +587,12 @@ export type Database = {
           periodo: string | null
           registrado_por: string | null
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           comprobante_url?: string | null
           created_at?: string
+          created_by?: string | null
           fecha_pago: string
           gasto_fijo_id: string
           id?: string
@@ -516,10 +600,12 @@ export type Database = {
           periodo?: string | null
           registrado_por?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           comprobante_url?: string | null
           created_at?: string
+          created_by?: string | null
           fecha_pago?: string
           gasto_fijo_id?: string
           id?: string
@@ -527,8 +613,16 @@ export type Database = {
           periodo?: string | null
           registrado_por?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "gastos_fijos_pagos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "gastos_fijos_pagos_gasto_fijo_id_fkey"
             columns: ["gasto_fijo_id"]
@@ -543,6 +637,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "gastos_fijos_pagos_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       gastos_variables: {
@@ -550,39 +651,59 @@ export type Database = {
           categoria: string
           comprobante_url: string | null
           created_at: string
+          created_by: string | null
           descripcion: string
           fecha: string
           id: string
           monto: number
           registrado_por: string | null
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           categoria?: string
           comprobante_url?: string | null
           created_at?: string
+          created_by?: string | null
           descripcion: string
           fecha?: string
           id?: string
           monto: number
           registrado_por?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           categoria?: string
           comprobante_url?: string | null
           created_at?: string
+          created_by?: string | null
           descripcion?: string
           fecha?: string
           id?: string
           monto?: number
           registrado_por?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "gastos_variables_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "gastos_variables_registrado_por_fkey"
             columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gastos_variables_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -682,29 +803,49 @@ export type Database = {
       metodos_pago_venta: {
         Row: {
           created_at: string
+          created_by: string | null
           es_anticipo: boolean
           id: string
           metodo: string
           monto: number
+          updated_by: string | null
           venta_id: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           es_anticipo?: boolean
           id?: string
           metodo: string
           monto: number
+          updated_by?: string | null
           venta_id: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           es_anticipo?: boolean
           id?: string
           metodo?: string
           monto?: number
+          updated_by?: string | null
           venta_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "metodos_pago_venta_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metodos_pago_venta_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "metodos_pago_venta_venta_id_fkey"
             columns: ["venta_id"]
@@ -720,6 +861,7 @@ export type Database = {
           categoria: string
           color: string | null
           created_at: string
+          created_by: string | null
           descripcion: string
           foto_url: string | null
           id: string
@@ -730,12 +872,14 @@ export type Database = {
           stock_minimo: number
           talla: string | null
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           activo?: boolean
           categoria: string
           color?: string | null
           created_at?: string
+          created_by?: string | null
           descripcion: string
           foto_url?: string | null
           id?: string
@@ -746,12 +890,14 @@ export type Database = {
           stock_minimo?: number
           talla?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           activo?: boolean
           categoria?: string
           color?: string | null
           created_at?: string
+          created_by?: string | null
           descripcion?: string
           foto_url?: string | null
           id?: string
@@ -762,13 +908,28 @@ export type Database = {
           stock_minimo?: number
           talla?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "productos_calzado_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "productos_calzado_proveedor_id_fkey"
             columns: ["proveedor_id"]
             isOneToOne: false
             referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "productos_calzado_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -777,6 +938,7 @@ export type Database = {
         Row: {
           activo: boolean
           created_at: string
+          created_by: string | null
           foto_url: string | null
           id: string
           nombre: string
@@ -785,10 +947,12 @@ export type Database = {
           stock_minimo: number
           unidad_medida: string
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           activo?: boolean
           created_at?: string
+          created_by?: string | null
           foto_url?: string | null
           id?: string
           nombre: string
@@ -797,10 +961,12 @@ export type Database = {
           stock_minimo?: number
           unidad_medida: string
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           activo?: boolean
           created_at?: string
+          created_by?: string | null
           foto_url?: string | null
           id?: string
           nombre?: string
@@ -809,46 +975,82 @@ export type Database = {
           stock_minimo?: number
           unidad_medida?: string
           updated_at?: string
+          updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "productos_varios_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "productos_varios_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       proveedor_cuentas_bancarias: {
         Row: {
           banco: string
           created_at: string
+          created_by: string | null
           id: string
           numero_cuenta: string
           proveedor_id: string
           tipo_cuenta: string
           titular: string | null
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           banco: string
           created_at?: string
+          created_by?: string | null
           id?: string
           numero_cuenta: string
           proveedor_id: string
           tipo_cuenta: string
           titular?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           banco?: string
           created_at?: string
+          created_by?: string | null
           id?: string
           numero_cuenta?: string
           proveedor_id?: string
           tipo_cuenta?: string
           titular?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "proveedor_cuentas_bancarias_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "proveedor_cuentas_bancarias_proveedor_id_fkey"
             columns: ["proveedor_id"]
             isOneToOne: false
             referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proveedor_cuentas_bancarias_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -858,36 +1060,57 @@ export type Database = {
           activo: boolean
           ciudad: string | null
           created_at: string
+          created_by: string | null
           id: string
           nit_cedula: string | null
           nombre: string
           notas: string | null
           telefono: string | null
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           activo?: boolean
           ciudad?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           nit_cedula?: string | null
           nombre: string
           notas?: string | null
           telefono?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           activo?: boolean
           ciudad?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           nit_cedula?: string | null
           nombre?: string
           notas?: string | null
           telefono?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "proveedores_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proveedores_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       users: {
         Row: {
@@ -927,6 +1150,7 @@ export type Database = {
           cantidad: number
           color: string | null
           created_at: string
+          created_by: string | null
           descripcion_snapshot: string
           id: string
           precio_unitario: number
@@ -935,12 +1159,14 @@ export type Database = {
           subtotal: number
           talla: string | null
           tipo_producto: string
+          updated_by: string | null
           venta_id: string
         }
         Insert: {
           cantidad: number
           color?: string | null
           created_at?: string
+          created_by?: string | null
           descripcion_snapshot: string
           id?: string
           precio_unitario: number
@@ -949,12 +1175,14 @@ export type Database = {
           subtotal: number
           talla?: string | null
           tipo_producto: string
+          updated_by?: string | null
           venta_id: string
         }
         Update: {
           cantidad?: number
           color?: string | null
           created_at?: string
+          created_by?: string | null
           descripcion_snapshot?: string
           id?: string
           precio_unitario?: number
@@ -963,9 +1191,17 @@ export type Database = {
           subtotal?: number
           talla?: string | null
           tipo_producto?: string
+          updated_by?: string | null
           venta_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "venta_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "venta_items_producto_calzado_id_fkey"
             columns: ["producto_calzado_id"]
@@ -978,6 +1214,13 @@ export type Database = {
             columns: ["producto_varios_id"]
             isOneToOne: false
             referencedRelation: "productos_varios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venta_items_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -1001,6 +1244,7 @@ export type Database = {
           corregida: boolean
           corregida_por: string | null
           created_at: string
+          created_by: string | null
           efectivo_recibido: number | null
           estado: string
           id: string
@@ -1010,6 +1254,7 @@ export type Database = {
           saldo_pendiente: number
           total: number
           updated_at: string
+          updated_by: string | null
           vendedor_id: string | null
         }
         Insert: {
@@ -1023,6 +1268,7 @@ export type Database = {
           corregida?: boolean
           corregida_por?: string | null
           created_at?: string
+          created_by?: string | null
           efectivo_recibido?: number | null
           estado?: string
           id?: string
@@ -1032,6 +1278,7 @@ export type Database = {
           saldo_pendiente?: number
           total: number
           updated_at?: string
+          updated_by?: string | null
           vendedor_id?: string | null
         }
         Update: {
@@ -1045,6 +1292,7 @@ export type Database = {
           corregida?: boolean
           corregida_por?: string | null
           created_at?: string
+          created_by?: string | null
           efectivo_recibido?: number | null
           estado?: string
           id?: string
@@ -1054,12 +1302,27 @@ export type Database = {
           saldo_pendiente?: number
           total?: number
           updated_at?: string
+          updated_by?: string | null
           vendedor_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "ventas_corregida_por_fkey"
             columns: ["corregida_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ventas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ventas_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]

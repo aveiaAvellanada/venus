@@ -62,11 +62,11 @@ En SP-2 eliminamos los triggers del historial para facilitar la migración. Ahor
 
 **Files:** `app/(app)/inventario/calzado/editor.tsx`
 
-- [ ] **Step 1:** Pantalla con formulario usando `ScrollView` y componentes nativos para capturar todos los datos del calzado.
-- [ ] **Step 2:** Integrar `expo-image-picker` para capturar fotos.
-- [ ] **Step 3:** Control de roles: Validar mediante redirección temprana que solo Dueño o Sandra puedan entrar a esta pantalla.
-- [ ] **Step 4:** Al guardar exitosamente (si el ID era nuevo), disparar un `Alert` preguntando "¿Agregar otro similar?". Si sí: limpiar solo Talla y Color y mantener la pantalla; si no: volver atrás.
-- [ ] **Step 5:** Typecheck y Commit.
+- [x] **Step 1:** Pantalla con formulario usando `ScrollView` y componentes nativos para capturar todos los datos del calzado.
+- [x] **Step 2:** Integrar `expo-image-picker` para capturar fotos.
+- [x] **Step 3:** Control de roles: Validar mediante redirección temprana que solo Dueño o Sandra puedan entrar a esta pantalla.
+- [x] **Step 4:** Al guardado exitosamente (si el ID era nuevo), disparar un `Alert` preguntando "¿Agregar otro similar?". Si sí: limpiar solo Talla y Color y mantener la pantalla; si no: volver atrás.
+- [x] **Step 5:** Typecheck y Commit.
 
 ---
 

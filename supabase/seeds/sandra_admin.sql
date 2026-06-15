@@ -1,5 +1,8 @@
 -- Seed Sandra Cardona como admin. Idempotente. Mismo patrón usado para los otros usuarios.
 -- auth.identities.email es columna generada: NO insertarla.
+-- NOTA: el PIN temporal '4321' solo se siembra al CREAR la cuenta. Re-ejecutar este
+-- seed NO resetea el PIN si la cuenta ya existe (el bloque de auth.users se omite por
+-- el guard de email); solo re-afirma rol='admin'/activo/nombre en public.users.
 do $$
 declare v_uid uuid;
 begin

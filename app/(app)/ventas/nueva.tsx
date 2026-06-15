@@ -1,4 +1,4 @@
-import { useCallback, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import {
   ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native'
@@ -9,6 +9,7 @@ import {
   type AccionCarrito, type ItemCarrito, type MetodoPago, type PagoInput, type ProductoVendible,
 } from '../../../lib/carrito'
 import { buscarProductos, registrarVenta } from '../../../lib/ventas'
+import { obtenerCajaHoy } from '../../../lib/caja'
 
 type Etapa = 'carrito' | 'cobrar' | 'confirmacion'
 const METODOS: MetodoPago[] = ['efectivo', 'nequi', 'daviplata']
@@ -121,6 +122,16 @@ export default function NuevaVenta() {
   const [cliente, setCliente] = useState({ nombre: '', apellido: '', telefono: '' })
   const [guardando, setGuardando] = useState(false)
   const [numeroVenta, setNumeroVenta] = useState<number | null>(null)
+  const [cajaEstado, setCajaEstado] = useState<'loading' | 'ok' | 'bloqueado'>('loading')
+
+  useEffect(() => {
+    obtenerCajaHoy()
+      .then(c => {
+        if (!c || c.estado !== 'abierto') setCajaEstado('bloqueado')
+        else setCajaEstado('ok')
+      })
+      .catch(() => setCajaEstado('bloqueado'))
+  }, [])
 
   const buscar = useCallback((texto: string) => {
     setQuery(texto)
@@ -139,6 +150,31 @@ export default function NuevaVenta() {
   }, [])
 
   if (redir) return redir
+
+  if (cajaEstado === 'loading') {
+    return (
+      <View style={[styles.container, styles.centro]}>
+        <ActivityIndicator size="large" color="#1E66F5" />
+      </View>
+    )
+  }
+
+  if (cajaEstado === 'bloqueado') {
+    return (
+      <View style={[styles.container, styles.centro]}>
+        <Text style={styles.okTitulo}>Caja cerrada</Text>
+        <Text style={{ fontSize: 16, color: '#666', textAlign: 'center' }}>
+          La caja de hoy no está abierta.
+        </Text>
+        <Pressable style={styles.primario} onPress={() => router.replace('/caja')}>
+          <Text style={[styles.primarioText, { paddingHorizontal: 24 }]}>Ir a Caja</Text>
+        </Pressable>
+        <Pressable style={styles.secundario} onPress={() => router.replace('/ventas')}>
+          <Text style={styles.secundarioText}>Volver a ventas</Text>
+        </Pressable>
+      </View>
+    )
+  }
 
   const total = totalCarrito(items)
   const pagos: PagoInput[] = metodos.map(m => ({ metodo: m, monto: Number(montos[m]) || 0 }))

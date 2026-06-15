@@ -20,7 +20,7 @@
 
 ## Setup (antes de la Tarea 1)
 
-- [ ] Crear rama desde `main`:
+- [x] Crear rama desde `main`:
 ```bash
 cd /home/aveia/Development/work/Venus
 git checkout main && git pull --ff-only
@@ -47,7 +47,7 @@ git checkout -b feat/sp1-roles-permisos
 
 **Files:** Create `supabase/migrations/<ts>_sp1_roles_helpers.sql`
 
-- [ ] **Step 1: Escribir la migración** con EXACTAMENTE:
+- [x] **Step 1: Escribir la migración** con EXACTAMENTE:
 ```sql
 -- SP-1: tercer rol 'admin' + helpers de nivel administrativo.
 
@@ -67,7 +67,7 @@ $$;
 grant execute on function private.is_admin(), private.is_staff_admin() to authenticated, service_role;
 ```
 
-- [ ] **Step 2: Aplicar** vía MCP `supabase.apply_migration` (`project_id: "xqspsaghukeynlizbjvc"`, `name: "sp1_roles_helpers"`, `query` = el SQL). Expected: sin error.
+- [x] **Step 2: Aplicar** vía MCP `supabase.apply_migration` (`project_id: "xqspsaghukeynlizbjvc"`, `name: "sp1_roles_helpers"`, `query` = el SQL). Expected: sin error.
 
 - [ ] **Step 3: Smoke test** vía MCP `supabase.execute_sql`:
 ```sql
@@ -86,7 +86,11 @@ end $$;
 ```
 Expected: termina con `T1_OK_ROLLBACK`.
 
-- [ ] **Step 4: Commit**
+> **Nota de ejecución:** el smoke test tal cual falla por FK (`public.users.id → auth.users(id)`): hay que sembrar una fila en `auth.users` antes del insert en `public.users`. Verificado con esa fila añadida → `T1_OK_ROLLBACK`. Aplica a los smoke tests de T2/T4/T5/T6/T9.
+
+- [x] **Step 3: Smoke test** — PASÓ (`T1_OK_ROLLBACK`, con auth.users sembrado).
+
+- [x] **Step 4: Commit** — `1d51a2d`
 ```bash
 git add supabase/migrations/
 git commit -m "feat(db): rol admin y helpers is_admin/is_staff_admin"
@@ -98,7 +102,7 @@ git commit -m "feat(db): rol admin y helpers is_admin/is_staff_admin"
 
 **Files:** Create `supabase/migrations/<ts>_sp1_auditoria.sql`
 
-- [ ] **Step 1: Escribir la migración** con EXACTAMENTE:
+- [x] **Step 1: Escribir la migración** con EXACTAMENTE:
 ```sql
 -- SP-1: auditoría base (created_by / updated_by) + trigger.
 
@@ -141,7 +145,7 @@ begin
 end $$;
 ```
 
-- [ ] **Step 2: Aplicar** vía MCP `supabase.apply_migration` (`name: "sp1_auditoria"`). Expected: sin error.
+- [x] **Step 2: Aplicar** vía MCP `supabase.apply_migration` (`name: "sp1_auditoria"`). Expected: sin error.
 
 - [ ] **Step 3: Smoke test** vía MCP `supabase.execute_sql`:
 ```sql
@@ -158,7 +162,9 @@ end $$;
 ```
 Expected: termina con `T2_OK_ROLLBACK`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 3: Smoke test** — PASÓ (`T2_OK_ROLLBACK`; usa un `dueno` existente, sin problema de FK).
+
+- [x] **Step 4: Commit** — `c27119b`
 ```bash
 git add supabase/migrations/
 git commit -m "feat(db): auditoría base created_by/updated_by con trigger"
@@ -170,7 +176,7 @@ git commit -m "feat(db): auditoría base created_by/updated_by con trigger"
 
 **Files:** Modify `lib/permisos.ts`, `lib/permisos.test.ts`
 
-- [ ] **Step 1: Reescribir el test** `lib/permisos.test.ts` con EXACTAMENTE:
+- [x] **Step 1: Reescribir el test** `lib/permisos.test.ts` con EXACTAMENTE:
 ```ts
 import { MODULOS, modulosPara, puedeAcceder } from './permisos'
 
@@ -226,11 +232,11 @@ describe('permisos', () => {
 })
 ```
 
-- [ ] **Step 2: Correr el test para verlo fallar**
+- [x] **Step 2: Correr el test para verlo fallar** — FALLÓ (5 failed, 3 passed) como se esperaba.
 Run: `npm test -- permisos`
 Expected: FAIL (la matriz vieja no cumple los conteos/ids nuevos).
 
-- [ ] **Step 3: Reescribir** `lib/permisos.ts` con EXACTAMENTE:
+- [x] **Step 3: Reescribir** `lib/permisos.ts` con EXACTAMENTE:
 ```ts
 export type Rol = 'dueno' | 'admin' | 'empleado'
 
@@ -270,11 +276,11 @@ export const puedeAcceder = (rol: Rol, id: string): boolean =>
   MODULOS.find(m => m.id === id)?.roles.includes(rol) ?? false
 ```
 
-- [ ] **Step 4: Correr tests y typecheck**
+- [x] **Step 4: Correr tests y typecheck** — 8 tests PASS. tsc: 0 errores nuevos; 2 errores PREEXISTENTES en `lib/supabase.ts` (`process` no tipado, `tsconfig` usa `"types": ["jest"]` sin `node`) — fuera del alcance de SP-1.
 Run: `npm test -- permisos && npx tsc --noEmit`
 Expected: PASS (8 tests) y tsc sin errores. (`lib/auth.tsx` ya usa `Rol`; no requiere cambios.)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** — `a4cad30`
 ```bash
 git add lib/permisos.ts lib/permisos.test.ts
 git commit -m "feat: matriz de permisos v4.0 (3 roles, Granja/Caja, tile Devoluciones)"
@@ -286,7 +292,7 @@ git commit -m "feat: matriz de permisos v4.0 (3 roles, Granja/Caja, tile Devoluc
 
 **Files:** Create `supabase/migrations/<ts>_sp1_rls_inventario_proveedores.sql`
 
-- [ ] **Step 1: Escribir la migración** con EXACTAMENTE:
+- [x] **Step 1: Escribir la migración** con EXACTAMENTE:
 ```sql
 -- SP-1 RLS: inventario editable por todo el staff; proveedores admin+dueño.
 
@@ -322,7 +328,7 @@ create policy prov_cuentas_admin on public.proveedor_cuentas_bancarias for all t
   using ((select private.is_staff_admin())) with check ((select private.is_staff_admin()));
 ```
 
-- [ ] **Step 2: Aplicar** vía MCP `supabase.apply_migration` (`name: "sp1_rls_inventario_proveedores"`). Expected: sin error.
+- [x] **Step 2: Aplicar** vía MCP `supabase.apply_migration` (`name: "sp1_rls_inventario_proveedores"`). Expected: sin error.
 
 - [ ] **Step 3: Smoke test** vía MCP `supabase.execute_sql`:
 ```sql
@@ -356,7 +362,9 @@ end $$;
 ```
 Expected: termina con `T4_OK_ROLLBACK`. (Si el insert de proveedor por empleado NO lanza `insufficient_privilege`/violación de RLS, es un bug.)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 3: Smoke test** — PASÓ (`T4_OK_ROLLBACK`; empleado edita inventario, no ve costos, no escribe proveedores).
+
+- [x] **Step 4: Commit** — `e944c3e`
 ```bash
 git add supabase/migrations/
 git commit -m "feat(db): RLS inventario editable por staff; proveedores admin+dueño"
@@ -368,7 +376,7 @@ git commit -m "feat(db): RLS inventario editable por staff; proveedores admin+du
 
 **Files:** Create `supabase/migrations/<ts>_sp1_rls_compras_gastos.sql`
 
-- [ ] **Step 1: Escribir la migración** con EXACTAMENTE:
+- [x] **Step 1: Escribir la migración** con EXACTAMENTE:
 ```sql
 -- SP-1 RLS: compras (recepción staff, finanzas admin+dueño) y gastos.
 
@@ -435,7 +443,7 @@ create policy gastos_var_delete on public.gastos_variables for delete to authent
   using ((select private.is_staff_admin()));
 ```
 
-- [ ] **Step 2: Aplicar** vía MCP `supabase.apply_migration` (`name: "sp1_rls_compras_gastos"`). Expected: sin error.
+- [x] **Step 2: Aplicar** vía MCP `supabase.apply_migration` (`name: "sp1_rls_compras_gastos"`). Expected: sin error.
 
 - [ ] **Step 3: Smoke test** vía MCP `supabase.execute_sql`:
 ```sql
@@ -450,7 +458,7 @@ begin
   -- empleado: registra gasto variable (ve lo suyo) pero NO gastos fijos
   perform set_config('request.jwt.claims', json_build_object('sub', v_emp, 'role','authenticated')::text, true);
   set local role authenticated;
-  insert into public.gastos_variables (descripcion, monto, categoria) values ('flete emp', 1000, 'Transporte');
+  insert into public.gastos_variables (descripcion, monto, categoria) values ('flete emp', 1000, 'transporte');
   begin
     insert into public.gastos_fijos (nombre, monto_aproximado) values ('arriendo', 1000);
     raise exception 'FALLO: empleado insertó gasto fijo';
@@ -469,7 +477,11 @@ end $$;
 ```
 Expected: termina con `T5_OK_ROLLBACK`.
 
-- [ ] **Step 4: Commit**
+> **Notas de ejecución (correcciones al smoke test, no a la migración):** (1) el bloque crea un admin sintético vía `gen_random_uuid()` → hay que sembrar una fila en `auth.users` antes del insert en `public.users` (FK). (2) `categoria` corregida `'Transporte'` → `'transporte'` (CHECK `gastos_variables_categoria_check` solo acepta minúsculas: transporte/reparaciones/insumos/otros). Con ambos arreglos → `T5_OK_ROLLBACK`.
+
+- [x] **Step 3: Smoke test** — PASÓ (`T5_OK_ROLLBACK`; empleado registra su gasto variable y NO gasto fijo; admin SÍ gestiona gasto fijo).
+
+- [x] **Step 4: Commit** — `0e9d560`
 ```bash
 git add supabase/migrations/
 git commit -m "feat(db): RLS compras y gastos por nivel administrativo"
@@ -481,7 +493,7 @@ git commit -m "feat(db): RLS compras y gastos por nivel administrativo"
 
 **Files:** Create `supabase/migrations/<ts>_sp1_rls_ventas_caja_users.sql`
 
-- [ ] **Step 1: Escribir la migración** con EXACTAMENTE:
+- [x] **Step 1: Escribir la migración** con EXACTAMENTE:
 ```sql
 -- SP-1 RLS: ventas/items/pagos y caja suman admin; users ve lista para admin.
 
@@ -553,7 +565,7 @@ create policy users_select on public.users for select to authenticated
   using (id = (select auth.uid()) or (select private.is_staff_admin()));
 ```
 
-- [ ] **Step 2: Aplicar** vía MCP `supabase.apply_migration` (`name: "sp1_rls_ventas_caja_users"`). Expected: sin error.
+- [x] **Step 2: Aplicar** vía MCP `supabase.apply_migration` (`name: "sp1_rls_ventas_caja_users"`). Expected: sin error.
 
 - [ ] **Step 3: Smoke test** vía MCP `supabase.execute_sql`:
 ```sql
@@ -587,7 +599,11 @@ end $$;
 ```
 Expected: termina con `T6_OK_ROLLBACK`.
 
-- [ ] **Step 4: Commit**
+> **Nota de ejecución:** sembrar `auth.users` para el admin sintético (FK), como en T1/T5. La venta usa `numero` (columna identity `GENERATED ALWAYS`, auto), `estado='completada'` válido. Con el seed FK → `T6_OK_ROLLBACK`.
+
+- [x] **Step 3: Smoke test** — PASÓ (`T6_OK_ROLLBACK`; empleado NO ve venta de hace 2 días, admin SÍ).
+
+- [x] **Step 4: Commit** — `fa722c0`
 ```bash
 git add supabase/migrations/
 git commit -m "feat(db): RLS ventas/caja/users con nivel admin"

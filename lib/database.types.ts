@@ -1391,6 +1391,7 @@ export type Database = {
         }
         Returns: string
       }
+      obtener_resumen_dia: { Args: { p_fecha: string }; Returns: Json }
       registrar_venta: {
         Args: {
           p_cliente_apellido?: string

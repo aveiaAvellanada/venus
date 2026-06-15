@@ -741,7 +741,8 @@ export type Database = {
           created_at: string
           id: string
           motivo: string | null
-          precio_venta: number | null
+          precio_maximo: number | null
+          precio_minimo: number | null
           producto_id: string
           registrado_por: string | null
         }
@@ -750,7 +751,8 @@ export type Database = {
           created_at?: string
           id?: string
           motivo?: string | null
-          precio_venta?: number | null
+          precio_maximo?: number | null
+          precio_minimo?: number | null
           producto_id: string
           registrado_por?: string | null
         }
@@ -759,7 +761,8 @@ export type Database = {
           created_at?: string
           id?: string
           motivo?: string | null
-          precio_venta?: number | null
+          precio_maximo?: number | null
+          precio_minimo?: number | null
           producto_id?: string
           registrado_por?: string | null
         }
@@ -1369,6 +1372,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      guardar_producto_calzado: {
+        Args: {
+          p_activo: boolean
+          p_categoria: string
+          p_color: string
+          p_costo_compra: number
+          p_descripcion: string
+          p_foto_url: string
+          p_id: string
+          p_precio_maximo: number
+          p_precio_minimo: number
+          p_proveedor_id: string
+          p_referencia: string
+          p_stock_actual: number
+          p_stock_minimo: number
+          p_talla: string
+        }
+        Returns: string
+      }
       registrar_venta: {
         Args: {
           p_cliente_apellido?: string

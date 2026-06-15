@@ -27,10 +27,10 @@ En SP-2 eliminamos los triggers del historial para facilitar la migración. Ahor
 
 **Files:** `supabase/migrations/<ts>_sp3_rpc_guardar_producto.sql`
 
-- [ ] **Step 1:** Crear migración con la función `public.guardar_producto_calzado`. La función debe aceptar todos los campos. Si es un UPDATE y el precio_minimo, precio_maximo o costo cambiaron, debe registrarlo en `private.historial_precios_calzado` (o `public` según RLS de SP-1).
-- [ ] **Step 2:** Aplicar migración vía MCP.
-- [ ] **Step 3:** Testear vía MCP `execute_sql` insertando y luego actualizando un precio, y comprobando la fila del historial.
-- [ ] **Step 4:** Commit.
+- [x] **Step 1:** Crear migración con la función `public.guardar_producto_calzado`. La función debe aceptar todos los campos. Si es un UPDATE y el precio_minimo, precio_maximo o costo cambiaron, debe registrarlo en `private.historial_precios_calzado` (o `public` según RLS de SP-1).
+- [x] **Step 2:** Aplicar migración vía MCP.
+- [x] **Step 3:** Testear vía MCP `execute_sql` insertando y luego actualizando un precio, y comprobando la fila del historial.
+- [x] **Step 4:** Commit.
 
 ---
 
@@ -38,11 +38,11 @@ En SP-2 eliminamos los triggers del historial para facilitar la migración. Ahor
 
 **Files:** `lib/inventario.ts`
 
-- [ ] **Step 1:** Crear `lib/inventario.ts`.
-- [ ] **Step 2:** Añadir función `listarCalzado(filtros)` que soporte búsqueda por texto y categoría.
-- [ ] **Step 3:** Añadir función `guardarCalzado(datos)` que llame a la RPC.
-- [ ] **Step 4:** Añadir funciones similares para la Granja (`listarVarios`, `guardarVarios`) operando directamente con Supabase (ya que la granja no tiene historial restrictivo de la misma manera).
-- [ ] **Step 5:** Typecheck y Commit.
+- [x] **Step 1:** Crear `lib/inventario.ts`.
+- [x] **Step 2:** Añadir función `listarCalzado(filtros)` que soporte búsqueda por texto y categoría.
+- [x] **Step 3:** Añadir función `guardarCalzado(datos)` que llame a la RPC.
+- [x] **Step 4:** Añadir funciones similares para la Granja (`listarVarios`, `guardarVarios`) operando directamente con Supabase (ya que la granja no tiene historial restrictivo de la misma manera).
+- [x] **Step 5:** Typecheck y Commit.
 
 ---
 

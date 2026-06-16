@@ -12,9 +12,19 @@ export async function comprimirYSubirImagen(uri: string): Promise<string> {
   // Generar un nombre único para el archivo
   const nombreArchivo = `${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
 
-  // Convertir uri a blob para la subida
-  const response = await fetch(manipulada.uri);
-  const blob = await response.blob();
+  // Convertir uri a blob para la subida usando XMLHttpRequest
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = function () {
+      resolve(xhr.response);
+    };
+    xhr.onerror = function (e) {
+      reject(new TypeError("Network request failed"));
+    };
+    xhr.responseType = "blob";
+    xhr.open("GET", manipulada.uri, true);
+    xhr.send(null);
+  });
 
   // Subir a Supabase Storage
   const { data, error } = await supabase.storage

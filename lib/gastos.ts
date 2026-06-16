@@ -17,9 +17,19 @@ export async function comprimirYSubirComprobante(uri: string): Promise<string> {
   );
 
   const nombreArchivo = `${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-  
-  const response = await fetch(manipulada.uri);
-  const blob = await response.blob();
+  // Convertir uri a blob para la subida usando XMLHttpRequest
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = function () {
+      resolve(xhr.response);
+    };
+    xhr.onerror = function (e) {
+      reject(new TypeError("Network request failed"));
+    };
+    xhr.responseType = "blob";
+    xhr.open("GET", manipulada.uri, true);
+    xhr.send(null);
+  });
 
   const { data, error } = await supabase.storage
     .from('comprobantes')

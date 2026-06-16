@@ -1,8 +1,18 @@
 import * as XLSX from 'xlsx';
 
 export async function leerExcel(uri: string): Promise<any[]> {
-  const res = await fetch(uri);
-  const buffer = await res.arrayBuffer();
+  const buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = function () {
+      resolve(xhr.response);
+    };
+    xhr.onerror = function (e) {
+      reject(new TypeError("Failed to read local file"));
+    };
+    xhr.responseType = "arraybuffer";
+    xhr.open("GET", uri, true);
+    xhr.send(null);
+  });
   const workbook = XLSX.read(buffer, { type: 'array' });
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];

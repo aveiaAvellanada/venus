@@ -12,16 +12,8 @@ export type UpdateCuentaBancaria = Database['public']['Tables']['proveedor_cuent
 export type Compra = Database['public']['Tables']['compras']['Row']
 export type CompraItem = Database['public']['Tables']['compra_items']['Row']
 
-export interface CompraPago {
-  id: string
-  compra_id: string
-  monto: number
-  fecha: string
-  registrado_por: string | null
-  notas: string | null
-  created_at?: string
-  updated_at?: string
-}
+export type CompraPago = Database['public']['Tables']['compra_pagos']['Row']
+export type InsertCompraPago = Database['public']['Tables']['compra_pagos']['Insert']
 
 // ----------------------------------------------------
 // 1. Providers CRUD & WhatsApp
@@ -447,22 +439,24 @@ export async function registrarPagoProveedor(datos: {
     throw new Error('El monto del pago supera el saldo pendiente de la compra.')
   }
 
+  const nuevoPago: InsertCompraPago = {
+    compra_id: datos.compra_id,
+    monto: datos.monto,
+    fecha: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }),
+    registrado_por: datos.registrado_por,
+    notas: datos.notas || null,
+    created_by: datos.registrado_por
+  }
+
   const { data: pago, error: insertError } = await supabase
-    .from('compra_pagos' as any)
-    .insert({
-      compra_id: datos.compra_id,
-      monto: datos.monto,
-      fecha: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }),
-      registrado_por: datos.registrado_por,
-      notas: datos.notas || null,
-      created_by: datos.registrado_por
-    } as any)
+    .from('compra_pagos')
+    .insert(nuevoPago)
     .select()
     .single()
 
   if (insertError) throw insertError
 
-  return pago as any as CompraPago
+  return pago
 }
 
 export async function obtenerDeudaProveedor(proveedorId: string): Promise<number> {
@@ -473,20 +467,20 @@ export async function obtenerDeudaProveedor(proveedorId: string): Promise<number
   // RLS de compras deja leer saldo_pendiente a is_staff_admin (incluida Sandra),
   // lo que filtraría la deuda saltándose el gate. La UI debe mostrar la deuda
   // solo al dueño.
-  const { data, error } = await (supabase.rpc as any)('obtener_deuda_proveedor', { p_id: proveedorId })
+  const { data, error } = await supabase.rpc('obtener_deuda_proveedor', { p_id: proveedorId })
   if (error) throw error
   return Number(data ?? 0)
 }
 
 export async function listarPagosCompra(compraId: string): Promise<CompraPago[]> {
   const { data, error } = await supabase
-    .from('compra_pagos' as any)
+    .from('compra_pagos')
     .select('*')
     .eq('compra_id', compraId)
     .order('created_at', { ascending: true })
 
   if (error) throw error
-  return (data || []) as any as CompraPago[]
+  return data || []
 }
 
 export async function listarPagosProveedor(proveedorId: string): Promise<CompraPago[]> {
@@ -501,13 +495,13 @@ export async function listarPagosProveedor(proveedorId: string): Promise<CompraP
   const purchaseIds = purchases.map(p => p.id)
 
   const { data: pagos, error: pagosError } = await supabase
-    .from('compra_pagos' as any)
+    .from('compra_pagos')
     .select('*')
     .in('compra_id', purchaseIds)
     .order('created_at', { ascending: false })
 
   if (pagosError) throw pagosError
-  return (pagos || []) as any as CompraPago[]
+  return pagos || []
 }
 
 export async function cancelarCompra(compraId: string, canceladaPor: string): Promise<Compra> {

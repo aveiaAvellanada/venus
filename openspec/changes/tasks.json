@@ -75,7 +75,7 @@
       "id": "pending-3",
       "descripcion": "Regenerar lib/database.types.ts contra el esquema final. AHORA ACTIVO: Proveedores usa `from('compra_pagos' as any)` porque database.types.ts aún no incluye la tabla compra_pagos ni obtener_deuda_proveedor (añadidas por ms1). Regenerar tipos y quitar los `as any` de lib/proveedores.ts. Confirmar tsc 0 y npm test verde.",
       "asignado_a": "claude-code",
-      "estado": "pendiente"
+      "estado": "completado"
     },
     {
       "id": "pending-4",

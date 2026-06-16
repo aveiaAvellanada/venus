@@ -301,6 +301,74 @@ export type Database = {
           },
         ]
       }
+      compra_pagos: {
+        Row: {
+          compra_id: string
+          created_at: string
+          created_by: string | null
+          fecha: string
+          id: string
+          monto: number
+          notas: string | null
+          registrado_por: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          compra_id: string
+          created_at?: string
+          created_by?: string | null
+          fecha?: string
+          id?: string
+          monto: number
+          notas?: string | null
+          registrado_por?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          compra_id?: string
+          created_at?: string
+          created_by?: string | null
+          fecha?: string
+          id?: string
+          monto?: number
+          notas?: string | null
+          registrado_por?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compra_pagos_compra_id_fkey"
+            columns: ["compra_id"]
+            isOneToOne: false
+            referencedRelation: "compras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compra_pagos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compra_pagos_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compra_pagos_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compras: {
         Row: {
           condicion_pago: string | null
@@ -1391,6 +1459,7 @@ export type Database = {
         }
         Returns: string
       }
+      obtener_deuda_proveedor: { Args: { p_id: string }; Returns: number }
       obtener_resumen_dia: { Args: { p_fecha: string }; Returns: Json }
       registrar_venta: {
         Args: {

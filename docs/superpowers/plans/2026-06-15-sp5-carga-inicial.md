@@ -43,12 +43,12 @@ Crearemos la pantalla donde el Dueño subirá el archivo y verá si todo está e
 
 **Files:** `app/(app)/inventario/carga.tsx`
 
-- [ ] **Step 1:** Crear el archivo `carga.tsx`.
-- [ ] **Step 2:** Proteger la ruta usando `usePermisos` para que solo el rol `dueno` pueda verla.
-- [ ] **Step 3:** Interfaz: Mostrar botón "Subir Archivo Excel". Al hacer tap, invoca `DocumentPicker.getDocumentAsync({ type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })`.
-- [ ] **Step 4:** Al obtener el URI, pasarlo a `leerExcel` y luego a `validarFilas`.
-- [ ] **Step 5:** Mostrar en pantalla el resumen: Cuántos productos se van a subir y si hubo errores (con un listado de las filas erróneas para que el usuario pueda ir al Excel a arreglarlas).
-- [ ] **Step 6:** Typecheck y Commit.
+- [x] **Step 1:** Crear el archivo `carga.tsx`.
+- [x] **Step 2:** Proteger la ruta usando `usePermisos` para que solo el rol `dueno` pueda verla.
+- [x] **Step 3:** Interfaz: Mostrar botón "Subir Archivo Excel". Al hacer tap, invoca `DocumentPicker.getDocumentAsync({ type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })`.
+- [x] **Step 4:** Al obtener el URI, pasarlo a `leerExcel` y luego a `validarFilas`.
+- [x] **Step 5:** Mostrar en pantalla el resumen: Cuántos productos se van a subir y si hubo errores (con un listado de las filas erróneas para que el usuario pueda ir al Excel a arreglarlas).
+- [x] **Step 6:** Typecheck y Commit.
 
 ---
 
@@ -58,8 +58,8 @@ Conectaremos el botón de carga con la base de datos reusando la función `guard
 
 **Files:** `app/(app)/inventario/carga.tsx`
 
-- [ ] **Step 1:** Agregar botón "Confirmar y Subir" en la UI. Este botón solo estará activo si `errores.length === 0` y hay al menos 1 fila válida.
-- [ ] **Step 2:** Crear la función `cargarMasivamente()` que itere las filas válidas y por cada una llame a `guardarCalzado` (desde `lib/inventario.ts`).
+- [x] **Step 1:** Agregar botón "Confirmar y Subir" en la UI. Este botón solo estará activo si `errores.length === 0` y hay al menos 1 fila válida.
+- [x] **Step 2:** Crear la función `cargarMasivamente()` que itere las filas válidas y por cada una llame a `guardarCalzado` (desde `lib/inventario.ts`).
    *Tip: Usar un bucle for-of o Promise.all para manejar asincronía limpiamente y mostrar un spinner de estado "Cargando (5/100)...".*
-- [ ] **Step 3:** Tras finalizar, mostrar Alert de éxito, limpiar el estado de la pantalla y navegar de vuelta al índice de inventario.
-- [ ] **Step 4:** Typecheck y Commit final de SP-5.
+- [x] **Step 3:** Tras finalizar, mostrar Alert de éxito, limpiar el estado de la pantalla y navegar de vuelta al índice de inventario.
+- [x] **Step 4:** Typecheck y Commit final de SP-5.

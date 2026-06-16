@@ -23,7 +23,7 @@ export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
 
   let calzadoQ = supabase
     .from('productos_calzado')
-    .select('id, descripcion, referencia, talla, color, precio_venta, stock_actual')
+    .select('id, descripcion, referencia, talla, color, precio_minimo, precio_maximo, stock_actual')
     .eq('activo', true)
     .gt('stock_actual', 0)
     .limit(10)
@@ -35,9 +35,8 @@ export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
 
   let variosQ = supabase
     .from('productos_varios')
-    .select('id, nombre, unidad_medida, precio_venta, stock_actual')
+    .select('id, nombre, unidad_medida, precio_sugerido')
     .eq('activo', true)
-    .gt('stock_actual', 0)
     .limit(10)
   if (termino) variosQ = variosQ.ilike('nombre', like)
 
@@ -50,7 +49,9 @@ export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
     id: c.id,
     titulo: c.descripcion,
     detalle: [c.talla ? `Talla ${c.talla}` : null, c.color].filter(Boolean).join(' · '),
-    precio: Number(c.precio_venta),
+    precio: Number(c.precio_maximo),
+    precioMin: Number(c.precio_minimo),
+    precioMax: Number(c.precio_maximo),
     stock: Number(c.stock_actual),
   }))
   const deVarios: ProductoVendible[] = (varios.data ?? []).map(v => ({
@@ -58,8 +59,8 @@ export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
     id: v.id,
     titulo: v.nombre,
     detalle: `por ${v.unidad_medida}`,
-    precio: Number(v.precio_venta),
-    stock: Number(v.stock_actual),
+    precio: v.precio_sugerido == null ? 0 : Number(v.precio_sugerido),
+    stock: Number.POSITIVE_INFINITY,
     unidad: v.unidad_medida,
   }))
   return [...deCalzado, ...deVarios].slice(0, 20)
@@ -78,6 +79,7 @@ export async function registrarVenta(input: RegistrarVentaInput): Promise<{ nume
       tipo: i.producto.tipo,
       producto_id: i.producto.id,
       cantidad: i.cantidad,
+      precio: i.precio,
     })),
     p_pagos: input.pagos.map(p => ({ metodo: p.metodo, monto: p.monto })),
     p_efectivo_recibido: input.efectivoRecibido ?? undefined,
@@ -97,6 +99,7 @@ function traducirError(msg: string): string {
   }
   if (msg.includes('pagos no suman')) return 'Los pagos no suman el total.'
   if (msg.includes('efectivo recibido')) return 'El efectivo recibido es menor al pago en efectivo.'
+  if (msg.includes('Precio inválido')) return 'El precio debe ser mayor a cero.'
   if (/network|fetch|failed to fetch|timeout|conexión|conexion/i.test(msg)) {
     return 'Sin conexión. La venta no se guardó. Intenta de nuevo.'
   }

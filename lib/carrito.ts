@@ -9,11 +9,14 @@ export interface ProductoVendible {
   precio: number
   stock: number
   unidad?: string
+  precioMin?: number
+  precioMax?: number
 }
 
 export interface ItemCarrito {
   producto: ProductoVendible
   cantidad: number
+  precio: number
   subtotal: number
 }
 
@@ -25,16 +28,23 @@ export interface PagoInput {
 export type AccionCarrito =
   | { tipo: 'agregar'; producto: ProductoVendible }
   | { tipo: 'cambiarCantidad'; id: string; cantidad: number }
+  | { tipo: 'cambiarPrecio'; id: string; precio: number }
   | { tipo: 'quitar'; id: string }
   | { tipo: 'limpiar' }
 
 export const redondear = (n: number): number => Math.round(n * 100) / 100
 
-function conCantidad(producto: ProductoVendible, cantidad: number): ItemCarrito {
+function precioInicial(producto: ProductoVendible): number {
+  if (producto.tipo === 'calzado') return producto.precioMax ?? producto.precio
+  return producto.precio
+}
+
+function linea(producto: ProductoVendible, cantidad: number, precio: number): ItemCarrito {
   let c = Math.min(cantidad, producto.stock)
   if (producto.tipo === 'calzado') c = Math.floor(c)
   c = Math.max(0, c)
-  return { producto, cantidad: c, subtotal: redondear(producto.precio * c) }
+  const p = Math.max(0, precio)
+  return { producto, cantidad: c, precio: p, subtotal: redondear(p * c) }
 }
 
 export function carritoReducer(items: ItemCarrito[], accion: AccionCarrito): ItemCarrito[] {
@@ -43,22 +53,31 @@ export function carritoReducer(items: ItemCarrito[], accion: AccionCarrito): Ite
       const existente = items.find(i => i.producto.id === accion.producto.id)
       if (existente) {
         return items.map(i =>
-          i.producto.id === accion.producto.id ? conCantidad(i.producto, i.cantidad + 1) : i,
+          i.producto.id === accion.producto.id ? linea(i.producto, i.cantidad + 1, i.precio) : i,
         )
       }
-      const nuevo = conCantidad(accion.producto, 1)
+      const nuevo = linea(accion.producto, 1, precioInicial(accion.producto))
       return nuevo.cantidad > 0 ? [...items, nuevo] : items
     }
     case 'cambiarCantidad':
       return items
-        .map(i => (i.producto.id === accion.id ? conCantidad(i.producto, accion.cantidad) : i))
+        .map(i => (i.producto.id === accion.id ? linea(i.producto, accion.cantidad, i.precio) : i))
         .filter(i => i.cantidad > 0)
+    case 'cambiarPrecio':
+      return items.map(i =>
+        i.producto.id === accion.id ? linea(i.producto, i.cantidad, accion.precio) : i,
+      )
     case 'quitar':
       return items.filter(i => i.producto.id !== accion.id)
     case 'limpiar':
       return []
   }
 }
+
+export const bajoMinimo = (item: ItemCarrito): boolean =>
+  item.producto.tipo === 'calzado' &&
+  item.producto.precioMin != null &&
+  item.precio < item.producto.precioMin
 
 export const totalCarrito = (items: ItemCarrito[]): number =>
   redondear(items.reduce((s, i) => s + i.subtotal, 0))

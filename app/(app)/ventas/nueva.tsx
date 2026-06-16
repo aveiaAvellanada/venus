@@ -1,19 +1,108 @@
-import { useCallback, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import {
   ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useRequireModulo } from '../../../lib/auth'
 import {
-  calcularCambio, carritoReducer, montoEfectivo, pagosCuadran, totalCarrito,
-  type MetodoPago, type PagoInput, type ProductoVendible,
+  bajoMinimo, calcularCambio, carritoReducer, montoEfectivo, pagosCuadran, totalCarrito,
+  type AccionCarrito, type ItemCarrito, type MetodoPago, type PagoInput, type ProductoVendible,
 } from '../../../lib/carrito'
 import { buscarProductos, registrarVenta } from '../../../lib/ventas'
+import { obtenerCajaHoy } from '../../../lib/caja'
 
 type Etapa = 'carrito' | 'cobrar' | 'confirmacion'
 const METODOS: MetodoPago[] = ['efectivo', 'nequi', 'daviplata']
 const ETIQUETA: Record<MetodoPago, string> = { efectivo: 'Efectivo', nequi: 'Nequi', daviplata: 'Daviplata' }
 const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
+const soloEntero = (t: string) => t.replace(/[^0-9]/g, '')
+const soloDecimal = (t: string) => {
+  const limpio = t.replace(/[^0-9.]/g, '')
+  const partes = limpio.split('.')
+  return partes.length <= 1 ? limpio : partes[0] + '.' + partes.slice(1).join('')
+}
+
+function LineaCarrito({
+  item, dispatch,
+}: {
+  item: ItemCarrito
+  dispatch: (a: AccionCarrito) => void
+}) {
+  const esCalzado = item.producto.tipo === 'calzado'
+  const [precioTxt, setPrecioTxt] = useState(String(item.precio))
+  const [cantTxt, setCantTxt] = useState(String(item.cantidad))
+  const bajo = bajoMinimo(item)
+
+  function commitPrecio() {
+    dispatch({ tipo: 'cambiarPrecio', id: item.producto.id, precio: Number(soloEntero(precioTxt)) || 0 })
+  }
+  function commitCantidad() {
+    dispatch({ tipo: 'cambiarCantidad', id: item.producto.id, cantidad: Number(soloDecimal(cantTxt)) || 0 })
+  }
+
+  return (
+    <View style={styles.itemCarrito}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.itemTitulo}>{item.producto.titulo}</Text>
+        {esCalzado ? (
+          <>
+            <View style={styles.precioFila}>
+              <Text style={styles.itemSub}>Precio c/u </Text>
+              <TextInput
+                style={[styles.precioInput, bajo && styles.precioInputAlerta]}
+                keyboardType="number-pad"
+                value={precioTxt}
+                onChangeText={t => setPrecioTxt(soloEntero(t))}
+                onEndEditing={commitPrecio}
+              />
+            </View>
+            <Text style={[styles.rango, bajo && styles.rangoAlerta]}>
+              Rango {pesos(item.producto.precioMin ?? 0)}–{pesos(item.producto.precioMax ?? 0)}
+              {bajo ? ' · bajo el mínimo' : ''}
+            </Text>
+          </>
+        ) : (
+          <View style={styles.precioFila}>
+            <TextInput
+              style={styles.precioInput}
+              keyboardType="decimal-pad"
+              value={cantTxt}
+              onChangeText={t => setCantTxt(soloDecimal(t))}
+              onEndEditing={commitCantidad}
+            />
+            <Text style={styles.itemSub}> {item.producto.unidad} × </Text>
+            <TextInput
+              style={styles.precioInput}
+              keyboardType="number-pad"
+              value={precioTxt}
+              onChangeText={t => setPrecioTxt(soloEntero(t))}
+              onEndEditing={commitPrecio}
+            />
+          </View>
+        )}
+        <Text style={styles.itemSub}>Subtotal {pesos(item.subtotal)}</Text>
+      </View>
+      {esCalzado ? (
+        <>
+          <Pressable hitSlop={12} style={styles.step}
+            onPress={() => dispatch({ tipo: 'cambiarCantidad', id: item.producto.id, cantidad: item.cantidad - 1 })}>
+            <Text style={styles.stepText}>−</Text>
+          </Pressable>
+          <Text style={styles.cantidad}>{item.cantidad}</Text>
+          <Pressable hitSlop={12} style={styles.step}
+            onPress={() => dispatch({ tipo: 'agregar', producto: item.producto })}>
+            <Text style={styles.stepText}>+</Text>
+          </Pressable>
+        </>
+      ) : (
+        <Pressable hitSlop={12} style={styles.step}
+          onPress={() => dispatch({ tipo: 'quitar', id: item.producto.id })}>
+          <Text style={styles.stepText}>×</Text>
+        </Pressable>
+      )}
+    </View>
+  )
+}
 
 export default function NuevaVenta() {
   const redir = useRequireModulo('ventas')
@@ -33,6 +122,16 @@ export default function NuevaVenta() {
   const [cliente, setCliente] = useState({ nombre: '', apellido: '', telefono: '' })
   const [guardando, setGuardando] = useState(false)
   const [numeroVenta, setNumeroVenta] = useState<number | null>(null)
+  const [cajaEstado, setCajaEstado] = useState<'loading' | 'ok' | 'bloqueado'>('loading')
+
+  useEffect(() => {
+    obtenerCajaHoy()
+      .then(c => {
+        if (!c || c.estado !== 'abierto') setCajaEstado('bloqueado')
+        else setCajaEstado('ok')
+      })
+      .catch(() => setCajaEstado('bloqueado'))
+  }, [])
 
   const buscar = useCallback((texto: string) => {
     setQuery(texto)
@@ -51,6 +150,31 @@ export default function NuevaVenta() {
   }, [])
 
   if (redir) return redir
+
+  if (cajaEstado === 'loading') {
+    return (
+      <View style={[styles.container, styles.centro]}>
+        <ActivityIndicator size="large" color="#1E66F5" />
+      </View>
+    )
+  }
+
+  if (cajaEstado === 'bloqueado') {
+    return (
+      <View style={[styles.container, styles.centro]}>
+        <Text style={styles.okTitulo}>Caja cerrada</Text>
+        <Text style={{ fontSize: 16, color: '#666', textAlign: 'center' }}>
+          La caja de hoy no está abierta.
+        </Text>
+        <Pressable style={styles.primario} onPress={() => router.replace('/caja')}>
+          <Text style={[styles.primarioText, { paddingHorizontal: 24 }]}>Ir a Caja</Text>
+        </Pressable>
+        <Pressable style={styles.secundario} onPress={() => router.replace('/ventas')}>
+          <Text style={styles.secundarioText}>Volver a ventas</Text>
+        </Pressable>
+      </View>
+    )
+  }
 
   const total = totalCarrito(items)
   const pagos: PagoInput[] = metodos.map(m => ({ metodo: m, monto: Number(montos[m]) || 0 }))
@@ -229,7 +353,9 @@ export default function NuevaVenta() {
             onPress={() => dispatch({ tipo: 'agregar', producto: p })}>
             <View style={{ flex: 1 }}>
               <Text style={styles.resultadoTitulo}>{p.titulo}</Text>
-              <Text style={styles.resultadoSub}>{p.detalle} · Stock: {p.stock}</Text>
+              <Text style={styles.resultadoSub}>
+                {p.detalle}{p.tipo === 'calzado' ? ` · Stock: ${p.stock}` : ''}
+              </Text>
             </View>
             <Text style={styles.resultadoPrecio}>{pesos(p.precio)}</Text>
           </Pressable>
@@ -239,21 +365,7 @@ export default function NuevaVenta() {
       <View style={styles.carrito}>
         <ScrollView style={styles.carritoLista}>
           {items.map(i => (
-            <View key={`${i.producto.tipo}-${i.producto.id}`} style={styles.itemCarrito}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.itemTitulo}>{i.producto.titulo}</Text>
-                <Text style={styles.itemSub}>{pesos(i.subtotal)}</Text>
-              </View>
-              <Pressable hitSlop={12} style={styles.step}
-                onPress={() => dispatch({ tipo: 'cambiarCantidad', id: i.producto.id, cantidad: i.cantidad - 1 })}>
-                <Text style={styles.stepText}>−</Text>
-              </Pressable>
-              <Text style={styles.cantidad}>{i.cantidad}</Text>
-              <Pressable hitSlop={12} style={styles.step}
-                onPress={() => dispatch({ tipo: 'agregar', producto: i.producto })}>
-                <Text style={styles.stepText}>+</Text>
-              </Pressable>
-            </View>
+            <LineaCarrito key={`${i.producto.tipo}-${i.producto.id}`} item={i} dispatch={dispatch} />
           ))}
         </ScrollView>
 
@@ -284,6 +396,11 @@ const styles = StyleSheet.create({
   carrito: { borderTopWidth: 1, borderTopColor: '#DDD', padding: 20, gap: 10 },
   carritoLista: { maxHeight: 220 },
   itemCarrito: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 },
+  precioFila: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  precioInput: { borderWidth: 1, borderColor: '#CCC', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, fontSize: 16, minWidth: 80 },
+  precioInputAlerta: { borderColor: '#D20F39' },
+  rango: { fontSize: 12, color: '#888', marginTop: 4 },
+  rangoAlerta: { color: '#D20F39' },
   itemTitulo: { fontSize: 16, fontWeight: '600' },
   itemSub: { fontSize: 13, color: '#666', marginTop: 2 },
   step: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#EFF5FF', alignItems: 'center', justifyContent: 'center' },

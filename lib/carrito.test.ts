@@ -1,5 +1,5 @@
 import {
-  carritoReducer, totalCarrito, pagosCuadran, montoEfectivo, calcularCambio,
+  carritoReducer, bajoMinimo, totalCarrito, pagosCuadran, montoEfectivo, calcularCambio,
   type ItemCarrito, type ProductoVendible,
 } from './carrito'
 
@@ -88,5 +88,58 @@ describe('helpers de total y pago', () => {
     expect(calcularCambio(120000, 100000)).toBe(20000)
     expect(calcularCambio(100000, 100000)).toBe(0)
     expect(calcularCambio(0, 100000)).toBe(0)
+  })
+})
+
+const calzado = (over: Partial<ProductoVendible> = {}): ProductoVendible => ({
+  tipo: 'calzado', id: 'c1', titulo: 'Tenis', detalle: '', precio: 10000,
+  stock: 3, precioMin: 5000, precioMax: 10000, ...over,
+})
+const granja = (over: Partial<ProductoVendible> = {}): ProductoVendible => ({
+  tipo: 'varios', id: 'g1', titulo: 'Maíz', detalle: 'por kg', precio: 4000,
+  stock: Number.POSITIVE_INFINITY, unidad: 'kg', ...over,
+})
+
+describe('carrito SP-2 — precio por línea', () => {
+  test('calzado: el precio de la línea inicia en el máximo', () => {
+    const items = carritoReducer([], { tipo: 'agregar', producto: calzado() })
+    expect(items[0].precio).toBe(10000)
+    expect(items[0].subtotal).toBe(10000)
+  })
+
+  test('cambiarPrecio permite bajar del mínimo (rango informativo, sin recorte)', () => {
+    let items = carritoReducer([], { tipo: 'agregar', producto: calzado() })
+    items = carritoReducer(items, { tipo: 'cambiarPrecio', id: 'c1', precio: 3000 })
+    expect(items[0].precio).toBe(3000)
+    expect(items[0].subtotal).toBe(3000)
+    expect(bajoMinimo(items[0])).toBe(true)
+  })
+
+  test('bajoMinimo es false dentro del rango y para Granja', () => {
+    let items = carritoReducer([], { tipo: 'agregar', producto: calzado() })
+    items = carritoReducer(items, { tipo: 'cambiarPrecio', id: 'c1', precio: 7000 })
+    expect(bajoMinimo(items[0])).toBe(false)
+    const g = carritoReducer([], { tipo: 'agregar', producto: granja() })
+    expect(bajoMinimo(g[0])).toBe(false)
+  })
+
+  test('Granja: cantidad decimal sin recorte por stock; subtotal = precio × cantidad', () => {
+    let items = carritoReducer([], { tipo: 'agregar', producto: granja() })
+    items = carritoReducer(items, { tipo: 'cambiarCantidad', id: 'g1', cantidad: 2.5 })
+    expect(items[0].cantidad).toBe(2.5)
+    expect(items[0].subtotal).toBe(10000)
+  })
+
+  test('Granja: cambiarPrecio recalcula el subtotal', () => {
+    let items = carritoReducer([], { tipo: 'agregar', producto: granja() })
+    items = carritoReducer(items, { tipo: 'cambiarCantidad', id: 'g1', cantidad: 2 })
+    items = carritoReducer(items, { tipo: 'cambiarPrecio', id: 'g1', precio: 5000 })
+    expect(items[0].subtotal).toBe(10000)
+  })
+
+  test('calzado: la cantidad sigue recortada por stock y a entero', () => {
+    let items = carritoReducer([], { tipo: 'agregar', producto: calzado({ stock: 2 }) })
+    items = carritoReducer(items, { tipo: 'cambiarCantidad', id: 'c1', cantidad: 9 })
+    expect(items[0].cantidad).toBe(2)
   })
 })

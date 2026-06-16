@@ -44,3 +44,15 @@ yarn-error.*
 /ios
 /android
 .env
+
+# Supabase CLI cache (local, no va al repo)
+supabase/.temp/
+
+# scratch / artefactos de desarrollo (no van a main)
+coverage/
+smoke_test*.sql
+payload_smoke.json
+PROJECT.md
+ORIGINAL_REQUEST.md
+TEST_INFRA.md
+TEST_READY.md

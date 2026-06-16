@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       cierres_caja: {
@@ -716,7 +741,8 @@ export type Database = {
           created_at: string
           id: string
           motivo: string | null
-          precio_venta: number | null
+          precio_maximo: number | null
+          precio_minimo: number | null
           producto_id: string
           registrado_por: string | null
         }
@@ -725,7 +751,8 @@ export type Database = {
           created_at?: string
           id?: string
           motivo?: string | null
-          precio_venta?: number | null
+          precio_maximo?: number | null
+          precio_minimo?: number | null
           producto_id: string
           registrado_por?: string | null
         }
@@ -734,7 +761,8 @@ export type Database = {
           created_at?: string
           id?: string
           motivo?: string | null
-          precio_venta?: number | null
+          precio_maximo?: number | null
+          precio_minimo?: number | null
           producto_id?: string
           registrado_por?: string | null
         }
@@ -865,7 +893,8 @@ export type Database = {
           descripcion: string
           foto_url: string | null
           id: string
-          precio_venta: number
+          precio_maximo: number
+          precio_minimo: number
           proveedor_id: string | null
           referencia: string | null
           stock_actual: number
@@ -883,7 +912,8 @@ export type Database = {
           descripcion: string
           foto_url?: string | null
           id?: string
-          precio_venta: number
+          precio_maximo?: number
+          precio_minimo?: number
           proveedor_id?: string | null
           referencia?: string | null
           stock_actual?: number
@@ -901,7 +931,8 @@ export type Database = {
           descripcion?: string
           foto_url?: string | null
           id?: string
-          precio_venta?: number
+          precio_maximo?: number
+          precio_minimo?: number
           proveedor_id?: string | null
           referencia?: string | null
           stock_actual?: number
@@ -942,9 +973,7 @@ export type Database = {
           foto_url: string | null
           id: string
           nombre: string
-          precio_venta: number
-          stock_actual: number
-          stock_minimo: number
+          precio_sugerido: number | null
           unidad_medida: string
           updated_at: string
           updated_by: string | null
@@ -956,9 +985,7 @@ export type Database = {
           foto_url?: string | null
           id?: string
           nombre: string
-          precio_venta: number
-          stock_actual?: number
-          stock_minimo?: number
+          precio_sugerido?: number | null
           unidad_medida: string
           updated_at?: string
           updated_by?: string | null
@@ -970,9 +997,7 @@ export type Database = {
           foto_url?: string | null
           id?: string
           nombre?: string
-          precio_venta?: number
-          stock_actual?: number
-          stock_minimo?: number
+          precio_sugerido?: number | null
           unidad_medida?: string
           updated_at?: string
           updated_by?: string | null
@@ -1153,6 +1178,8 @@ export type Database = {
           created_by: string | null
           descripcion_snapshot: string
           id: string
+          precio_maximo_snapshot: number | null
+          precio_minimo_snapshot: number | null
           precio_unitario: number
           producto_calzado_id: string | null
           producto_varios_id: string | null
@@ -1169,6 +1196,8 @@ export type Database = {
           created_by?: string | null
           descripcion_snapshot: string
           id?: string
+          precio_maximo_snapshot?: number | null
+          precio_minimo_snapshot?: number | null
           precio_unitario: number
           producto_calzado_id?: string | null
           producto_varios_id?: string | null
@@ -1185,6 +1214,8 @@ export type Database = {
           created_by?: string | null
           descripcion_snapshot?: string
           id?: string
+          precio_maximo_snapshot?: number | null
+          precio_minimo_snapshot?: number | null
           precio_unitario?: number
           producto_calzado_id?: string | null
           producto_varios_id?: string | null
@@ -1341,6 +1372,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      guardar_producto_calzado: {
+        Args: {
+          p_activo: boolean
+          p_categoria: string
+          p_color: string
+          p_costo_compra: number
+          p_descripcion: string
+          p_foto_url: string
+          p_id: string
+          p_precio_maximo: number
+          p_precio_minimo: number
+          p_proveedor_id: string
+          p_referencia: string
+          p_stock_actual: number
+          p_stock_minimo: number
+          p_talla: string
+        }
+        Returns: string
+      }
+      obtener_resumen_dia: { Args: { p_fecha: string }; Returns: Json }
       registrar_venta: {
         Args: {
           p_cliente_apellido?: string
@@ -1480,6 +1531,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

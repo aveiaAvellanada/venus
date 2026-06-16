@@ -45,7 +45,7 @@ git checkout -b feat/sp2-precio-min-max
 
 **Files:** Create `supabase/migrations/<ts>_sp2_precio_min_max_granja.sql`
 
-- [ ] **Step 1: Escribir la migración** con EXACTAMENTE:
+- [x] **Step 1: Escribir la migración** con EXACTAMENTE:
 ```sql
 -- SP-2 esquema: calzado precio mín/máx; Granja sin stock + precio_sugerido; venta_items snapshot.
 
@@ -69,9 +69,9 @@ alter table public.venta_items add column if not exists precio_minimo_snapshot n
 alter table public.venta_items add column if not exists precio_maximo_snapshot numeric(12,2);
 ```
 
-- [ ] **Step 2: Aplicar** vía MCP `supabase.apply_migration` (`project_id: "xqspsaghukeynlizbjvc"`, `name: "sp2_precio_min_max_granja"`, `query` = el SQL). Expected: sin error.
+- [x] **Step 2: Aplicar** vía MCP `supabase.apply_migration` (`project_id: "xqspsaghukeynlizbjvc"`, `name: "sp2_precio_min_max_granja"`, `query` = el SQL). Expected: sin error.
 
-- [ ] **Step 3: Smoke test** vía MCP `supabase.execute_sql`:
+- [x] **Step 3: Smoke test** vía MCP `supabase.execute_sql`:
 ```sql
 do $$
 declare v_n int;
@@ -95,7 +95,7 @@ end $$;
 ```
 Expected: termina con `T1_OK_ROLLBACK`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 ```bash
 git add supabase/migrations/
 git commit -m "feat(db): calzado mín/máx, Granja sin stock, venta_items snapshot"
@@ -107,7 +107,7 @@ git commit -m "feat(db): calzado mín/máx, Granja sin stock, venta_items snapsh
 
 **Files:** Create `supabase/migrations/<ts>_sp2_registrar_venta_precio.sql`
 
-- [ ] **Step 1: Escribir la migración** con EXACTAMENTE:
+- [x] **Step 1: Escribir la migración** con EXACTAMENTE:
 ```sql
 -- SP-2: registrar_venta acepta `precio` por item (regateo calzado / precio Granja).
 create or replace function public.registrar_venta(
@@ -271,9 +271,9 @@ revoke all on function public.registrar_venta(jsonb, jsonb, numeric, text, text,
 grant execute on function public.registrar_venta(jsonb, jsonb, numeric, text, text, text) to authenticated;
 ```
 
-- [ ] **Step 2: Aplicar** vía MCP `supabase.apply_migration` (`name: "sp2_registrar_venta_precio"`). Expected: sin error.
+- [x] **Step 2: Aplicar** vía MCP `supabase.apply_migration` (`name: "sp2_registrar_venta_precio"`). Expected: sin error.
 
-- [ ] **Step 3: Smoke test (camino feliz + bajo el mínimo + Granja)** vía MCP `supabase.execute_sql`:
+- [x] **Step 3: Smoke test (camino feliz + bajo el mínimo + Granja)** vía MCP `supabase.execute_sql`:
 ```sql
 do $$
 declare
@@ -318,7 +318,7 @@ end $$;
 ```
 Expected: termina con `T2_OK_ROLLBACK`.
 
-- [ ] **Step 4: Smoke test (precio inválido rechazado)** vía MCP `supabase.execute_sql`:
+- [x] **Step 4: Smoke test (precio inválido rechazado)** vía MCP `supabase.execute_sql`:
 ```sql
 do $$
 declare v_uid uuid; v_gid uuid;
@@ -340,7 +340,7 @@ end $$;
 ```
 Expected: termina con `T2B_OK_ROLLBACK`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add supabase/migrations/
 git commit -m "feat(db): registrar_venta acepta precio por item (regateo/Granja)"
@@ -352,7 +352,7 @@ git commit -m "feat(db): registrar_venta acepta precio por item (regateo/Granja)
 
 **Files:** Modify `lib/carrito.ts`, `lib/carrito.test.ts`
 
-- [ ] **Step 1a: Añadir `bajoMinimo` al import existente** en la cabecera de `lib/carrito.test.ts` (el import ya trae `carritoReducer`, `type ItemCarrito`, `type ProductoVendible`; solo agregar `bajoMinimo`):
+- [x] **Step 1a: Añadir `bajoMinimo` al import existente** en la cabecera de `lib/carrito.test.ts` (el import ya trae `carritoReducer`, `type ItemCarrito`, `type ProductoVendible`; solo agregar `bajoMinimo`):
 ```ts
 import {
   carritoReducer, bajoMinimo, totalCarrito, pagosCuadran, montoEfectivo, calcularCambio,
@@ -360,7 +360,7 @@ import {
 } from './carrito'
 ```
 
-- [ ] **Step 1b: Añadir los tests SP-2** al final de `lib/carrito.test.ts` (no borrar los tests existentes; NO repetir imports — `ProductoVendible` y `bajoMinimo` ya quedaron importados arriba):
+- [x] **Step 1b: Añadir los tests SP-2** al final de `lib/carrito.test.ts` (no borrar los tests existentes; NO repetir imports — `ProductoVendible` y `bajoMinimo` ya quedaron importados arriba):
 ```ts
 const calzado = (over: Partial<ProductoVendible> = {}): ProductoVendible => ({
   tipo: 'calzado', id: 'c1', titulo: 'Tenis', detalle: '', precio: 10000,
@@ -416,11 +416,11 @@ describe('carrito SP-2 — precio por línea', () => {
 })
 ```
 
-- [ ] **Step 2: Correr el test para verlo fallar**
+- [x] **Step 2: Correr el test para verlo fallar**
 Run: `npm test -- carrito`
 Expected: FAIL (no existen `cambiarPrecio`/`bajoMinimo` ni `precio` por línea).
 
-- [ ] **Step 3: Reescribir** `lib/carrito.ts` con EXACTAMENTE:
+- [x] **Step 3: Reescribir** `lib/carrito.ts` con EXACTAMENTE:
 ```ts
 export type TipoProducto = 'calzado' | 'varios'
 export type MetodoPago = 'efectivo' | 'nequi' | 'daviplata'
@@ -519,11 +519,11 @@ export const calcularCambio = (efectivoRecibido: number, efectivoMonto: number):
   redondear(Math.max(0, efectivoRecibido - efectivoMonto))
 ```
 
-- [ ] **Step 4: Correr tests y typecheck**
+- [x] **Step 4: Correr tests y typecheck**
 Run: `npm test -- carrito && npx tsc --noEmit`
 Expected: PASS (tests viejos + nuevos) y tsc exit 0.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add lib/carrito.ts lib/carrito.test.ts
 git commit -m "feat: precio por línea en carrito (regateo, Granja sin stock)"
@@ -535,7 +535,7 @@ git commit -m "feat: precio por línea en carrito (regateo, Granja sin stock)"
 
 **Files:** Modify `lib/ventas.ts`
 
-- [ ] **Step 1: Reemplazar la función `buscarProductos`** (líneas ~20-66) por EXACTAMENTE:
+- [x] **Step 1: Reemplazar la función `buscarProductos`** (líneas ~20-66) por EXACTAMENTE:
 ```ts
 export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
   const termino = q.trim()
@@ -587,7 +587,7 @@ export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
 }
 ```
 
-- [ ] **Step 2: Enviar el precio por item** — en `registrarVenta`, dentro de `p_items: input.items.map(...)`, añadir el campo `precio`:
+- [x] **Step 2: Enviar el precio por item** — en `registrarVenta`, dentro de `p_items: input.items.map(...)`, añadir el campo `precio`:
 ```ts
     p_items: input.items.map(i => ({
       tipo: i.producto.tipo,
@@ -597,16 +597,16 @@ export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
     })),
 ```
 
-- [ ] **Step 3: Añadir traducción del error de precio** — en `traducirError`, antes del `return` final, añadir:
+- [x] **Step 3: Añadir traducción del error de precio** — en `traducirError`, antes del `return` final, añadir:
 ```ts
   if (msg.includes('Precio inválido')) return 'El precio debe ser mayor a cero.'
 ```
 
-- [ ] **Step 4: Typecheck**
+- [x] **Step 4: Typecheck**
 Run: `npx tsc --noEmit`
 Expected: exit 0.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add lib/ventas.ts
 git commit -m "feat: buscarProductos con mín/máx y precio_sugerido; enviar precio a la RPC"
@@ -780,11 +780,11 @@ git commit -m "chore(types): regenerar tras esquema de precios SP-2"
 
 **Files:** ninguno (verificación).
 
-- [ ] **Step 1: Suite completa**
+- [x] **Step 1: Suite completa**
 Run: `npx tsc --noEmit && npm test`
 Expected: tsc exit 0; todos los tests pasan (`carrito` + `permisos`).
 
-- [ ] **Step 2: Recap RPC** vía MCP `supabase.execute_sql` (calzado dentro de rango + Granja, sanidad combinada):
+- [x] **Step 2: Recap RPC** vía MCP `supabase.execute_sql` (calzado dentro de rango + Granja, sanidad combinada):
 ```sql
 do $$
 declare v_uid uuid; v_cid uuid; v_gid uuid; v_res jsonb; v_vid uuid; v_total numeric;

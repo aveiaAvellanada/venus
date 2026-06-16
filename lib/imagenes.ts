@@ -12,16 +12,19 @@ export async function comprimirYSubirImagen(uri: string): Promise<string> {
   // Generar un nombre único para el archivo
   const nombreArchivo = `${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
 
-  // Convertir uri a blob para la subida usando XMLHttpRequest
-  const blob = await new Promise<Blob>((resolve, reject) => {
+  // Leer el archivo local como ArrayBuffer vía XMLHttpRequest.
+  // En React Native, fetch() falla con URIs file:// y subir un Blob a
+  // Supabase Storage produce "Network request failed"; subir un ArrayBuffer
+  // sí funciona (patrón documentado por Supabase para Expo/React Native).
+  const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.onload = function () {
       resolve(xhr.response);
     };
-    xhr.onerror = function (e) {
-      reject(new TypeError("Network request failed"));
+    xhr.onerror = function () {
+      reject(new TypeError("No se pudo leer el archivo local"));
     };
-    xhr.responseType = "blob";
+    xhr.responseType = "arraybuffer";
     xhr.open("GET", manipulada.uri, true);
     xhr.send(null);
   });
@@ -29,7 +32,7 @@ export async function comprimirYSubirImagen(uri: string): Promise<string> {
   // Subir a Supabase Storage
   const { data, error } = await supabase.storage
     .from('productos')
-    .upload(nombreArchivo, blob, {
+    .upload(nombreArchivo, arrayBuffer, {
       contentType: 'image/jpeg',
     });
 

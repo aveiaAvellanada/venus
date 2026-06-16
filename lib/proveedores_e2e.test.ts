@@ -1358,9 +1358,10 @@ describe('Providers E2E Test Suite (60+ cases)', () => {
       await expect(api.cancelarCompra(comp.id, 'andres')).rejects.toThrow('La compra ya está cancelada.')
     })
 
-    // 67. obtenerDeudaProveedor falls back to direct query when RPC fails
-    test('67. obtenerDeudaProveedor fallback when RPC fails', async () => {
-      // Create a credit purchase under the special provider ID that triggers forced RPC error
+    // 67. obtenerDeudaProveedor propaga el error de la RPC y NO filtra la deuda
+    // (sin fallback a query directa; la deuda es solo para el dueño).
+    test('67. obtenerDeudaProveedor propaga el error de la RPC (sin fallback)', async () => {
+      // Provider ID especial que fuerza un error en la RPC (simula no-dueño bloqueado)
       const providerId = 'force-rpc-error'
       await api.registrarCompraDirecta({
         proveedor_id: providerId,
@@ -1368,8 +1369,7 @@ describe('Providers E2E Test Suite (60+ cases)', () => {
         condicion_pago: 'credito',
         items: [{ descripcion: 'Botas', cantidad: 5, costo_unitario: 1000 }]
       })
-      const debt = await api.obtenerDeudaProveedor(providerId)
-      expect(debt).toBe(5000)
+      await expect(api.obtenerDeudaProveedor(providerId)).rejects.toThrow()
     })
 
     // 68. listarCompras lists all purchases ordered by created_at descending

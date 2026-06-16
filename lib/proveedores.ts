@@ -466,25 +466,16 @@ export async function registrarPagoProveedor(datos: {
 }
 
 export async function obtenerDeudaProveedor(proveedorId: string): Promise<number> {
-  try {
-    const { data, error } = await (supabase.rpc as any)('obtener_deuda_proveedor', { p_id: proveedorId })
-    if (!error && data !== null) {
-      return Number(data)
-    }
-  } catch (e) {
-    // Fallback if RPC is missing
-  }
-
-  const { data, error } = await supabase
-    .from('compras')
-    .select('saldo_pendiente')
-    .eq('proveedor_id', proveedorId)
-    .eq('estado', 'completada')
-    .eq('condicion_pago', 'credito')
-
+  // La deuda con proveedores es información financiera reservada al dueño.
+  // La RPC `obtener_deuda_proveedor` está gateada a private.is_owner() y es la
+  // ÚNICA vía permitida: si falla (p.ej. la invoca un no-dueño), propagamos el
+  // error. NO se hace fallback a una query directa sobre `compras`, porque la
+  // RLS de compras deja leer saldo_pendiente a is_staff_admin (incluida Sandra),
+  // lo que filtraría la deuda saltándose el gate. La UI debe mostrar la deuda
+  // solo al dueño.
+  const { data, error } = await (supabase.rpc as any)('obtener_deuda_proveedor', { p_id: proveedorId })
   if (error) throw error
-  const sum = (data || []).reduce((acc, row) => acc + (row.saldo_pendiente || 0), 0)
-  return sum
+  return Number(data ?? 0)
 }
 
 export async function listarPagosCompra(compraId: string): Promise<CompraPago[]> {

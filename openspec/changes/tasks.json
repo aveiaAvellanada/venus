@@ -1,0 +1,93 @@
+{
+  "proyecto": "Venus",
+  "rama_activa": "feat/sp2-precio-min-max",
+  "ultimo_agente": "antigravity",
+  "sp_completados": ["SP-1", "SP-2", "SP-3", "SP-4", "SP-5", "SP-6"],
+  "sp_pendientes": ["SP-7", "SP-8", "SP-9"],
+  "estado_sp": {
+    "SP-1": {
+      "modulos": "Roles/permisos/RLS/auditoría base (3 roles dueno/admin/empleado, seed de Sandra)",
+      "estado": "mergeado_a_main",
+      "spec": "docs/superpowers/specs/2026-06-14-sp1-roles-permisos-rls-design.md",
+      "plan": "docs/superpowers/plans/2026-06-14-sp1-roles-permisos-rls.md"
+    },
+    "SP-2": {
+      "modulos": "Nueva Venta: Granja sin stock + precio mín/máx (regateo)",
+      "estado": "construido_en_rama_sin_mergear",
+      "spec": "docs/superpowers/specs/2026-06-15-sp2-granja-precio-min-max-design.md",
+      "plan": "docs/superpowers/plans/2026-06-15-sp2-granja-precio-min-max.md"
+    },
+    "SP-3": {
+      "modulos": "Módulos 3 y 4 — Inventario de Calzado y Granja (pantallas de gestión)",
+      "estado": "construido_en_rama_sin_mergear",
+      "spec": "docs/superpowers/specs/2026-06-15-sp3-inventario-design.md",
+      "plan": "docs/superpowers/plans/2026-06-15-sp3-inventario.md"
+    },
+    "SP-4": {
+      "modulos": "Módulo 7 — Caja (cierre manual)",
+      "estado": "construido_en_rama_sin_mergear",
+      "spec": "docs/superpowers/specs/2026-06-15-sp4-caja-design.md",
+      "plan": "docs/superpowers/plans/2026-06-15-sp4-caja.md"
+    },
+    "SP-5": {
+      "modulos": "Módulo 15 — Carga Inicial del Inventario (plantilla Excel, fase 1)",
+      "estado": "construido_en_rama_sin_mergear",
+      "spec": "docs/superpowers/specs/2026-06-15-sp5-carga-inicial-design.md",
+      "plan": "docs/superpowers/plans/2026-06-15-sp5-carga-inicial.md"
+    },
+    "SP-6": {
+      "modulos": "Módulos 9 y 10 — Gastos Fijos y Gastos Variables",
+      "estado": "construido_en_rama_sin_mergear",
+      "spec": "docs/superpowers/specs/2026-06-15-sp6-gastos-design.md",
+      "plan": "docs/superpowers/plans/2026-06-15-sp6-gastos.md"
+    },
+    "SP-7": { "modulos": "Sin spec aún. Candidatos: Devoluciones (M2) + Recibir Mercancía (M5)", "estado": "sin_spec" },
+    "SP-8": { "modulos": "Sin spec aún. Candidatos: Proveedores (M6, hay WIP) + Gestión Empleados (M8)", "estado": "sin_spec" },
+    "SP-9": { "modulos": "Sin spec aún. Candidatos: Balance (M11) + Reportes/Dashboard (M12) + Reportes Automáticos (M13) + Análisis IA (M14)", "estado": "sin_spec" }
+  },
+  "tareas_pendientes": [
+    {
+      "id": "pending-1",
+      "descripcion": "Revisar (code review) y mergear feat/sp2-precio-min-max a main. La rama acumula SP-2 a SP-6 en un solo branch (~5000 líneas); evaluar si se mergea completo o se separa por SP.",
+      "asignado_a": "claude-code",
+      "estado": "pendiente"
+    },
+    {
+      "id": "pending-2",
+      "descripcion": "Aplicar al Supabase remoto (xqspsaghukeynlizbjvc) las migraciones aún NO registradas en schema_migrations: sp2_registrar_venta_precio, sp3_storage_productos, sp3_rpc_guardar_producto, sp4_rpc_caja, sp6_storage_comprobantes y ms1_db_triggers. Hoy el remoto solo está aplicado hasta sp2_precio_min_max_granja, así que la RPC de venta con precio y los backends de SP-3/4/6 NO están vivos. Verificar con smoke tests *_OK_ROLLBACK.",
+      "asignado_a": "claude-code",
+      "estado": "pendiente"
+    },
+    {
+      "id": "pending-3",
+      "descripcion": "Regenerar lib/database.types.ts contra el esquema final una vez aplicadas todas las migraciones, y confirmar npx tsc --noEmit en 0 y npm test verde.",
+      "asignado_a": "claude-code",
+      "estado": "pendiente"
+    },
+    {
+      "id": "pending-4",
+      "descripcion": "Limpiar artefactos del branch antes del merge (no deben ir a main): PROJECT.md, ORIGINAL_REQUEST.md, TEST_INFRA.md, TEST_READY.md, coverage/, smoke_test*.sql, payload_smoke.json, supabase/.temp/. Añadir los que falten al .gitignore.",
+      "asignado_a": "claude-code",
+      "estado": "pendiente"
+    },
+    {
+      "id": "pending-5",
+      "descripcion": "Terminar y commitear el WIP del módulo Proveedores (lib/proveedores.ts, lib/proveedores_e2e.test.ts, smoke_test_proveedores.sql, migración 20260616010000_ms1_db_triggers.sql, supabase/tests/) — actualmente SIN commitear en el working tree de la rama.",
+      "asignado_a": "antigravity",
+      "estado": "en_progreso"
+    },
+    {
+      "id": "pending-6",
+      "descripcion": "Corregir nombres en los specs SP-3 a SP-6: el dueño es 'Andrés Artunduaga' (no 'Don Carlos'). Alinear con PRD v4.0 y CLAUDE.md.",
+      "asignado_a": "claude-code",
+      "estado": "pendiente"
+    },
+    {
+      "id": "pending-7",
+      "descripcion": "Definir specs y planes de SP-7/SP-8/SP-9 (brainstorming → writing-plans) para los módulos aún sin construir: Devoluciones (M2), Recibir Mercancía (M5), Proveedores (M6), Gestión Empleados (M8), Balance (M11), Reportes y Dashboard (M12), Reportes Automáticos (M13), Análisis IA (M14).",
+      "asignado_a": "claude-code",
+      "estado": "pendiente"
+    }
+  ],
+  "notas": "Estado real al 2026-06-15. SP-1 es el ÚNICO mergeado a main. SP-2 a SP-6 fueron construidos por Antigravity en la rama feat/sp2-precio-min-max (sus planes están marcados completos) pero NO están mergeados ni revisados por Claude Code. IMPORTANTE: según supabase_migrations.schema_migrations, el Supabase remoto solo tiene aplicado hasta 'sp2_precio_min_max_granja'; la RPC registrar_venta con precio (SP-2) y todas las migraciones de SP-3/SP-4/SP-6 + ms1 existen como archivos pero NO figuran aplicadas — Claude Code debe verificarlas/aplicarlas antes o durante el merge (pending-2). Además hay WIP sin commitear del módulo Proveedores (pending-5) y archivos de scratch que no deben entrar a main (pending-4). Los specs SP-3..SP-6 llaman 'Don Carlos' al dueño por error; el real es Andrés Artunduaga (pending-6). División de roles: Antigravity construye, Claude Code revisa, migra y mergea (ver AGENTS.md §5)."
+}

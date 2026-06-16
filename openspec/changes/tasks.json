@@ -1,8 +1,8 @@
 {
   "proyecto": "Venus",
-  "rama_activa": "main",
-  "ultimo_agente": "claude-code",
-  "handoff": "2026-06-16: main contiene SP-1..SP-6 + Proveedores (M6 backend/lib). Próximo cuello de botella: los módulos por construir (SP-7/SP-9 y la UI de Proveedores + Empleados de SP-8) necesitan que Claude Code escriba specs/planes antes (pending-8). Antigravity: parte de main actualizado, trabaja en rama de feature, sigue los planes en docs/superpowers/plans/, no mergees a main (eso lo hace Claude Code).",
+  "rama_activa": "feat/sp8-proveedores-ui",
+  "ultimo_agente": "antigravity",
+  "handoff": "2026-06-16: La UI del Módulo de Proveedores (M6) y sus pruebas unitarias en Jest (110 tests) han sido completadas, verificadas y testeadas con éxito mediante teamwork-preview. Se commiteó todo en la rama feat/sp8-proveedores-ui. Queda pendiente que Claude Code haga code review y mergee a main (pending-9), así como definir specs/planes para los siguientes módulos (pending-8).",
   "ramas_feature": {
     "feat/sp2-precio-min-max": {
       "contenido": "SP-2 a SP-6. Revisado, rebaseado sobre main, scratch limpiado, gate de seguridad añadido.",
@@ -13,6 +13,10 @@
       "base": "main (5d09e27)",
       "contenido": "Proveedores M6 (lib/proveedores.ts, e2e tests, migración ms1_db_triggers). Construido en paralelo, NO encima de SP-2..SP-6.",
       "estado": "mergeado_a_main (2026-06-16). Antigravity la rebaseó sobre main y limpió el smoke_test de la raíz; Claude Code revisó, corrigió un fix de seguridad (fuga de deuda) y mergeó."
+    },
+    "feat/sp8-proveedores-ui": {
+      "contenido": "UI del Módulo de Proveedores (M6) en React Native/Expo (pantallas, layout, permisos y pruebas unitarias con Jest).",
+      "estado": "completado_esperando_merge"
     }
   },
   "sp_completados": ["SP-1", "SP-2", "SP-3", "SP-4", "SP-5", "SP-6"],
@@ -55,7 +59,7 @@
       "plan": "docs/superpowers/plans/2026-06-15-sp6-gastos.md"
     },
     "SP-7": { "modulos": "Sin spec aún. Candidatos: Devoluciones (M2) + Recibir Mercancía (M5)", "estado": "sin_spec" },
-    "SP-8": { "modulos": "Proveedores (M6, mergeado a main) + Gestión Empleados (M8, pendiente)", "estado": "parcial_mergeado (Proveedores listo; Empleados sin construir)" },
+    "SP-8": { "modulos": "Proveedores (M6, backend en main, UI en feat/sp8-proveedores-ui) + Gestión Empleados (M8, pendiente)", "estado": "parcial_mergeado (Proveedores backend y UI listos; Empleados sin construir)" },
     "SP-9": { "modulos": "Sin spec aún. Candidatos: Balance (M11) + Reportes/Dashboard (M12) + Reportes Automáticos (M13) + Análisis IA (M14)", "estado": "sin_spec" }
   },
   "tareas_pendientes": [
@@ -106,7 +110,13 @@
       "descripcion": "Definir specs y planes de SP-7/SP-8(empleados)/SP-9 (brainstorming -> writing-plans): Devoluciones (M2), Recibir Mercancía (M5), Gestión Empleados (M8), Balance (M11), Reportes y Dashboard (M12), Reportes Automáticos (M13), Análisis IA (M14).",
       "asignado_a": "claude-code",
       "estado": "pendiente"
+    },
+    {
+      "id": "pending-9",
+      "descripcion": "Code review + merge de feat/sp8-proveedores-ui (UI de M6 Proveedores, pantallas, layout, permisos, tests Jest) a main.",
+      "asignado_a": "claude-code",
+      "estado": "pendiente"
     }
   ],
-  "notas": "Actualizado 2026-06-16 (Claude Code). Sesión: aplicadas/reconciliadas todas las migraciones SP-2..SP-6 + ms1 + gate de rol (remoto al día y registrado), code review de SP-2..SP-6, fix de seguridad en guardar_producto_calzado, rebase de feat/sp2 sobre main, limpieza de scratch, corrección de nombres, y merge de feat/sp2-precio-min-max a main. feat/sp8-proveedores (M6) queda SEPARADA y sin revisar a propósito (pending-7). División de roles: Antigravity construye, Claude Code revisa/migra/mergea (AGENTS.md §5). main pusheado a origin/main al cierre de la sesión; handoff a Antigravity (ver campo 'handoff')."
+  "notas": "Actualizado 2026-06-16 (Antigravity). UI de Proveedores completada y testeada con éxito mediante el flujo teamwork-preview. Se creó la rama feat/sp8-proveedores-ui con los cambios y se deja listo para que Claude Code haga code review y mergee a main. 110 tests verdes (incluyendo 40 nuevos test de componentes en app/proveedores.test.tsx), tsc 0."
 }

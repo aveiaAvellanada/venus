@@ -20,7 +20,7 @@ export const MODULOS: Modulo[] = [
   { id: 'recibir-mercancia',  titulo: 'Recibir mercancía',  icono: '📥', roles: TODOS },
   { id: 'caja',               titulo: 'Caja',               icono: '🧾', roles: TODOS },
   { id: 'gastos-variables',   titulo: 'Gastos variables',   icono: '💸', roles: TODOS },
-  { id: 'proveedores',        titulo: 'Proveedores',        icono: '🚚', roles: STAFF_ADMIN },
+  { id: 'proveedores',        titulo: 'Proveedores',        icono: '🚚', roles: STAFF_ADMIN, ruta: '/proveedores' },
   { id: 'gastos-fijos',       titulo: 'Gastos fijos',       icono: '📌', roles: STAFF_ADMIN },
   { id: 'reportes',           titulo: 'Reportes',           icono: '📊', roles: STAFF_ADMIN },
   { id: 'carga-inicial',      titulo: 'Carga inicial',      icono: '📷', roles: STAFF_ADMIN },

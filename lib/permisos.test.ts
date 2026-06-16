@@ -45,6 +45,10 @@ describe('permisos', () => {
     expect(MODULOS.find(m => m.id === 'ventas')?.ruta).toBe('/ventas')
   })
 
+  test('proveedores conserva su ruta dedicada', () => {
+    expect(MODULOS.find(m => m.id === 'proveedores')?.ruta).toBe('/proveedores')
+  })
+
   test('no hay ids de módulo duplicados', () => {
     const ids = MODULOS.map(m => m.id)
     expect(new Set(ids).size).toBe(ids.length)

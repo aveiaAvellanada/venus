@@ -2,6 +2,7 @@
   "proyecto": "Venus",
   "rama_activa": "main",
   "ultimo_agente": "claude-code",
+  "handoff": "2026-06-16: Claude Code cierra sesión. main (con SP-1..SP-6) pusheado a origin/main. ANTIGRAVITY toma el control para construir los módulos que faltan. Antes de construir SP-7/SP-9 hace falta que Claude Code escriba sus specs/planes (pending-8); Proveedores (feat/sp8) espera review+merge de Claude Code (pending-7). Antigravity: parte de main actualizado, trabaja en rama de feature, sigue los planes en docs/superpowers/plans/, no mergees a main (eso lo hace Claude Code).",
   "ramas_feature": {
     "feat/sp2-precio-min-max": {
       "contenido": "SP-2 a SP-6. Revisado, rebaseado sobre main, scratch limpiado, gate de seguridad añadido.",
@@ -107,5 +108,5 @@
       "estado": "pendiente"
     }
   ],
-  "notas": "Actualizado 2026-06-16 (Claude Code). Sesión: aplicadas/reconciliadas todas las migraciones SP-2..SP-6 + ms1 + gate de rol (remoto al día y registrado), code review de SP-2..SP-6, fix de seguridad en guardar_producto_calzado, rebase de feat/sp2 sobre main, limpieza de scratch, corrección de nombres, y merge de feat/sp2-precio-min-max a main. feat/sp8-proveedores (M6) queda SEPARADA y sin revisar a propósito (pending-7). División de roles: Antigravity construye, Claude Code revisa/migra/mergea (AGENTS.md §5)."
+  "notas": "Actualizado 2026-06-16 (Claude Code). Sesión: aplicadas/reconciliadas todas las migraciones SP-2..SP-6 + ms1 + gate de rol (remoto al día y registrado), code review de SP-2..SP-6, fix de seguridad en guardar_producto_calzado, rebase de feat/sp2 sobre main, limpieza de scratch, corrección de nombres, y merge de feat/sp2-precio-min-max a main. feat/sp8-proveedores (M6) queda SEPARADA y sin revisar a propósito (pending-7). División de roles: Antigravity construye, Claude Code revisa/migra/mergea (AGENTS.md §5). main pusheado a origin/main al cierre de la sesión; handoff a Antigravity (ver campo 'handoff')."
 }

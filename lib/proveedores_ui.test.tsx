@@ -2,11 +2,11 @@ import React from 'react'
 // @ts-ignore
 import renderer, { act } from 'react-test-renderer'
 import { Linking, Alert, TextInput, Switch } from 'react-native'
-import ProveedoresIndex from './(app)/proveedores/index'
-import ProveedorDetailScreen from './(app)/proveedores/[id]'
-import ProveedorEditorScreen from './(app)/proveedores/editor'
-import { useAuth } from '../lib/auth'
-import * as api from '../lib/proveedores'
+import ProveedoresIndex from '../app/(app)/proveedores/index'
+import ProveedorDetailScreen from '../app/(app)/proveedores/[id]'
+import ProveedorEditorScreen from '../app/(app)/proveedores/editor'
+import { useAuth } from './auth'
+import * as api from './proveedores'
 
 // Mock @expo/vector-icons
 jest.mock('@expo/vector-icons', () => {

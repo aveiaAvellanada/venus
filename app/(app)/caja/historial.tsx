@@ -55,7 +55,7 @@ export default function HistorialCaja() {
             <View style={styles.card}>
               <View style={styles.row}>
                 <Text style={styles.fecha}>{item.fecha}</Text>
-                <Text style={[styles.estadoBadge, item.estado === 'abierto' ? styles.bgAbierto : styles.bgCerrado]}>
+                <Text style={[styles.estadoBadge, item.estado === 'abierta' ? styles.bgAbierto : styles.bgCerrado]}>
                   {item.estado.toUpperCase()}
                 </Text>
               </View>
@@ -66,7 +66,7 @@ export default function HistorialCaja() {
                   <Text style={styles.totalGeneral}>{pesos(item.total_general || 0)}</Text>
                 </View>
 
-                {item.estado === 'cerrado' && (
+                {item.estado === 'cerrada' && (
                   <View style={styles.rightAlign}>
                     <Text style={styles.label}>Diferencia</Text>
                     <Text style={[styles.diferencia, hasDiff ? (isFaltante ? styles.textRojo : styles.textVerde) : styles.textGris]}>
@@ -76,7 +76,7 @@ export default function HistorialCaja() {
                 )}
               </View>
               
-              {item.estado === 'cerrado' && hasDiff && item.diferencia_nota && (
+              {item.estado === 'cerrada' && hasDiff && item.diferencia_nota && (
                 <Text style={styles.nota}>Nota: {item.diferencia_nota}</Text>
               )}
             </View>

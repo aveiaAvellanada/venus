@@ -127,7 +127,7 @@ export default function NuevaVenta() {
   useEffect(() => {
     obtenerCajaHoy()
       .then(c => {
-        if (!c || c.estado !== 'abierto') setCajaEstado('bloqueado')
+        if (!c || c.estado !== 'abierta') setCajaEstado('bloqueado')
         else setCajaEstado('ok')
       })
       .catch(() => setCajaEstado('bloqueado'))

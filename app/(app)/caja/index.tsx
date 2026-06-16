@@ -20,10 +20,10 @@ export default function CajaDashboard() {
     try {
       const caja = await obtenerCajaHoy()
       setEstadoCaja(caja)
-      if (caja && caja.estado === 'abierto') {
+      if (caja && caja.estado === 'abierta') {
         const res = await obtenerResumenEnVivo()
         setResumen(res)
-      } else if (caja && caja.estado === 'cerrado') {
+      } else if (caja && caja.estado === 'cerrada') {
         setResumen({
           total_general: caja.total_general,
           total_ventas: caja.total_ventas,
@@ -83,7 +83,7 @@ export default function CajaDashboard() {
     )
   }
 
-  const isAbierto = estadoCaja.estado === 'abierto'
+  const isAbierto = estadoCaja.estado === 'abierta'
 
   return (
     <ScrollView 

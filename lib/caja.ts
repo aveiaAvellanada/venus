@@ -18,7 +18,7 @@ export async function abrirCaja() {
     .from('cierres_caja')
     .insert({
       fecha: hoy,
-      estado: 'abierto',
+      estado: 'abierta',
       modo: 'manual',
       apertura_at: new Date().toISOString(),
       total_ventas: 0,
@@ -53,14 +53,14 @@ export async function obtenerResumenEnVivo() {
 export async function cerrarCaja(params: { efectivo_contado: number, diferencia: number, nota: string | null }) {
   const caja = await obtenerCajaHoy()
   if (!caja) throw new Error('No hay caja abierta para cerrar hoy.')
-  if (caja.estado === 'cerrado') throw new Error('La caja de hoy ya se cerró.')
+  if (caja.estado === 'cerrada') throw new Error('La caja de hoy ya se cerró.')
   
   const resumen = await obtenerResumenEnVivo()
   
   const { data, error } = await supabase
     .from('cierres_caja')
     .update({
-      estado: 'cerrado',
+      estado: 'cerrada',
       cierre_at: new Date().toISOString(),
       total_ventas: resumen.total_ventas,
       total_general: resumen.total_general,

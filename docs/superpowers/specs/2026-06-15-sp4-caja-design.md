@@ -2,7 +2,7 @@
 **Design Specification**
 
 ## 1. Objetivo
-Permitir a los empleados (Camilo, Beatriz, Nikol, Sandra) y a Don Carlos abrir y cerrar el día operativo del negocio. Este módulo consolida los ingresos de todas las ventas realizadas durante el día, exige que el empleado cuente el dinero físico (efectivo), y calcula de forma automática la existencia de faltantes o sobrantes.
+Permitir a los empleados (Camilo, Beatriz, Nikol, Sandra) y a Andrés Artunduaga abrir y cerrar el día operativo del negocio. Este módulo consolida los ingresos de todas las ventas realizadas durante el día, exige que el empleado cuente el dinero físico (efectivo), y calcula de forma automática la existencia de faltantes o sobrantes.
 
 Este plan cubre la versión **Modo Manual**, en la cual los empleados inician el proceso pulsando "Abrir caja" y "Cerrar caja" voluntariamente. El modo automático y las notificaciones automáticas por WhatsApp se dejan para un posterior módulo (SP-5/SP-6) una vez tengamos infraestructura de tareas en la nube (Edge Functions).
 

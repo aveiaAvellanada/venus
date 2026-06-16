@@ -6,7 +6,7 @@ Proveer la interfaz y lógica para administrar el catálogo base de la tienda. E
 - **Módulo 3 (Inventario de Calzado):** Gestión estructurada con stock, variantes (tallas/colores) y rangos de precio.
 - **Módulo 4 (Granja):** Gestión flexible sin stock físico, con unidades de medida, donde el precio final se decide siempre en la caja.
 
-Esto permitirá que la pantalla de `Nueva Venta` deje de depender de datos de semilla (mocks) y empiece a consumir el inventario real del negocio creado por Don Carlos o Sandra.
+Esto permitirá que la pantalla de `Nueva Venta` deje de depender de datos de semilla (mocks) y empiece a consumir el inventario real del negocio creado por Andrés Artunduaga o Sandra.
 
 ---
 

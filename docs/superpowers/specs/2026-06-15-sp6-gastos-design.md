@@ -2,7 +2,7 @@
 **Design Specification**
 
 ## 1. Objetivo
-Dotar a Don Carlos de un centro de control de egresos donde pueda registrar pagos recurrentes (como el arriendo o los servicios públicos) y gastos del día a día (fletes, reparaciones). Esta información es la base para el futuro módulo de Balance que calculará la rentabilidad neta del negocio.
+Dotar a Andrés Artunduaga de un centro de control de egresos donde pueda registrar pagos recurrentes (como el arriendo o los servicios públicos) y gastos del día a día (fletes, reparaciones). Esta información es la base para el futuro módulo de Balance que calculará la rentabilidad neta del negocio.
 
 ---
 

@@ -2,14 +2,14 @@
 **Design Specification**
 
 ## 1. Objetivo
-Permitir a Don Carlos migrar masivamente todo el inventario de su cuaderno físico o de un Excel previo hacia la nueva base de datos de Supabase de manera estructurada, evitando la creación manual de los productos uno a uno.
+Permitir a Andrés Artunduaga migrar masivamente todo el inventario de su cuaderno físico o de un Excel previo hacia la nueva base de datos de Supabase de manera estructurada, evitando la creación manual de los productos uno a uno.
 
 Este módulo se centra en la **Fase 1: Importación por Plantilla Excel**, la cual es la manera más confiable y libre de errores de reconocimiento óptico (OCR).
 
 ---
 
 ## 2. Roles y Accesos
-- **Uso Exclusivo:** Solo el usuario con rol de `dueno` (Don Carlos) tendrá acceso a la pantalla de "Carga Inicial" (probablemente accesible desde el área de Inventario o Configuración). Los empleados no verán esta opción para evitar inyecciones accidentales de inventario duplicado.
+- **Uso Exclusivo:** Solo el usuario con rol de `dueno` (Andrés Artunduaga) tendrá acceso a la pantalla de "Carga Inicial" (probablemente accesible desde el área de Inventario o Configuración). Los empleados no verán esta opción para evitar inyecciones accidentales de inventario duplicado.
 
 ---
 

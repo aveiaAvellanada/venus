@@ -44,7 +44,7 @@ export default function DevolucionesIndex() {
         setNoEncontrada(true)
         return
       }
-      router.push({ pathname: '/devoluciones/nueva', params: { venta: venta.venta_id } })
+      router.push({ pathname: '/devoluciones/nueva', params: { venta: venta.venta_id, numero: String(venta.numero) } })
     } catch (err: unknown) {
       const mensaje = err instanceof Error ? err.message : 'Error al buscar la venta.'
       setError(mensaje)

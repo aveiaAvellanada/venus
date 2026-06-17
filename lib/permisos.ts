@@ -17,7 +17,7 @@ export const MODULOS: Modulo[] = [
   { id: 'devoluciones',       titulo: 'Devoluciones',       icono: '↩️', roles: TODOS },
   { id: 'inventario-calzado', titulo: 'Inventario calzado', icono: '👟', roles: TODOS, ruta: '/inventario/calzado' },
   { id: 'granja',             titulo: 'Granja',             icono: '🥚', roles: TODOS, ruta: '/inventario/granja' },
-  { id: 'recibir-mercancia',  titulo: 'Recibir mercancía',  icono: '📥', roles: TODOS },
+  { id: 'recibir-mercancia',  titulo: 'Recibir mercancía',  icono: '📥', roles: TODOS, ruta: '/recibir-mercancia' },
   { id: 'caja',               titulo: 'Caja',               icono: '🧾', roles: TODOS, ruta: '/caja' },
   { id: 'gastos-variables',   titulo: 'Gastos variables',   icono: '💸', roles: TODOS, ruta: '/gastos' },
   { id: 'proveedores',        titulo: 'Proveedores',        icono: '🚚', roles: STAFF_ADMIN, ruta: '/proveedores' },

@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       cierres_caja: {
@@ -455,6 +430,180 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devolucion_items: {
+        Row: {
+          cambio_talla_color_id: string | null
+          cantidad: number
+          created_at: string
+          created_by: string | null
+          devolucion_id: string
+          id: string
+          precio_maximo_snapshot: number | null
+          precio_minimo_snapshot: number | null
+          precio_reemplazo: number | null
+          precio_unitario: number
+          producto_calzado_id: string | null
+          producto_varios_id: string | null
+          subtotal: number
+          updated_at: string
+          updated_by: string | null
+          venta_item_id: string
+        }
+        Insert: {
+          cambio_talla_color_id?: string | null
+          cantidad: number
+          created_at?: string
+          created_by?: string | null
+          devolucion_id: string
+          id?: string
+          precio_maximo_snapshot?: number | null
+          precio_minimo_snapshot?: number | null
+          precio_reemplazo?: number | null
+          precio_unitario: number
+          producto_calzado_id?: string | null
+          producto_varios_id?: string | null
+          subtotal: number
+          updated_at?: string
+          updated_by?: string | null
+          venta_item_id: string
+        }
+        Update: {
+          cambio_talla_color_id?: string | null
+          cantidad?: number
+          created_at?: string
+          created_by?: string | null
+          devolucion_id?: string
+          id?: string
+          precio_maximo_snapshot?: number | null
+          precio_minimo_snapshot?: number | null
+          precio_reemplazo?: number | null
+          precio_unitario?: number
+          producto_calzado_id?: string | null
+          producto_varios_id?: string | null
+          subtotal?: number
+          updated_at?: string
+          updated_by?: string | null
+          venta_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devolucion_items_cambio_talla_color_id_fkey"
+            columns: ["cambio_talla_color_id"]
+            isOneToOne: false
+            referencedRelation: "productos_calzado"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devolucion_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devolucion_items_devolucion_id_fkey"
+            columns: ["devolucion_id"]
+            isOneToOne: false
+            referencedRelation: "devoluciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devolucion_items_producto_calzado_id_fkey"
+            columns: ["producto_calzado_id"]
+            isOneToOne: false
+            referencedRelation: "productos_calzado"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devolucion_items_producto_varios_id_fkey"
+            columns: ["producto_varios_id"]
+            isOneToOne: false
+            referencedRelation: "productos_varios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devolucion_items_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devolucion_items_venta_item_id_fkey"
+            columns: ["venta_item_id"]
+            isOneToOne: false
+            referencedRelation: "venta_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devoluciones: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          metodo_cobro: string | null
+          metodo_reembolso: string | null
+          monto_cobrado: number
+          monto_devuelto: number
+          motivo: string
+          tipo_devolucion: string
+          updated_at: string
+          updated_by: string | null
+          venta_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metodo_cobro?: string | null
+          metodo_reembolso?: string | null
+          monto_cobrado?: number
+          monto_devuelto?: number
+          motivo: string
+          tipo_devolucion: string
+          updated_at?: string
+          updated_by?: string | null
+          venta_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metodo_cobro?: string | null
+          metodo_reembolso?: string | null
+          monto_cobrado?: number
+          monto_devuelto?: number
+          motivo?: string
+          tipo_devolucion?: string
+          updated_at?: string
+          updated_by?: string | null
+          venta_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devoluciones_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devoluciones_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devoluciones_venta_id_fkey"
+            columns: ["venta_id"]
+            isOneToOne: false
+            referencedRelation: "ventas"
             referencedColumns: ["id"]
           },
         ]
@@ -1461,6 +1610,19 @@ export type Database = {
       }
       obtener_deuda_proveedor: { Args: { p_id: string }; Returns: number }
       obtener_resumen_dia: { Args: { p_fecha: string }; Returns: Json }
+      registrar_devolucion: {
+        Args: {
+          p_items: Json
+          p_metodo_cobro: string
+          p_metodo_reembolso: string
+          p_monto_cobrado: number
+          p_monto_devuelto: number
+          p_motivo: string
+          p_tipo_devolucion: string
+          p_venta_id: string
+        }
+        Returns: Json
+      }
       registrar_venta: {
         Args: {
           p_cliente_apellido?: string
@@ -1600,9 +1762,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

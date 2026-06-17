@@ -35,11 +35,11 @@ del mes y registrar pagos de sueldo con su historial. Todo auditado.
 Un día cuenta como **trabajado** si, en zona horaria `America/Bogota`, el empleado
 registró ≥1 venta (`ventas.created_by`) **o** ≥1 cierre de caja
 (`cierres_caja.created_by`/`cerrado_por`) ese día. Andrés puede **ajustar manualmente**
-vía `empleado_dias_trabajados`:
-- `tipo='trabajado'` (manual) **suma** un día que la actividad no detectó.
-- `tipo='ausente'` **resta** un día (situación especial).
+vía `empleado_dias_trabajados` (la tabla restringe `tipo` a `('trabajado','ausencia','adicional')`):
+- `tipo='trabajado'` o `'adicional'` (manual) **suma** un día que la actividad no detectó.
+- `tipo='ausencia'` **resta** un día (situación especial).
 
-Días del mes = `distinct(fechas de actividad ∪ manuales 'trabajado') − fechas 'ausente'`.
+Días del mes = `distinct(fechas de actividad ∪ manuales 'trabajado'/'adicional') − fechas 'ausencia'`.
 
 ### 2.2 Cálculo del pago (proporcional por días)
 - `diasEsperadosMes(diasTrabajoSemana, anio, mes)` = `round(diasTrabajoSemana × díasDelMes / 7)`.

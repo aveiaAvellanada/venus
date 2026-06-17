@@ -54,14 +54,15 @@ begin
     union
     select distinct m.fecha
     from public.empleado_dias_trabajados m
-    where m.empleado_id = p_empleado_id and m.tipo = 'trabajado'
+    where m.empleado_id = p_empleado_id and m.tipo in ('trabajado','adicional')
       and extract(year from m.fecha)::int = p_anio
       and extract(month from m.fecha)::int = p_mes
   ),
   ausentes as (
+    -- la tabla restringe tipo a ('trabajado','ausencia','adicional'); 'ausencia' resta el día
     select distinct m.fecha as d
     from public.empleado_dias_trabajados m
-    where m.empleado_id = p_empleado_id and m.tipo = 'ausente'
+    where m.empleado_id = p_empleado_id and m.tipo = 'ausencia'
       and extract(year from m.fecha)::int = p_anio
       and extract(month from m.fecha)::int = p_mes
   )

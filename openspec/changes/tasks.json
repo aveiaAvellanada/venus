@@ -1,122 +1,42 @@
 {
   "proyecto": "Venus",
-  "rama_activa": "feat/sp8-proveedores-ui",
-  "ultimo_agente": "antigravity",
-  "handoff": "2026-06-16: La UI del Módulo de Proveedores (M6) y sus pruebas unitarias en Jest (110 tests) han sido completadas, verificadas y testeadas con éxito mediante teamwork-preview. Se commiteó todo en la rama feat/sp8-proveedores-ui. Queda pendiente que Claude Code haga code review y mergee a main (pending-9), así como definir specs/planes para los siguientes módulos (pending-8).",
-  "ramas_feature": {
-    "feat/sp2-precio-min-max": {
-      "contenido": "SP-2 a SP-6. Revisado, rebaseado sobre main, scratch limpiado, gate de seguridad añadido.",
-      "estado": "mergeado_a_main (sesión 2026-06-16)"
-    },
-    "feat/sp8-proveedores": {
-      "head": "5564125",
-      "base": "main (5d09e27)",
-      "contenido": "Proveedores M6 (lib/proveedores.ts, e2e tests, migración ms1_db_triggers). Construido en paralelo, NO encima de SP-2..SP-6.",
-      "estado": "mergeado_a_main (2026-06-16). Antigravity la rebaseó sobre main y limpió el smoke_test de la raíz; Claude Code revisó, corrigió un fix de seguridad (fuga de deuda) y mergeó."
-    },
-    "feat/sp8-proveedores-ui": {
-      "contenido": "UI del Módulo de Proveedores (M6) en React Native/Expo (pantallas, layout, permisos y pruebas unitarias con Jest).",
-      "estado": "completado_esperando_merge"
-    }
+  "modelo_de_trabajo": "agente-unico-antigravity",
+  "rama_activa": "main",
+  "ultimo_agente": "claude-code",
+  "fecha_estado": "2026-06-16",
+  "handoff": "2026-06-16 — Traspaso a AGENTE ÚNICO (Antigravity). A partir de ahora Antigravity asume el ciclo completo: specs/planes, build, migraciones SQL/RLS/RPC (aplicar al remoto + regenerar lib/database.types.ts + smoke tests), autorevisión, merge a main (--no-ff) y push, y mantener este archivo. Ver AGENTS.md §5 (rol único + checklist obligatorio antes de cada merge). ESTADO: main está sano, sincronizado con origin/main, con SP-1..SP-6 + Proveedores M6 (backend + UI) ya integrados y verificados (tsc 0, 116 tests). El Supabase remoto está al día y registrado. No hay trabajo a medio mergear. Lo que sigue: definir specs y construir los módulos faltantes (ver 'roadmap').",
+  "estado_global": {
+    "main_sincronizado_con_origin": true,
+    "remoto_supabase": "xqspsaghukeynlizbjvc — migraciones al día y registradas (SP-1..SP-6 + ms1 + gate de rol)",
+    "verificacion": "tsc --noEmit 0 errores; npm test 116 verdes (4 suites)",
+    "tipos": "lib/database.types.ts incluye compra_pagos y obtener_deuda_proveedor; sin `as any` de esos en lib/proveedores.ts"
   },
-  "sp_completados": ["SP-1", "SP-2", "SP-3", "SP-4", "SP-5", "SP-6"],
-  "sp_pendientes": ["SP-7", "SP-8", "SP-9"],
+  "sp_completados": ["SP-1", "SP-2", "SP-3", "SP-4", "SP-5", "SP-6", "SP-8(Proveedores M6)"],
+  "sp_pendientes": ["SP-7", "SP-8(Empleados M8)", "SP-9"],
   "estado_sp": {
-    "SP-1": {
-      "modulos": "Roles/permisos/RLS/auditoría base (3 roles dueno/admin/empleado, seed de Sandra)",
-      "estado": "mergeado_a_main",
-      "spec": "docs/superpowers/specs/2026-06-14-sp1-roles-permisos-rls-design.md",
-      "plan": "docs/superpowers/plans/2026-06-14-sp1-roles-permisos-rls.md"
-    },
-    "SP-2": {
-      "modulos": "Nueva Venta: Granja sin stock + precio mín/máx (regateo)",
-      "estado": "mergeado_a_main",
-      "spec": "docs/superpowers/specs/2026-06-15-sp2-granja-precio-min-max-design.md",
-      "plan": "docs/superpowers/plans/2026-06-15-sp2-granja-precio-min-max.md"
-    },
-    "SP-3": {
-      "modulos": "Módulos 3 y 4 — Inventario de Calzado y Granja (pantallas de gestión)",
-      "estado": "mergeado_a_main (incluye fix de seguridad: gate de rol en guardar_producto_calzado)",
-      "spec": "docs/superpowers/specs/2026-06-15-sp3-inventario-design.md",
-      "plan": "docs/superpowers/plans/2026-06-15-sp3-inventario.md"
-    },
-    "SP-4": {
-      "modulos": "Módulo 7 — Caja (cierre manual)",
-      "estado": "mergeado_a_main",
-      "spec": "docs/superpowers/specs/2026-06-15-sp4-caja-design.md",
-      "plan": "docs/superpowers/plans/2026-06-15-sp4-caja.md"
-    },
-    "SP-5": {
-      "modulos": "Módulo 15 — Carga Inicial del Inventario (plantilla Excel, fase 1). Sin migración propia (cliente: expo-document-picker + xlsx).",
-      "estado": "mergeado_a_main",
-      "spec": "docs/superpowers/specs/2026-06-15-sp5-carga-inicial-design.md",
-      "plan": "docs/superpowers/plans/2026-06-15-sp5-carga-inicial.md"
-    },
-    "SP-6": {
-      "modulos": "Módulos 9 y 10 — Gastos Fijos y Gastos Variables",
-      "estado": "mergeado_a_main",
-      "spec": "docs/superpowers/specs/2026-06-15-sp6-gastos-design.md",
-      "plan": "docs/superpowers/plans/2026-06-15-sp6-gastos.md"
-    },
-    "SP-7": { "modulos": "Sin spec aún. Candidatos: Devoluciones (M2) + Recibir Mercancía (M5)", "estado": "sin_spec" },
-    "SP-8": { "modulos": "Proveedores (M6, backend en main, UI en feat/sp8-proveedores-ui) + Gestión Empleados (M8, pendiente)", "estado": "parcial_mergeado (Proveedores backend y UI listos; Empleados sin construir)" },
-    "SP-9": { "modulos": "Sin spec aún. Candidatos: Balance (M11) + Reportes/Dashboard (M12) + Reportes Automáticos (M13) + Análisis IA (M14)", "estado": "sin_spec" }
+    "SP-1": { "modulos": "Roles/permisos/RLS/auditoría base (3 roles dueno/admin/empleado, seed de Sandra)", "estado": "mergeado_a_main" },
+    "SP-2": { "modulos": "Nueva Venta: Granja sin stock + precio mín/máx (regateo)", "estado": "mergeado_a_main" },
+    "SP-3": { "modulos": "Inventario de Calzado y Granja (M3, M4) — pantallas de gestión + gate de rol en guardar_producto_calzado", "estado": "mergeado_a_main" },
+    "SP-4": { "modulos": "Caja, cierre manual (M7)", "estado": "mergeado_a_main" },
+    "SP-5": { "modulos": "Carga Inicial del Inventario, plantilla Excel (M15, fase 1)", "estado": "mergeado_a_main" },
+    "SP-6": { "modulos": "Gastos Fijos y Variables (M9, M10)", "estado": "mergeado_a_main" },
+    "SP-7": { "modulos": "Devoluciones (M2) + Recibir Mercancía (M5)", "estado": "sin_spec" },
+    "SP-8": { "modulos": "Proveedores (M6) MERGEADO (backend ms1 + lib + UI). Falta Gestión de Empleados (M8) — OJO: las tablas empleado_config / empleado_dias_trabajados / empleado_pagos YA existen en el esquema remoto.", "estado": "parcial: Proveedores listo; Empleados sin construir" },
+    "SP-9": { "modulos": "Balance (M11) + Reportes/Dashboard (M12) + Reportes Automáticos (M13) + Análisis IA (M14)", "estado": "sin_spec" }
   },
-  "tareas_pendientes": [
-    {
-      "id": "pending-1",
-      "descripcion": "Code review + merge de feat/sp2-precio-min-max (SP-2..SP-6) a main.",
-      "asignado_a": "claude-code",
-      "estado": "completado"
-    },
-    {
-      "id": "pending-2",
-      "descripcion": "Aplicar migraciones al Supabase remoto. COMPLETADO 2026-06-16: se descubrió que SP-2..SP-6 ya estaban aplicadas out-of-band (sin registrar); se aplicaron ms1_db_triggers y sp3_storage_productos (faltantes) y se reconciliaron/registraron las 4 ya-vivas + el gate de rol. list_migrations completo. Verificado con smoke tests.",
-      "asignado_a": "claude-code",
-      "estado": "completado"
-    },
-    {
-      "id": "pending-3",
-      "descripcion": "Regenerar lib/database.types.ts contra el esquema final. AHORA ACTIVO: Proveedores usa `from('compra_pagos' as any)` porque database.types.ts aún no incluye la tabla compra_pagos ni obtener_deuda_proveedor (añadidas por ms1). Regenerar tipos y quitar los `as any` de lib/proveedores.ts. Confirmar tsc 0 y npm test verde.",
-      "asignado_a": "claude-code",
-      "estado": "completado"
-    },
-    {
-      "id": "pending-4",
-      "descripcion": "Limpiar scratch antes del merge (payload_smoke.json, smoke_test.sql, supabase/.temp/, etc.) y ampliar .gitignore.",
-      "asignado_a": "claude-code",
-      "estado": "completado"
-    },
-    {
-      "id": "pending-5",
-      "descripcion": "WIP de Proveedores commiteado por antigravity en feat/sp8-proveedores (commit 5564125).",
-      "asignado_a": "antigravity",
-      "estado": "completado"
-    },
-    {
-      "id": "pending-6",
-      "descripcion": "Corregir 'Don Carlos' -> 'Andrés Artunduaga' en specs SP-3..SP-6. (Nota: el spec 2026-06-14-nueva-venta-design.md también tiene el error — pendiente aparte.)",
-      "asignado_a": "claude-code",
-      "estado": "completado"
-    },
-    {
-      "id": "pending-7",
-      "descripcion": "Revisar y mergear feat/sp8-proveedores (M6 Proveedores) a main. COMPLETADO 2026-06-16: code review + fix de seguridad (obtenerDeudaProveedor ya no filtra deuda vía fallback) + merge --no-ff (465f21b). 96 tests verdes, tsc 0. PENDIENTE asociado: construir la UI de Proveedores (pantallas app/) — lib/proveedores.ts existe pero no hay pantallas todavía.",
-      "asignado_a": "claude-code",
-      "estado": "completado"
-    },
-    {
-      "id": "pending-8",
-      "descripcion": "Definir specs y planes de SP-7/SP-8(empleados)/SP-9 (brainstorming -> writing-plans): Devoluciones (M2), Recibir Mercancía (M5), Gestión Empleados (M8), Balance (M11), Reportes y Dashboard (M12), Reportes Automáticos (M13), Análisis IA (M14).",
-      "asignado_a": "claude-code",
-      "estado": "pendiente"
-    },
-    {
-      "id": "pending-9",
-      "descripcion": "Code review + merge de feat/sp8-proveedores-ui (UI de M6 Proveedores, pantallas, layout, permisos, tests Jest) a main.",
-      "asignado_a": "claude-code",
-      "estado": "pendiente"
-    }
+  "roadmap": [
+    { "orden": 1, "modulo": "Recibir Mercancía (M5)", "nota": "El backend del flujo de compras ya existe en lib/proveedores.ts (registrarLlegadaFisica, completarInformacionFinanciera, registrarCompraDirecta) y los triggers de stock están vivos. Mayormente UI + 'crear producto sin salir del flujo'. Bajo riesgo, alto valor.", "asignado_a": "antigravity" },
+    { "orden": 2, "modulo": "Devoluciones (M2)", "nota": "Necesidad diaria. Requiere ESQUEMA NUEVO: tabla devoluciones + RPC atómico que restituya stock de calzado (Granja no), no permita devolver más de lo vendido, y audite. Diseñar spec+plan primero.", "asignado_a": "antigravity" },
+    { "orden": 3, "modulo": "Gestión de Empleados (M8)", "nota": "Solo dueño. Las tablas ya existen en el remoto (empleado_config/dias_trabajados/pagos); revisar/ajustar su RLS (owner-only) y construir UI. Pagos a empleados = finanzas (solo Andrés).", "asignado_a": "antigravity" },
+    { "orden": 4, "modulo": "SP-9: Balance (M11) → Reportes/Dashboard (M12) → Reportes Automáticos (M13) → Análisis IA (M14)", "nota": "Lo más complejo; se beneficia de datos acumulados. Balance consume ventas+gastos+compras (ya completos). Reportes Automáticos y Análisis IA requieren infra de notificaciones (Edge Functions) y 3+ meses de datos respectivamente.", "asignado_a": "antigravity" }
   ],
-  "notas": "Actualizado 2026-06-16 (Antigravity). UI de Proveedores completada y testeada con éxito mediante el flujo teamwork-preview. Se creó la rama feat/sp8-proveedores-ui con los cambios y se deja listo para que Claude Code haga code review y mergee a main. 110 tests verdes (incluyendo 40 nuevos test de componentes en app/proveedores.test.tsx), tsc 0."
+  "deuda_tecnica_menor": [
+    "lib/proveedores.ts: 2 `as any` en `.insert(itemsToInsert as any)` (compra_items) — tipar cuando convenga.",
+    "Compresión de fotos a ≤500KB (regla del PRD) no garantizada (resize 1080 + compress 0.7) en lib/imagenes.ts y lib/gastos.ts.",
+    "Interpolación de búsqueda en filtros .or() de PostgREST (listarProveedores, buscarProductos, listarCalzado): escapar o usar textSearch.",
+    "lib/storage.ts centraliza la lectura de archivos locales; lib/excel.ts aún tiene su propia copia del lector XHR (DRY opcional).",
+    "Spec docs/superpowers/specs/2026-06-14-nueva-venta-design.md llama 'Don Carlos' al dueño y 'empleado' a Andrés (corregir)."
+  ],
+  "historial_pendientes_cerrados": "pending-1..pending-9 completados en la sesión 2026-06-16 (merge SP-2..SP-6, aplicación/reconciliación de migraciones, regeneración de tipos, limpieza de scratch, corrección de nombres, merge de Proveedores backend+UI, y fix de subida de fotos Blob->bytes en lib/storage.ts).",
+  "notas": "Estado final del traspaso (Claude Code, 2026-06-16). main = sano y pusheado; remoto al día. Antigravity continúa como agente único siguiendo AGENTS.md §5 y este roadmap. Fuente de verdad del producto: docs/Venus_PRD_v4.0.md. Convenciones: CLAUDE.md."
 }

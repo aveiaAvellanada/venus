@@ -118,34 +118,41 @@ deudas con proveedores y gestión de usuarios). Sandra es el nivel intermedio
 
 ---
 
-## 5. División de roles entre agentes
+## 5. Flujo de trabajo (agente único: Antigravity)
 
-Venus se construye con dos agentes que se reparten el trabajo. **Respeta esta
-división**: evita pisar el trabajo del otro y deja el estado en
-`openspec/changes/tasks.json`.
+Desde el 2026-06-16 el proyecto lo lleva **un solo agente: Antigravity CLI** (con
+su herramienta de agentes / teamwork). Asume el **ciclo completo**. El estado vivo
+está en `openspec/changes/tasks.json`: **léelo al empezar y actualízalo al terminar**
+(`rama_activa`, `ultimo_agente`, `sp_completados`, `sp_pendientes`, `tareas_pendientes`).
 
-### 🛠️ Antigravity CLI — Constructor principal
-- Implementa los módulos: UI (pantallas `app/`), lógica de datos (`lib/`), hooks,
-  componentes, **tests** (jest), y **commits** por tarea siguiendo el plan.
-- Trabaja sobre la rama de feature activa (no sobre `main`).
-- Sigue los planes en `docs/superpowers/plans/` paso a paso; marca cada tarea `[x]`.
-- **No** mergea a `main` ni decide arquitectura/esquema por su cuenta: si una tarea
-  exige un cambio de esquema o una decisión de diseño nueva, lo deja anotado en
-  `tasks.json` para Claude Code.
+Antigravity es responsable de todo:
+- **Diseño:** escribe **specs** en `docs/superpowers/specs/` y **planes** en
+  `docs/superpowers/plans/` antes de construir (brainstorming → plan → build).
+- **Construcción:** UI (`app/`), lógica de datos (`lib/`), hooks, componentes y
+  **tests** (jest). Un commit por tarea; marca cada tarea `[x]` en su plan.
+- **Base de datos:** es el dueño de las **migraciones SQL / RLS / RPC**. Las crea en
+  `supabase/migrations/` (timestamp creciente, `drop ... if exists`), las **aplica al
+  Supabase remoto** (`xqspsaghukeynlizbjvc`) vía el MCP de Supabase (o el CLI),
+  **regenera `lib/database.types.ts`** y corre **smoke tests SQL** (centinela
+  `*_OK_ROLLBACK`, en transacción con `rollback`).
+- **Integración:** trabaja en rama de feature, se **autorevisa**, **mergea a `main`**
+  con `--no-ff` y hace `push`.
+- **Estado:** mantiene `tasks.json` y los sub-proyectos (SP-N).
 
-### 🧭 Claude Code — Supervisor estratégico
-- Escribe **specs** (`docs/superpowers/specs/`) y **planes** (`docs/superpowers/plans/`)
-  vía brainstorming → writing-plans antes de construir.
-- Es el dueño de las **migraciones SQL / RLS / RPC** y de **aplicarlas** al Supabase
-  remoto (MCP `apply_migration`), regenerar `lib/database.types.ts`, y de los
-  smoke tests SQL (centinela `*_OK_ROLLBACK`).
-- Hace **code review** del trabajo del constructor y decide el **merge a `main`**
-  (con `--no-ff`) y el `push`.
-- Mantiene `tasks.json` y el estado de los sub-proyectos (SP-N).
+### Checklist obligatorio antes de CADA merge a `main`
+1. `npx tsc --noEmit` → **0 errores**.
+2. `npm test` → **verde**.
+3. Si tocó el esquema: migración aplicada al remoto + smoke test SQL `*_OK_ROLLBACK`
+   + `lib/database.types.ts` regenerado.
+4. Sin scratch en el árbol (`supabase/.temp/`, `smoke_test*.sql`, `payload_smoke.json`,
+   `coverage/`, `PROJECT.md`, `TEST_*.md` — ya en `.gitignore`).
+5. **RLS es la frontera de seguridad real:** finanzas/costos/márgenes/**deuda de
+   proveedores**/pagos a empleados se gatean al **dueño** tanto en RLS/RPC como en UI;
+   nunca confíes solo en el gating de la UI.
 
-**Handoff:** el estado vivo está en `openspec/changes/tasks.json`
-(`rama_activa`, `ultimo_agente`, `sp_completados`, `sp_pendientes`,
-`tareas_pendientes`). Léelo al empezar y actualízalo al terminar.
+> ⚠️ Al no haber un segundo revisor, **extrema el rigor**: tests + smoke + lectura del
+> propio diff antes de mergear. Considera correr una revisión asistida (p. ej.
+> `/code-review`) de vez en cuando.
 
 ---
 

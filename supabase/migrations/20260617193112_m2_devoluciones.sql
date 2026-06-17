@@ -20,7 +20,7 @@ create table public.devoluciones (
   motivo           text not null,
   tipo_devolucion  text not null check (tipo_devolucion in ('total','parcial','cambio')),
   monto_devuelto   numeric(12,2) not null default 0.00 check (monto_devuelto >= 0.00),
-  metodo_reembolso text check (metodo_reembolso in ('efectivo','nequi','daviplata','cambio')),
+  metodo_reembolso text check (metodo_reembolso in ('efectivo','nequi','daviplata')),
   monto_cobrado    numeric(12,2) not null default 0.00 check (monto_cobrado >= 0.00),
   metodo_cobro     text check (metodo_cobro in ('efectivo','nequi','daviplata')),
   created_at       timestamptz not null default now(),
@@ -275,6 +275,11 @@ revoke all on function public.registrar_devolucion(uuid, text, text, text, text,
 grant execute on function public.registrar_devolucion(uuid, text, text, text, text, numeric, numeric, jsonb) to authenticated;
 
 -- 9. obtener_resumen_dia: resta reembolsos, suma cobros, incluye ventas devueltas/cambiadas
+--    SEMÁNTICA DE CAJA (intencional): las devoluciones se netean por SU fecha
+--    (created_at de la devolución), no por la fecha de la venta original. Es el flujo
+--    de caja del día: "qué dinero entró/salió hoy". Por eso un reembolso de una venta
+--    de ayer reduce el efectivo de HOY, y total_general del día puede quedar negativo si
+--    los reembolsos del día superan las ventas del día. Caja (M7) consume este resumen.
 create or replace function public.obtener_resumen_dia(p_fecha date)
 returns json
 language plpgsql

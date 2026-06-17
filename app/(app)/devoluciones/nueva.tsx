@@ -99,6 +99,14 @@ export default function NuevaDevolucionScreen() {
           setCargando(false)
           return
         }
+        // Solo se admiten devoluciones sobre ventas vigentes; las terminales
+        // (devuelta_total/cambiada_total/cancelada) o separadas las rechazaría el RPC.
+        const estadosPermitidos = ['completada', 'devuelta_parcial', 'cambiada_parcial']
+        if (!estadosPermitidos.includes(data.estado)) {
+          setErrorCarga(`Esta venta no admite devoluciones (estado: ${data.estado}).`)
+          setCargando(false)
+          return
+        }
         setVenta(data)
         // Inicializar estado de items: para 'total' usamos el disponible completo
         setEstadoItems(
@@ -426,7 +434,9 @@ export default function NuevaDevolucionScreen() {
   const puedeConfirmar =
     !enviando &&
     motivo.trim().length > 0 &&
-    itemsConCantidad.length > 0
+    itemsConCantidad.length > 0 &&
+    (neto.monto_devuelto === 0 || metodoReembolso !== null) &&
+    (neto.monto_cobrado === 0 || metodoCobro !== null)
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (

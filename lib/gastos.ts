@@ -1,6 +1,7 @@
 import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from './supabase';
 import { Database } from './database.types';
+import { bytesDesdeUriLocal } from './storage';
 
 type GastoVariableRow = Database['public']['Tables']['gastos_variables']['Row'];
 type GastoVariableInsert = Database['public']['Tables']['gastos_variables']['Insert'];
@@ -17,13 +18,13 @@ export async function comprimirYSubirComprobante(uri: string): Promise<string> {
   );
 
   const nombreArchivo = `${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-  
-  const response = await fetch(manipulada.uri);
-  const blob = await response.blob();
+  // En RN el file:// solo se lee fiable como Blob, pero subir un Blob falla;
+  // convertimos a bytes y subimos esos bytes (ver lib/storage.ts).
+  const bytes = await bytesDesdeUriLocal(manipulada.uri);
 
   const { data, error } = await supabase.storage
     .from('comprobantes')
-    .upload(nombreArchivo, blob, {
+    .upload(nombreArchivo, bytes, {
       contentType: 'image/jpeg',
     });
 

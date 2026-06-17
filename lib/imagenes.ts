@@ -1,5 +1,6 @@
 import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from './supabase';
+import { bytesDesdeUriLocal } from './storage';
 
 export async function comprimirYSubirImagen(uri: string): Promise<string> {
   // Comprimir y redimensionar la imagen
@@ -12,14 +13,16 @@ export async function comprimirYSubirImagen(uri: string): Promise<string> {
   // Generar un nombre único para el archivo
   const nombreArchivo = `${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
 
-  // Convertir uri a blob para la subida
-  const response = await fetch(manipulada.uri);
-  const blob = await response.blob();
+  // En React Native el file:// solo se lee fiable como Blob (XHR responseType
+  // 'blob'); 'arraybuffer' falla y fetch() también. Pero subir un Blob a
+  // Supabase produce "Network request failed", así que convertimos el Blob a
+  // bytes (base64 vía FileReader -> Uint8Array) y subimos esos bytes.
+  const bytes = await bytesDesdeUriLocal(manipulada.uri);
 
   // Subir a Supabase Storage
   const { data, error } = await supabase.storage
     .from('productos')
-    .upload(nombreArchivo, blob, {
+    .upload(nombreArchivo, bytes, {
       contentType: 'image/jpeg',
     });
 

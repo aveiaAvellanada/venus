@@ -45,6 +45,34 @@ describe('permisos', () => {
     expect(MODULOS.find(m => m.id === 'ventas')?.ruta).toBe('/ventas')
   })
 
+  test('proveedores conserva su ruta dedicada', () => {
+    expect(MODULOS.find(m => m.id === 'proveedores')?.ruta).toBe('/proveedores')
+  })
+
+  test('caja conserva su ruta dedicada', () => {
+    expect(MODULOS.find(m => m.id === 'caja')?.ruta).toBe('/caja')
+  })
+
+  test('inventario-calzado conserva su ruta dedicada', () => {
+    expect(MODULOS.find(m => m.id === 'inventario-calzado')?.ruta).toBe('/inventario/calzado')
+  })
+
+  test('granja conserva su ruta dedicada', () => {
+    expect(MODULOS.find(m => m.id === 'granja')?.ruta).toBe('/inventario/granja')
+  })
+
+  test('gastos-variables conserva su ruta dedicada', () => {
+    expect(MODULOS.find(m => m.id === 'gastos-variables')?.ruta).toBe('/gastos')
+  })
+
+  test('gastos-fijos conserva su ruta dedicada', () => {
+    expect(MODULOS.find(m => m.id === 'gastos-fijos')?.ruta).toBe('/gastos/fijos')
+  })
+
+  test('carga-inicial conserva su ruta dedicada', () => {
+    expect(MODULOS.find(m => m.id === 'carga-inicial')?.ruta).toBe('/inventario/carga')
+  })
+
   test('no hay ids de módulo duplicados', () => {
     const ids = MODULOS.map(m => m.id)
     expect(new Set(ids).size).toBe(ids.length)

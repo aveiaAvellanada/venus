@@ -117,8 +117,9 @@ export default function EmpleadoDetalleScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      cargarDatos()
-    }, [cargarDatos])
+      // No disparar peticiones si el rol no tiene acceso (el guard redirige abajo).
+      if (!requireModulo) cargarDatos()
+    }, [cargarDatos, requireModulo])
   )
 
   // ─── Guard de módulo ───────────────────────────────────────────────────────
@@ -152,6 +153,11 @@ export default function EmpleadoDetalleScreen() {
         Alert.alert('Validación', 'La fecha de inicio debe tener el formato AAAA-MM-DD.')
         return
       }
+      const d = new Date(fechaInicioParsed + 'T00:00:00')
+      if (isNaN(d.getTime())) {
+        Alert.alert('Validación', 'La fecha de inicio no es una fecha válida.')
+        return
+      }
     }
 
     try {
@@ -179,7 +185,7 @@ export default function EmpleadoDetalleScreen() {
     const titulo = nuevoActivo ? 'Activar empleado' : 'Desactivar empleado'
     const mensaje = nuevoActivo
       ? `¿Activar a ${empleado.nombre}? Podrá iniciar sesión nuevamente.`
-      : `¿Desactivar a ${empleado.nombre}? El empleado no podrá iniciar sesión.`
+      : `¿Desactivar a ${empleado.nombre}? No podrá iniciar sesión la próxima vez (si tiene una sesión abierta, expirará en breve).`
 
     Alert.alert(titulo, mensaje, [
       { text: 'Cancelar', style: 'cancel' },

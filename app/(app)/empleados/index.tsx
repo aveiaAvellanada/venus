@@ -62,8 +62,9 @@ export default function EmpleadosIndex() {
 
   useFocusEffect(
     useCallback(() => {
-      cargarDatos()
-    }, [cargarDatos])
+      // No disparar peticiones si el rol no tiene acceso (el guard redirige abajo).
+      if (!requireModulo) cargarDatos()
+    }, [cargarDatos, requireModulo])
   )
 
   const onRefresh = () => {

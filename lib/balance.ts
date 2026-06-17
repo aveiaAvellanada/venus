@@ -1,3 +1,23 @@
+import { supabase } from './supabase'
+
+export type Balance = {
+  ingresos: {
+    efectivo: number; nequi: number; daviplata: number
+    reembolsos: number; cobros_cambios: number; total_neto: number
+  }
+  egresos: {
+    gastos_fijos: number; gastos_variables: number
+    pagos_proveedores: number; sueldos: number; total: number
+  }
+  balance: number
+}
+
+export async function obtenerBalance(desde: string, hasta: string): Promise<Balance> {
+  const { data, error } = await supabase.rpc('obtener_balance', { p_desde: desde, p_hasta: hasta })
+  if (error) throw error
+  return data as unknown as Balance
+}
+
 function toISO(d: Date): string {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')

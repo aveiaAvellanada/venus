@@ -2,18 +2,18 @@
   "proyecto": "Venus",
   "modelo_de_trabajo": "agente-unico-antigravity",
   "regla_global_protocolo_sesion": "OBLIGATORIO (ver AGENTS.md §8). INICIO: leer claude-mem + tasks.json + AGENTS.md antes de tocar nada. DURANTE: guardar observación en claude-mem al completar una tarea, tomar una decisión de diseño, encontrar un bug, o cuando la sesión esté por acabar. FIN: guardar en claude-mem el estado exacto (qué se hizo, en qué tarea iba, qué falta) y commitear + push antes de parar.",
-  "rama_activa": "feat/m2-devoluciones",
+  "rama_activa": "main",
   "ultimo_agente": "claude-code",
   "fecha_estado": "2026-06-17",
   "handoff": "2026-06-16 — Traspaso a AGENTE ÚNICO (Antigravity). A partir de ahora Antigravity asume el ciclo completo: specs/planes, build, migraciones SQL/RLS/RPC (aplicar al remoto + regenerar lib/database.types.ts + smoke tests), autorevisión, merge a main (--no-ff) y push, y mantener este archivo. Ver AGENTS.md §5 (rol único + checklist obligatorio antes de cada merge). ESTADO: main está sano, sincronizado con origin/main, con SP-1..SP-6 + Proveedores M6 (backend + UI) ya integrados y verificados (tsc 0, 116 tests). El Supabase remoto está al día y registrado. No hay trabajo a medio mergear. Lo que sigue: definir specs y construir los módulos faltantes (ver 'roadmap').",
   "estado_global": {
     "main_sincronizado_con_origin": true,
-    "remoto_supabase": "xqspsaghukeynlizbjvc — migraciones al día y registradas (SP-1..SP-6 + ms1 + gate de rol)",
-    "verificacion": "tsc --noEmit 0 errores; npm test 116 verdes (4 suites)",
-    "tipos": "lib/database.types.ts incluye compra_pagos y obtener_deuda_proveedor; sin `as any` de esos en lib/proveedores.ts"
+    "remoto_supabase": "xqspsaghukeynlizbjvc — migraciones al día y registradas (SP-1..SP-6 + ms1 + gate de rol + 20260617193112_m2_devoluciones)",
+    "verificacion": "tsc --noEmit 0 errores; npm test 153 verdes (7 suites)",
+    "tipos": "lib/database.types.ts regenerado con devoluciones/devolucion_items/registrar_devolucion (monto_cobrado/metodo_cobro)"
   },
-  "sp_completados": ["SP-1", "SP-2", "SP-3", "SP-4", "SP-5", "SP-6", "SP-8(Proveedores M6)"],
-  "sp_pendientes": ["SP-7", "SP-8(Empleados M8)", "SP-9"],
+  "sp_completados": ["SP-1", "SP-2", "SP-3", "SP-4", "SP-5", "SP-6", "SP-7(M2 Devoluciones + M5 Recibir Mercancía)", "SP-8(Proveedores M6)"],
+  "sp_pendientes": ["SP-8(Empleados M8)", "SP-9"],
   "estado_sp": {
     "SP-1": { "modulos": "Roles/permisos/RLS/auditoría base (3 roles dueno/admin/empleado, seed de Sandra)", "estado": "mergeado_a_main" },
     "SP-2": { "modulos": "Nueva Venta: Granja sin stock + precio mín/máx (regateo)", "estado": "mergeado_a_main" },
@@ -21,7 +21,7 @@
     "SP-4": { "modulos": "Caja, cierre manual (M7)", "estado": "mergeado_a_main" },
     "SP-5": { "modulos": "Carga Inicial del Inventario, plantilla Excel (M15, fase 1)", "estado": "mergeado_a_main" },
     "SP-6": { "modulos": "Gastos Fijos y Variables (M9, M10)", "estado": "mergeado_a_main" },
-    "SP-7": { "modulos": "Devoluciones (M2) + Recibir Mercancía (M5)", "estado": "M5 mergeado a main (13ab7be). M2 CONSTRUIDO en rama feat/m2-devoluciones (sin mergear, espera decisión humana): migración aplicada al remoto (20260617193112_m2_devoluciones), RPC registrar_devolucion con diferencia de precio en cambios + estado cambiada/devuelta, obtener_resumen_dia netea devoluciones (Caja M7 verificada compatible), lib/devoluciones.ts (lógica pura + datos), UI app/(app)/devoluciones/{_layout,index,nueva}. Verificado: tsc 0, npm test 153 (7 suites), smoke verde, probe de atomicidad OK. 2 bugs hallados y corregidos en el camino (drop trigger pre-tabla; import supabase rompía test puro). Falta: code review final + merge --no-ff aprobado por humano." },
+    "SP-7": { "modulos": "Devoluciones (M2) + Recibir Mercancía (M5)", "estado": "MERGEADO a main. M5 en 13ab7be; M2 en 18cd8f7 (merge --no-ff de feat/m2-devoluciones). M2: migración 20260617193112_m2_devoluciones aplicada al remoto, RPC registrar_devolucion (cambios con diferencia de precio + estado cambiada/devuelta), obtener_resumen_dia netea devoluciones POR FECHA DE LA VENTA (decisión de producto), lib/devoluciones.ts + UI app/(app)/devoluciones. Verificado: tsc 0, npm test 153 (7 suites), smoke verde, atomicidad OK, Caja M7 compatible. Code review final: 0 críticos, 4 Important atendidos." },
     "SP-8": { "modulos": "Proveedores (M6) MERGEADO (backend ms1 + lib + UI). Falta Gestión de Empleados (M8) — OJO: las tablas empleado_config / empleado_dias_trabajados / empleado_pagos YA existen en el esquema remoto.", "estado": "parcial: Proveedores listo; Empleados sin construir" },
     "SP-9": { "modulos": "Balance (M11) + Reportes/Dashboard (M12) + Reportes Automáticos (M13) + Análisis IA (M14)", "estado": "sin_spec" }
   },

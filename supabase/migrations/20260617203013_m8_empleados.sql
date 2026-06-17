@@ -24,7 +24,7 @@ create trigger trg_empleado_dias_registrado_por
   before insert on public.empleado_dias_trabajados
   for each row execute function private.set_registrado_por();
 
--- 2. RPC: días trabajados del mes (ventas ∪ cierres ∪ manuales 'trabajado') − 'ausente'
+-- 2. RPC: días trabajados del mes (ventas ∪ cierres ∪ manuales 'trabajado'/'adicional') − 'ausencia'
 create or replace function public.obtener_dias_trabajados(
   p_empleado_id uuid, p_anio int, p_mes int
 ) returns int

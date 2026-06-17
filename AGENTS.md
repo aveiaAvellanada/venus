@@ -150,9 +150,34 @@ Antigravity es responsable de todo:
    proveedores**/pagos a empleados se gatean al **dueño** tanto en RLS/RPC como en UI;
    nunca confíes solo en el gating de la UI.
 
-> ⚠️ Al no haber un segundo revisor, **extrema el rigor**: tests + smoke + lectura del
-> propio diff antes de mergear. Considera correr una revisión asistida (p. ej.
-> `/code-review`) de vez en cuando.
+> ⚠️ Sin un segundo revisor humano, **extrema el rigor**: tests + smoke + lectura del
+> propio diff antes de mergear. En modo teamwork, usa el subagente verificador como
+> ese segundo par de ojos (ver abajo).
+
+### 5.1 Modo teamwork (multi-agente, Antigravity 2.0 `/teamwork-preview`)
+
+Se puede paralelizar el trabajo (hasta 5 subagentes + Manager View + un subagente
+**verificador con memoria** que corre la UI). En Venus conviene, **con estas reglas
+para no romper la integridad**:
+
+- **Un SP a la vez.** Paraleliza **dentro** de un módulo (varias pantallas, capa de
+  datos, tests), **no** varios módulos en paralelo sobre `main`.
+- **La base de datos es un recurso SERIAL.** Un único subagente (o el orquestador) es
+  dueño de migraciones/RLS/RPC y las aplica de a una. **Nunca** dos agentes tocando el
+  esquema a la vez (rompe `schema_migrations` y la RLS). El esquema va **primero**; las
+  pantallas se construyen sobre el esquema ya aplicado.
+- **Un único integrador** posee el merge a `main`: los subagentes trabajan en una rama
+  de feature compartida (o sub-ramas) y se integran en orden, corriendo el checklist
+  pre-merge **una sola vez** al final.
+- **El subagente verificador es un check obligatorio:** valida la UI en Expo y, sobre
+  todo, que la información financiera (costos/deuda/pagos) **no se muestre a empleados**.
+  (Este rol habría cazado el bug de subida de fotos que los unit tests no vieron.)
+- En los planes, **marca cada tarea como `serial` o `paralela`** (esquema/migración =
+  serial y primero; pantallas = paralelas; verificación = continua).
+
+> Antigravity opera de forma **autónoma**: se autorevisa y decide sus merges. Solo
+> consulta al humano ante una **decisión de producto** o un **bloqueo real**, no para
+> aprobaciones de rutina.
 
 ---
 

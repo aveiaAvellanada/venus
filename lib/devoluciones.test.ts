@@ -1,3 +1,8 @@
+// lib/devoluciones.ts importa el cliente supabase (para el acceso a datos); en jest
+// eso intenta inicializar AsyncStorage y falla. Estas pruebas son de lógica pura, así
+// que mockeamos el cliente (igual que recibir_mercancia/proveedores_e2e).
+jest.mock('./supabase', () => ({ supabase: {} }))
+
 import { calcularDiferenciaCambio, netearDevolucion, validarCantidades } from './devoluciones'
 
 describe('calcularDiferenciaCambio', () => {

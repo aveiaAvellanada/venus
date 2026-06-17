@@ -8,11 +8,8 @@ alter table public.ventas add constraint ventas_estado_check
                     'devuelta_parcial','devuelta_total',
                     'cambiada_parcial','cambiada_total'));
 
--- 2. Idempotencia
-drop trigger if exists trg_devoluciones_audit on public.devoluciones;
-drop trigger if exists trg_devoluciones_updated_at on public.devoluciones;
-drop trigger if exists trg_devolucion_items_audit on public.devolucion_items;
-drop trigger if exists trg_devolucion_items_updated_at on public.devolucion_items;
+-- 2. Idempotencia (drop table ... cascade elimina también sus triggers; no usar
+--    "drop trigger ... on <tabla>" antes de crear la tabla: falla si la tabla no existe)
 drop table if exists public.devolucion_items cascade;
 drop table if exists public.devoluciones cascade;
 

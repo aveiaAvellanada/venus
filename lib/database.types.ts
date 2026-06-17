@@ -1609,6 +1609,10 @@ export type Database = {
         Returns: string
       }
       obtener_deuda_proveedor: { Args: { p_id: string }; Returns: number }
+      obtener_dias_trabajados: {
+        Args: { p_anio: number; p_empleado_id: string; p_mes: number }
+        Returns: number
+      }
       obtener_resumen_dia: { Args: { p_fecha: string }; Returns: Json }
       registrar_devolucion: {
         Args: {

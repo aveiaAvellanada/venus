@@ -275,11 +275,10 @@ revoke all on function public.registrar_devolucion(uuid, text, text, text, text,
 grant execute on function public.registrar_devolucion(uuid, text, text, text, text, numeric, numeric, jsonb) to authenticated;
 
 -- 9. obtener_resumen_dia: resta reembolsos, suma cobros, incluye ventas devueltas/cambiadas
---    SEMÁNTICA DE CAJA (intencional): las devoluciones se netean por SU fecha
---    (created_at de la devolución), no por la fecha de la venta original. Es el flujo
---    de caja del día: "qué dinero entró/salió hoy". Por eso un reembolso de una venta
---    de ayer reduce el efectivo de HOY, y total_general del día puede quedar negativo si
---    los reembolsos del día superan las ventas del día. Caja (M7) consume este resumen.
+--    SEMÁNTICA POR FECHA DE VENTA: las devoluciones se netean contra el día de la VENTA
+--    ORIGINAL (ventas.created_at), no contra la fecha de la devolución. Así el resumen de
+--    un día refleja las ventas netas hechas ESE día (una venta totalmente devuelta queda
+--    en neto 0 en su propio día, sin importar cuándo se devolvió). Caja (M7) lo consume.
 create or replace function public.obtener_resumen_dia(p_fecha date)
 returns json
 language plpgsql
@@ -306,22 +305,23 @@ begin
   from public.metodos_pago_venta m join public.ventas v on v.id = m.venta_id
   where v.estado = any(v_estados) and (v.created_at at time zone 'America/Bogota')::date = p_fecha;
 
-  -- Restar reembolsos y sumar cobros de las devoluciones del día
+  -- Restar reembolsos y sumar cobros de las devoluciones cuya VENTA original es de p_fecha
   select
     v_total_general
-      - coalesce(sum(monto_devuelto),0) + coalesce(sum(monto_cobrado),0),
+      - coalesce(sum(d.monto_devuelto),0) + coalesce(sum(d.monto_cobrado),0),
     v_total_efectivo
-      - coalesce(sum(case when metodo_reembolso='efectivo' then monto_devuelto else 0 end),0)
-      + coalesce(sum(case when metodo_cobro='efectivo' then monto_cobrado else 0 end),0),
+      - coalesce(sum(case when d.metodo_reembolso='efectivo' then d.monto_devuelto else 0 end),0)
+      + coalesce(sum(case when d.metodo_cobro='efectivo' then d.monto_cobrado else 0 end),0),
     v_total_nequi
-      - coalesce(sum(case when metodo_reembolso='nequi' then monto_devuelto else 0 end),0)
-      + coalesce(sum(case when metodo_cobro='nequi' then monto_cobrado else 0 end),0),
+      - coalesce(sum(case when d.metodo_reembolso='nequi' then d.monto_devuelto else 0 end),0)
+      + coalesce(sum(case when d.metodo_cobro='nequi' then d.monto_cobrado else 0 end),0),
     v_total_daviplata
-      - coalesce(sum(case when metodo_reembolso='daviplata' then monto_devuelto else 0 end),0)
-      + coalesce(sum(case when metodo_cobro='daviplata' then monto_cobrado else 0 end),0)
+      - coalesce(sum(case when d.metodo_reembolso='daviplata' then d.monto_devuelto else 0 end),0)
+      + coalesce(sum(case when d.metodo_cobro='daviplata' then d.monto_cobrado else 0 end),0)
   into v_total_general, v_total_efectivo, v_total_nequi, v_total_daviplata
-  from public.devoluciones
-  where (created_at at time zone 'America/Bogota')::date = p_fecha;
+  from public.devoluciones d
+  join public.ventas v on v.id = d.venta_id
+  where (v.created_at at time zone 'America/Bogota')::date = p_fecha;
 
   return json_build_object(
     'total_ventas', v_total_ventas,

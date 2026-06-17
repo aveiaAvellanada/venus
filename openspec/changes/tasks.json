@@ -1,9 +1,10 @@
 {
   "proyecto": "Venus",
   "modelo_de_trabajo": "agente-unico-antigravity",
-  "rama_activa": "main",
+  "regla_global_protocolo_sesion": "OBLIGATORIO (ver AGENTS.md §8). INICIO: leer claude-mem + tasks.json + AGENTS.md antes de tocar nada. DURANTE: guardar observación en claude-mem al completar una tarea, tomar una decisión de diseño, encontrar un bug, o cuando la sesión esté por acabar. FIN: guardar en claude-mem el estado exacto (qué se hizo, en qué tarea iba, qué falta) y commitear + push antes de parar.",
+  "rama_activa": "feat/m2-devoluciones",
   "ultimo_agente": "claude-code",
-  "fecha_estado": "2026-06-16",
+  "fecha_estado": "2026-06-17",
   "handoff": "2026-06-16 — Traspaso a AGENTE ÚNICO (Antigravity). A partir de ahora Antigravity asume el ciclo completo: specs/planes, build, migraciones SQL/RLS/RPC (aplicar al remoto + regenerar lib/database.types.ts + smoke tests), autorevisión, merge a main (--no-ff) y push, y mantener este archivo. Ver AGENTS.md §5 (rol único + checklist obligatorio antes de cada merge). ESTADO: main está sano, sincronizado con origin/main, con SP-1..SP-6 + Proveedores M6 (backend + UI) ya integrados y verificados (tsc 0, 116 tests). El Supabase remoto está al día y registrado. No hay trabajo a medio mergear. Lo que sigue: definir specs y construir los módulos faltantes (ver 'roadmap').",
   "estado_global": {
     "main_sincronizado_con_origin": true,
@@ -20,7 +21,7 @@
     "SP-4": { "modulos": "Caja, cierre manual (M7)", "estado": "mergeado_a_main" },
     "SP-5": { "modulos": "Carga Inicial del Inventario, plantilla Excel (M15, fase 1)", "estado": "mergeado_a_main" },
     "SP-6": { "modulos": "Gastos Fijos y Variables (M9, M10)", "estado": "mergeado_a_main" },
-    "SP-7": { "modulos": "Devoluciones (M2) + Recibir Mercancía (M5)", "estado": "sin_spec" },
+    "SP-7": { "modulos": "Devoluciones (M2) + Recibir Mercancía (M5)", "estado": "M5 mergeado a main (13ab7be). M2: spec+plan listos en rama feat/m2-devoluciones (docs 2026-06-17); ejecutando Subagent-Driven empezando por la capa BD. La capa BD previa de Antigravity se reescribe (cambios con diferencia de precio + estado cambiada/devuelta) y aún no está aplicada al remoto." },
     "SP-8": { "modulos": "Proveedores (M6) MERGEADO (backend ms1 + lib + UI). Falta Gestión de Empleados (M8) — OJO: las tablas empleado_config / empleado_dias_trabajados / empleado_pagos YA existen en el esquema remoto.", "estado": "parcial: Proveedores listo; Empleados sin construir" },
     "SP-9": { "modulos": "Balance (M11) + Reportes/Dashboard (M12) + Reportes Automáticos (M13) + Análisis IA (M14)", "estado": "sin_spec" }
   },

@@ -219,5 +219,35 @@ para no romper la integridad**:
 
 ---
 
+## 8. Protocolo de sesión (OBLIGATORIO)
+
+Toda sesión de cualquier agente (Claude Code, Antigravity, etc.) sigue este protocolo.
+**No es opcional.**
+
+### 8.1 Al INICIAR la sesión — antes de tocar nada
+1. **Leer claude-mem** (la memoria persistente: contexto inyectado al inicio + buscar
+   con la skill `mem-search` / `search` lo relevante a la tarea).
+2. **Leer `openspec/changes/tasks.json`** (estado vivo: rama activa, SP en curso, pendientes).
+3. **Leer `AGENTS.md`** (este archivo) y, si aplica, `CLAUDE.md` y el spec/plan del módulo.
+
+No se escribe código, ni se aplican migraciones, ni se commitea hasta haber hecho lo anterior.
+
+### 8.2 DURANTE la sesión — guardar en claude-mem cada vez que
+Registrar una observación en claude-mem (vía la skill de memoria / `observation_add`)
+en cada uno de estos momentos:
+- **Completes una tarea** (qué quedó hecho y verificado).
+- **Tomes una decisión de diseño** (qué se decidió y por qué; alternativas descartadas).
+- **Encuentres un bug o problema** (síntoma, causa raíz si se conoce, y workaround/fix).
+- **La sesión esté por acabarse** (snapshot de estado, ver 8.3).
+
+### 8.3 Al TERMINAR la sesión — antes de parar
+1. **Guardar en claude-mem el estado exacto:** qué se hizo, en qué tarea/SP iba, qué
+   falta, y cualquier bloqueo o decisión pendiente. (Mantener también `tasks.json`
+   actualizado: `rama_activa`, `ultimo_agente`, `sp_*`, `tareas_pendientes`.)
+2. **Commitear y hacer push** del trabajo antes de detenerse (en la rama de feature; el
+   merge a `main` sigue las reglas de §5). Nunca terminar con trabajo sin commitear/pushear.
+
+---
+
 *Fuente de verdad: `docs/Venus_PRD_v4.0.md`. Convenciones Claude Code: `CLAUDE.md`.
 Estado de tareas: `openspec/changes/tasks.json`.*

@@ -114,12 +114,14 @@ export default function BalanceIndex() {
       <View style={styles.selectorWrap}>
         <View style={styles.tipoRow}>
           <TouchableOpacity
+            testID="btn-tipo-semana"
             style={[styles.tipoBtn, tipo === 'semana' && styles.tipoBtnActivo]}
             onPress={() => cambiarTipo('semana')}
           >
             <Text style={[styles.tipoText, tipo === 'semana' && styles.tipoTextActivo]}>Semana</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            testID="btn-tipo-mes"
             style={[styles.tipoBtn, tipo === 'mes' && styles.tipoBtnActivo]}
             onPress={() => cambiarTipo('mes')}
           >
@@ -128,11 +130,11 @@ export default function BalanceIndex() {
         </View>
 
         <View style={styles.navRow}>
-          <TouchableOpacity style={styles.navBtn} onPress={() => mover(-1)} accessibilityLabel="Período anterior">
+          <TouchableOpacity testID="btn-nav-prev" style={styles.navBtn} onPress={() => mover(-1)} accessibilityLabel="Período anterior">
             <Ionicons name="chevron-back" size={22} color="#374151" />
           </TouchableOpacity>
           <Text style={styles.periodoLabel}>{etiquetaPeriodo(tipo, refDate)}</Text>
-          <TouchableOpacity style={styles.navBtn} onPress={() => mover(1)} accessibilityLabel="Período siguiente">
+          <TouchableOpacity testID="btn-nav-next" style={styles.navBtn} onPress={() => mover(1)} accessibilityLabel="Período siguiente">
             <Ionicons name="chevron-forward" size={22} color="#374151" />
           </TouchableOpacity>
         </View>

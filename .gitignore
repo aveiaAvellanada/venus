@@ -56,3 +56,6 @@ PROJECT.md
 ORIGINAL_REQUEST.md
 TEST_INFRA.md
 TEST_READY.md
+
+# salida de debug de tests (scratch)
+test_output.txt

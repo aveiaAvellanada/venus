@@ -6,7 +6,7 @@ Documento maestro de referencia: `docs/Venus_PRD_v3.0.md` (Módulo 1: Registro d
 
 ## 1. Objetivo y alcance
 
-Permitir registrar una **venta completa** (pagada en el momento) desde el celular, de forma rápida, actualizando el inventario automáticamente. Lo usa Andrés (empleado) principalmente y Don Carlos (dueño) cuando está en el local.
+Permitir registrar una **venta completa** (pagada en el momento) desde el celular, de forma rápida, actualizando el inventario automáticamente. La usan los empleados (Camilo, Beatriz, Nikol) principalmente y Andrés (dueño) cuando está en el local.
 
 ### Dentro del alcance (v1)
 - Carrito con **zapatos** (`productos_calzado`) y **productos varios** (`productos_varios`).
@@ -45,7 +45,7 @@ alter table public.ventas
   add column efectivo_recibido numeric(12,2) check (efectivo_recibido >= 0),
   add column cambio            numeric(12,2) not null default 0 check (cambio >= 0);
 ```
-- `efectivo_recibido`: cuánto efectivo entregó el cliente. **Nullable** (null cuando la venta no tiene componente en efectivo). Lo necesita Don Carlos para cuadrar caja.
+- `efectivo_recibido`: cuánto efectivo entregó el cliente. **Nullable** (null cuando la venta no tiene componente en efectivo). Lo necesita Andrés para cuadrar caja.
 - `cambio`: vuelto entregado = `efectivo_recibido − (porción pagada en efectivo)`. Default 0 (ventas sin efectivo o pago exacto).
 
 ### 3.2 Función `registrar_venta`

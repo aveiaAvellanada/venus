@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 import { orIlike } from './busqueda'
 import type { Database } from './database.types'
 
+type CompraItemInsert = Database['public']['Tables']['compra_items']['Insert']
 export type Proveedor = Database['public']['Tables']['proveedores']['Row']
 export type InsertProveedor = Database['public']['Tables']['proveedores']['Insert']
 export type UpdateProveedor = Database['public']['Tables']['proveedores']['Update']
@@ -182,7 +183,7 @@ export async function registrarLlegadaFisica(datos: {
 
   if (compraError) throw compraError
 
-  const itemsToInsert = datos.items.map(item => ({
+  const itemsToInsert: CompraItemInsert[] = datos.items.map(item => ({
     compra_id: compra.id,
     descripcion: item.descripcion,
     cantidad: item.cantidad,
@@ -197,7 +198,7 @@ export async function registrarLlegadaFisica(datos: {
 
   const { error: itemsError } = await supabase
     .from('compra_items')
-    .insert(itemsToInsert as any)
+    .insert(itemsToInsert)
 
   if (itemsError) {
     await supabase.from('compras').delete().eq('id', compra.id)
@@ -345,7 +346,7 @@ export async function registrarCompraDirecta(datos: {
 
   if (compraError) throw compraError
 
-  const itemsToInsert = datos.items.map(item => ({
+  const itemsToInsert: CompraItemInsert[] = datos.items.map(item => ({
     compra_id: compra.id,
     descripcion: item.descripcion,
     cantidad: item.cantidad,
@@ -360,7 +361,7 @@ export async function registrarCompraDirecta(datos: {
 
   const { error: itemsError } = await supabase
     .from('compra_items')
-    .insert(itemsToInsert as any)
+    .insert(itemsToInsert)
 
   if (itemsError) {
     await supabase.from('compras').delete().eq('id', compra.id)

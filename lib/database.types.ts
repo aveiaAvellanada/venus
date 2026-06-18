@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      caja_config: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          hora_apertura: string | null
+          hora_cierre: string | null
+          id: string
+          modo_automatico: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          hora_apertura?: string | null
+          hora_cierre?: string | null
+          id?: string
+          modo_automatico?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          hora_apertura?: string | null
+          hora_cierre?: string | null
+          id?: string
+          modo_automatico?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caja_config_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caja_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cierres_caja: {
         Row: {
           apertura_at: string | null

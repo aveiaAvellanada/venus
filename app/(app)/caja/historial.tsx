@@ -8,18 +8,19 @@ const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
 
 export default function HistorialCaja() {
   const { perfil } = useAuth()
+  const puedeVer = perfil?.rol === 'dueno' || perfil?.rol === 'admin'
   const [cierres, setCierres] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
-      if (perfil?.rol !== 'dueno') return
-      
+      if (!puedeVer) return
+
       const { data, error } = await supabase
         .from('cierres_caja')
-        .select('*')
+        .select('*, cerrado_por_user:users!cerrado_por(nombre)')
         .order('fecha', { ascending: false })
-      
+
       if (!error && data) {
         setCierres(data)
       }
@@ -28,7 +29,7 @@ export default function HistorialCaja() {
     load()
   }, [perfil])
 
-  if (perfil?.rol !== 'dueno') {
+  if (!puedeVer) {
     return <Redirect href="/caja" />
   }
 
@@ -78,6 +79,10 @@ export default function HistorialCaja() {
               
               {item.estado === 'cerrada' && hasDiff && item.diferencia_nota && (
                 <Text style={styles.nota}>Nota: {item.diferencia_nota}</Text>
+              )}
+
+              {item.estado === 'cerrada' && (
+                <Text style={styles.nota}>Cerró: {item.cerrado_por_user?.nombre ?? 'Automático'}</Text>
               )}
             </View>
           )

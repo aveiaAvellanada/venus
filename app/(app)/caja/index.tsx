@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { View, Text, StyleSheet, Pressable, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useRequireModulo } from '../../../lib/auth'
-import { obtenerCajaHoy, abrirCaja, obtenerResumenEnVivo } from '../../../lib/caja'
+import { obtenerCajaHoy, abrirCaja, reabrirCaja, obtenerResumenEnVivo } from '../../../lib/caja'
 
 const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
 
@@ -71,6 +71,18 @@ export default function CajaDashboard() {
     }
   }
 
+  async function handleReabrir() {
+    setAbriendo(true)
+    try {
+      await reabrirCaja()
+      await cargarDatos()
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setAbriendo(false)
+    }
+  }
+
   if (!estadoCaja) {
     return (
       <View style={[styles.container, styles.centro]}>
@@ -121,9 +133,13 @@ export default function CajaDashboard() {
         </View>
       )}
 
-      {isAbierto && (
+      {isAbierto ? (
         <Pressable style={styles.btnCerrar} onPress={() => router.push('/caja/cierre')}>
           <Text style={styles.btnCerrarText}>Ir a Cerrar Caja</Text>
+        </Pressable>
+      ) : (
+        <Pressable style={styles.btnGigante} onPress={handleReabrir} disabled={abriendo}>
+          {abriendo ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnGiganteText}>Abrir caja de nuevo</Text>}
         </Pressable>
       )}
     </ScrollView>

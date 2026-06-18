@@ -14,7 +14,7 @@ const SOLO_DUENO: Rol[] = ['dueno']
 
 export const MODULOS: Modulo[] = [
   { id: 'ventas',             titulo: 'Ventas',             icono: '🛒', roles: TODOS, ruta: '/ventas' },
-  { id: 'devoluciones',       titulo: 'Devoluciones',       icono: '↩️', roles: TODOS },
+  { id: 'devoluciones',       titulo: 'Devoluciones',       icono: '↩️', roles: TODOS, ruta: '/devoluciones' },
   { id: 'inventario-calzado', titulo: 'Inventario calzado', icono: '👟', roles: TODOS, ruta: '/inventario/calzado' },
   { id: 'granja',             titulo: 'Granja',             icono: '🥚', roles: TODOS, ruta: '/inventario/granja' },
   { id: 'recibir-mercancia',  titulo: 'Recibir mercancía',  icono: '📥', roles: TODOS, ruta: '/recibir-mercancia' },

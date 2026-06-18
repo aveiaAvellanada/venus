@@ -34,6 +34,28 @@ export async function abrirCaja() {
   return data
 }
 
+export async function reabrirCaja() {
+  const caja = await obtenerCajaHoy()
+  if (!caja) throw new Error('No hay caja de hoy para reabrir.')
+  if (caja.estado === 'abierta') return caja
+
+  const { data, error } = await supabase
+    .from('cierres_caja')
+    .update({
+      estado: 'abierta',
+      cierre_at: null,
+      efectivo_contado: null,
+      diferencia: null,
+      diferencia_nota: null,
+    })
+    .eq('id', caja.id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function obtenerResumenEnVivo() {
   const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' })
   const { data, error } = await supabase.rpc('obtener_resumen_dia', { p_fecha: hoy })

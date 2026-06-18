@@ -51,7 +51,7 @@ begin
       select 1 from public.empleado_dias_trabajados d
       where d.empleado_id = ec.empleado_id
         and d.fecha = v_hoy
-        and d.tipo = 'trabajado');
+        and d.tipo in ('trabajado','adicional'));
 
   return json_build_object(
     'proveedores_por_vencer', v_prov,

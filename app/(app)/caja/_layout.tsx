@@ -12,7 +12,7 @@ export default function CajaLayout() {
         name="index" 
         options={{ 
           title: 'Caja del Día', 
-          headerRight: () => perfil?.rol === 'dueno' ? (
+          headerRight: () => (perfil?.rol === 'dueno' || perfil?.rol === 'admin') ? (
             <Pressable onPress={() => router.push('/caja/historial')} hitSlop={10}>
               <Text style={{ color: '#1E66F5', fontWeight: 'bold', fontSize: 16 }}>Historial</Text>
             </Pressable>

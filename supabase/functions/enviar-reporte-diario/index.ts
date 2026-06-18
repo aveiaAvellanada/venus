@@ -49,6 +49,8 @@ Deno.serve(async (req) => {
     await admin.from('reporte_envios').insert({ fecha, canal: 'correo', ok, detalle })
     return json({ ok, detalle, fecha })
   } catch (e) {
-    return json({ error: String(e) }, 500)
+    const msg = e instanceof Error ? e.message : JSON.stringify(e)
+    console.error('enviar-reporte-diario error:', msg)
+    return json({ error: msg }, 500)
   }
 })

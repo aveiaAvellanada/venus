@@ -1621,6 +1621,10 @@ export type Database = {
         Args: { p_anio: number; p_empleado_id: string; p_mes: number }
         Returns: number
       }
+      obtener_reporte_periodo: {
+        Args: { p_desde: string; p_hasta: string }
+        Returns: Json
+      }
       obtener_resumen_dia: { Args: { p_fecha: string }; Returns: Json }
       registrar_devolucion: {
         Args: {

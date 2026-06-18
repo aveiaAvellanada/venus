@@ -25,7 +25,7 @@ export const MODULOS: Modulo[] = [
   { id: 'reportes',           titulo: 'Reportes',           icono: '📊', roles: STAFF_ADMIN },
   { id: 'carga-inicial',      titulo: 'Carga inicial',      icono: '📷', roles: STAFF_ADMIN, ruta: '/inventario/carga' },
   { id: 'gestion-empleado',   titulo: 'Empleados',          icono: '👤', roles: SOLO_DUENO, ruta: '/empleados' },
-  { id: 'balance',            titulo: 'Balance',            icono: '⚖️', roles: SOLO_DUENO },
+  { id: 'balance',            titulo: 'Balance',            icono: '⚖️', roles: SOLO_DUENO, ruta: '/balance' },
   { id: 'analisis-ia',        titulo: 'Análisis IA',        icono: '🤖', roles: SOLO_DUENO },
 ]
 

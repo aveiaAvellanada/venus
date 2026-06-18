@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator, Alert, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator, Alert, ScrollView, Linking } from 'react-native'
 import { useRouter } from 'expo-router'
 import { obtenerResumenEnVivo, cerrarCaja } from '../../../lib/caja'
+import { dispararReporteCorreo, obtenerReporteDiario, construirLinkWhatsapp } from '../../../lib/reporteDiario'
 
 const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
 
@@ -54,9 +55,32 @@ export default function CierreCaja() {
         diferencia,
         nota: hasDiferencia ? nota.trim() : null
       })
-      Alert.alert('Caja Cerrada', 'La caja se cerró exitosamente.', [
-        { text: 'OK', onPress: () => router.replace('/caja') }
-      ])
+
+      const ahora = new Date()
+      const fechaISO = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`
+
+      // Disparo del correo automático (fire-and-forget; no bloquea el cierre)
+      dispararReporteCorreo(fechaISO).catch((e) => console.warn('Reporte por correo no disparado:', e))
+
+      // WhatsApp asistido: arma el link con el mensaje del día
+      let waLink: string | null = null
+      try {
+        const rep = await obtenerReporteDiario(fechaISO)
+        waLink = construirLinkWhatsapp(null, rep.mensaje)
+      } catch (e) {
+        console.warn('No se pudo armar el WhatsApp:', e)
+      }
+
+      Alert.alert(
+        'Caja cerrada',
+        'La caja se cerró exitosamente.',
+        waLink
+          ? [
+              { text: 'Enviar por WhatsApp', onPress: () => { Linking.openURL(waLink!); router.replace('/caja') } },
+              { text: 'Listo', onPress: () => router.replace('/caja') },
+            ]
+          : [{ text: 'OK', onPress: () => router.replace('/caja') }]
+      )
     } catch (e: any) {
       Alert.alert('Error al cerrar caja', e.message)
       setGuardando(false)

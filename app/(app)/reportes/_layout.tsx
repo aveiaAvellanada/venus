@@ -17,6 +17,7 @@ export default function ReportesLayout() {
     >
       <Stack.Screen name="index" options={{ title: 'Reportes' }} />
       <Stack.Screen name="periodos" options={{ title: 'Reporte de período' }} />
+      <Stack.Screen name="config" options={{ title: 'Reportes automáticos' }} />
     </Stack>
   )
 }

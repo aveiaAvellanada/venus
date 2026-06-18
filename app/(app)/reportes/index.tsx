@@ -124,6 +124,18 @@ export default function ReportesIndex() {
             <Ionicons name="chevron-forward" size={16} color="#1d4ed8" />
           </TouchableOpacity>
 
+          {esDueno && (
+            <TouchableOpacity
+              testID="btn-config-reportes"
+              style={styles.linkPeriodos}
+              onPress={() => router.push('/reportes/config')}
+            >
+              <Ionicons name="notifications-outline" size={16} color="#1d4ed8" />
+              <Text style={styles.linkPeriodosText}>Configurar reportes automáticos</Text>
+              <Ionicons name="chevron-forward" size={16} color="#1d4ed8" />
+            </TouchableOpacity>
+          )}
+
           {/* Ventas de hoy */}
           <View style={styles.card}>
             <Text style={styles.cardTitulo}>Ventas de hoy</Text>

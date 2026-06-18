@@ -55,6 +55,7 @@ jest.mock('./reportes', () => {
     obtenerResumenDia: jest.fn(),
     listarStockBajo: jest.fn(),
     obtenerDashboardDueno: jest.fn(),
+    obtenerReportePeriodo: jest.fn(),
   }
 })
 jest.mock('../lib/reportes', () => {
@@ -64,11 +65,13 @@ jest.mock('../lib/reportes', () => {
     obtenerResumenDia: jest.fn(),
     listarStockBajo: jest.fn(),
     obtenerDashboardDueno: jest.fn(),
+    obtenerReportePeriodo: jest.fn(),
   }
 })
 
 import ReportesLayout from '../app/(app)/reportes/_layout'
 import ReportesIndex from '../app/(app)/reportes/index'
+import ReportesPeriodos from '../app/(app)/reportes/periodos'
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -206,5 +209,83 @@ describe('Reportes/Dashboard UI — tests de integración', () => {
       expect(findAllByText(root, 'Nequi').length).toBeGreaterThan(0)
       expect(findAllByText(root, 'Daviplata').length).toBeGreaterThan(0)
     })
+  })
+})
+
+// ── Reporte de período (M12 it.2) ───────────────────────────────────────────────
+
+const REPORTE = {
+  total_vendido: 230000, total_anterior: 50000, num_ventas: 2,
+  efectivo: 150000, nequi: 80000, daviplata: 0,
+  dia_top: { fecha: '2051-05-10', monto: 150000 },
+  top_productos: [
+    { producto: 'Bota Smoke', unidades: 3, monto: 150000 },
+    { producto: 'Tenis Smoke', unidades: 1, monto: 80000 },
+  ],
+  sin_movimiento: [{ id: 'p3', producto: 'Sandalia Smoke' }],
+}
+
+describe('Reporte de período UI', () => {
+  let tree: renderer.ReactTestRenderer | null = null
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    ;(useRequireModulo as jest.Mock).mockReturnValue(null)
+    ;(useAuth as jest.Mock).mockReturnValue({ perfil: { rol: 'dueno', nombre: 'Andrés' } })
+    ;(apiReportes.obtenerReportePeriodo as jest.Mock).mockResolvedValue(REPORTE)
+  })
+
+  afterEach(async () => {
+    if (tree) {
+      try {
+        await act(async () => {
+          tree!.unmount()
+        })
+      } catch {
+        // ignore
+      }
+      tree = null
+    }
+  })
+
+  test('Gating: invoca useRequireModulo("reportes"); si devuelve elemento no carga datos', async () => {
+    const redirectEl = React.createElement('Text', null, 'Sin acceso')
+    ;(useRequireModulo as jest.Mock).mockReturnValue(redirectEl)
+    await act(async () => {
+      tree = renderer.create(<ReportesPeriodos />)
+    })
+    expect(useRequireModulo).toHaveBeenCalledWith('reportes')
+    expect(apiReportes.obtenerReportePeriodo).not.toHaveBeenCalled()
+  })
+
+  test('Renderiza total, top productos, día top y sin movimiento del mock', async () => {
+    await act(async () => {
+      tree = renderer.create(<ReportesPeriodos />)
+    })
+    const root = tree!.root
+    expect(findAllContainingText(root, '230.000').length).toBeGreaterThan(0)
+    expect(findAllByText(root, 'Bota Smoke').length).toBeGreaterThan(0)
+    expect(findAllByText(root, 'Tenis Smoke').length).toBeGreaterThan(0)
+    expect(findAllByText(root, '2051-05-10').length).toBeGreaterThan(0)
+    expect(findAllByText(root, 'Sandalia Smoke').length).toBeGreaterThan(0)
+  })
+
+  test('Comparación: total 230k vs anterior 50k → muestra "360% vs período anterior"', async () => {
+    await act(async () => {
+      tree = renderer.create(<ReportesPeriodos />)
+    })
+    expect(findAllContainingText(tree!.root, '360% vs período anterior').length).toBeGreaterThan(0)
+  })
+
+  test('Cambiar a Semana vuelve a invocar obtenerReportePeriodo', async () => {
+    await act(async () => {
+      tree = renderer.create(<ReportesPeriodos />)
+    })
+    const callsAntes = (apiReportes.obtenerReportePeriodo as jest.Mock).mock.calls.length
+    const btnSemana = tree!.root.findByProps({ testID: 'btn-tipo-semana' })
+    await act(async () => {
+      btnSemana.props.onPress()
+    })
+    expect((apiReportes.obtenerReportePeriodo as jest.Mock).mock.calls.length).toBeGreaterThan(callsAntes)
   })
 })

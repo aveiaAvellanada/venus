@@ -1354,6 +1354,84 @@ export type Database = {
           },
         ]
       }
+      reporte_config: {
+        Row: {
+          correo_destino: string | null
+          correo_on: boolean
+          created_at: string
+          created_by: string | null
+          hora_envio: string | null
+          id: string
+          updated_at: string
+          updated_by: string | null
+          whatsapp_on: boolean
+        }
+        Insert: {
+          correo_destino?: string | null
+          correo_on?: boolean
+          created_at?: string
+          created_by?: string | null
+          hora_envio?: string | null
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_on?: boolean
+        }
+        Update: {
+          correo_destino?: string | null
+          correo_on?: boolean
+          created_at?: string
+          created_by?: string | null
+          hora_envio?: string | null
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_on?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reporte_config_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reporte_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reporte_envios: {
+        Row: {
+          canal: string
+          detalle: string | null
+          enviado_at: string
+          fecha: string
+          id: string
+          ok: boolean
+        }
+        Insert: {
+          canal: string
+          detalle?: string | null
+          enviado_at?: string
+          fecha: string
+          id?: string
+          ok: boolean
+        }
+        Update: {
+          canal?: string
+          detalle?: string | null
+          enviado_at?: string
+          fecha?: string
+          id?: string
+          ok?: boolean
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           activo: boolean
@@ -1621,6 +1699,7 @@ export type Database = {
         Args: { p_anio: number; p_empleado_id: string; p_mes: number }
         Returns: number
       }
+      obtener_reporte_diario: { Args: { p_fecha: string }; Returns: Json }
       obtener_reporte_periodo: {
         Args: { p_desde: string; p_hasta: string }
         Returns: Json

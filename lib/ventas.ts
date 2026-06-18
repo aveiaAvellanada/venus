@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { orIlike } from './busqueda'
 import type { ItemCarrito, PagoInput, ProductoVendible } from './carrito'
 
 export interface VentaResumen {
@@ -28,9 +29,7 @@ export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
     .gt('stock_actual', 0)
     .limit(10)
   if (termino) {
-    calzadoQ = calzadoQ.or(
-      `descripcion.ilike.${like},referencia.ilike.${like},talla.ilike.${like},color.ilike.${like}`,
-    )
+    calzadoQ = calzadoQ.or(orIlike(['descripcion', 'referencia', 'talla', 'color'], termino))
   }
 
   let variosQ = supabase

@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { orIlike } from './busqueda'
 import type { Database } from './database.types'
 
 export type Proveedor = Database['public']['Tables']['proveedores']['Row']
@@ -27,8 +28,7 @@ export async function listarProveedores(filtros?: { buscar?: string; activo?: bo
   }
 
   if (filtros?.buscar) {
-    const term = `%${filtros.buscar}%`
-    query = query.or(`nombre.ilike.${term},nit_cedula.ilike.${term}`)
+    query = query.or(orIlike(['nombre', 'nit_cedula'], filtros.buscar))
   }
 
   const { data, error } = await query

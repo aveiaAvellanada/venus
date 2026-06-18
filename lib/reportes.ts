@@ -51,6 +51,27 @@ export async function obtenerDashboardDueno(diasAlerta = 7): Promise<DashboardDu
   return data as unknown as DashboardDueno
 }
 
+export type TopProducto = { producto: string; unidades: number; monto: number }
+export type ProductoSinMovimiento = { id: string; producto: string }
+export type DiaTop = { fecha: string; monto: number }
+export type ReportePeriodo = {
+  total_vendido: number
+  total_anterior: number
+  num_ventas: number
+  efectivo: number
+  nequi: number
+  daviplata: number
+  dia_top: DiaTop | null
+  top_productos: TopProducto[]
+  sin_movimiento: ProductoSinMovimiento[]
+}
+
+export async function obtenerReportePeriodo(desde: string, hasta: string): Promise<ReportePeriodo> {
+  const { data, error } = await supabase.rpc('obtener_reporte_periodo', { p_desde: desde, p_hasta: hasta })
+  if (error) throw error
+  return data as unknown as ReportePeriodo
+}
+
 export function compararConAyer(
   hoy: number,
   ayer: number

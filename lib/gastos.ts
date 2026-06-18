@@ -1,7 +1,6 @@
-import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from './supabase';
 import { Database } from './database.types';
-import { bytesDesdeUriLocal } from './storage';
+import { comprimirBajoLimite } from './imagenes';
 
 type GastoVariableRow = Database['public']['Tables']['gastos_variables']['Row'];
 type GastoVariableInsert = Database['public']['Tables']['gastos_variables']['Insert'];
@@ -11,16 +10,10 @@ type GastoFijoPagoRow = Database['public']['Tables']['gastos_fijos_pagos']['Row'
 type GastoFijoPagoInsert = Database['public']['Tables']['gastos_fijos_pagos']['Insert'];
 
 export async function comprimirYSubirComprobante(uri: string): Promise<string> {
-  const manipulada = await ImageManipulator.manipulateAsync(
-    uri,
-    [{ resize: { width: 1080 } }],
-    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-  );
+  // Comprime bajo el límite del PRD (≤500KB) reutilizando el helper compartido.
+  const bytes = await comprimirBajoLimite(uri);
 
   const nombreArchivo = `${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-  // En RN el file:// solo se lee fiable como Blob, pero subir un Blob falla;
-  // convertimos a bytes y subimos esos bytes (ver lib/storage.ts).
-  const bytes = await bytesDesdeUriLocal(manipulada.uri);
 
   const { data, error } = await supabase.storage
     .from('comprobantes')

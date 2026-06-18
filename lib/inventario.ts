@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { orIlike } from './busqueda'
 import type { Database } from './database.types'
 
 export type ProductoCalzado = Database['public']['Tables']['productos_calzado']['Row']
@@ -18,7 +19,7 @@ export async function listarCalzado(filtros?: {
   }
   
   if (filtros?.busqueda) {
-    query = query.or(`descripcion.ilike.%${filtros.busqueda}%,referencia.ilike.%${filtros.busqueda}%,talla.ilike.%${filtros.busqueda}%,color.ilike.%${filtros.busqueda}%`)
+    query = query.or(orIlike(['descripcion', 'referencia', 'talla', 'color'], filtros.busqueda))
   }
   
   if (filtros?.estado === 'disponible') {

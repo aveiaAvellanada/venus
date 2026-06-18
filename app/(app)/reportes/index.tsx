@@ -9,7 +9,7 @@ import {
   RefreshControl,
   SafeAreaView,
 } from 'react-native'
-import { useFocusEffect } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useRequireModulo, useAuth } from '../../../lib/auth'
 import {
@@ -34,6 +34,7 @@ function toISO(d: Date): string {
 export default function ReportesIndex() {
   const requireModulo = useRequireModulo('reportes')
   const { perfil } = useAuth()
+  const router = useRouter()
   const esDueno = perfil?.rol === 'dueno'
 
   const [hoy, setHoy] = useState<ResumenDia | null>(null)
@@ -112,6 +113,17 @@ export default function ReportesIndex() {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#3b82f6']} />}
         >
+          {/* Acceso al reporte por semana / mes */}
+          <TouchableOpacity
+            testID="btn-ver-periodos"
+            style={styles.linkPeriodos}
+            onPress={() => router.push('/reportes/periodos')}
+          >
+            <Ionicons name="calendar-outline" size={16} color="#1d4ed8" />
+            <Text style={styles.linkPeriodosText}>Ver reporte por semana / mes</Text>
+            <Ionicons name="chevron-forward" size={16} color="#1d4ed8" />
+          </TouchableOpacity>
+
           {/* Ventas de hoy */}
           <View style={styles.card}>
             <Text style={styles.cardTitulo}>Ventas de hoy</Text>
@@ -220,6 +232,8 @@ function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
+  linkPeriodos: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#eff6ff', borderRadius: 12, borderWidth: 1, borderColor: '#bfdbfe', paddingVertical: 12, marginBottom: 12 },
+  linkPeriodosText: { fontSize: 14, fontWeight: '600', color: '#1d4ed8' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   scrollContent: { padding: 16, paddingBottom: 40 },
   card: {

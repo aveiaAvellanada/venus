@@ -900,6 +900,7 @@ function BuscadorReemplazoModal({
                     <Text style={styles.resultTitle}>{prod.descripcion}</Text>
                     <Text style={styles.resultSubtitle}>
                       {[
+                        prod.marca,
                         prod.referencia && `Ref: ${prod.referencia}`,
                         prod.talla && `T: ${prod.talla}`,
                         prod.color && `C: ${prod.color}`,

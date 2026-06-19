@@ -1158,6 +1158,7 @@ export type Database = {
           descripcion: string
           foto_url: string | null
           id: string
+          marca: string | null
           precio_maximo: number
           precio_minimo: number
           proveedor_id: string | null
@@ -1177,6 +1178,7 @@ export type Database = {
           descripcion: string
           foto_url?: string | null
           id?: string
+          marca?: string | null
           precio_maximo?: number
           precio_minimo?: number
           proveedor_id?: string | null
@@ -1196,6 +1198,7 @@ export type Database = {
           descripcion?: string
           foto_url?: string | null
           id?: string
+          marca?: string | null
           precio_maximo?: number
           precio_minimo?: number
           proveedor_id?: string | null
@@ -1724,6 +1727,7 @@ export type Database = {
           p_descripcion: string
           p_foto_url: string
           p_id: string
+          p_marca?: string
           p_precio_maximo: number
           p_precio_minimo: number
           p_proveedor_id: string

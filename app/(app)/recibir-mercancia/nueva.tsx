@@ -36,6 +36,7 @@ const CATEGORIAS_CALZADO = ['Chanclas', 'Escolar', 'Botas caucho', 'Deportivo', 
 interface SelectedItem {
   producto_calzado_id: string
   descripcion: string
+  marca: string | null
   referencia: string | null
   talla: string | null
   color: string | null
@@ -77,6 +78,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
       return [...prev, {
         producto_calzado_id: item.producto_calzado_id,
         descripcion: item.descripcion,
+        marca: item.marca || null,
         referencia: item.referencia || null,
         talla: item.talla || null,
         color: item.color || null,
@@ -112,6 +114,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
   // Inline Calzado Form State
   const [calzadoCategoria, setCalzadoCategoria] = useState('Otros')
   const [calzadoDescripcion, setCalzadoDescripcion] = useState('')
+  const [calzadoMarca, setCalzadoMarca] = useState('')
   const [calzadoReferencia, setCalzadoReferencia] = useState('')
   const [calzadoTalla, setCalzadoTalla] = useState('')
   const [calzadoColor, setCalzadoColor] = useState('')
@@ -175,6 +178,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
       setItems(prev => [...prev, {
         producto_calzado_id: prod.id,
         descripcion: prod.descripcion,
+        marca: prod.marca || null,
         referencia: prod.referencia || null,
         talla: prod.talla || null,
         color: prod.color || null,
@@ -272,6 +276,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
       const nuevoId = await guardarCalzado({
         categoria: calzadoCategoria,
         descripcion: calzadoDescripcion.trim(),
+        marca: calzadoMarca.trim() || null,
         referencia: calzadoReferencia.trim() || null,
         talla: calzadoTalla.trim() || null,
         color: calzadoColor.trim() || null,
@@ -286,6 +291,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
       setItems(prev => [...prev, {
         producto_calzado_id: nuevoId,
         descripcion: calzadoDescripcion.trim(),
+        marca: calzadoMarca.trim() || null,
         referencia: calzadoReferencia.trim() || null,
         talla: calzadoTalla.trim() || null,
         color: calzadoColor.trim() || null,
@@ -295,6 +301,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
 
       // Clear form and close
       setCalzadoDescripcion('')
+      setCalzadoMarca('')
       setCalzadoReferencia('')
       setCalzadoTalla('')
       setCalzadoColor('')
@@ -502,7 +509,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.resultTitle}>{prod.descripcion}</Text>
                     <Text style={styles.resultSubtitle}>
-                      Ref: {prod.referencia || 'N/A'} • Talla: {prod.talla || 'N/A'} • Color: {prod.color || 'N/A'}
+                      {prod.marca ? `${prod.marca} • ` : ''}Ref: {prod.referencia || 'N/A'} • Talla: {prod.talla || 'N/A'} • Color: {prod.color || 'N/A'}
                     </Text>
                   </View>
                   <Ionicons name="add-outline" size={20} color="#10b981" />
@@ -528,7 +535,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
                   <View style={{ flex: 1, marginRight: 8 }}>
                     <Text style={styles.itemTitle}>{item.descripcion}</Text>
                     <Text style={styles.itemSubText}>
-                      Ref: {item.referencia || 'N/A'} • Talla: {item.talla || 'N/A'} • Color: {item.color || 'N/A'}
+                      {item.marca ? `${item.marca} • ` : ''}Ref: {item.referencia || 'N/A'} • Talla: {item.talla || 'N/A'} • Color: {item.color || 'N/A'}
                     </Text>
                   </View>
 
@@ -815,6 +822,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
               setItems(prev => [...prev, {
                 producto_calzado_id: nuevoId,
                 descripcion: values.descripcion,
+                marca: values.marca ?? null,
                 referencia: null,
                 talla: null,
                 color: null,
@@ -870,11 +878,23 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
                 <Text style={styles.label}>Descripción / Nombre *</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Ej. Tenis Puma Smash"
+                  placeholder="Ej. Smash"
                   placeholderTextColor="#9ca3af"
                   value={calzadoDescripcion}
                   onChangeText={setCalzadoDescripcion}
                   testID="input-calzado-desc"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Marca</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ej. Puma"
+                  placeholderTextColor="#9ca3af"
+                  value={calzadoMarca}
+                  onChangeText={setCalzadoMarca}
+                  testID="input-calzado-marca"
                 />
               </View>
 

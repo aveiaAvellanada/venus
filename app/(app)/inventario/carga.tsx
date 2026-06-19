@@ -61,6 +61,7 @@ export default function CargaMasivaInventario() {
         await guardarCalzado({
           categoria: item.categoria,
           descripcion: item.descripcion,
+          marca: item.marca,
           precio_minimo: item.precio_min,
           precio_maximo: item.precio_max,
           costo_compra: item.costo,

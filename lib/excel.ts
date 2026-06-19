@@ -43,6 +43,7 @@ export function validarFilas(filas: any[]) {
 
     const categoria = getColValue(fila, ['categoria']);
     const descripcion = getColValue(fila, ['descripcion']);
+    const marca = getColValue(fila, ['marca']);
     const precioMin = getColValue(fila, ['preciominimo', 'preciomin']);
     const precioMax = getColValue(fila, ['preciomaximo', 'preciomax']);
     const costo = getColValue(fila, ['costo', 'costocompra']);
@@ -97,6 +98,7 @@ export function validarFilas(filas: any[]) {
       validas.push({
         categoria: validCategory,
         descripcion: String(descripcion).trim(),
+        marca: marca ? String(marca).trim() : null,
         precio_min: nPrecioMin,
         precio_max: nPrecioMax,
         costo: nCosto,

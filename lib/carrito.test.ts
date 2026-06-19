@@ -1,5 +1,6 @@
 import {
   carritoReducer, bajoMinimo, totalCarrito, pagosCuadran, montoEfectivo, calcularCambio,
+  detalleCalzado,
   type ItemCarrito, type ProductoVendible,
 } from './carrito'
 
@@ -141,5 +142,24 @@ describe('carrito SP-2 — precio por línea', () => {
     let items = carritoReducer([], { tipo: 'agregar', producto: calzado({ stock: 2 }) })
     items = carritoReducer(items, { tipo: 'cambiarCantidad', id: 'c1', cantidad: 9 })
     expect(items[0].cantidad).toBe(2)
+  })
+})
+
+describe('detalleCalzado — subtítulo con marca', () => {
+  test('combina marca, talla y color en ese orden', () => {
+    expect(detalleCalzado({ marca: 'Nike', talla: '38', color: 'Negro' })).toBe('Nike · Talla 38 · Negro')
+  })
+
+  test('sin marca preserva el formato previo (talla · color)', () => {
+    expect(detalleCalzado({ talla: '38', color: 'Negro' })).toBe('Talla 38 · Negro')
+  })
+
+  test('solo marca', () => {
+    expect(detalleCalzado({ marca: 'Adidas' })).toBe('Adidas')
+  })
+
+  test('campos vacíos o nulos producen cadena vacía', () => {
+    expect(detalleCalzado({})).toBe('')
+    expect(detalleCalzado({ marca: null, talla: null, color: null })).toBe('')
   })
 })

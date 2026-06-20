@@ -68,13 +68,13 @@ import BalanceIndex from '../app/(app)/balance/index'
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const BALANCE_GANANCIA: apiBalance.Balance = {
-  ingresos: { efectivo: 200000, nequi: 50000, daviplata: 0, reembolsos: 0, cobros_cambios: 0, total_neto: 250000 },
+  ingresos: { efectivo: 200000, nequi: 50000, bre_b: 0, otro: 0, reembolsos: 0, cobros_cambios: 0, total_neto: 250000 },
   egresos: { gastos_fijos: 20000, gastos_variables: 30000, pagos_proveedores: 40000, sueldos: 50000, total: 140000 },
   balance: 110000,
 }
 
 const BALANCE_PERDIDA: apiBalance.Balance = {
-  ingresos: { efectivo: 100000, nequi: 0, daviplata: 0, reembolsos: 0, cobros_cambios: 0, total_neto: 100000 },
+  ingresos: { efectivo: 100000, nequi: 0, bre_b: 0, otro: 0, reembolsos: 0, cobros_cambios: 0, total_neto: 100000 },
   egresos: { gastos_fijos: 20000, gastos_variables: 30000, pagos_proveedores: 40000, sueldos: 50000, total: 140000 },
   balance: -40000,
 }

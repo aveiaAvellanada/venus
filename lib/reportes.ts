@@ -5,7 +5,8 @@ export type ResumenDia = {
   total_general: number
   total_efectivo: number
   total_nequi: number
-  total_daviplata: number
+  total_bre_b: number
+  total_otro: number
 }
 
 export type ProductoStockBajo = {
@@ -60,7 +61,8 @@ export type ReportePeriodo = {
   num_ventas: number
   efectivo: number
   nequi: number
-  daviplata: number
+  bre_b: number
+  otro: number
   dia_top: DiaTop | null
   top_productos: TopProducto[]
   sin_movimiento: ProductoSinMovimiento[]

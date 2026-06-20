@@ -185,7 +185,8 @@ export default function BalanceIndex() {
             <Text style={styles.seccionTitulo}>Ingresos</Text>
             <Fila etiqueta="Efectivo" valor={pesos(data.ingresos.efectivo)} />
             <Fila etiqueta="Nequi" valor={pesos(data.ingresos.nequi)} />
-            <Fila etiqueta="Daviplata" valor={pesos(data.ingresos.daviplata)} />
+            <Fila etiqueta="Bre-B" valor={pesos(data.ingresos.bre_b)} />
+            <Fila etiqueta="Otro" valor={pesos(data.ingresos.otro)} />
             <Fila etiqueta="Reembolsos" valor={'- ' + pesos(data.ingresos.reembolsos)} />
             <Fila etiqueta="Cobros de cambios" valor={pesos(data.ingresos.cobros_cambios)} />
             <Fila etiqueta="Total neto" valor={pesos(data.ingresos.total_neto)} total />

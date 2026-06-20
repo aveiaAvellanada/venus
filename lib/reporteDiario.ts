@@ -11,7 +11,8 @@ export type ReporteDiario = {
   num_ventas: number
   efectivo: number
   nequi: number
-  daviplata: number
+  bre_b: number
+  otro: number
   mas_vendido: string | null
   stock_bajo: string[]
   caja_cuadro: boolean | null

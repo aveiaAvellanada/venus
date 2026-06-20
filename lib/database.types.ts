@@ -76,10 +76,11 @@ export type Database = {
           fecha: string
           id: string
           modo: string
-          total_daviplata: number
+          total_bre_b: number
           total_efectivo: number
           total_general: number
           total_nequi: number
+          total_otro: number
           total_ventas: number
           updated_at: string
           updated_by: string | null
@@ -97,10 +98,11 @@ export type Database = {
           fecha: string
           id?: string
           modo?: string
-          total_daviplata?: number
+          total_bre_b?: number
           total_efectivo?: number
           total_general?: number
           total_nequi?: number
+          total_otro?: number
           total_ventas?: number
           updated_at?: string
           updated_by?: string | null
@@ -118,10 +120,11 @@ export type Database = {
           fecha?: string
           id?: string
           modo?: string
-          total_daviplata?: number
+          total_bre_b?: number
           total_efectivo?: number
           total_general?: number
           total_nequi?: number
+          total_otro?: number
           total_ventas?: number
           updated_at?: string
           updated_by?: string | null

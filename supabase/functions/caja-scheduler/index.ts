@@ -38,7 +38,7 @@ Deno.serve(async () => {
     if (accion === 'abrir') {
       const { error } = await admin.from('cierres_caja').insert({
         fecha, estado: 'abierta', modo: 'automatico', apertura_at: new Date().toISOString(),
-        total_ventas: 0, total_general: 0, total_efectivo: 0, total_nequi: 0, total_daviplata: 0,
+        total_ventas: 0, total_general: 0, total_efectivo: 0, total_nequi: 0, total_bre_b: 0, total_otro: 0,
       })
       if (error) throw error
       return json({ accion: 'abierta', fecha })
@@ -51,7 +51,7 @@ Deno.serve(async () => {
         estado: 'cerrada', cierre_at: new Date().toISOString(),
         total_ventas: Number(res.total_ventas ?? 0), total_general: Number(res.total_general ?? 0),
         total_efectivo: Number(res.total_efectivo ?? 0), total_nequi: Number(res.total_nequi ?? 0),
-        total_daviplata: Number(res.total_daviplata ?? 0),
+        total_bre_b: Number(res.total_bre_b ?? 0), total_otro: Number(res.total_otro ?? 0),
         efectivo_contado: null, diferencia: null, diferencia_nota: null,
       }).eq('id', caja!.id)
       if (error) throw error

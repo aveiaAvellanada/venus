@@ -1,5 +1,5 @@
 export type TipoProducto = 'calzado' | 'varios'
-export type MetodoPago = 'efectivo' | 'nequi' | 'daviplata'
+export type MetodoPago = 'efectivo' | 'nequi' | 'bre_b' | 'otro'
 
 export interface ProductoVendible {
   tipo: TipoProducto

@@ -76,10 +76,10 @@ import ReportesPeriodos from '../app/(app)/reportes/periodos'
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const RESUMEN_HOY: apiReportes.ResumenDia = {
-  total_ventas: 4, total_general: 150000, total_efectivo: 100000, total_nequi: 50000, total_daviplata: 0,
+  total_ventas: 4, total_general: 150000, total_efectivo: 100000, total_nequi: 50000, total_bre_b: 0, total_otro: 0,
 }
 const RESUMEN_AYER: apiReportes.ResumenDia = {
-  total_ventas: 2, total_general: 100000, total_efectivo: 100000, total_nequi: 0, total_daviplata: 0,
+  total_ventas: 2, total_general: 100000, total_efectivo: 100000, total_nequi: 0, total_bre_b: 0, total_otro: 0,
 }
 const DASH: apiReportes.DashboardDueno = {
   proveedores_por_vencer: [
@@ -207,7 +207,8 @@ describe('Reportes/Dashboard UI — tests de integración', () => {
       expect(findAllContainingText(root, '4 ventas').length).toBeGreaterThan(0)
       expect(findAllByText(root, 'Efectivo').length).toBeGreaterThan(0)
       expect(findAllByText(root, 'Nequi').length).toBeGreaterThan(0)
-      expect(findAllByText(root, 'Daviplata').length).toBeGreaterThan(0)
+      expect(findAllByText(root, 'Bre-B').length).toBeGreaterThan(0)
+      expect(findAllByText(root, 'Otro').length).toBeGreaterThan(0)
     })
   })
 })
@@ -216,7 +217,7 @@ describe('Reportes/Dashboard UI — tests de integración', () => {
 
 const REPORTE = {
   total_vendido: 230000, total_anterior: 50000, num_ventas: 2,
-  efectivo: 150000, nequi: 80000, daviplata: 0,
+  efectivo: 150000, nequi: 80000, bre_b: 0, otro: 0,
   dia_top: { fecha: '2051-05-10', monto: 150000 },
   top_productos: [
     { producto: 'Bota Smoke', unidades: 3, monto: 150000 },

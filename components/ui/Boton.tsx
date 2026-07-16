@@ -38,6 +38,7 @@ export function Boton({
   return (
     <Presionable
       accessibilityRole="button"
+      accessibilityLabel={titulo}
       accessibilityState={{ disabled: inactivo, busy: cargando }}
       disabled={inactivo}
       onPress={inactivo ? undefined : onPress}

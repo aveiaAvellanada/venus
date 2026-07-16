@@ -9,6 +9,7 @@ import {
   obtenerVentasPorSubperiodo,
   obtenerGastosPeriodo,
   etiquetaBucket,
+  granularidadParaRango,
 } from './dashboard'
 
 const rpc = supabase.rpc as jest.Mock
@@ -53,6 +54,13 @@ describe('rangoParaPeriodo', () => {
     const enero = new Date('2026-01-05T10:00:00-05:00')
     expect(rangoParaPeriodo('anio', enero).desde).toBe('2025-02-01')
     expect(rangoParaPeriodo('semana', enero).desde).toBe('2025-12-30')
+  })
+})
+
+describe('granularidadParaRango', () => {
+  it('hasta 31 días es por día; más largo por mes', () => {
+    expect(granularidadParaRango('2026-07-01', '2026-07-31')).toBe('dia')
+    expect(granularidadParaRango('2026-05-01', '2026-07-15')).toBe('mes')
   })
 })
 

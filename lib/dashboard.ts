@@ -62,6 +62,14 @@ export function rangoParaPeriodo(periodo: Periodo, ahora: Date = new Date()): Ra
   }
 }
 
+// Granularidad para un rango elegido a mano: hasta 31 días → barras por día;
+// más largo → barras por mes.
+export function granularidadParaRango(desde: string, hasta: string): Granularidad {
+  const dias =
+    (new Date(`${hasta}T12:00:00Z`).getTime() - new Date(`${desde}T12:00:00Z`).getTime()) / 86400000
+  return dias <= 31 ? 'dia' : 'mes'
+}
+
 // Etiqueta corta para el eje del gráfico (§6.14). Zona-segura: mediodía UTC.
 export function etiquetaBucket(inicio: string, granularidad: Granularidad): string {
   const d = new Date(`${inicio}T12:00:00Z`)

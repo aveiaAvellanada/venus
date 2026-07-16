@@ -4,7 +4,12 @@ process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'dummy-key'
 jest.mock('./supabase', () => ({ supabase: { rpc: jest.fn() } }))
 
 import { supabase } from './supabase'
-import { rangoParaPeriodo, obtenerVentasPorSubperiodo, obtenerGastosPeriodo } from './dashboard'
+import {
+  rangoParaPeriodo,
+  obtenerVentasPorSubperiodo,
+  obtenerGastosPeriodo,
+  etiquetaBucket,
+} from './dashboard'
 
 const rpc = supabase.rpc as jest.Mock
 
@@ -48,6 +53,23 @@ describe('rangoParaPeriodo', () => {
     const enero = new Date('2026-01-05T10:00:00-05:00')
     expect(rangoParaPeriodo('anio', enero).desde).toBe('2025-02-01')
     expect(rangoParaPeriodo('semana', enero).desde).toBe('2025-12-30')
+  })
+})
+
+describe('etiquetaBucket', () => {
+  it('dia: abreviatura del día de la semana en es-CO', () => {
+    expect(etiquetaBucket('2026-07-13', 'dia')).toBe('lun')
+    expect(etiquetaBucket('2026-07-15', 'dia')).toBe('mié')
+    expect(etiquetaBucket('2026-07-19', 'dia')).toBe('dom')
+  })
+
+  it('semana: día y mes cortos', () => {
+    expect(etiquetaBucket('2026-07-13', 'semana')).toBe('13 jul')
+  })
+
+  it('mes: mes corto', () => {
+    expect(etiquetaBucket('2026-07-01', 'mes')).toBe('jul')
+    expect(etiquetaBucket('2025-12-01', 'mes')).toBe('dic')
   })
 })
 

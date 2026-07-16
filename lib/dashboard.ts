@@ -62,6 +62,18 @@ export function rangoParaPeriodo(periodo: Periodo, ahora: Date = new Date()): Ra
   }
 }
 
+// Etiqueta corta para el eje del gráfico (§6.14). Zona-segura: mediodía UTC.
+export function etiquetaBucket(inicio: string, granularidad: Granularidad): string {
+  const d = new Date(`${inicio}T12:00:00Z`)
+  const opciones: Intl.DateTimeFormatOptions =
+    granularidad === 'dia'
+      ? { weekday: 'short', timeZone: 'UTC' }
+      : granularidad === 'semana'
+        ? { day: 'numeric', month: 'short', timeZone: 'UTC' }
+        : { month: 'short', timeZone: 'UTC' }
+  return d.toLocaleDateString('es-CO', opciones).replace(/\./g, '').replace(' de ', ' ').toLowerCase()
+}
+
 export async function obtenerVentasPorSubperiodo(
   desde: string,
   hasta: string,

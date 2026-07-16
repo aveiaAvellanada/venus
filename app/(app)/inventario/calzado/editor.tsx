@@ -104,6 +104,22 @@ export default function CalzadoEditorScreen() {
     return null
   }
 
+  const Encabezado = () => (
+    <View
+      style={{
+        flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+        paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>
+        {id ? 'Editar Calzado' : 'Nuevo Calzado'}
+      </Text>
+    </View>
+  )
+
   const handleSeleccionarImagen = async () => {
     Alert.alert(
       'Seleccionar Foto',
@@ -208,27 +224,18 @@ export default function CalzadoEditorScreen() {
 
   if (fetching) {
     return (
-      <View style={{ flex: 1, backgroundColor: paleta.fondo, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color={paleta.primario} />
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
+        </View>
       </View>
     )
   }
 
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <View
-        style={{
-          flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-          paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
-        }}
-      >
-        <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
-          <ArrowLeft size={24} color={paleta.texto} />
-        </Presionable>
-        <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>
-          {id ? 'Editar Calzado' : 'Nuevo Calzado'}
-        </Text>
-      </View>
+      <Encabezado />
 
       <ScrollView
         contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}

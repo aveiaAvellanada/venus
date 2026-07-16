@@ -28,6 +28,20 @@ export default function CalzadoDetailScreen() {
 
   if (requireModulo) return requireModulo
 
+  const Encabezado = () => (
+    <View
+      style={{
+        flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+        paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Detalle del Calzado</Text>
+    </View>
+  )
+
   useEffect(() => {
     async function fetchProducto() {
       try {
@@ -64,17 +78,23 @@ export default function CalzadoDetailScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: paleta.fondo, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color={paleta.primario} />
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
+        </View>
       </View>
     )
   }
 
   if (!producto) {
     return (
-      <View style={{ flex: 1, backgroundColor: paleta.fondo, justifyContent: 'center', padding: espacio.xl, gap: espacio.l }}>
-        <EstadoVacio icono={<PackageX />} titulo="Producto no encontrado" />
-        <Boton titulo="Volver" variante="fantasma" onPress={() => router.back()} />
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado />
+        <View style={{ flex: 1, justifyContent: 'center', padding: espacio.xl, gap: espacio.l }}>
+          <EstadoVacio icono={<PackageX />} titulo="Producto no encontrado" />
+          <Boton titulo="Volver" variante="fantasma" onPress={() => router.back()} />
+        </View>
       </View>
     )
   }
@@ -83,17 +103,7 @@ export default function CalzadoDetailScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <View
-        style={{
-          flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-          paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
-        }}
-      >
-        <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
-          <ArrowLeft size={24} color={paleta.texto} />
-        </Presionable>
-        <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Detalle del Calzado</Text>
-      </View>
+      <Encabezado />
 
       <ScrollView
         contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}

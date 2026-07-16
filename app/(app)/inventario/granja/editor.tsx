@@ -72,6 +72,22 @@ export default function GranjaEditorScreen() {
     return null
   }
 
+  const Encabezado = () => (
+    <View
+      style={{
+        flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+        paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>
+        {id ? 'Editar Producto de Granja' : 'Nuevo Producto de Granja'}
+      </Text>
+    </View>
+  )
+
   const handleSeleccionarImagen = async () => {
     Alert.alert(
       'Seleccionar Foto',
@@ -148,27 +164,18 @@ export default function GranjaEditorScreen() {
 
   if (fetching) {
     return (
-      <View style={{ flex: 1, backgroundColor: paleta.fondo, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color={paleta.primario} />
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
+        </View>
       </View>
     )
   }
 
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <View
-        style={{
-          flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-          paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
-        }}
-      >
-        <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
-          <ArrowLeft size={24} color={paleta.texto} />
-        </Presionable>
-        <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>
-          {id ? 'Editar Producto de Granja' : 'Nuevo Producto de Granja'}
-        </Text>
-      </View>
+      <Encabezado />
 
       <ScrollView
         contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}

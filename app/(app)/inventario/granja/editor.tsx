@@ -1,30 +1,35 @@
 import { useEffect, useState } from 'react'
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, ScrollView, Image, ActivityIndicator, Alert } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import { ArrowLeft, Camera, Pencil, Save } from 'lucide-react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { useAuth, useRequireModulo } from '../../../../lib/auth'
 import { supabase } from '../../../../lib/supabase'
 import { guardarVarios } from '../../../../lib/inventario'
 import { comprimirYSubirImagen } from '../../../../lib/imagenes'
+import { useTema } from '../../../../lib/tema'
+import { espacio, radio, tipografia } from '../../../../lib/theme'
+import { Boton, CampoTexto, Presionable, Tarjeta, useToast } from '../../../../components/ui'
 
 export default function GranjaEditorScreen() {
   const requireModulo = useRequireModulo('granja')
   const { id } = useLocalSearchParams<{ id?: string }>()
   const router = useRouter()
   const { perfil } = useAuth()
+  const { paleta } = useTema()
+  const { mostrar } = useToast()
 
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(!!id)
-  
+
   const [nombre, setNombre] = useState('')
   const [unidadMedida, setUnidadMedida] = useState('')
   const [precioSugerido, setPrecioSugerido] = useState('')
   const [fotoUrl, setFotoUrl] = useState<string | null>(null)
-  
+
   const esDueno = perfil?.rol === 'dueno'
   const esAdmin = perfil?.rol === 'admin'
-  
+
   useEffect(() => {
     if (perfil && !esDueno && !esAdmin) {
       router.replace('/productos')
@@ -40,22 +45,22 @@ export default function GranjaEditorScreen() {
           .select('*')
           .eq('id', id)
           .single()
-          
+
         if (error) throw error
-        
+
         setNombre(data.nombre || '')
         setUnidadMedida(data.unidad_medida || '')
         setPrecioSugerido(data.precio_sugerido?.toString() || '')
         setFotoUrl(data.foto_url || null)
       } catch (err) {
         console.error(err)
-        Alert.alert('Error', 'No se pudo cargar el producto')
+        mostrar('No se pudo cargar el producto', 'error')
         router.back()
       } finally {
         setFetching(false)
       }
     }
-    
+
     if (perfil && (esDueno || esAdmin)) {
       fetchProducto()
     }
@@ -108,7 +113,7 @@ export default function GranjaEditorScreen() {
       setFotoUrl(url)
     } catch (err: any) {
       console.error(err)
-      Alert.alert('Error', 'No se pudo subir la imagen: ' + err.message)
+      mostrar('No se pudo subir la imagen: ' + err.message, 'error')
     } finally {
       setLoading(false)
     }
@@ -116,10 +121,10 @@ export default function GranjaEditorScreen() {
 
   const handleGuardar = async () => {
     if (!nombre || !unidadMedida) {
-      Alert.alert('Campos requeridos', 'Por favor llena los campos obligatorios (*).')
+      mostrar('Por favor llena los campos obligatorios (*).', 'error')
       return
     }
-    
+
     try {
       setLoading(true)
       await guardarVarios({
@@ -130,12 +135,12 @@ export default function GranjaEditorScreen() {
         foto_url: fotoUrl || null,
         activo: true,
       })
-      
-      Alert.alert('Guardado exitoso', id ? 'El producto ha sido actualizado.' : 'Producto creado.')
+
+      mostrar(id ? 'El producto ha sido actualizado.' : 'Producto creado.')
       router.back()
     } catch (err: any) {
       console.error(err)
-      Alert.alert('Error', 'Hubo un error al guardar el producto.')
+      mostrar('Hubo un error al guardar el producto.', 'error')
     } finally {
       setLoading(false)
     }
@@ -143,204 +148,106 @@ export default function GranjaEditorScreen() {
 
   if (fetching) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <View style={{ flex: 1, backgroundColor: paleta.fondo, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={paleta.primario} />
       </View>
     )
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.imageSection}>
-          <TouchableOpacity onPress={handleSeleccionarImagen} style={styles.imagePickerContainer} activeOpacity={0.8}>
+    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+      <View
+        style={{
+          flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+          paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+        }}
+      >
+        <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
+          <ArrowLeft size={24} color={paleta.texto} />
+        </Presionable>
+        <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>
+          {id ? 'Editar Producto de Granja' : 'Nuevo Producto de Granja'}
+        </Text>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ alignItems: 'center' }}>
+          <Presionable
+            accessibilityRole="button"
+            accessibilityLabel="Añadir foto"
+            onPress={handleSeleccionarImagen}
+            style={{
+              width: 140, height: 140, borderRadius: radio.full,
+              backgroundColor: paleta.superficie2, alignItems: 'center', justifyContent: 'center',
+            }}
+          >
             {fotoUrl ? (
-              <Image source={{ uri: fotoUrl }} style={styles.imagePreview} />
+              <Image source={{ uri: fotoUrl }} style={{ width: 140, height: 140, borderRadius: radio.full }} />
             ) : (
-              <View style={styles.imagePlaceholder}>
-                <Ionicons name="camera-outline" size={48} color="#9ca3af" />
-                <Text style={styles.imagePlaceholderText}>Añadir foto</Text>
+              <View style={{ alignItems: 'center', gap: espacio.s }}>
+                <Camera size={40} color={paleta.texto3} />
+                <Text style={[tipografia.caption, { color: paleta.texto3 }]}>Añadir foto</Text>
               </View>
             )}
             {loading && (
-              <View style={styles.imageLoadingOverlay}>
-                <ActivityIndicator color="#ffffff" size="large" />
+              <View
+                style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: paleta.overlay, borderRadius: radio.full,
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <ActivityIndicator color={paleta.sobrePrimario} size="large" />
               </View>
             )}
-            <View style={styles.editIconBadge}>
-              <Ionicons name="pencil" size={16} color="#ffffff" />
+            <View
+              style={{
+                position: 'absolute', bottom: 0, right: 0, width: 36, height: 36, borderRadius: radio.full,
+                backgroundColor: paleta.primario, alignItems: 'center', justifyContent: 'center',
+                borderWidth: 3, borderColor: paleta.fondo,
+              }}
+            >
+              <Pencil size={16} color={paleta.sobrePrimario} />
             </View>
-          </TouchableOpacity>
+          </Presionable>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Información del Producto</Text>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nombre *</Text>
-            <TextInput style={styles.input} value={nombre} onChangeText={setNombre} placeholder="Ej. Huevos Criollos" placeholderTextColor="#9ca3af" />
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>Información del producto</Text>
+          <View style={{ marginTop: espacio.m }}>
+            <CampoTexto etiqueta="Nombre *" value={nombre} onChangeText={setNombre} placeholder="Ej. Huevos Criollos" />
           </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Unidad de Medida *</Text>
-            <TextInput style={styles.input} value={unidadMedida} onChangeText={setUnidadMedida} placeholder="Ej. Cubeta, Unidad, Kg" placeholderTextColor="#9ca3af" />
+          <View style={{ marginTop: espacio.m }}>
+            <CampoTexto
+              etiqueta="Unidad de medida *"
+              value={unidadMedida}
+              onChangeText={setUnidadMedida}
+              placeholder="Ej. Cubeta, Unidad, Kg"
+            />
           </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Precio Sugerido (Opcional)</Text>
-            <TextInput style={styles.input} value={precioSugerido} onChangeText={setPrecioSugerido} placeholder="0.00" keyboardType="numeric" placeholderTextColor="#9ca3af" />
+          <View style={{ marginTop: espacio.m }}>
+            <CampoTexto
+              etiqueta="Precio sugerido (opcional)"
+              value={precioSugerido}
+              onChangeText={setPrecioSugerido}
+              placeholder="0.00"
+              keyboardType="number-pad"
+            />
           </View>
-        </View>
+        </Tarjeta>
       </ScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
+      <View style={{ padding: espacio.l, paddingBottom: espacio.xxxl, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
+        <Boton
+          titulo={id ? 'Actualizar producto' : 'Guardar producto'}
           onPress={handleGuardar}
-          disabled={loading}
-          activeOpacity={0.8}
-        >
-          {loading ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <>
-              <Ionicons name="save-outline" size={20} color="#ffffff" style={styles.buttonIcon} />
-              <Text style={styles.saveButtonText}>{id ? 'Actualizar Producto' : 'Guardar Producto'}</Text>
-            </>
-          )}
-        </TouchableOpacity>
+          cargando={loading}
+          icono={<Save size={20} color={paleta.sobrePrimario} />}
+        />
       </View>
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { paddingBottom: 100, padding: 16 },
-  imageSection: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  imagePickerContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
-    position: 'relative',
-  },
-  imagePreview: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 70,
-  },
-  imagePlaceholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imagePlaceholderText: {
-    color: '#9ca3af',
-    fontSize: 14,
-    marginTop: 8,
-    fontWeight: '500',
-  },
-  imageLoadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    borderRadius: 70,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  editIconBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#3b82f6',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#f9fafb',
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 16,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4b5563',
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#ffffff',
-    padding: 16,
-    paddingBottom: 32,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  saveButton: {
-    backgroundColor: '#3b82f6',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  saveButtonDisabled: {
-    opacity: 0.7,
-  },
-  buttonIcon: {
-    marginRight: 8,
-  },
-  saveButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-})

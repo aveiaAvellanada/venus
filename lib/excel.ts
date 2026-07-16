@@ -11,7 +11,9 @@ export async function leerExcel(uri: string): Promise<any[]> {
   return XLSX.utils.sheet_to_json(sheet);
 }
 
-const CATEGORIAS_VALIDAS = [
+// Las 7 categorías canónicas de calzado (PRD v4.0 §3). Única fuente de verdad:
+// cualquier pantalla que muestre chips de categoría debe importar esto.
+export const CATEGORIAS = [
   'Chanclas',
   'Escolar',
   'Botas caucho',
@@ -54,7 +56,7 @@ export function validarFilas(filas: any[]) {
 
     let validCategory: string | undefined;
     if (categoria) {
-      const match = CATEGORIAS_VALIDAS.find(c => 
+      const match = CATEGORIAS.find(c =>
         c.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === 
         String(categoria).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       );

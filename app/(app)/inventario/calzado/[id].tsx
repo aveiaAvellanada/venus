@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, Image, ScrollView, ActivityIndicator } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import { ArrowLeft, ImageOff, PackageX, Pencil } from 'lucide-react-native'
 import { useAuth, useRequireModulo } from '../../../../lib/auth'
 import { supabase } from '../../../../lib/supabase'
 import type { ProductoCalzado } from '../../../../lib/inventario'
+import { useTema } from '../../../../lib/tema'
+import { espacio, radio, tabular, tipografia } from '../../../../lib/theme'
+import { Badge, Boton, EstadoVacio, Presionable, Tarjeta } from '../../../../components/ui'
+
+function formatCOP(n: number): string {
+  return '$' + n.toLocaleString('es-CO')
+}
 
 export default function CalzadoDetailScreen() {
   const requireModulo = useRequireModulo('inventario-calzado')
@@ -14,6 +21,7 @@ export default function CalzadoDetailScreen() {
   const [loading, setLoading] = useState(true)
   const { perfil } = useAuth()
   const router = useRouter()
+  const { paleta } = useTema()
 
   const esDueno = perfil?.rol === 'dueno'
   const esEmpleado = perfil?.rol === 'empleado'
@@ -40,7 +48,7 @@ export default function CalzadoDetailScreen() {
             .order('created_at', { ascending: false })
             .limit(1)
             .single()
-          
+
           if (historial) {
             setCostoCompra(historial.costo_compra)
           }
@@ -56,197 +64,115 @@ export default function CalzadoDetailScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <View style={{ flex: 1, backgroundColor: paleta.fondo, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={paleta.primario} />
       </View>
     )
   }
 
   if (!producto) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Producto no encontrado</Text>
+      <View style={{ flex: 1, backgroundColor: paleta.fondo, justifyContent: 'center', padding: espacio.xl, gap: espacio.l }}>
+        <EstadoVacio icono={<PackageX />} titulo="Producto no encontrado" />
+        <Boton titulo="Volver" variante="fantasma" onPress={() => router.back()} />
       </View>
     )
   }
 
+  const stockBajo = producto.stock_actual <= producto.stock_minimo
+
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.imageContainer}>
+    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+      <View
+        style={{
+          flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+          paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+        }}
+      >
+        <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
+          <ArrowLeft size={24} color={paleta.texto} />
+        </Presionable>
+        <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Detalle del Calzado</Text>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ width: '100%', height: 260, borderRadius: radio.lg, overflow: 'hidden', backgroundColor: paleta.superficie2 }}>
           {producto.foto_url ? (
-            <Image source={{ uri: producto.foto_url }} style={styles.image} resizeMode="cover" />
+            <Image source={{ uri: producto.foto_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
           ) : (
-            <View style={[styles.image, styles.placeholderImage]}>
-              <Ionicons name="image-outline" size={64} color="#9ca3af" />
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <ImageOff size={56} color={paleta.texto3} />
             </View>
           )}
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryText}>{producto.categoria}</Text>
+          <View style={{ position: 'absolute', top: espacio.m, right: espacio.m }}>
+            <Badge texto={producto.categoria} tipo="neutro" />
           </View>
         </View>
 
-        <View style={styles.infoCard}>
-          <Text style={styles.title}>{producto.descripcion}</Text>
-          {producto.marca ? <Text style={styles.brand}>{producto.marca}</Text> : null}
-          <Text style={styles.reference}>Ref: {producto.referencia || 'Sin referencia'}</Text>
+        <Tarjeta>
+          <Text style={[tipografia.h1, { color: paleta.texto }]}>{producto.descripcion}</Text>
+          {producto.marca ? (
+            <Text style={[tipografia.cuerpoLg, { color: paleta.primario, marginTop: 2 }]}>{producto.marca}</Text>
+          ) : null}
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2, marginTop: 4 }]}>
+            Ref: {producto.referencia || 'Sin referencia'}
+          </Text>
 
-          <View style={styles.attributesRow}>
-            <View style={styles.attributeBox}>
-              <Text style={styles.attributeLabel}>Talla</Text>
-              <Text style={styles.attributeValue}>{producto.talla || '-'}</Text>
+          <View style={{ flexDirection: 'row', gap: espacio.s, marginTop: espacio.l }}>
+            <View style={{ flex: 1, backgroundColor: paleta.superficie2, borderRadius: radio.sm, padding: espacio.m, alignItems: 'center', gap: 4 }}>
+              <Text style={[tipografia.caption, { color: paleta.texto3 }]}>Talla</Text>
+              <Text style={[tipografia.h3, { color: paleta.texto }]}>{producto.talla || '-'}</Text>
             </View>
-            <View style={styles.attributeBox}>
-              <Text style={styles.attributeLabel}>Color</Text>
-              <Text style={styles.attributeValue}>{producto.color || '-'}</Text>
+            <View style={{ flex: 1, backgroundColor: paleta.superficie2, borderRadius: radio.sm, padding: espacio.m, alignItems: 'center', gap: 4 }}>
+              <Text style={[tipografia.caption, { color: paleta.texto3 }]}>Color</Text>
+              <Text style={[tipografia.h3, { color: paleta.texto }]}>{producto.color || '-'}</Text>
             </View>
-            <View style={styles.attributeBox}>
-              <Text style={styles.attributeLabel}>Stock</Text>
-              <Text style={[styles.attributeValue, producto.stock_actual <= producto.stock_minimo && styles.warningText]}>
+            <View style={{ flex: 1, backgroundColor: paleta.superficie2, borderRadius: radio.sm, padding: espacio.m, alignItems: 'center', gap: 4 }}>
+              <Text style={[tipografia.caption, { color: paleta.texto3 }]}>Stock</Text>
+              <Text style={[tipografia.h3, tabular, { color: stockBajo ? paleta.peligroTexto : paleta.texto }]}>
                 {producto.stock_actual}
               </Text>
             </View>
           </View>
+        </Tarjeta>
 
-          <View style={styles.priceSection}>
-            <Text style={styles.sectionTitle}>Precios de Venta</Text>
-            <View style={styles.priceRow}>
-              <View>
-                <Text style={styles.priceLabel}>Mínimo</Text>
-                <Text style={styles.priceValue}>${producto.precio_minimo.toLocaleString()}</Text>
-              </View>
-              <View style={styles.priceDivider} />
-              <View>
-                <Text style={styles.priceLabel}>Máximo</Text>
-                <Text style={styles.priceValue}>${producto.precio_maximo.toLocaleString()}</Text>
-              </View>
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>Precios de venta</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginTop: espacio.m }}>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={[tipografia.caption, { color: paleta.texto2 }]}>Mínimo</Text>
+              <Text style={[tipografia.h2, tabular, { color: paleta.exitoTexto }]}>{formatCOP(producto.precio_minimo)}</Text>
+            </View>
+            <View style={{ width: 1, height: 32, backgroundColor: paleta.borde }} />
+            <View style={{ alignItems: 'center' }}>
+              <Text style={[tipografia.caption, { color: paleta.texto2 }]}>Máximo</Text>
+              <Text style={[tipografia.h2, tabular, { color: paleta.exitoTexto }]}>{formatCOP(producto.precio_maximo)}</Text>
             </View>
           </View>
+        </Tarjeta>
 
-          {esDueno && (
-            <View style={styles.costSection}>
-              <Text style={styles.sectionTitle}>Costo de Compra (Solo Dueño)</Text>
-              <Text style={styles.costValue}>
-                {costoCompra ? `$${costoCompra.toLocaleString()}` : 'No registrado'}
-              </Text>
-            </View>
-          )}
-        </View>
+        {esDueno && (
+          <Tarjeta estilo={{ backgroundColor: paleta.advertenciaSoft, borderColor: paleta.advertenciaSoft }}>
+            <Text style={[tipografia.etiqueta, { color: paleta.advertenciaTexto }]}>Costo de compra (solo dueño)</Text>
+            <Text style={[tipografia.h2, tabular, { color: paleta.advertenciaTexto, marginTop: 4 }]}>
+              {costoCompra ? formatCOP(costoCompra) : 'No registrado'}
+            </Text>
+          </Tarjeta>
+        )}
       </ScrollView>
 
       {!esEmpleado && (
-        <View style={styles.footer}>
-          <TouchableOpacity 
-            style={styles.editButton} 
+        <View style={{ padding: espacio.l, paddingBottom: espacio.xxxl, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
+          <Boton
+            titulo="Editar producto"
+            icono={<Pencil size={20} color={paleta.sobrePrimario} />}
             onPress={() => router.push(`/inventario/calzado/editor?id=${producto.id}`)}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="pencil" size={20} color="#ffffff" style={styles.buttonIcon} />
-            <Text style={styles.editButtonText}>Editar Producto</Text>
-          </TouchableOpacity>
+          />
         </View>
       )}
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: { fontSize: 16, color: '#ef4444' },
-  scrollContent: { paddingBottom: 100 },
-  imageContainer: {
-    width: '100%',
-    height: 300,
-    backgroundColor: '#ffffff',
-    position: 'relative',
-  },
-  image: { width: '100%', height: '100%' },
-  placeholderImage: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#f3f4f6' },
-  categoryBadge: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  categoryText: { color: '#ffffff', fontSize: 13, fontWeight: '600' },
-  infoCard: {
-    backgroundColor: '#ffffff',
-    marginTop: -24,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  title: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 4 },
-  brand: { fontSize: 16, fontWeight: '600', color: '#3b82f6', marginBottom: 4 },
-  reference: { fontSize: 15, color: '#6b7280', marginBottom: 24 },
-  attributesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 32,
-    gap: 12,
-  },
-  attributeBox: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  attributeLabel: { fontSize: 12, color: '#64748b', marginBottom: 4, fontWeight: '500' },
-  attributeValue: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
-  warningText: { color: '#ef4444' },
-  priceSection: {
-    backgroundColor: '#f0fdf4',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  sectionTitle: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 12 },
-  priceRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
-  priceLabel: { fontSize: 13, color: '#166534', opacity: 0.8, marginBottom: 2, textAlign: 'center' },
-  priceValue: { fontSize: 20, fontWeight: '700', color: '#166534', textAlign: 'center' },
-  priceDivider: { width: 1, height: 30, backgroundColor: '#bbf7d0' },
-  costSection: {
-    backgroundColor: '#fffbeb',
-    borderRadius: 16,
-    padding: 16,
-  },
-  costValue: { fontSize: 20, fontWeight: '700', color: '#b45309' },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#ffffff',
-    padding: 16,
-    paddingBottom: 32,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  editButton: {
-    backgroundColor: '#3b82f6',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  buttonIcon: { marginRight: 8 },
-  editButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
-})

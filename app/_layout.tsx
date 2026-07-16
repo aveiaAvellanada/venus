@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { Stack } from 'expo-router'
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, Text, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
 import {
@@ -13,11 +13,14 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans'
 import { AuthProvider, useAuth } from '../lib/auth'
 import { TemaProvider, useTema } from '../lib/tema'
+import { espacio, tipografia } from '../lib/theme'
+import { Boton } from '../components/ui'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
 function Navegacion() {
   const { cargando, session, perfil, cerrarSesion } = useAuth()
+  const { paleta } = useTema()
 
   const salir = useCallback(async () => {
     try {
@@ -27,10 +30,19 @@ function Navegacion() {
     }
   }, [cerrarSesion])
 
+  const centro = {
+    flex: 1,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: espacio.l,
+    padding: espacio.xxl,
+    backgroundColor: paleta.fondo,
+  }
+
   if (cargando) {
     return (
-      <View style={styles.centro}>
-        <ActivityIndicator size="large" />
+      <View style={centro}>
+        <ActivityIndicator size="large" color={paleta.primario} />
       </View>
     )
   }
@@ -39,12 +51,14 @@ function Navegacion() {
   // ofrecemos cerrar sesión para volver al login (evita el loop de redirección).
   if (session && !perfil) {
     return (
-      <View style={styles.centro}>
-        <Text style={styles.titulo}>No pudimos cargar tu perfil</Text>
-        <Text style={styles.sub}>Revisa tu conexión e intenta de nuevo.</Text>
-        <Pressable style={styles.btn} onPress={salir} hitSlop={16}>
-          <Text style={styles.btnText}>Cerrar sesión</Text>
-        </Pressable>
+      <View style={centro}>
+        <Text style={[tipografia.h2, { color: paleta.texto, textAlign: 'center' }]}>
+          No pudimos cargar tu perfil
+        </Text>
+        <Text style={[tipografia.cuerpo, { color: paleta.texto2, textAlign: 'center' }]}>
+          Revisa tu conexión e intenta de nuevo.
+        </Text>
+        <Boton titulo="Cerrar sesión" onPress={salir} />
       </View>
     )
   }
@@ -78,11 +92,3 @@ export default function RootLayout() {
     </TemaProvider>
   )
 }
-
-const styles = StyleSheet.create({
-  centro: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24, backgroundColor: '#fff' },
-  titulo: { fontSize: 24, fontWeight: '700', textAlign: 'center' },
-  sub: { fontSize: 16, color: '#777', textAlign: 'center' },
-  btn: { marginTop: 8, backgroundColor: '#1E66F5', borderRadius: 16, paddingVertical: 18, paddingHorizontal: 32 },
-  btnText: { color: '#fff', fontSize: 18, fontWeight: '600' },
-})

@@ -7,19 +7,10 @@ export default function ProveedoresLayout() {
   if (requireModulo) return requireModulo
 
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: '#ffffff' },
-        headerShadowVisible: false,
-        headerTintColor: '#111827',
-        headerTitleStyle: { fontWeight: '600' },
-        contentStyle: { backgroundColor: '#f9fafb' },
-        headerTitleAlign: 'center',
-      }}
-    >
-      <Stack.Screen name="index" options={{ title: 'Proveedores' }} />
-      <Stack.Screen name="editor" options={{ title: 'Editor de Proveedor', presentation: 'modal' }} />
-      <Stack.Screen name="[id]" options={{ title: 'Detalle de Proveedor' }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="editor" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="[id]" />
     </Stack>
   )
 }

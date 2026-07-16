@@ -2,19 +2,27 @@ import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
   Linking,
   Modal,
-  TextInput,
   Platform,
   KeyboardAvoidingView,
 } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import {
+  ArrowLeft,
+  CircleAlert,
+  CircleCheckBig,
+  CreditCard,
+  MessageCircle,
+  Pencil,
+  Plus,
+  Receipt,
+  Trash2,
+  X,
+} from 'lucide-react-native'
 import { useAuth, useRequireModulo } from '../../../lib/auth'
 import {
   obtenerProveedorPorId,
@@ -31,12 +39,17 @@ import {
   type Compra,
   type CompraPago,
 } from '../../../lib/proveedores'
+import { useTema } from '../../../lib/tema'
+import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
+import { Badge, Boton, CampoTexto, CirculoIcono, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
 
 export default function ProveedorDetailScreen() {
   const requireModulo = useRequireModulo('proveedores')
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const { perfil } = useAuth()
+  const { paleta } = useTema()
+  const { mostrar } = useToast()
 
   // General States
   const [proveedor, setProveedor] = useState<Proveedor | null>(null)
@@ -75,7 +88,7 @@ export default function ProveedorDetailScreen() {
         obtenerProveedorPorId(id),
         listarCuentasBancarias(id),
       ])
-      
+
       setProveedor(dataProveedor)
       setCuentas(dataCuentas)
 
@@ -92,7 +105,7 @@ export default function ProveedorDetailScreen() {
       }
     } catch (err: any) {
       console.error('Error al cargar info general:', err)
-      Alert.alert('Error', 'No se pudo cargar la información general del proveedor.')
+      mostrar('No se pudo cargar la información general del proveedor.', 'error')
     } finally {
       setLoadingGeneral(false)
     }
@@ -110,7 +123,7 @@ export default function ProveedorDetailScreen() {
       ])
 
       setDeudaTotal(totalDeuda)
-      
+
       // Filter purchases on client-side to only show completed credit purchases with pending balance
       const creditPurchases = listaCompras.filter(
         c => c.condicion_pago === 'credito' && Number(c.saldo_pendiente) > 0
@@ -119,7 +132,7 @@ export default function ProveedorDetailScreen() {
       setHistorialPagos(listaPagos)
     } catch (err: any) {
       console.error('Error al cargar finanzas:', err)
-      Alert.alert('Error', 'No se pudo cargar la información financiera del proveedor.')
+      mostrar('No se pudo cargar la información financiera del proveedor.', 'error')
     } finally {
       setLoadingFinanzas(false)
     }
@@ -138,27 +151,27 @@ export default function ProveedorDetailScreen() {
   // WhatsApp contact trigger
   const handleWhatsAppContact = async (telefono: string | null) => {
     if (!telefono) {
-      Alert.alert('Teléfono faltante', 'Este proveedor no tiene teléfono registrado.')
+      mostrar('Este proveedor no tiene teléfono registrado.', 'error')
       return
     }
     const defaultMessage = 'Hola, nos contactamos de la Tienda de Calzado Venus.'
     const url = obtenerWhatsAppLink(telefono, defaultMessage)
     if (!url) {
-      Alert.alert('Error', 'El formato del número de teléfono no es válido.')
+      mostrar('El formato del número de teléfono no es válido.', 'error')
       return
     }
     try {
       await Linking.openURL(url)
     } catch (error) {
       console.error('Error opening WhatsApp:', error)
-      Alert.alert('Error', 'No se pudo abrir WhatsApp. Por favor verifica si tienes la aplicación instalada.')
+      mostrar('No se pudo abrir WhatsApp. Por favor verifica si tienes la aplicación instalada.', 'error')
     }
   }
 
   // Create Bank Account
   const handleGuardarCuenta = async () => {
     if (!banco.trim() || !numeroCuenta.trim()) {
-      Alert.alert('Campos obligatorios', 'El banco y el número de cuenta son obligatorios.')
+      mostrar('El banco y el número de cuenta son obligatorios.', 'error')
       return
     }
     if (!id) return
@@ -172,7 +185,7 @@ export default function ProveedorDetailScreen() {
         numero_cuenta: numeroCuenta.trim(),
         titular: titular.trim() || null,
       })
-      Alert.alert('Éxito', 'Cuenta bancaria agregada correctamente.')
+      mostrar('Cuenta bancaria agregada correctamente.')
       setCuentaModalVisible(false)
       // Reset form
       setBanco('')
@@ -184,13 +197,13 @@ export default function ProveedorDetailScreen() {
       setCuentas(updatedCuentas)
     } catch (err: any) {
       console.error('Error al guardar cuenta:', err)
-      Alert.alert('Error', err.message || 'No se pudo agregar la cuenta bancaria.')
+      mostrar(err.message || 'No se pudo agregar la cuenta bancaria.', 'error')
     } finally {
       setGuardandoCuenta(false)
     }
   }
 
-  // Delete Bank Account Prompt
+  // Delete Bank Account Prompt (confirmación destructiva: se mantiene en Alert.alert — Regla 9)
   const handleEliminarCuenta = (cuentaId: string) => {
     Alert.alert(
       'Eliminar Cuenta',
@@ -203,14 +216,14 @@ export default function ProveedorDetailScreen() {
           onPress: async () => {
             try {
               await eliminarCuentaBancaria(cuentaId)
-              Alert.alert('Éxito', 'Cuenta bancaria eliminada.')
+              mostrar('Cuenta bancaria eliminada.')
               if (id) {
                 const updatedCuentas = await listarCuentasBancarias(id)
                 setCuentas(updatedCuentas)
               }
             } catch (err: any) {
               console.error('Error al eliminar cuenta:', err)
-              Alert.alert('Error', err.message || 'No se pudo eliminar la cuenta.')
+              mostrar(err.message || 'No se pudo eliminar la cuenta.', 'error')
             }
           },
         },
@@ -224,12 +237,12 @@ export default function ProveedorDetailScreen() {
 
     const monto = parseFloat(montoPago)
     if (isNaN(monto) || monto <= 0) {
-      Alert.alert('Monto inválido', 'El monto debe ser un número mayor a cero.')
+      mostrar('El monto debe ser un número mayor a cero.', 'error')
       return
     }
 
     if (monto > Number(compraSeleccionada.saldo_pendiente)) {
-      Alert.alert('Monto excedido', 'El monto del pago supera el saldo pendiente de la compra.')
+      mostrar('El monto del pago supera el saldo pendiente de la compra.', 'error')
       return
     }
 
@@ -242,570 +255,507 @@ export default function ProveedorDetailScreen() {
         notas: notasPago.trim() || null,
       })
 
-      Alert.alert('Éxito', 'Pago registrado correctamente.')
+      mostrar('Pago registrado correctamente.')
       setPagoModalVisible(false)
       setMontoPago('')
       setNotasPago('')
       setCompraSeleccionada(null)
-      
+
       // Reload financial data
       await cargarInformacionFinanciera()
     } catch (err: any) {
       console.error('Error al guardar pago:', err)
-      Alert.alert('Error', err.message || 'No se pudo registrar el pago.')
+      mostrar(err.message || 'No se pudo registrar el pago.', 'error')
     } finally {
       setGuardandoPago(false)
     }
   }
 
+  const Encabezado = () => (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: espacio.m,
+        paddingHorizontal: espacio.xl,
+        paddingTop: 56,
+        paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]} numberOfLines={1}>
+        {proveedor?.nombre || 'Detalle de Proveedor'}
+      </Text>
+    </View>
+  )
+
   if (loadingGeneral) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.loadingText}>Cargando detalle del proveedor...</Text>
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: espacio.m }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Cargando detalle del proveedor...</Text>
+        </View>
       </View>
     )
   }
 
   if (!proveedor) {
     return (
-      <View style={styles.center}>
-        <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
-        <Text style={styles.errorText}>No se encontró el proveedor especificado.</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Volver</Text>
-        </TouchableOpacity>
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, gap: espacio.l }}>
+          <EstadoVacio icono={<CircleAlert />} titulo="No se encontró el proveedor especificado." />
+          <Boton titulo="Volver" variante="secundario" tamano="md" onPress={() => router.back()} />
+        </View>
       </View>
     )
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* 1. General Info Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.sectionTitle}>Información General</Text>
-            <TouchableOpacity
-              style={styles.editHeaderButton}
+    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+      <Encabezado />
+
+      <ScrollView
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 1. Información General */}
+        <Tarjeta>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: espacio.l }}>
+            <Text style={[tipografia.h3, { color: paleta.texto }]}>Información General</Text>
+            <Presionable
+              accessibilityRole="button"
+              accessibilityLabel="Editar información general"
               onPress={() => router.push(`/proveedores/editor?id=${proveedor.id}`)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.xs }}
             >
-              <Ionicons name="create-outline" size={20} color="#3b82f6" />
-              <Text style={styles.editHeaderText}>Editar</Text>
-            </TouchableOpacity>
+              <Pencil size={18} color={paleta.primario} />
+              <Text style={[tipografia.etiqueta, { color: paleta.primario }]}>Editar</Text>
+            </Presionable>
           </View>
 
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>Nombre</Text>
-            <Text style={styles.infoValue}>{proveedor.nombre}</Text>
-          </View>
-
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>NIT / CC</Text>
-            <Text style={styles.infoValue}>{proveedor.nit_cedula || 'No registrado'}</Text>
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.infoBlock, { flex: 1 }]}>
-              <Text style={styles.infoLabel}>Teléfono</Text>
-              <Text style={styles.infoValue}>{proveedor.telefono || 'No registrado'}</Text>
+          <View style={{ gap: espacio.l }}>
+            <View>
+              <Text style={[tipografia.caption, { color: paleta.texto3 }]}>Nombre</Text>
+              <Text style={[tipografia.cuerpo, { color: paleta.texto, marginTop: 2 }]}>{proveedor.nombre}</Text>
             </View>
-            {proveedor.telefono && (
-              <TouchableOpacity
-                style={styles.whatsappButton}
-                onPress={() => handleWhatsAppContact(proveedor.telefono)}
-                testID="whatsapp-btn"
-              >
-                <Ionicons name="logo-whatsapp" size={18} color="#ffffff" style={styles.waIcon} />
-                <Text style={styles.whatsappButtonText}>Escribir</Text>
-              </TouchableOpacity>
-            )}
-          </View>
 
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>Ciudad / Dirección</Text>
-            <Text style={styles.infoValue}>{proveedor.ciudad || 'No registrado'}</Text>
-          </View>
-
-          {email ? (
-            <View style={styles.infoBlock}>
-              <Text style={styles.infoLabel}>Correo Electrónico (Email)</Text>
-              <Text style={styles.infoValue}>{email}</Text>
+            <View>
+              <Text style={[tipografia.caption, { color: paleta.texto3 }]}>NIT / CC</Text>
+              <Text style={[tipografia.cuerpo, { color: paleta.texto, marginTop: 2 }]}>
+                {proveedor.nit_cedula || 'No registrado'}
+              </Text>
             </View>
-          ) : null}
 
-          {parsedNotas ? (
-            <View style={styles.infoBlock}>
-              <Text style={styles.infoLabel}>Notas</Text>
-              <Text style={styles.infoValue}>{parsedNotas}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[tipografia.caption, { color: paleta.texto3 }]}>Teléfono</Text>
+                <Text style={[tipografia.cuerpo, { color: paleta.texto, marginTop: 2 }]}>
+                  {proveedor.telefono || 'No registrado'}
+                </Text>
+              </View>
+              {proveedor.telefono && (
+                <Presionable
+                  accessibilityRole="button"
+                  accessibilityLabel="Escribir por WhatsApp"
+                  onPress={() => handleWhatsAppContact(proveedor.telefono)}
+                  testID="whatsapp-btn"
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: espacio.xs,
+                    backgroundColor: paleta.exitoSoft,
+                    paddingHorizontal: espacio.l,
+                    paddingVertical: espacio.s,
+                    borderRadius: radio.sm,
+                  }}
+                >
+                  <MessageCircle size={18} color={paleta.exito} />
+                  <Text style={[tipografia.etiqueta, { color: paleta.exitoTexto }]}>Escribir</Text>
+                </Presionable>
+              )}
             </View>
-          ) : null}
 
-          <View style={styles.statusRow}>
-            <Text style={styles.infoLabel}>Estado</Text>
-            <View style={[styles.badge, proveedor.activo ? styles.badgeActive : styles.badgeInactive]}>
-              <Text style={styles.badgeText}>{proveedor.activo ? 'ACTIVO' : 'INACTIVO'}</Text>
+            <View>
+              <Text style={[tipografia.caption, { color: paleta.texto3 }]}>Ciudad / Dirección</Text>
+              <Text style={[tipografia.cuerpo, { color: paleta.texto, marginTop: 2 }]}>
+                {proveedor.ciudad || 'No registrado'}
+              </Text>
+            </View>
+
+            {email ? (
+              <View>
+                <Text style={[tipografia.caption, { color: paleta.texto3 }]}>Correo Electrónico (Email)</Text>
+                <Text style={[tipografia.cuerpo, { color: paleta.texto, marginTop: 2 }]}>{email}</Text>
+              </View>
+            ) : null}
+
+            {parsedNotas ? (
+              <View>
+                <Text style={[tipografia.caption, { color: paleta.texto3 }]}>Notas</Text>
+                <Text style={[tipografia.cuerpo, { color: paleta.texto, marginTop: 2 }]}>{parsedNotas}</Text>
+              </View>
+            ) : null}
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.m }}>
+              <Text style={[tipografia.caption, { color: paleta.texto3 }]}>Estado</Text>
+              <Badge texto={proveedor.activo ? 'ACTIVO' : 'INACTIVO'} tipo={proveedor.activo ? 'exito' : 'peligro'} />
             </View>
           </View>
-        </View>
+        </Tarjeta>
 
-        {/* 2. Bank Accounts Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.sectionTitle}>Cuentas Bancarias</Text>
-            <TouchableOpacity
-              style={styles.addButton}
+        {/* 2. Cuentas Bancarias */}
+        <Tarjeta>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: espacio.l }}>
+            <Text style={[tipografia.h3, { color: paleta.texto }]}>Cuentas Bancarias</Text>
+            <Presionable
+              accessibilityRole="button"
+              accessibilityLabel="Agregar cuenta bancaria"
               onPress={() => setCuentaModalVisible(true)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.xs }}
             >
-              <Ionicons name="add-circle-outline" size={20} color="#3b82f6" />
-              <Text style={styles.addButtonText}>Agregar</Text>
-            </TouchableOpacity>
+              <Plus size={18} color={paleta.primario} />
+              <Text style={[tipografia.etiqueta, { color: paleta.primario }]}>Agregar</Text>
+            </Presionable>
           </View>
 
           {cuentas.length === 0 ? (
-            <View style={styles.emptyCardContainer}>
-              <Ionicons name="card-outline" size={32} color="#9ca3af" />
-              <Text style={styles.emptyCardText}>No hay cuentas bancarias registradas.</Text>
-            </View>
+            <EstadoVacio icono={<CreditCard />} titulo="No hay cuentas bancarias registradas." />
           ) : (
-            cuentas.map((cuenta) => (
-              <View key={cuenta.id} style={styles.cuentaRow}>
-                <View style={styles.cuentaDetails}>
-                  <Text style={styles.cuentaBanco}>{cuenta.banco}</Text>
-                  <Text style={styles.cuentaMeta}>
+            cuentas.map((cuenta, idx) => (
+              <View
+                key={cuenta.id}
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingVertical: espacio.m,
+                  borderTopWidth: idx > 0 ? 1 : 0,
+                  borderTopColor: paleta.borde,
+                }}
+              >
+                <View style={{ flex: 1, marginRight: espacio.m }}>
+                  <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>{cuenta.banco}</Text>
+                  <Text style={[tipografia.caption, { color: paleta.texto2, marginTop: 2 }]}>
                     {cuenta.tipo_cuenta === 'ahorros' ? 'Ahorros' : 'Corriente'} · {cuenta.numero_cuenta}
                   </Text>
                   {cuenta.titular && (
-                    <Text style={styles.cuentaTitular}>Titular: {cuenta.titular}</Text>
+                    <Text style={[tipografia.caption, { color: paleta.texto3, marginTop: 2 }]}>
+                      Titular: {cuenta.titular}
+                    </Text>
                   )}
                 </View>
-                <TouchableOpacity
-                  style={styles.deleteCuentaBtn}
+                <Presionable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Eliminar cuenta ${cuenta.banco}`}
                   onPress={() => handleEliminarCuenta(cuenta.id)}
                   hitSlop={8}
                 >
-                  <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                </TouchableOpacity>
+                  <Trash2 size={20} color={paleta.peligro} />
+                </Presionable>
               </View>
             ))
           )}
-        </View>
+        </Tarjeta>
 
-        {/* 3. Owner-Only Financial Panel */}
+        {/* 3. Panel financiero (solo dueño) */}
         {perfil?.rol === 'dueno' && (
-          <View testID="financial-panel">
+          <View testID="financial-panel" style={{ gap: espacio.l }}>
             {loadingFinanzas ? (
-              <View style={styles.card}>
-                <ActivityIndicator size="small" color="#3b82f6" />
-                <Text style={styles.loadingText}>Cargando información financiera...</Text>
-              </View>
-            ) : (
-              <>
-                {/* Consolidated Debt Card */}
-                <View style={[styles.card, styles.debtCard]}>
-                  <Text style={styles.debtLabel}>Deuda Total Consolidada</Text>
-                  <Text style={styles.debtValue}>
-                    ${deudaTotal.toLocaleString('es-CO')}
+              <Tarjeta>
+                <View style={{ alignItems: 'center', gap: espacio.s }}>
+                  <ActivityIndicator size="small" color={paleta.primario} />
+                  <Text style={[tipografia.caption, { color: paleta.texto2 }]}>
+                    Cargando información financiera...
                   </Text>
                 </View>
+              </Tarjeta>
+            ) : (
+              <>
+                {/* Deuda consolidada */}
+                <Tarjeta estilo={{ backgroundColor: paleta.primarioSoft, borderColor: paleta.primario }}>
+                  <Text style={[tipografia.etiqueta, { color: paleta.primario }]}>DEUDA TOTAL CONSOLIDADA</Text>
+                  <Text style={[tipografia.h1, tabular, { color: paleta.texto, marginTop: 4 }]}>
+                    ${deudaTotal.toLocaleString('es-CO')}
+                  </Text>
+                </Tarjeta>
 
-                {/* Credit Purchases Card */}
-                <View style={styles.card}>
-                  <Text style={styles.sectionTitle}>Compras a Crédito Pendientes</Text>
+                {/* Compras a crédito pendientes */}
+                <Tarjeta>
+                  <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.l }]}>
+                    Compras a Crédito Pendientes
+                  </Text>
                   {comprasCredito.length === 0 ? (
-                    <View style={styles.emptyCardContainer}>
-                      <Ionicons name="checkmark-circle-outline" size={32} color="#10b981" />
-                      <Text style={styles.emptyCardText}>No hay compras con saldo pendiente.</Text>
-                    </View>
+                    <EstadoVacio icono={<CircleCheckBig />} titulo="No hay compras con saldo pendiente." />
                   ) : (
-                    comprasCredito.map((compra) => (
-                      <View key={compra.id} style={styles.purchaseRow}>
-                        <View style={styles.purchaseMeta}>
-                          <Text style={styles.purchaseDate}>
+                    comprasCredito.map((compra, idx) => (
+                      <View
+                        key={compra.id}
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          paddingVertical: espacio.m,
+                          borderTopWidth: idx > 0 ? 1 : 0,
+                          borderTopColor: paleta.borde,
+                        }}
+                      >
+                        <View style={{ flex: 1, marginRight: espacio.m }}>
+                          <Text style={[tipografia.caption, { color: paleta.texto2 }]}>
                             Fecha: {new Date(compra.created_at).toLocaleDateString('es-CO')}
                           </Text>
-                          <Text style={styles.purchaseTotal}>
+                          <Text style={[tipografia.caption, tabular, { color: paleta.texto3, marginTop: 2 }]}>
                             Total: ${Number(compra.total).toLocaleString('es-CO')}
                           </Text>
-                          <Text style={styles.purchaseSaldo}>
+                          <Text style={[tipografia.cuerpo, tabular, { color: paleta.peligroTexto, marginTop: 2 }]}>
                             Saldo: ${Number(compra.saldo_pendiente).toLocaleString('es-CO')}
                           </Text>
                         </View>
-                        <TouchableOpacity
-                          style={styles.payBtn}
+                        <Boton
+                          titulo="Registrar Pago"
+                          variante="secundario"
+                          tamano="md"
                           onPress={() => {
                             setCompraSeleccionada(compra)
                             setPagoModalVisible(true)
                           }}
-                        >
-                          <Text style={styles.payBtnText}>Registrar Pago</Text>
-                        </TouchableOpacity>
+                        />
                       </View>
                     ))
                   )}
-                </View>
+                </Tarjeta>
 
-                {/* Payment History Card */}
-                <View style={styles.card}>
-                  <Text style={styles.sectionTitle}>Historial de Pagos</Text>
+                {/* Historial de pagos */}
+                <Tarjeta>
+                  <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.l }]}>Historial de Pagos</Text>
                   {historialPagos.length === 0 ? (
-                    <View style={styles.emptyCardContainer}>
-                      <Ionicons name="receipt-outline" size={32} color="#9ca3af" />
-                      <Text style={styles.emptyCardText}>No se han registrado pagos para este proveedor.</Text>
-                    </View>
+                    <EstadoVacio icono={<Receipt />} titulo="No se han registrado pagos para este proveedor." />
                   ) : (
-                    historialPagos.map((pago) => (
-                      <View key={pago.id} style={styles.paymentRow}>
-                        <View style={styles.paymentMeta}>
-                          <Text style={styles.paymentMonto}>
+                    historialPagos.map((pago, idx) => (
+                      <View
+                        key={pago.id}
+                        style={{
+                          paddingVertical: espacio.m,
+                          borderTopWidth: idx > 0 ? 1 : 0,
+                          borderTopColor: paleta.borde,
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                          <Text style={[tipografia.cuerpoLg, tabular, { color: paleta.exitoTexto }]}>
                             ${Number(pago.monto).toLocaleString('es-CO')}
                           </Text>
-                          <Text style={styles.paymentDate}>
-                            {pago.fecha}
-                          </Text>
+                          <Text style={[tipografia.caption, { color: paleta.texto3 }]}>{pago.fecha}</Text>
                         </View>
                         {pago.notas ? (
-                          <Text style={styles.paymentNotas}>{pago.notas}</Text>
+                          <Text style={[tipografia.caption, { color: paleta.texto2, marginTop: 2, fontStyle: 'italic' }]}>
+                            {pago.notas}
+                          </Text>
                         ) : null}
                       </View>
                     ))
                   )}
-                </View>
+                </Tarjeta>
               </>
             )}
           </View>
         )}
-
       </ScrollView>
 
-      {/* 4. Bank Account Modal */}
+      {/* 4. Modal de nueva cuenta bancaria */}
       <Modal
         animationType="slide"
-        transparent={true}
+        transparent
         visible={cuentaModalVisible}
         onRequestClose={() => setCuentaModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.modalContainer}
+            style={{ backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '85%' }}
           >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Nueva Cuenta Bancaria</Text>
-              <TouchableOpacity onPress={() => setCuentaModalVisible(false)} hitSlop={12}>
-                <Ionicons name="close" size={24} color="#4b5563" />
-              </TouchableOpacity>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingHorizontal: espacio.xl,
+                paddingVertical: espacio.l,
+                borderBottomWidth: 1,
+                borderBottomColor: paleta.borde,
+              }}
+            >
+              <Text style={[tipografia.h3, { color: paleta.texto }]}>Nueva Cuenta Bancaria</Text>
+              <Presionable
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar"
+                onPress={() => setCuentaModalVisible(false)}
+                hitSlop={12}
+              >
+                <X size={24} color={paleta.texto2} />
+              </Presionable>
             </View>
 
-            <ScrollView contentContainerStyle={styles.modalForm} showsVerticalScrollIndicator={false}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Banco *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={banco}
-                  onChangeText={setBanco}
-                  placeholder="ej: Bancolombia, Nequi, Daviplata"
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
+            <ScrollView
+              contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.l }}
+              showsVerticalScrollIndicator={false}
+            >
+              <CampoTexto
+                etiqueta="Banco *"
+                value={banco}
+                onChangeText={setBanco}
+                placeholder="ej: Bancolombia, Nequi, Daviplata"
+                testID="input-banco"
+              />
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Tipo de Cuenta *</Text>
-                <View style={styles.pickerRow}>
-                  <TouchableOpacity
-                    style={[styles.pickerBtn, tipoCuenta === 'ahorros' && styles.pickerBtnActive]}
-                    onPress={() => setTipoCuenta('ahorros')}
-                  >
-                    <Text style={[styles.pickerBtnText, tipoCuenta === 'ahorros' && styles.pickerBtnTextActive]}>
-                      Ahorros
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.pickerBtn, tipoCuenta === 'corriente' && styles.pickerBtnActive]}
-                    onPress={() => setTipoCuenta('corriente')}
-                  >
-                    <Text style={[styles.pickerBtnText, tipoCuenta === 'corriente' && styles.pickerBtnTextActive]}>
-                      Corriente
-                    </Text>
-                  </TouchableOpacity>
+              <View>
+                <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>
+                  Tipo de Cuenta *
+                </Text>
+                <View style={{ flexDirection: 'row', gap: espacio.s }}>
+                  {(['ahorros', 'corriente'] as const).map((tipo) => {
+                    const activo = tipoCuenta === tipo
+                    return (
+                      <Presionable
+                        key={tipo}
+                        accessibilityRole="button"
+                        accessibilityLabel={tipo === 'ahorros' ? 'Ahorros' : 'Corriente'}
+                        accessibilityState={{ selected: activo }}
+                        onPress={() => setTipoCuenta(tipo)}
+                        style={{
+                          flex: 1,
+                          paddingVertical: espacio.m,
+                          borderRadius: radio.sm,
+                          alignItems: 'center',
+                          backgroundColor: activo ? paleta.primarioSoft : paleta.superficie2,
+                          borderWidth: 1,
+                          borderColor: activo ? paleta.primario : paleta.borde,
+                        }}
+                      >
+                        <Text style={[tipografia.cuerpo, { color: activo ? paleta.primario : paleta.texto2 }]}>
+                          {tipo === 'ahorros' ? 'Ahorros' : 'Corriente'}
+                        </Text>
+                      </Presionable>
+                    )
+                  })}
                 </View>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Número de Cuenta *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={numeroCuenta}
-                  onChangeText={setNumeroCuenta}
-                  placeholder="Número de cuenta"
-                  keyboardType="numeric"
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
+              <CampoTexto
+                etiqueta="Número de Cuenta *"
+                value={numeroCuenta}
+                onChangeText={setNumeroCuenta}
+                placeholder="Número de cuenta"
+                keyboardType="number-pad"
+                testID="input-numero-cuenta"
+              />
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Titular (Opcional)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={titular}
-                  onChangeText={setTitular}
-                  placeholder="Nombre del titular"
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
+              <CampoTexto
+                etiqueta="Titular (Opcional)"
+                value={titular}
+                onChangeText={setTitular}
+                placeholder="Nombre del titular"
+                testID="input-titular"
+              />
 
-              <TouchableOpacity
-                style={[styles.saveBtn, guardandoCuenta && styles.saveBtnDisabled]}
+              <Boton
+                titulo="Guardar Cuenta"
                 onPress={handleGuardarCuenta}
-                disabled={guardandoCuenta}
-              >
-                {guardandoCuenta ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text style={styles.saveBtnText}>Guardar Cuenta</Text>
-                )}
-              </TouchableOpacity>
+                cargando={guardandoCuenta}
+                deshabilitado={guardandoCuenta}
+              />
             </ScrollView>
           </KeyboardAvoidingView>
         </View>
       </Modal>
 
-      {/* 5. Payment Modal */}
+      {/* 5. Modal de registro de pago */}
       <Modal
         animationType="slide"
-        transparent={true}
+        transparent
         visible={pagoModalVisible}
         onRequestClose={() => {
           setPagoModalVisible(false)
           setCompraSeleccionada(null)
         }}
       >
-        <View style={styles.modalOverlay}>
+        <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.modalContainer}
+            style={{ backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '85%' }}
           >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Registrar Pago</Text>
-              <TouchableOpacity
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingHorizontal: espacio.xl,
+                paddingVertical: espacio.l,
+                borderBottomWidth: 1,
+                borderBottomColor: paleta.borde,
+              }}
+            >
+              <Text style={[tipografia.h3, { color: paleta.texto }]}>Registrar Pago</Text>
+              <Presionable
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar"
                 onPress={() => {
                   setPagoModalVisible(false)
                   setCompraSeleccionada(null)
                 }}
                 hitSlop={12}
               >
-                <Ionicons name="close" size={24} color="#4b5563" />
-              </TouchableOpacity>
+                <X size={24} color={paleta.texto2} />
+              </Presionable>
             </View>
 
             {compraSeleccionada && (
-              <ScrollView contentContainerStyle={styles.modalForm} showsVerticalScrollIndicator={false}>
-                <View style={styles.purchaseSummary}>
-                  <Text style={styles.summaryLabel}>
+              <ScrollView
+                contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.l }}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={{ backgroundColor: paleta.superficie2, borderRadius: radio.sm, padding: espacio.l, gap: 4 }}>
+                  <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>
                     Compra: {new Date(compraSeleccionada.created_at).toLocaleDateString('es-CO')}
                   </Text>
-                  <Text style={styles.summaryLabel}>
+                  <Text style={[tipografia.cuerpo, tabular, { color: paleta.texto2 }]}>
                     Saldo Pendiente: ${Number(compraSeleccionada.saldo_pendiente).toLocaleString('es-CO')}
                   </Text>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Monto del Pago *</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={montoPago}
-                    onChangeText={setMontoPago}
-                    placeholder="Monto en COP"
-                    keyboardType="numeric"
-                    placeholderTextColor="#9ca3af"
-                  />
-                </View>
+                <CampoTexto
+                  etiqueta="Monto del Pago *"
+                  value={montoPago}
+                  onChangeText={setMontoPago}
+                  placeholder="Monto en COP"
+                  keyboardType="number-pad"
+                  testID="input-monto-pago"
+                />
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Notas / Observaciones</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    value={notasPago}
-                    onChangeText={setNotasPago}
-                    placeholder="Comprobante, Nequi ref, etc."
-                    multiline
-                    numberOfLines={3}
-                    placeholderTextColor="#9ca3af"
-                  />
-                </View>
+                <CampoTexto
+                  etiqueta="Notas / Observaciones"
+                  value={notasPago}
+                  onChangeText={setNotasPago}
+                  placeholder="Comprobante, Nequi ref, etc."
+                  multiline
+                  numberOfLines={3}
+                  testID="input-notas-pago"
+                />
 
-                <TouchableOpacity
-                  style={[styles.saveBtn, guardandoPago && styles.saveBtnDisabled]}
+                <Boton
+                  titulo="Registrar Pago"
                   onPress={handleGuardarPago}
-                  disabled={guardandoPago}
-                >
-                  {guardandoPago ? (
-                    <ActivityIndicator color="#ffffff" />
-                  ) : (
-                    <Text style={styles.saveBtnText}>Registrar Pago</Text>
-                  )}
-                </TouchableOpacity>
+                  cargando={guardandoPago}
+                  deshabilitado={guardandoPago}
+                />
               </ScrollView>
             )}
           </KeyboardAvoidingView>
         </View>
       </Modal>
-
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  loadingText: { marginTop: 12, color: '#4b5563', fontSize: 15 },
-  errorText: { fontSize: 15, color: '#ef4444', textAlign: 'center', marginTop: 12, marginBottom: 16 },
-  backButton: { backgroundColor: '#3b82f6', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
-  backButtonText: { color: '#ffffff', fontWeight: '600', fontSize: 14 },
-  scrollContent: { padding: 16, paddingBottom: 60 },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  editHeaderButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  editHeaderText: { fontSize: 14, color: '#3b82f6', fontWeight: '600' },
-  addButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  addButtonText: { fontSize: 14, color: '#3b82f6', fontWeight: '600' },
-  infoBlock: { marginBottom: 14 },
-  infoLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280', marginBottom: 4, textTransform: 'uppercase' },
-  infoValue: { fontSize: 15, color: '#111827', fontWeight: '500' },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-  whatsappButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#22c55e',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  waIcon: { marginRight: 6 },
-  whatsappButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '600' },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  badgeActive: { backgroundColor: '#dcfce7' },
-  badgeInactive: { backgroundColor: '#fee2e2' },
-  badgeText: { fontSize: 12, fontWeight: '700', color: '#111827' },
-  emptyCardContainer: { alignItems: 'center', paddingVertical: 24, gap: 8 },
-  emptyCardText: { color: '#9ca3af', fontSize: 14, textAlign: 'center' },
-  cuentaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  cuentaDetails: { flex: 1, marginRight: 16 },
-  cuentaBanco: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  cuentaMeta: { fontSize: 13, color: '#4b5563', marginTop: 2 },
-  cuentaTitular: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  deleteCuentaBtn: { padding: 8 },
-  debtCard: { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' },
-  debtLabel: { fontSize: 13, fontWeight: '600', color: '#1d4ed8', textTransform: 'uppercase', marginBottom: 6 },
-  debtValue: { fontSize: 24, fontWeight: '800', color: '#1e3a8a' },
-  purchaseRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  purchaseMeta: { flex: 1, marginRight: 16 },
-  purchaseDate: { fontSize: 14, color: '#4b5563' },
-  purchaseTotal: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  purchaseSaldo: { fontSize: 14, fontWeight: '600', color: '#b91c1c', marginTop: 2 },
-  payBtn: { backgroundColor: '#3b82f6', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
-  payBtnText: { color: '#ffffff', fontSize: 12, fontWeight: '600' },
-  paymentRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  paymentMeta: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  paymentMonto: { fontSize: 15, fontWeight: '600', color: '#10b981' },
-  paymentDate: { fontSize: 13, color: '#6b7280' },
-  paymentNotas: { fontSize: 13, color: '#4b5563', fontStyle: 'italic' },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContainer: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '85%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  modalForm: { padding: 20, paddingBottom: 40 },
-  inputGroup: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: '#4b5563', marginBottom: 6 },
-  input: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  textArea: { height: 74, textAlignVertical: 'top' },
-  pickerRow: { flexDirection: 'row', gap: 10 },
-  pickerBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  pickerBtnActive: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
-  pickerBtnText: { fontSize: 14, fontWeight: '600', color: '#4b5563' },
-  pickerBtnTextActive: { color: '#ffffff' },
-  saveBtn: {
-    backgroundColor: '#3b82f6',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  saveBtnDisabled: { opacity: 0.7 },
-  saveBtnText: { color: '#ffffff', fontSize: 15, fontWeight: '600' },
-  purchaseSummary: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 16,
-  },
-  summaryLabel: { fontSize: 14, color: '#374151', fontWeight: '500', marginBottom: 4 },
-})

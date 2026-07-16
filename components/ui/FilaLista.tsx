@@ -47,7 +47,7 @@ export function FilaLista({ icono, titulo, subtitulo, derecha, chevron = false, 
   if (!onPress) return contenido(false)
 
   return (
-    <Pressable accessibilityRole="button" onPress={onPress}>
+    <Pressable accessibilityRole="button" accessibilityLabel={titulo} onPress={onPress}>
       {({ pressed }) => contenido(pressed)}
     </Pressable>
   )

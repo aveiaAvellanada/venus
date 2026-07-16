@@ -1755,8 +1755,16 @@ export type Database = {
         Returns: number
       }
       obtener_reporte_diario: { Args: { p_fecha: string }; Returns: Json }
+      obtener_gastos_periodo: {
+        Args: { p_desde: string; p_hasta: string }
+        Returns: Json
+      }
       obtener_reporte_periodo: {
         Args: { p_desde: string; p_hasta: string }
+        Returns: Json
+      }
+      obtener_ventas_por_subperiodo: {
+        Args: { p_desde: string; p_hasta: string; p_granularidad: string }
         Returns: Json
       }
       obtener_resumen_dia: { Args: { p_fecha: string }; Returns: Json }

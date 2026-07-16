@@ -720,8 +720,15 @@ describe('Devoluciones UI — tests de integración', () => {
 
       const root = tree!.root
 
-      // Intentar confirmar sin motivo
+      // Sin motivo, el botón de confirmar debe quedar deshabilitado (puedeConfirmar
+      // exige motivo.trim().length > 0), por lo que Boton anula su onPress. La guarda
+      // interna `if (!motivo.trim())` en handleConfirmar queda inalcanzable desde la UI
+      // en este estado: es defensa en profundidad ya cubierta por la condición de
+      // habilitación, así que verificamos el contrato observable (disabled + no-op)
+      // en vez de invocar el guard directamente.
       const btnConfirmar = root.findByProps({ accessibilityLabel: 'Confirmar devolución' })
+      expect(btnConfirmar.props.accessibilityState.disabled).toBe(true)
+
       await act(async () => {
         btnConfirmar.props.onPress?.()
       })

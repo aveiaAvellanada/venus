@@ -39,6 +39,14 @@ export function CampoTexto({ etiqueta, error, gigante = false, onFocus, onBlur, 
             color: paleta.texto,
             paddingHorizontal: espacio.l,
           },
+          resto.multiline
+            ? {
+                height: undefined,
+                minHeight: 100,
+                textAlignVertical: 'top' as const,
+                paddingVertical: espacio.m,
+              }
+            : null,
         ]}
         {...resto}
       />

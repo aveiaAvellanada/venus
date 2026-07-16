@@ -7,12 +7,12 @@ import type { Rol } from '../../../lib/permisos'
 import { useTema } from '../../../lib/tema'
 import type { ModoTema } from '../../../lib/theme'
 import { espacio, radio, tipografia } from '../../../lib/theme'
-import { Badge, CirculoIcono, ControlSegmentado, FilaLista, Tarjeta } from '../../../components/ui'
+import { Badge, CirculoIcono, ControlSegmentado, FilaLista, Presionable, Tarjeta } from '../../../components/ui'
 
 const NOMBRE_ROL: Record<Rol, string> = {
-  dueno: 'DUEÑO',
-  admin: 'ADMINISTRATIVA',
-  empleado: 'OPERATIVO',
+  dueno: 'Dueño',
+  admin: 'Administrativa',
+  empleado: 'Operativo',
 }
 
 const MODOS: ModoTema[] = ['claro', 'oscuro', 'sistema']
@@ -109,15 +109,15 @@ export default function Perfil() {
         ) : null}
 
         <Tarjeta estilo={{ paddingVertical: espacio.xs, borderColor: paleta.peligroSoft }}>
-          <FilaLista
-            icono={
-              <CirculoIcono tono="peligro">
-                <LogOut />
-              </CirculoIcono>
-            }
-            titulo="Cerrar sesión"
+          <Presionable
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar sesión"
             onPress={confirmarSalida}
-          />
+            style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.m, minHeight: 64, paddingVertical: espacio.s }}
+          >
+            <CirculoIcono tono="peligro"><LogOut /></CirculoIcono>
+            <Text style={[tipografia.h3, { color: paleta.peligroTexto }]}>Cerrar sesión</Text>
+          </Presionable>
         </Tarjeta>
       </ScrollView>
     </View>

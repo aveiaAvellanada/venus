@@ -56,7 +56,7 @@ describe('Perfil', () => {
     conPerfil('dueno')
     const arbol = await montar()
     expect(existeTexto(arbol, 'Andrés Artunduaga')).toBe(true)
-    expect(existeTexto(arbol, 'DUEÑO')).toBe(true)
+    expect(existeTexto(arbol, 'Dueño')).toBe(true)
   })
 
   it('el segmentado de tema arranca en Sistema y al elegir Oscuro persiste', async () => {
@@ -74,7 +74,7 @@ describe('Perfil', () => {
     const arbol = await montar()
     expect(existeTexto(arbol, 'Automatización de caja')).toBe(false)
     expect(existeTexto(arbol, 'Empleados')).toBe(false)
-    expect(existeTexto(arbol, 'OPERATIVO')).toBe(true)
+    expect(existeTexto(arbol, 'Operativo')).toBe(true)
   })
 
   it('la fila Cerrar sesión existe', async () => {

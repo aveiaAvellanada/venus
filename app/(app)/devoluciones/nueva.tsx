@@ -3,18 +3,27 @@ import {
   View,
   Text,
   TextInput,
-  StyleSheet,
   ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Modal,
   Platform,
   KeyboardAvoidingView,
-  Pressable,
 } from 'react-native'
 import { useRouter, useLocalSearchParams } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import {
+  ArrowLeft,
+  Ban,
+  CircleAlert,
+  CircleCheckBig,
+  CircleX,
+  Info,
+  Minus,
+  Receipt,
+  Search,
+  TrendingDown,
+  TrendingUp,
+  X,
+} from 'lucide-react-native'
 import { useRequireModulo } from '../../../lib/auth'
 import {
   buscarVentaParaDevolucion,
@@ -29,6 +38,9 @@ import {
   type ItemDevolucionInput,
 } from '../../../lib/devoluciones'
 import { listarCalzado, type ProductoCalzado } from '../../../lib/inventario'
+import { useTema } from '../../../lib/tema'
+import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
+import { Badge, Boton, CampoTexto, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
 
 // ── Tipos locales ─────────────────────────────────────────────────────────────
 
@@ -54,12 +66,20 @@ function disponible(item: VentaItemParaDevolucion): number {
   return item.cantidad_vendida - item.cantidad_ya_devuelta
 }
 
+const TIPOS: { value: TipoDevolucion; label: string }[] = [
+  { value: 'total', label: 'Total' },
+  { value: 'parcial', label: 'Parcial' },
+  { value: 'cambio', label: 'Cambio' },
+]
+
 // ── Componente principal ──────────────────────────────────────────────────────
 
 export default function NuevaDevolucionScreen() {
   const requireModulo = useRequireModulo('devoluciones')
   const router = useRouter()
   const params = useLocalSearchParams<{ venta: string; numero: string }>()
+  const { paleta } = useTema()
+  const { mostrar } = useToast()
 
   // ── Estado de la venta ──
   const [venta, setVenta] = useState<VentaParaDevolucion | null>(null)
@@ -392,12 +412,11 @@ export default function NuevaDevolucionScreen() {
         monto_cobrado: neto.monto_cobrado,
         items,
       })
-      Alert.alert('Éxito', 'La devolución fue registrada correctamente.', [
-        { text: 'Aceptar', onPress: () => router.back() },
-      ])
+      mostrar('Devolución registrada')
+      router.back()
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al registrar la devolución.'
-      Alert.alert('Error', msg)
+      mostrar(msg, 'error')
     } finally {
       setEnviando(false)
     }
@@ -409,9 +428,9 @@ export default function NuevaDevolucionScreen() {
   // ── Cargando ─────────────────────────────────────────────────────────────
   if (cargando) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.cargandoText}>Cargando venta…</Text>
+      <View style={{ flex: 1, backgroundColor: paleta.fondo, alignItems: 'center', justifyContent: 'center', gap: espacio.m }}>
+        <ActivityIndicator size="large" color={paleta.primario} />
+        <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Cargando venta…</Text>
       </View>
     )
   }
@@ -419,12 +438,12 @@ export default function NuevaDevolucionScreen() {
   // ── Error de carga ────────────────────────────────────────────────────────
   if (errorCarga || !venta) {
     return (
-      <View style={styles.centered}>
-        <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
-        <Text style={styles.errorText}>{errorCarga ?? 'Venta no disponible.'}</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Volver</Text>
-        </TouchableOpacity>
+      <View style={{ flex: 1, backgroundColor: paleta.fondo, justifyContent: 'center', padding: espacio.xl, gap: espacio.l }}>
+        <EstadoVacio
+          icono={<CircleAlert />}
+          titulo={errorCarga ?? 'Venta no disponible.'}
+        />
+        <Boton titulo="Volver" variante="fantasma" onPress={() => router.back()} />
       </View>
     )
   }
@@ -441,70 +460,91 @@ export default function NuevaDevolucionScreen() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={{ flex: 1, backgroundColor: paleta.fondo }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      {/* Header */}
+      <View style={{
+        flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+        paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+      }}>
+        <Presionable accessibilityRole="button" accessibilityLabel="Volver"
+          onPress={() => router.back()} hitSlop={12}>
+          <ArrowLeft size={24} color={paleta.texto} />
+        </Presionable>
+        <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Nueva Devolución</Text>
+      </View>
+
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={16}>
-            <Ionicons name="arrow-back" size={24} color="#111827" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Nueva Devolución</Text>
-        </View>
-
         {/* Info de la venta */}
-        <View style={styles.card}>
-          <View style={styles.cardHeaderRow}>
-            <Ionicons name="receipt-outline" size={18} color="#3b82f6" />
-            <Text style={styles.sectionTitle}>Venta #{venta.numero}</Text>
+        <Tarjeta>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s, marginBottom: espacio.s }}>
+            <Receipt size={18} color={paleta.primario} />
+            <Text style={[tipografia.h3, { color: paleta.texto }]}>Venta #{venta.numero}</Text>
           </View>
-          <Text style={styles.ventaDetalle}>
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>
             Fecha: {new Date(venta.fecha).toLocaleDateString('es-CO')}
           </Text>
           {venta.cliente_nombre ? (
-            <Text style={styles.ventaDetalle}>Cliente: {venta.cliente_nombre}</Text>
+            <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Cliente: {venta.cliente_nombre}</Text>
           ) : null}
-          <Text style={styles.ventaDetalle}>
-            Estado:{' '}
-            <Text style={styles.estadoBadge}>{venta.estado}</Text>
-          </Text>
-        </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s, marginTop: espacio.xs }}>
+            <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Estado:</Text>
+            <Badge texto={venta.estado} tipo="neutro" />
+          </View>
+        </Tarjeta>
 
         {/* Tipo de devolución */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Tipo de devolución *</Text>
-          <View style={styles.tipoRow}>
-            {(['total', 'parcial', 'cambio'] as TipoDevolucion[]).map((t) => (
-              <TouchableOpacity
-                key={t}
-                style={[styles.tipoBtn, tipo === t && styles.tipoBtnActive]}
-                onPress={() => setTipo(t)}
-                testID={`btn-tipo-${t}`}
-              >
-                <Text style={[styles.tipoBtnText, tipo === t && styles.tipoBtnTextActive]}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>Tipo de devolución *</Text>
+          <View style={{ flexDirection: 'row', gap: espacio.s, marginTop: espacio.m }}>
+            {TIPOS.map(({ value: t, label }) => {
+              const activo = tipo === t
+              return (
+                <Presionable
+                  key={t}
+                  accessibilityRole="button"
+                  accessibilityLabel={label}
+                  accessibilityState={{ selected: activo }}
+                  onPress={() => setTipo(t)}
+                  testID={`btn-tipo-${t}`}
+                  style={{
+                    flex: 1,
+                    paddingVertical: espacio.s,
+                    borderRadius: radio.sm,
+                    alignItems: 'center',
+                    backgroundColor: activo ? paleta.primario : paleta.superficie2,
+                    borderWidth: 1,
+                    borderColor: activo ? paleta.primario : paleta.borde,
+                  }}
+                >
+                  <Text style={[tipografia.etiqueta, { color: activo ? paleta.sobrePrimario : paleta.texto2 }]}>
+                    {label}
+                  </Text>
+                </Presionable>
+              )
+            })}
           </View>
           {tipo === 'cambio' && (
-            <View style={styles.infoBox}>
-              <Ionicons name="information-circle-outline" size={15} color="#0284c7" />
-              <Text style={styles.infoText}>
+            <View style={{
+              flexDirection: 'row', alignItems: 'flex-start', gap: espacio.s,
+              backgroundColor: paleta.primarioSoft, borderRadius: radio.sm, padding: espacio.s, marginTop: espacio.m,
+            }}>
+              <Info size={15} color={paleta.primario} />
+              <Text style={[tipografia.caption, { color: paleta.primario, flex: 1 }]}>
                 Solo aplica para ítems de calzado. Los productos de Granja no admiten cambio de producto.
               </Text>
             </View>
           )}
-        </View>
+        </Tarjeta>
 
         {/* Items de la venta */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Ítems a devolver</Text>
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>Ítems a devolver</Text>
           {venta.items.map((ventaItem, idx) => {
             const ei = estadoItems[idx]
             const disp = disponible(ventaItem)
@@ -514,71 +554,82 @@ export default function NuevaDevolucionScreen() {
             const bloqueadoPorGranja = esCambio && !esCalzado
 
             return (
-              <View key={ventaItem.venta_item_id} style={styles.itemCard} testID={`item-devolucion-${ventaItem.venta_item_id}`}>
-                <View style={styles.itemHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.itemTitle}>{ventaItem.descripcion}</Text>
+              <View
+                key={ventaItem.venta_item_id}
+                testID={`item-devolucion-${ventaItem.venta_item_id}`}
+                style={{ borderTopWidth: 1, borderTopColor: paleta.borde, paddingTop: espacio.m, marginTop: espacio.m }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: espacio.s, marginBottom: espacio.s }}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>{ventaItem.descripcion}</Text>
                     {(ventaItem.talla || ventaItem.color) ? (
-                      <Text style={styles.itemSubtitle}>
+                      <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
                         {[ventaItem.talla && `Talla: ${ventaItem.talla}`, ventaItem.color && `Color: ${ventaItem.color}`]
                           .filter(Boolean)
                           .join('  •  ')}
                       </Text>
                     ) : null}
-                    <Text style={styles.itemStock}>
+                    <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
                       Vendido: {ventaItem.cantidad_vendida} • Disponible: {disp}
                       {disp === 0 ? '  (ya devuelto)' : ''}
                     </Text>
-                    <Text style={styles.itemPrecio}>
+                    <Text style={[tipografia.caption, tabular, { color: paleta.texto3 }]}>
                       Precio: {formatCOP(ventaItem.precio_unitario)} c/u
                     </Text>
                   </View>
-                  <View style={styles.tipoBadgeWrapper}>
-                    <Text style={[styles.tipoBadge, esCalzado ? styles.tipoBadgeCalzado : styles.tipoBadgeVarios]}>
-                      {esCalzado ? 'Calzado' : 'Granja'}
-                    </Text>
-                  </View>
+                  <Badge texto={esCalzado ? 'Calzado' : 'Granja'} tipo={esCalzado ? 'neutro' : 'exito'} />
                 </View>
 
                 {bloqueadoPorGranja ? (
-                  <View style={styles.granjaWarning}>
-                    <Ionicons name="ban-outline" size={14} color="#92400e" />
-                    <Text style={styles.granjaWarningText}>
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center', gap: espacio.s,
+                    backgroundColor: paleta.advertenciaSoft, borderRadius: radio.sm, padding: espacio.s,
+                  }}>
+                    <Ban size={14} color={paleta.advertenciaTexto} />
+                    <Text style={[tipografia.caption, { color: paleta.advertenciaTexto, flex: 1 }]}>
                       Los productos de Granja no aplican para cambio de producto.
                     </Text>
                   </View>
                 ) : disp === 0 ? (
-                  <Text style={styles.yaDevueltoText}>Este ítem ya fue devuelto completamente.</Text>
+                  <Text style={[tipografia.caption, { color: paleta.texto3, fontStyle: 'italic' }]}>
+                    Este ítem ya fue devuelto completamente.
+                  </Text>
                 ) : (
                   <>
                     {/* Cantidad */}
-                    <View style={styles.cantidadRow}>
-                      <Text style={styles.label}>Cantidad a devolver:</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.m, marginTop: espacio.xs }}>
+                      <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>Cantidad a devolver:</Text>
                       {tipo === 'total' ? (
-                        <Text style={styles.cantidadFija}>{disp}</Text>
+                        <Text style={[tipografia.h3, tabular, { color: paleta.texto, minWidth: 40, textAlign: 'center' }]}>
+                          {disp}
+                        </Text>
                       ) : (
-                        <TextInput
-                          style={styles.cantidadInput}
-                          keyboardType="number-pad"
-                          value={String(ei.cantidad)}
-                          onChangeText={(v) => actualizarCantidad(idx, v)}
-                          editable={disp > 0}
-                          testID={`input-cantidad-${ventaItem.venta_item_id}`}
-                        />
+                        <View style={{ width: 90 }}>
+                          <CampoTexto
+                            keyboardType="number-pad"
+                            value={String(ei.cantidad)}
+                            onChangeText={(v) => actualizarCantidad(idx, v)}
+                            editable={disp > 0}
+                            testID={`input-cantidad-${ventaItem.venta_item_id}`}
+                          />
+                        </View>
                       )}
                     </View>
 
                     {/* Reemplazo para cambio */}
                     {esCambio && esCalzado && (
-                      <View style={styles.reemplazoSection}>
-                        <Text style={styles.label}>Calzado de reemplazo *</Text>
+                      <View style={{ marginTop: espacio.m, gap: espacio.s }}>
+                        <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>Calzado de reemplazo *</Text>
                         {ei.reemplazoSeleccionado ? (
-                          <View style={styles.reemplazoSeleccionado}>
+                          <View style={{
+                            flexDirection: 'row', alignItems: 'center',
+                            backgroundColor: paleta.exitoSoft, borderRadius: radio.sm, padding: espacio.m,
+                          }}>
                             <View style={{ flex: 1 }}>
-                              <Text style={styles.reemplazoNombre}>
+                              <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>
                                 {ei.reemplazoSeleccionado.descripcion}
                               </Text>
-                              <Text style={styles.reemplazoDetalle}>
+                              <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
                                 {[
                                   ei.reemplazoSeleccionado.talla && `T: ${ei.reemplazoSeleccionado.talla}`,
                                   ei.reemplazoSeleccionado.color && `C: ${ei.reemplazoSeleccionado.color}`,
@@ -587,7 +638,9 @@ export default function NuevaDevolucionScreen() {
                                   .join('  •  ')}
                               </Text>
                             </View>
-                            <TouchableOpacity
+                            <Presionable
+                              accessibilityRole="button"
+                              accessibilityLabel="Quitar reemplazo"
                               onPress={() => {
                                 setEstadoItems((prev) =>
                                   prev.map((e, i) =>
@@ -605,69 +658,61 @@ export default function NuevaDevolucionScreen() {
                               hitSlop={12}
                               testID={`btn-quitar-reemplazo-${ventaItem.venta_item_id}`}
                             >
-                              <Ionicons name="close-circle" size={22} color="#ef4444" />
-                            </TouchableOpacity>
+                              <CircleX size={22} color={paleta.peligro} />
+                            </Presionable>
                           </View>
                         ) : (
-                          <TouchableOpacity
-                            style={styles.buscarReemplazoBtn}
+                          <Presionable
+                            accessibilityRole="button"
+                            accessibilityLabel="Buscar calzado de reemplazo"
                             onPress={() => abrirModalReemplazo(idx)}
                             testID={`btn-buscar-reemplazo-${ventaItem.venta_item_id}`}
+                            style={{
+                              flexDirection: 'row', alignItems: 'center', gap: espacio.s,
+                              backgroundColor: paleta.primarioSoft, borderRadius: radio.sm,
+                              paddingVertical: espacio.m, paddingHorizontal: espacio.l,
+                            }}
                           >
-                            <Ionicons name="search" size={16} color="#3b82f6" />
-                            <Text style={styles.buscarReemplazoBtnText}>Buscar calzado…</Text>
-                          </TouchableOpacity>
+                            <Search size={16} color={paleta.primario} />
+                            <Text style={[tipografia.etiqueta, { color: paleta.primario }]}>Buscar calzado…</Text>
+                          </Presionable>
                         )}
 
                         {/* Precio de reemplazo */}
                         {ei.cambio_talla_color_id && (
-                          <View style={styles.precioReemplazoGroup}>
-                            <Text style={styles.label}>Precio de reemplazo ($) *</Text>
-                            <TextInput
-                              style={styles.input}
-                              keyboardType="numeric"
+                          <View style={{ marginTop: espacio.xs, gap: espacio.xs }}>
+                            <CampoTexto
+                              etiqueta="Precio de reemplazo ($) *"
+                              keyboardType="number-pad"
                               placeholder="Ingresa el precio"
-                              placeholderTextColor="#9ca3af"
                               value={ei.precio_reemplazo !== undefined ? String(ei.precio_reemplazo) : ''}
                               onChangeText={(v) => actualizarPrecioReemplazo(idx, v)}
                               testID={`input-precio-reemplazo-${ventaItem.venta_item_id}`}
                             />
-                            {ei.precio_reemplazo !== undefined && ei.precio_reemplazo > 0 && (
-                              <View style={styles.diferenciaRow}>
-                                {(() => {
-                                  const diff = calcularDiferenciaCambio(
-                                    ventaItem.precio_unitario,
-                                    ei.precio_reemplazo,
-                                    ei.cantidad
-                                  )
-                                  return (
-                                    <>
-                                      <Ionicons
-                                        name={diff > 0 ? 'trending-up' : diff < 0 ? 'trending-down' : 'remove-outline'}
-                                        size={15}
-                                        color={diff > 0 ? '#ef4444' : diff < 0 ? '#10b981' : '#6b7280'}
-                                      />
-                                      <Text
-                                        style={[
-                                          styles.diferenciaText,
-                                          diff > 0
-                                            ? styles.diferenciaPositiva
-                                            : diff < 0
-                                            ? styles.diferenciaNegativa
-                                            : styles.diferenciaCero,
-                                        ]}
-                                      >
-                                        {diff > 0
-                                          ? `Cliente paga ${formatCOP(diff)} adicional`
-                                          : diff < 0
-                                          ? `Reembolso ${formatCOP(-diff)}`
-                                          : 'Cambio sin diferencia de precio'}
-                                      </Text>
-                                    </>
-                                  )
-                                })()}
-                              </View>
-                            )}
+                            {ei.precio_reemplazo !== undefined && ei.precio_reemplazo > 0 && (() => {
+                              const diff = calcularDiferenciaCambio(
+                                ventaItem.precio_unitario,
+                                ei.precio_reemplazo,
+                                ei.cantidad
+                              )
+                              const IconoDiff = diff > 0 ? TrendingUp : diff < 0 ? TrendingDown : Minus
+                              const colorDiff = diff > 0 ? paleta.peligroTexto : diff < 0 ? paleta.exitoTexto : paleta.texto2
+                              return (
+                                <View style={{
+                                  flexDirection: 'row', alignItems: 'center', gap: espacio.s,
+                                  padding: espacio.s, borderRadius: radio.sm, backgroundColor: paleta.superficie2,
+                                }}>
+                                  <IconoDiff size={15} color={colorDiff} />
+                                  <Text style={[tipografia.etiqueta, tabular, { color: colorDiff }]}>
+                                    {diff > 0
+                                      ? `Cliente paga ${formatCOP(diff)} adicional`
+                                      : diff < 0
+                                      ? `Reembolso ${formatCOP(-diff)}`
+                                      : 'Cambio sin diferencia de precio'}
+                                  </Text>
+                                </View>
+                              )
+                            })()}
                           </View>
                         )}
                       </View>
@@ -677,15 +722,13 @@ export default function NuevaDevolucionScreen() {
               </View>
             )
           })}
-        </View>
+        </Tarjeta>
 
         {/* Motivo */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Motivo *</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
+        <Tarjeta>
+          <CampoTexto
+            etiqueta="Motivo *"
             placeholder="Describe el motivo de la devolución…"
-            placeholderTextColor="#9ca3af"
             multiline
             numberOfLines={3}
             value={motivo}
@@ -695,28 +738,35 @@ export default function NuevaDevolucionScreen() {
             }}
             testID="input-motivo"
           />
-        </View>
+        </Tarjeta>
 
         {/* Resumen neto */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Resumen</Text>
-          <View style={styles.resumenRow}>
-            <Text style={styles.resumenLabel}>Monto a reembolsar:</Text>
-            <Text style={[styles.resumenValor, { color: '#10b981' }]}>
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>Resumen</Text>
+          <View style={{
+            flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+            paddingVertical: espacio.s, borderBottomWidth: 1, borderBottomColor: paleta.borde, marginTop: espacio.s,
+          }}>
+            <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Monto a reembolsar:</Text>
+            <Text style={[tipografia.h3, tabular, { color: paleta.exitoTexto }]}>
               {formatCOP(neto.monto_devuelto)}
             </Text>
           </View>
-          <View style={styles.resumenRow}>
-            <Text style={styles.resumenLabel}>Monto a cobrar al cliente:</Text>
-            <Text style={[styles.resumenValor, { color: '#ef4444' }]}>
+          <View style={{
+            flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: espacio.s,
+          }}>
+            <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Monto a cobrar al cliente:</Text>
+            <Text style={[tipografia.h3, tabular, { color: paleta.peligroTexto }]}>
               {formatCOP(neto.monto_cobrado)}
             </Text>
           </View>
 
           {/* Método de reembolso */}
           {neto.monto_devuelto > 0 && (
-            <View style={styles.metodoGroup}>
-              <Text style={styles.label}>Método de reembolso *</Text>
+            <View style={{ marginTop: espacio.m }}>
+              <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.xs }]}>
+                Método de reembolso *
+              </Text>
               <MetodoPicker
                 value={metodoReembolso}
                 onChange={setMetodoReembolso}
@@ -727,8 +777,10 @@ export default function NuevaDevolucionScreen() {
 
           {/* Método de cobro */}
           {neto.monto_cobrado > 0 && (
-            <View style={styles.metodoGroup}>
-              <Text style={styles.label}>Método de cobro adicional *</Text>
+            <View style={{ marginTop: espacio.m }}>
+              <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.xs }]}>
+                Método de cobro adicional *
+              </Text>
               <MetodoPicker
                 value={metodoCobro}
                 onChange={setMetodoCobro}
@@ -738,44 +790,40 @@ export default function NuevaDevolucionScreen() {
           )}
 
           {neto.monto_devuelto === 0 && neto.monto_cobrado === 0 && tipo === 'cambio' && (
-            <View style={styles.infoBox}>
-              <Ionicons name="checkmark-circle-outline" size={15} color="#059669" />
-              <Text style={[styles.infoText, { color: '#059669' }]}>
+            <View style={{
+              flexDirection: 'row', alignItems: 'flex-start', gap: espacio.s,
+              backgroundColor: paleta.exitoSoft, borderRadius: radio.sm, padding: espacio.s, marginTop: espacio.m,
+            }}>
+              <CircleCheckBig size={15} color={paleta.exitoTexto} />
+              <Text style={[tipografia.caption, { color: paleta.exitoTexto, flex: 1 }]}>
                 Cambio sin diferencia de precio.
               </Text>
             </View>
           )}
-        </View>
+        </Tarjeta>
 
         {/* Errores de validación */}
         {erroresValidacion.length > 0 && (
-          <View style={styles.erroresBox}>
+          <View style={{
+            backgroundColor: paleta.peligroSoft, borderRadius: radio.sm, padding: espacio.m, gap: espacio.xs,
+          }}>
             {erroresValidacion.map((e, i) => (
-              <View key={i} style={styles.errorRow}>
-                <Ionicons name="close-circle-outline" size={16} color="#ef4444" />
-                <Text style={styles.errorRowText}>{e}</Text>
+              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s }}>
+                <CircleX size={16} color={paleta.peligroTexto} />
+                <Text style={[tipografia.caption, { color: paleta.peligroTexto, flex: 1 }]}>{e}</Text>
               </View>
             ))}
           </View>
         )}
 
         {/* Botón confirmar */}
-        <TouchableOpacity
-          style={[styles.submitButton, !puedeConfirmar && styles.submitButtonDisabled]}
+        <Boton
+          titulo="Confirmar devolución"
           onPress={handleConfirmar}
-          disabled={!puedeConfirmar}
-          activeOpacity={0.8}
-          testID="btn-confirmar-devolucion"
-        >
-          {enviando ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <>
-              <Ionicons name="checkmark-circle-outline" size={22} color="#ffffff" style={styles.submitIcon} />
-              <Text style={styles.submitButtonText}>Confirmar devolución</Text>
-            </>
-          )}
-        </TouchableOpacity>
+          cargando={enviando}
+          deshabilitado={!puedeConfirmar}
+          icono={<CircleCheckBig size={20} color={paleta.sobrePrimario} />}
+        />
       </ScrollView>
 
       {/* Modal buscador de reemplazo */}
@@ -810,20 +858,36 @@ function MetodoPicker({
   onChange: (m: MetodoDinero) => void
   testPrefix: string
 }) {
+  const { paleta } = useTema()
   return (
-    <View style={styles.metodosRow}>
-      {METODOS.map((m) => (
-        <TouchableOpacity
-          key={m.value}
-          style={[styles.metodoChip, value === m.value && styles.metodoChipActive]}
-          onPress={() => onChange(m.value)}
-          testID={`btn-metodo-${testPrefix}-${m.value}`}
-        >
-          <Text style={[styles.metodoChipText, value === m.value && styles.metodoChipTextActive]}>
-            {m.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
+    <View style={{ flexDirection: 'row', gap: espacio.s }}>
+      {METODOS.map((m) => {
+        const activo = value === m.value
+        return (
+          <Presionable
+            key={m.value}
+            accessibilityRole="button"
+            accessibilityLabel={m.label}
+            accessibilityState={{ selected: activo }}
+            onPress={() => onChange(m.value)}
+            testID={`btn-metodo-${testPrefix}-${m.value}`}
+            style={{
+              flex: 1,
+              height: 40,
+              borderRadius: radio.full,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: activo ? paleta.primario : paleta.superficie2,
+              borderWidth: 1,
+              borderColor: activo ? paleta.primario : paleta.borde,
+            }}
+          >
+            <Text style={[tipografia.etiqueta, { color: activo ? paleta.sobrePrimario : paleta.texto2 }]}>
+              {m.label}
+            </Text>
+          </Presionable>
+        )
+      })}
     </View>
   )
 }
@@ -845,6 +909,7 @@ function BuscadorReemplazoModal({
   onSeleccionar,
   onCerrar,
 }: BuscadorReemplazoModalProps) {
+  const { paleta } = useTema()
   return (
     <Modal
       visible
@@ -853,53 +918,73 @@ function BuscadorReemplazoModal({
       onRequestClose={onCerrar}
       testID="modal-buscar-reemplazo"
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Buscar calzado de reemplazo</Text>
-            <TouchableOpacity onPress={onCerrar} hitSlop={12} testID="btn-cerrar-modal-reemplazo">
-              <Ionicons name="close" size={24} color="#374151" />
-            </TouchableOpacity>
+      <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
+        <View style={{
+          backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '80%',
+        }}>
+          <View style={{
+            flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+            padding: espacio.l, borderBottomWidth: 1, borderBottomColor: paleta.borde,
+          }}>
+            <Text style={[tipografia.h3, { color: paleta.texto }]}>Buscar calzado de reemplazo</Text>
+            <Presionable
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar buscador de reemplazo"
+              onPress={onCerrar}
+              hitSlop={12}
+              testID="btn-cerrar-modal-reemplazo"
+            >
+              <X size={24} color={paleta.texto2} />
+            </Presionable>
           </View>
 
-          <View style={styles.modalBody}>
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={18} color="#6b7280" />
+          <View style={{ padding: espacio.l, flex: 1 }}>
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', gap: espacio.s,
+              backgroundColor: paleta.superficie2, borderRadius: radio.md, paddingHorizontal: espacio.m, height: 44,
+              marginBottom: espacio.m,
+            }}>
+              <Search size={18} color={paleta.texto3} />
               <TextInput
-                style={styles.searchInput}
+                style={[tipografia.cuerpo, { flex: 1, color: paleta.texto }]}
                 placeholder="Buscar por descripción, talla, color…"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={paleta.textoDeshabilitado}
                 autoFocus
                 value={estadoItem.busquedaReemplazo}
                 onChangeText={(q) => onBuscar(idx, q)}
                 testID="input-buscar-reemplazo"
               />
               {estadoItem.buscandoReemplazo && (
-                <ActivityIndicator size="small" color="#3b82f6" />
+                <ActivityIndicator size="small" color={paleta.primario} />
               )}
             </View>
 
             <ScrollView
-              style={styles.modalResultsScroll}
+              style={{ maxHeight: 400 }}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
               {estadoItem.resultadosBusqueda.length === 0 &&
               !estadoItem.buscandoReemplazo &&
               estadoItem.busquedaReemplazo.trim() !== '' ? (
-                <Text style={styles.sinResultados}>Sin resultados para esa búsqueda.</Text>
+                <EstadoVacio icono={<Search />} titulo="Sin resultados" mensaje="Prueba con otra búsqueda." />
               ) : null}
 
               {estadoItem.resultadosBusqueda.map((prod) => (
-                <TouchableOpacity
+                <Presionable
                   key={prod.id}
-                  style={styles.resultItem}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Seleccionar ${prod.descripcion}`}
                   onPress={() => onSeleccionar(idx, prod)}
                   testID={`resultado-reemplazo-${prod.id}`}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+                    paddingVertical: espacio.m, borderBottomWidth: 1, borderBottomColor: paleta.borde,
+                  }}
                 >
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.resultTitle}>{prod.descripcion}</Text>
-                    <Text style={styles.resultSubtitle}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>{prod.descripcion}</Text>
+                    <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
                       {[
                         prod.marca,
                         prod.referencia && `Ref: ${prod.referencia}`,
@@ -910,12 +995,12 @@ function BuscadorReemplazoModal({
                         .filter(Boolean)
                         .join('  •  ')}
                     </Text>
-                    <Text style={styles.resultPrecio}>
+                    <Text style={[tipografia.caption, tabular, { color: paleta.primario }]}>
                       {formatCOP(prod.precio_minimo)} – {formatCOP(prod.precio_maximo)}
                     </Text>
                   </View>
-                  <Ionicons name="checkmark-circle-outline" size={22} color="#10b981" />
-                </TouchableOpacity>
+                  <CircleCheckBig size={22} color={paleta.exito} />
+                </Presionable>
               ))}
             </ScrollView>
           </View>
@@ -924,302 +1009,3 @@ function BuscadorReemplazoModal({
     </Modal>
   )
 }
-
-// ── Estilos ───────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  scrollContent: { padding: 16, paddingBottom: 60 },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-    gap: 16,
-  },
-  cargandoText: { fontSize: 15, color: '#6b7280' },
-  errorText: { fontSize: 15, color: '#ef4444', textAlign: 'center' },
-  backButton: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  backButtonText: { color: '#ffffff', fontWeight: '700', fontSize: 15 },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: 12,
-    marginBottom: 16,
-    marginTop: Platform.OS === 'ios' ? 44 : 12,
-  },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
-
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-  },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  ventaDetalle: { fontSize: 14, color: '#4b5563', marginTop: 4 },
-  estadoBadge: { fontWeight: '700', color: '#3b82f6' },
-
-  tipoRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
-  tipoBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#f3f4f6',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    alignItems: 'center',
-  },
-  tipoBtnActive: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
-  tipoBtnText: { fontSize: 14, fontWeight: '600', color: '#4b5563' },
-  tipoBtnTextActive: { color: '#ffffff' },
-
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-    backgroundColor: '#eff6ff',
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 12,
-  },
-  infoText: { flex: 1, fontSize: 13, color: '#0284c7', lineHeight: 18 },
-
-  itemCard: {
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    paddingTop: 14,
-    marginTop: 14,
-  },
-  itemHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 10 },
-  itemTitle: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  itemSubtitle: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  itemStock: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  itemPrecio: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  tipoBadgeWrapper: { paddingTop: 2 },
-  tipoBadge: {
-    fontSize: 11,
-    fontWeight: '700',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  tipoBadgeCalzado: { backgroundColor: '#dbeafe', color: '#1d4ed8' },
-  tipoBadgeVarios: { backgroundColor: '#dcfce7', color: '#166534' },
-
-  granjaWarning: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#fef3c7',
-    borderRadius: 8,
-    padding: 10,
-  },
-  granjaWarningText: { flex: 1, fontSize: 13, color: '#92400e' },
-  yaDevueltoText: { fontSize: 13, color: '#9ca3af', fontStyle: 'italic' },
-
-  cantidadRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 8,
-  },
-  label: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 6 },
-  cantidadFija: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    minWidth: 40,
-    textAlign: 'center',
-  },
-  cantidadInput: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    width: 70,
-    textAlign: 'center',
-  },
-
-  reemplazoSection: { marginTop: 12, gap: 8 },
-  buscarReemplazoBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#eff6ff',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-  },
-  buscarReemplazoBtnText: { fontSize: 14, color: '#3b82f6', fontWeight: '600' },
-  reemplazoSeleccionado: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0fdf4',
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-  },
-  reemplazoNombre: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  reemplazoDetalle: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  precioReemplazoGroup: { marginTop: 10 },
-  input: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  textArea: { height: 80, textAlignVertical: 'top' },
-  diferenciaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#f9fafb',
-  },
-  diferenciaText: { fontSize: 13, fontWeight: '600' },
-  diferenciaPositiva: { color: '#ef4444' },
-  diferenciaNegativa: { color: '#059669' },
-  diferenciaCero: { color: '#6b7280' },
-
-  resumenRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  resumenLabel: { fontSize: 14, color: '#4b5563' },
-  resumenValor: { fontSize: 16, fontWeight: '700' },
-  metodoGroup: { marginTop: 14 },
-  metodosRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  metodoChip: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#f3f4f6',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    alignItems: 'center',
-  },
-  metodoChipActive: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
-  metodoChipText: { fontSize: 13, fontWeight: '600', color: '#4b5563' },
-  metodoChipTextActive: { color: '#ffffff' },
-
-  erroresBox: {
-    backgroundColor: '#fef2f2',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-  },
-  errorRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  errorRowText: { fontSize: 13, color: '#dc2626', flex: 1 },
-
-  submitButton: {
-    backgroundColor: '#3b82f6',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginTop: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  submitButtonDisabled: { opacity: 0.5 },
-  submitIcon: { marginRight: 8 },
-  submitButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
-
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  modalBody: { padding: 16, flex: 1 },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
-    gap: 8,
-    marginBottom: 12,
-  },
-  searchInput: { flex: 1, fontSize: 15, color: '#111827' },
-  modalResultsScroll: { maxHeight: 400 },
-  sinResultados: {
-    fontSize: 14,
-    color: '#9ca3af',
-    textAlign: 'center',
-    paddingVertical: 24,
-    fontStyle: 'italic',
-  },
-  resultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  resultTitle: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  resultSubtitle: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  resultPrecio: { fontSize: 12, color: '#3b82f6', marginTop: 2, fontWeight: '600' },
-})

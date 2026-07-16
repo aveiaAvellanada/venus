@@ -8,6 +8,7 @@ import renderer, { act } from 'react-test-renderer'
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
+jest.useFakeTimers()
 
 // Mock Supabase (both relative and absolute paths used by different imports)
 jest.mock('./supabase', () => ({
@@ -27,15 +28,10 @@ jest.mock('../lib/supabase', () => ({
   },
 }))
 
-// Mock @expo/vector-icons
-jest.mock('@expo/vector-icons', () => {
-  const React = require('react')
-  const { Text } = require('react-native')
-  return {
-    Ionicons: (props: { name?: string; [key: string]: unknown }) =>
-      React.createElement(Text, props, props.name),
-  }
-})
+// Mock react-native-safe-area-context (usado por el Toast al mostrarse)
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
 
 // Mock expo-router
 const mockUseLocalSearchParams = jest.fn(() => ({ venta: 'venta-uuid-1', numero: '42' }))
@@ -103,9 +99,24 @@ jest.mock('../lib/inventario', () => ({
   guardarCalzado: jest.fn(),
 }))
 
+import { TemaProvider } from './tema'
+import { ToastProvider } from '../components/ui'
+
 // Import screens AFTER all mocks
 import DevolucionesLayout from '../app/(app)/devoluciones/_layout'
-import NuevaDevolucionScreen from '../app/(app)/devoluciones/nueva'
+import NuevaDevolucionScreenRaw from '../app/(app)/devoluciones/nueva'
+
+// La pantalla ahora usa useTema()/useToast(); se envuelve en los providers reales
+// para cada render (patrón de lib/venta_nueva_ui.test.tsx).
+function NuevaDevolucionScreen() {
+  return (
+    <TemaProvider>
+      <ToastProvider>
+        <NuevaDevolucionScreenRaw />
+      </ToastProvider>
+    </TemaProvider>
+  )
+}
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -517,9 +528,9 @@ describe('Devoluciones UI — tests de integración', () => {
       })
 
       // Confirmar
-      const btnConfirmar = root.findByProps({ testID: 'btn-confirmar-devolucion' })
+      const btnConfirmar = root.findByProps({ accessibilityLabel: 'Confirmar devolución' })
       await act(async () => {
-        btnConfirmar.props.onPress()
+        btnConfirmar.props.onPress?.()
       })
 
       expect(apiDevoluciones.registrarDevolucion).toHaveBeenCalledWith(
@@ -583,9 +594,9 @@ describe('Devoluciones UI — tests de integración', () => {
       })
 
       // Confirmar
-      const btnConfirmar = root.findByProps({ testID: 'btn-confirmar-devolucion' })
+      const btnConfirmar = root.findByProps({ accessibilityLabel: 'Confirmar devolución' })
       await act(async () => {
-        btnConfirmar.props.onPress()
+        btnConfirmar.props.onPress?.()
       })
 
       expect(apiDevoluciones.registrarDevolucion).toHaveBeenCalledWith(
@@ -675,9 +686,9 @@ describe('Devoluciones UI — tests de integración', () => {
       })
 
       // Confirmar
-      const btnConfirmar = root.findByProps({ testID: 'btn-confirmar-devolucion' })
+      const btnConfirmar = root.findByProps({ accessibilityLabel: 'Confirmar devolución' })
       await act(async () => {
-        btnConfirmar.props.onPress()
+        btnConfirmar.props.onPress?.()
       })
 
       // monto_cobrado = (120000 - 80000) * 1 = 40000
@@ -710,9 +721,9 @@ describe('Devoluciones UI — tests de integración', () => {
       const root = tree!.root
 
       // Intentar confirmar sin motivo
-      const btnConfirmar = root.findByProps({ testID: 'btn-confirmar-devolucion' })
+      const btnConfirmar = root.findByProps({ accessibilityLabel: 'Confirmar devolución' })
       await act(async () => {
-        btnConfirmar.props.onPress()
+        btnConfirmar.props.onPress?.()
       })
 
       expect(apiDevoluciones.registrarDevolucion).not.toHaveBeenCalled()

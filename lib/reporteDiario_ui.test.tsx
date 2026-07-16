@@ -1,13 +1,20 @@
 import React from 'react'
-import { Alert } from 'react-native'
 process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://dummy-url.supabase.co'
 process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'dummy-key'
 // @ts-ignore
 import renderer, { act } from 'react-test-renderer'
+import { Text } from 'react-native'
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
+jest.useFakeTimers()
+
+// El Toast/Presionable usan reanimated y los insets de safe-area (Regla global de pantallas restilizadas)
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
+
 jest.mock('./supabase', () => ({ supabase: { from: jest.fn(), rpc: jest.fn(), functions: { invoke: jest.fn() } } }))
 jest.mock('../lib/supabase', () => ({ supabase: { from: jest.fn(), rpc: jest.fn(), functions: { invoke: jest.fn() } } }))
 
@@ -40,7 +47,25 @@ jest.mock('../lib/reporteDiario', () => {
   return { ...real, obtenerReporteConfig: jest.fn(), guardarReporteConfig: jest.fn() }
 })
 
-import ReportesConfig from '../app/(app)/reportes/config'
+import ReportesConfigRaw from '../app/(app)/reportes/config'
+import { TemaProvider } from './tema'
+import { ToastProvider } from '../components/ui'
+
+// La pantalla ahora usa useTema() y useToast(); se envuelve con el mismo nombre que
+// ya usa toda la suite para no tocar cada call-site.
+function ReportesConfig() {
+  return (
+    <TemaProvider>
+      <ToastProvider>
+        <ReportesConfigRaw />
+      </ToastProvider>
+    </TemaProvider>
+  )
+}
+
+// Extrae el texto plano visible en el árbol (usado para verificar mensajes de useToast)
+const textosVisibles = (root: renderer.ReactTestInstance): string =>
+  root.findAllByType(Text).map((t: renderer.ReactTestInstance) => t.props.children).flat().join(' ')
 
 describe('Reportes Automáticos — config UI', () => {
   let tree: renderer.ReactTestRenderer | null = null
@@ -69,26 +94,23 @@ describe('Reportes Automáticos — config UI', () => {
   })
 
   test('Guardar invoca guardarReporteConfig con los valores cargados', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     await act(async () => { tree = renderer.create(<ReportesConfig />) })
-    const btn = tree!.root.findByProps({ testID: 'btn-guardar-config' })
+    const btn = tree!.root.findByProps({ accessibilityLabel: 'Guardar' })
     await act(async () => { btn.props.onPress() })
     expect(api.guardarReporteConfig).toHaveBeenCalledWith({
       whatsapp_on: true, correo_on: false, correo_destino: null,
     })
-    alertSpy.mockRestore()
+    expect(textosVisibles(tree!.root)).toContain('La configuración se actualizó.')
   })
 
   test('Validación: con correo activo pero vacío, no guarda', async () => {
     ;(api.obtenerReporteConfig as jest.Mock).mockResolvedValue({
       whatsapp_on: true, correo_on: true, correo_destino: null, hora_envio: null,
     })
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     await act(async () => { tree = renderer.create(<ReportesConfig />) })
-    const btn = tree!.root.findByProps({ testID: 'btn-guardar-config' })
+    const btn = tree!.root.findByProps({ accessibilityLabel: 'Guardar' })
     await act(async () => { btn.props.onPress() })
     expect(api.guardarReporteConfig).not.toHaveBeenCalled()
-    expect(alertSpy).toHaveBeenCalledWith('Correo inválido', expect.any(String))
-    alertSpy.mockRestore()
+    expect(textosVisibles(tree!.root)).toContain('Ingresa un correo válido para el envío automático.')
   })
 })

@@ -4,10 +4,16 @@ process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'dummy-key'
 // @ts-ignore
 import renderer, { act } from 'react-test-renderer'
 
-// Mock AsyncStorage
+// Mock AsyncStorage (usado por TemaProvider para persistir el modo)
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
+jest.useFakeTimers()
+
+// El Toast/Presionable usan reanimated y los insets de safe-area (Regla global de pantallas restilizadas)
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
 
 // Mock Supabase (relative and absolute)
 jest.mock('./supabase', () => ({ supabase: { rpc: jest.fn() } }))
@@ -63,7 +69,19 @@ jest.mock('../lib/balance', () => {
 
 // Import screens AFTER all mocks
 import BalanceLayout from '../app/(app)/balance/_layout'
-import BalanceIndex from '../app/(app)/balance/index'
+import BalanceIndexRaw from '../app/(app)/balance/index'
+import { TemaProvider } from './tema'
+import { paletaClara } from './theme'
+
+// La pantalla ahora usa useTema(); se envuelve con el mismo nombre que ya usa toda
+// la suite para no tocar cada call-site.
+function BalanceIndex() {
+  return (
+    <TemaProvider>
+      <BalanceIndexRaw />
+    </TemaProvider>
+  )
+}
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -164,11 +182,11 @@ describe('Balance UI — tests de integración', () => {
       expect(perdidaLabels.length).toBeGreaterThan(0)
       expect(findAllByText(root, 'Ganancia').length).toBe(0)
 
-      // El monto del balance se muestra con el color rojo de pérdida (#b91c1c)
+      // El monto del balance se muestra con el color de texto de pérdida (paleta.peligroTexto)
       const montoRojo = root.findAll((el: renderer.ReactTestInstance) => {
         if (el.type !== 'Text') return false
         const style = Array.isArray(el.props.style) ? Object.assign({}, ...el.props.style.filter(Boolean)) : el.props.style
-        return flatten(el.props.children).includes('40.000') && style && style.color === '#b91c1c'
+        return flatten(el.props.children).includes('40.000') && style && style.color === paletaClara.peligroTexto
       })
       expect(montoRojo.length).toBeGreaterThan(0)
     })

@@ -1,16 +1,20 @@
 import React, { useState, useCallback } from 'react'
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  RefreshControl,
-  SafeAreaView,
-} from 'react-native'
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import {
+  ArrowLeft,
+  Banknote,
+  Bell,
+  CalendarDays,
+  CircleAlert,
+  CreditCard,
+  Minus,
+  Smartphone,
+  TrendingDown,
+  TrendingUp,
+  User,
+  Zap,
+} from 'lucide-react-native'
 import { useRequireModulo, useAuth } from '../../../lib/auth'
 import {
   obtenerResumenDia,
@@ -21,6 +25,10 @@ import {
   type ProductoStockBajo,
   type DashboardDueno,
 } from '../../../lib/reportes'
+import { useTema } from '../../../lib/tema'
+import type { Paleta } from '../../../lib/theme'
+import { espacio, tabular, tipografia } from '../../../lib/theme'
+import { CirculoIcono, EstadoVacio, FilaLista, Presionable, Tarjeta, TarjetaMetrica } from '../../../components/ui'
 
 const pesos = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
@@ -31,10 +39,32 @@ function toISO(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
+// Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
+function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: espacio.m,
+        paddingHorizontal: espacio.xl,
+        paddingTop: 56,
+        paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={onVolver} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Reportes</Text>
+    </View>
+  )
+}
+
 export default function ReportesIndex() {
   const requireModulo = useRequireModulo('reportes')
   const { perfil } = useAuth()
   const router = useRouter()
+  const { paleta } = useTema()
   const esDueno = perfil?.rol === 'dueno'
 
   const [hoy, setHoy] = useState<ResumenDia | null>(null)
@@ -90,73 +120,89 @@ export default function ReportesIndex() {
     cargarDatos(true)
   }
 
-  const cmp =
-    hoy && ayer ? compararConAyer(hoy.total_general, ayer.total_general) : null
+  const cmp = hoy && ayer ? compararConAyer(hoy.total_general, ayer.total_general) : null
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+      <Encabezado paleta={paleta} onVolver={() => router.back()} />
+
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#3b82f6" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
         </View>
       ) : error ? (
-        <View style={styles.center}>
-          <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => cargarDatos()}>
-            <Text style={styles.retryButtonText}>Reintentar</Text>
-          </TouchableOpacity>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl }}>
+          <EstadoVacio icono={<CircleAlert />} titulo={error} textoAccion="Reintentar" onAccion={() => cargarDatos()} />
         </View>
       ) : hoy ? (
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.m }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#3b82f6']} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={paleta.primario} />}
         >
-          {/* Acceso al reporte por semana / mes */}
-          <TouchableOpacity
-            testID="btn-ver-periodos"
-            style={styles.linkPeriodos}
-            onPress={() => router.push('/reportes/periodos')}
-          >
-            <Ionicons name="calendar-outline" size={16} color="#1d4ed8" />
-            <Text style={styles.linkPeriodosText}>Ver reporte por semana / mes</Text>
-            <Ionicons name="chevron-forward" size={16} color="#1d4ed8" />
-          </TouchableOpacity>
-
-          {esDueno && (
-            <TouchableOpacity
-              testID="btn-config-reportes"
-              style={styles.linkPeriodos}
-              onPress={() => router.push('/reportes/config')}
-            >
-              <Ionicons name="notifications-outline" size={16} color="#1d4ed8" />
-              <Text style={styles.linkPeriodosText}>Configurar reportes automáticos</Text>
-              <Ionicons name="chevron-forward" size={16} color="#1d4ed8" />
-            </TouchableOpacity>
-          )}
+          {/* Acceso al reporte por semana / mes y configuración (solo dueño) */}
+          <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
+            <FilaLista
+              icono={
+                <CirculoIcono tono="primario">
+                  <CalendarDays />
+                </CirculoIcono>
+              }
+              titulo="Ver reporte por semana / mes"
+              chevron
+              onPress={() => router.push('/reportes/periodos')}
+            />
+            {esDueno && (
+              <>
+                <View style={{ height: 1, backgroundColor: paleta.borde, marginLeft: 56 }} />
+                <FilaLista
+                  icono={
+                    <CirculoIcono tono="primario">
+                      <Bell />
+                    </CirculoIcono>
+                  }
+                  titulo="Configurar reportes automáticos"
+                  chevron
+                  onPress={() => router.push('/reportes/config')}
+                />
+              </>
+            )}
+          </Tarjeta>
 
           {/* Ventas de hoy */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitulo}>Ventas de hoy</Text>
-            <Text style={styles.totalHoy}>{pesos(hoy.total_general)}</Text>
-            <View style={styles.ventasRow}>
-              <Text style={styles.subtle}>{hoy.total_ventas} {hoy.total_ventas === 1 ? 'venta' : 'ventas'}</Text>
+          <Tarjeta>
+            <Text style={[tipografia.micro, { color: paleta.texto3 }]}>Ventas de hoy</Text>
+            <Text style={[tipografia.display, tabular, { color: paleta.texto, marginTop: 2 }]}>
+              {pesos(hoy.total_general)}
+            </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: espacio.xs }}>
+              <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+                {hoy.total_ventas} {hoy.total_ventas === 1 ? 'venta' : 'ventas'}
+              </Text>
               {cmp && (
-                <View style={styles.cmpRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                   {cmp.sinBase ? (
-                    <Text style={styles.cmpNeutro}>— sin comparación</Text>
+                    <Text style={[tipografia.caption, { color: paleta.texto3 }]}>— sin comparación</Text>
                   ) : (
                     <>
-                      <Ionicons
-                        name={cmp.direccion === 'sube' ? 'arrow-up' : cmp.direccion === 'baja' ? 'arrow-down' : 'remove'}
-                        size={14}
-                        color={cmp.direccion === 'sube' ? '#15803d' : cmp.direccion === 'baja' ? '#b91c1c' : '#6b7280'}
-                      />
+                      {cmp.direccion === 'sube' ? (
+                        <TrendingUp size={14} color={paleta.exito} />
+                      ) : cmp.direccion === 'baja' ? (
+                        <TrendingDown size={14} color={paleta.peligro} />
+                      ) : (
+                        <Minus size={14} color={paleta.texto3} />
+                      )}
                       <Text
                         style={[
-                          styles.cmpText,
-                          cmp.direccion === 'sube' ? styles.textoSube : cmp.direccion === 'baja' ? styles.textoBaja : styles.cmpNeutro,
+                          tipografia.etiqueta,
+                          {
+                            color:
+                              cmp.direccion === 'sube'
+                                ? paleta.exitoTexto
+                                : cmp.direccion === 'baja'
+                                  ? paleta.peligroTexto
+                                  : paleta.texto3,
+                          },
                         ]}
                       >
                         {cmp.pct}% vs ayer
@@ -166,116 +212,77 @@ export default function ReportesIndex() {
                 </View>
               )}
             </View>
-            <View style={styles.desglose}>
-              <Fila etiqueta="Efectivo" valor={pesos(hoy.total_efectivo)} />
-              <Fila etiqueta="Nequi" valor={pesos(hoy.total_nequi)} />
-              <Fila etiqueta="Bre-B" valor={pesos(hoy.total_bre_b)} />
-              <Fila etiqueta="Otro" valor={pesos(hoy.total_otro)} />
-            </View>
+          </Tarjeta>
+
+          <View style={{ flexDirection: 'row', gap: espacio.s }}>
+            <TarjetaMetrica mini etiqueta="Efectivo" valor={pesos(hoy.total_efectivo)} icono={<Banknote size={16} color={paleta.primario} />} />
+            <TarjetaMetrica mini etiqueta="Nequi" valor={pesos(hoy.total_nequi)} icono={<Smartphone size={16} color={paleta.primario} />} />
+            <TarjetaMetrica mini etiqueta="Bre-B" valor={pesos(hoy.total_bre_b)} icono={<Zap size={16} color={paleta.primario} />} />
+            <TarjetaMetrica mini etiqueta="Otro" valor={pesos(hoy.total_otro)} icono={<CreditCard size={16} color={paleta.primario} />} />
           </View>
 
           {/* Stock bajo (ambos roles) */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitulo}>Stock bajo</Text>
+          <Tarjeta>
+            <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.s }]}>Stock bajo</Text>
             {stockBajo.length === 0 ? (
-              <Text style={styles.vacio}>Todo en orden con el stock.</Text>
+              <Text style={[tipografia.cuerpo, { color: paleta.texto3, paddingVertical: 4 }]}>Todo en orden con el stock.</Text>
             ) : (
               stockBajo.map((p) => (
-                <View key={p.id} style={styles.fila}>
-                  <Text style={styles.filaEtiqueta} numberOfLines={1}>
-                    {p.descripcion}{p.talla ? ` · talla ${p.talla}` : ''}
+                <View key={p.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: espacio.s }}>
+                  <Text style={[tipografia.cuerpo, { color: paleta.texto2, flex: 1, marginRight: espacio.s }]} numberOfLines={1}>
+                    {p.descripcion}
+                    {p.talla ? ` · talla ${p.talla}` : ''}
                   </Text>
-                  <Text style={styles.filaAlerta}>quedan {p.stock_actual}</Text>
+                  <Text style={[tipografia.etiqueta, { color: paleta.advertenciaTexto }]}>quedan {p.stock_actual}</Text>
                 </View>
               ))
             )}
-          </View>
+          </Tarjeta>
 
           {/* Widgets solo-dueño */}
           {esDueno && dashDueno && (
             <>
-              <View style={styles.card}>
-                <Text style={styles.cardTitulo}>Proveedores por vencer</Text>
+              <Tarjeta>
+                <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.s }]}>Proveedores por vencer</Text>
                 {dashDueno.proveedores_por_vencer.length === 0 ? (
-                  <Text style={styles.vacio}>Sin pagos próximos a vencer.</Text>
+                  <Text style={[tipografia.cuerpo, { color: paleta.texto3, paddingVertical: 4 }]}>Sin pagos próximos a vencer.</Text>
                 ) : (
                   dashDueno.proveedores_por_vencer.map((p, i) => (
-                    <View key={i} style={styles.fila}>
-                      <View style={styles.provInfo}>
-                        <Text style={styles.filaEtiqueta} numberOfLines={1}>{p.proveedor}</Text>
-                        <Text style={[styles.provFecha, p.vencida && styles.textoBaja]}>
-                          {p.vencida ? 'Vencida · ' : 'Vence '}{p.fecha_vencimiento}
+                    <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: espacio.s }}>
+                      <View style={{ flex: 1, marginRight: espacio.s }}>
+                        <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]} numberOfLines={1}>
+                          {p.proveedor}
+                        </Text>
+                        <Text style={[tipografia.caption, { color: p.vencida ? paleta.peligroTexto : paleta.texto3, marginTop: 2 }]}>
+                          {p.vencida ? 'Vencida · ' : 'Vence '}
+                          {p.fecha_vencimiento}
                         </Text>
                       </View>
-                      <Text style={[styles.filaValor, p.vencida && styles.textoBaja]}>{pesos(p.saldo)}</Text>
+                      <Text style={[tipografia.etiqueta, tabular, { color: p.vencida ? paleta.peligroTexto : paleta.texto }]}>
+                        {pesos(p.saldo)}
+                      </Text>
                     </View>
                   ))
                 )}
-              </View>
+              </Tarjeta>
 
-              <View style={styles.card}>
-                <Text style={styles.cardTitulo}>Empleados sin actividad hoy</Text>
+              <Tarjeta>
+                <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.s }]}>Empleados sin actividad hoy</Text>
                 {dashDueno.empleados_sin_actividad.length === 0 ? (
-                  <Text style={styles.vacio}>Todos registraron actividad hoy.</Text>
+                  <Text style={[tipografia.cuerpo, { color: paleta.texto3, paddingVertical: 4 }]}>Todos registraron actividad hoy.</Text>
                 ) : (
                   dashDueno.empleados_sin_actividad.map((e) => (
-                    <View key={e.id} style={styles.fila}>
-                      <Ionicons name="person-outline" size={14} color="#6b7280" style={styles.iconMargin} />
-                      <Text style={styles.filaEtiqueta}>{e.nombre}</Text>
+                    <View key={e.id} style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s, paddingVertical: espacio.s }}>
+                      <User size={14} color={paleta.texto3} />
+                      <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>{e.nombre}</Text>
                     </View>
                   ))
                 )}
-              </View>
+              </Tarjeta>
             </>
           )}
         </ScrollView>
       ) : null}
-    </SafeAreaView>
-  )
-}
-
-function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
-  return (
-    <View style={styles.fila}>
-      <Text style={styles.filaEtiqueta}>{etiqueta}</Text>
-      <Text style={styles.filaValor}>{valor}</Text>
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  linkPeriodos: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#eff6ff', borderRadius: 12, borderWidth: 1, borderColor: '#bfdbfe', paddingVertical: 12, marginBottom: 12 },
-  linkPeriodosText: { fontSize: 14, fontWeight: '600', color: '#1d4ed8' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  scrollContent: { padding: 16, paddingBottom: 40 },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginBottom: 12,
-  },
-  cardTitulo: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 8 },
-  totalHoy: { fontSize: 30, fontWeight: '800', color: '#111827' },
-  ventasRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2, marginBottom: 8 },
-  subtle: { fontSize: 13, color: '#6b7280' },
-  cmpRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  cmpText: { fontSize: 13, fontWeight: '600' },
-  cmpNeutro: { fontSize: 13, color: '#6b7280' },
-  textoSube: { color: '#15803d' },
-  textoBaja: { color: '#b91c1c' },
-  desglose: { borderTopWidth: 1, borderTopColor: '#f3f4f6', paddingTop: 8 },
-  fila: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 },
-  filaEtiqueta: { fontSize: 14, color: '#4b5563', flex: 1 },
-  filaValor: { fontSize: 14, color: '#111827', fontWeight: '500' },
-  filaAlerta: { fontSize: 13, color: '#b45309', fontWeight: '600' },
-  provInfo: { flex: 1, marginRight: 8 },
-  provFecha: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  vacio: { fontSize: 13, color: '#9ca3af', paddingVertical: 4 },
-  iconMargin: { marginRight: 6 },
-  errorText: { fontSize: 15, color: '#ef4444', textAlign: 'center', marginTop: 12, marginBottom: 16 },
-  retryButton: { backgroundColor: '#3b82f6', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
-  retryButtonText: { color: '#ffffff', fontWeight: '600', fontSize: 14 },
-})

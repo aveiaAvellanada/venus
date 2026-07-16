@@ -1,18 +1,21 @@
 import React, { useState, useCallback } from 'react'
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from 'react-native'
+import { useFocusEffect, useRouter } from 'expo-router'
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  RefreshControl,
-  SafeAreaView,
-} from 'react-native'
-import { useFocusEffect } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  CircleArrowDown,
+  CircleArrowUp,
+  TrendingUp,
+} from 'lucide-react-native'
 import { useRequireModulo } from '../../../lib/auth'
 import { obtenerBalance, rangoPeriodo, proyeccionMes, type Balance } from '../../../lib/balance'
+import { useTema } from '../../../lib/tema'
+import type { Paleta } from '../../../lib/theme'
+import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
+import { CirculoIcono, EstadoVacio, Presionable, Tarjeta, TarjetaMetrica } from '../../../components/ui'
 
 const pesos = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
@@ -39,8 +42,67 @@ function esMesEnCurso(tipo: Tipo, refDate: Date): boolean {
   return refDate.getFullYear() === hoy.getFullYear() && refDate.getMonth() === hoy.getMonth()
 }
 
+// Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
+function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: espacio.m,
+        paddingHorizontal: espacio.xl,
+        paddingTop: 56,
+        paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={onVolver} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Balance</Text>
+    </View>
+  )
+}
+
+// Selector semana/mes: Presionable con testID (ControlSegmentado no acepta testID —
+// se mantiene este control equivalente con tokens para no romper los tests existentes).
+function SelectorTipo({ tipo, onCambio }: { tipo: Tipo; onCambio: (t: Tipo) => void }) {
+  const { paleta } = useTema()
+  const opciones: { valor: Tipo; etiqueta: string; testID: string }[] = [
+    { valor: 'semana', etiqueta: 'Semana', testID: 'btn-tipo-semana' },
+    { valor: 'mes', etiqueta: 'Mes', testID: 'btn-tipo-mes' },
+  ]
+  return (
+    <View style={{ flexDirection: 'row', backgroundColor: paleta.superficie2, borderRadius: radio.full, padding: 4 }}>
+      {opciones.map((o) => (
+        <Presionable
+          key={o.valor}
+          testID={o.testID}
+          accessibilityRole="tab"
+          accessibilityLabel={o.etiqueta}
+          accessibilityState={{ selected: tipo === o.valor }}
+          onPress={() => onCambio(o.valor)}
+          style={{
+            flex: 1,
+            height: 36,
+            borderRadius: radio.full,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: tipo === o.valor ? paleta.fondo : 'transparent',
+          }}
+        >
+          <Text style={[tipografia.etiqueta, { color: tipo === o.valor ? paleta.primario : paleta.texto2 }]}>
+            {o.etiqueta}
+          </Text>
+        </Presionable>
+      ))}
+    </View>
+  )
+}
+
 export default function BalanceIndex() {
   const requireModulo = useRequireModulo('balance')
+  const router = useRouter()
+  const { paleta } = useTema()
 
   const [tipo, setTipo] = useState<Tipo>('mes')
   const [refDate, setRefDate] = useState<Date>(new Date())
@@ -109,80 +171,101 @@ export default function BalanceIndex() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Selector de período */}
-      <View style={styles.selectorWrap}>
-        <View style={styles.tipoRow}>
-          <TouchableOpacity
-            testID="btn-tipo-semana"
-            style={[styles.tipoBtn, tipo === 'semana' && styles.tipoBtnActivo]}
-            onPress={() => cambiarTipo('semana')}
-          >
-            <Text style={[styles.tipoText, tipo === 'semana' && styles.tipoTextActivo]}>Semana</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            testID="btn-tipo-mes"
-            style={[styles.tipoBtn, tipo === 'mes' && styles.tipoBtnActivo]}
-            onPress={() => cambiarTipo('mes')}
-          >
-            <Text style={[styles.tipoText, tipo === 'mes' && styles.tipoTextActivo]}>Mes</Text>
-          </TouchableOpacity>
-        </View>
+    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+      <Encabezado paleta={paleta} onVolver={() => router.back()} />
 
-        <View style={styles.navRow}>
-          <TouchableOpacity testID="btn-nav-prev" style={styles.navBtn} onPress={() => mover(-1)} accessibilityLabel="Período anterior">
-            <Ionicons name="chevron-back" size={22} color="#374151" />
-          </TouchableOpacity>
-          <Text style={styles.periodoLabel}>{etiquetaPeriodo(tipo, refDate)}</Text>
-          <TouchableOpacity testID="btn-nav-next" style={styles.navBtn} onPress={() => mover(1)} accessibilityLabel="Período siguiente">
-            <Ionicons name="chevron-forward" size={22} color="#374151" />
-          </TouchableOpacity>
+      {/* Selector de período */}
+      <View
+        style={{
+          paddingHorizontal: espacio.xl,
+          paddingBottom: espacio.m,
+          borderBottomWidth: 1,
+          borderBottomColor: paleta.borde,
+        }}
+      >
+        <SelectorTipo tipo={tipo} onCambio={cambiarTipo} />
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: espacio.m }}>
+          <Presionable
+            testID="btn-nav-prev"
+            accessibilityRole="button"
+            accessibilityLabel="Período anterior"
+            onPress={() => mover(-1)}
+            hitSlop={12}
+            style={{ padding: espacio.xs }}
+          >
+            <ChevronLeft size={22} color={paleta.texto2} />
+          </Presionable>
+          <Text style={[tipografia.cuerpoLg, { color: paleta.texto, textTransform: 'capitalize' }]}>
+            {etiquetaPeriodo(tipo, refDate)}
+          </Text>
+          <Presionable
+            testID="btn-nav-next"
+            accessibilityRole="button"
+            accessibilityLabel="Período siguiente"
+            onPress={() => mover(1)}
+            hitSlop={12}
+            style={{ padding: espacio.xs }}
+          >
+            <ChevronRight size={22} color={paleta.texto2} />
+          </Presionable>
         </View>
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#3b82f6" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
         </View>
       ) : error ? (
-        <View style={styles.center}>
-          <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => cargarDatos(tipo, refDate)}>
-            <Text style={styles.retryButtonText}>Reintentar</Text>
-          </TouchableOpacity>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl }}>
+          <EstadoVacio
+            icono={<CircleAlert />}
+            titulo={error}
+            textoAccion="Reintentar"
+            onAccion={() => cargarDatos(tipo, refDate)}
+          />
         </View>
       ) : data ? (
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.m }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#3b82f6']} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={paleta.primario} />}
         >
           {/* Tarjeta Balance */}
-          <View style={[styles.balanceCard, esPerdida ? styles.balanceCardPerdida : styles.balanceCardGanancia]}>
-            <Text style={styles.balanceLabel}>{esPerdida ? 'Pérdida' : 'Ganancia'}</Text>
-            <Text style={[styles.balanceMonto, esPerdida ? styles.textoPerdida : styles.textoGanancia]}>
+          <Tarjeta
+            estilo={{
+              alignItems: 'center',
+              backgroundColor: esPerdida ? paleta.peligroSoft : paleta.exitoSoft,
+              borderColor: esPerdida ? paleta.peligro : paleta.exito,
+            }}
+          >
+            <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: 4 }]}>
+              {esPerdida ? 'Pérdida' : 'Ganancia'}
+            </Text>
+            <Text style={[tipografia.display, tabular, { color: esPerdida ? paleta.peligroTexto : paleta.exitoTexto }]}>
               {pesos(balanceNum)}
             </Text>
-          </View>
+          </Tarjeta>
 
           {/* Ingresos / Egresos */}
-          <View style={styles.dosColumnas}>
-            <View style={[styles.miniCard, styles.miniCardIngreso]}>
-              <Ionicons name="arrow-down-circle-outline" size={20} color="#15803d" />
-              <Text style={styles.miniLabel}>Ingresos netos</Text>
-              <Text style={[styles.miniMonto, styles.textoGanancia]}>{pesos(data.ingresos.total_neto)}</Text>
-            </View>
-            <View style={[styles.miniCard, styles.miniCardEgreso]}>
-              <Ionicons name="arrow-up-circle-outline" size={20} color="#b91c1c" />
-              <Text style={styles.miniLabel}>Egresos</Text>
-              <Text style={[styles.miniMonto, styles.textoPerdida]}>{pesos(data.egresos.total)}</Text>
-            </View>
+          <View style={{ flexDirection: 'row', gap: espacio.s }}>
+            <TarjetaMetrica
+              mini
+              etiqueta="Ingresos netos"
+              valor={pesos(data.ingresos.total_neto)}
+              icono={<CircleArrowDown size={16} color={paleta.exito} />}
+            />
+            <TarjetaMetrica
+              mini
+              etiqueta="Egresos"
+              valor={pesos(data.egresos.total)}
+              icono={<CircleArrowUp size={16} color={paleta.peligro} />}
+            />
           </View>
 
           {/* Desglose de ingresos */}
-          <View style={styles.seccion}>
-            <Text style={styles.seccionTitulo}>Ingresos</Text>
+          <Tarjeta>
+            <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.s }]}>Ingresos</Text>
             <Fila etiqueta="Efectivo" valor={pesos(data.ingresos.efectivo)} />
             <Fila etiqueta="Nequi" valor={pesos(data.ingresos.nequi)} />
             <Fila etiqueta="Bre-B" valor={pesos(data.ingresos.bre_b)} />
@@ -190,141 +273,60 @@ export default function BalanceIndex() {
             <Fila etiqueta="Reembolsos" valor={'- ' + pesos(data.ingresos.reembolsos)} />
             <Fila etiqueta="Cobros de cambios" valor={pesos(data.ingresos.cobros_cambios)} />
             <Fila etiqueta="Total neto" valor={pesos(data.ingresos.total_neto)} total />
-          </View>
+          </Tarjeta>
 
           {/* Desglose de egresos */}
-          <View style={styles.seccion}>
-            <Text style={styles.seccionTitulo}>Egresos</Text>
+          <Tarjeta>
+            <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.s }]}>Egresos</Text>
             <Fila etiqueta="Gastos fijos" valor={pesos(data.egresos.gastos_fijos)} />
             <Fila etiqueta="Gastos variables" valor={pesos(data.egresos.gastos_variables)} />
             <Fila etiqueta="Pagos a proveedores" valor={pesos(data.egresos.pagos_proveedores)} />
             <Fila etiqueta="Sueldos" valor={pesos(data.egresos.sueldos)} />
             <Fila etiqueta="Total" valor={pesos(data.egresos.total)} total />
-          </View>
+          </Tarjeta>
 
           {/* Proyección del mes en curso */}
           {mostrarProyeccion && (
-            <View style={styles.proyeccionCard}>
-              <Ionicons name="trending-up-outline" size={18} color="#1d4ed8" style={styles.iconMargin} />
-              <View style={styles.proyeccionTexto}>
-                <Text style={styles.proyeccionLabel}>Proyección de cierre del mes</Text>
-                <Text style={styles.proyeccionSub}>Según el promedio diario de lo que va del mes</Text>
+            <Tarjeta estilo={{ flexDirection: 'row', alignItems: 'center', backgroundColor: paleta.primarioSoft, borderColor: paleta.primarioSoft }}>
+              <CirculoIcono tono="primario" tamano={36}>
+                <TrendingUp />
+              </CirculoIcono>
+              <View style={{ flex: 1, marginLeft: espacio.m }}>
+                <Text style={[tipografia.etiqueta, { color: paleta.texto }]}>Proyección de cierre del mes</Text>
+                <Text style={[tipografia.caption, { color: paleta.texto2, marginTop: 2 }]}>
+                  Según el promedio diario de lo que va del mes
+                </Text>
               </View>
-              <Text style={[styles.proyeccionMonto, proyeccion < 0 ? styles.textoPerdida : styles.textoGanancia]}>
+              <Text
+                style={[
+                  tipografia.h3,
+                  tabular,
+                  { color: proyeccion < 0 ? paleta.peligroTexto : paleta.exitoTexto, marginLeft: espacio.s },
+                ]}
+              >
                 {pesos(proyeccion)}
               </Text>
-            </View>
+            </Tarjeta>
           )}
         </ScrollView>
       ) : null}
-    </SafeAreaView>
-  )
-}
-
-function Fila({ etiqueta, valor, total }: { etiqueta: string; valor: string; total?: boolean }) {
-  return (
-    <View style={[styles.fila, total && styles.filaTotal]}>
-      <Text style={[styles.filaEtiqueta, total && styles.filaTextoTotal]}>{etiqueta}</Text>
-      <Text style={[styles.filaValor, total && styles.filaTextoTotal]}>{valor}</Text>
     </View>
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  selectorWrap: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  tipoRow: {
-    flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    padding: 3,
-  },
-  tipoBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  tipoBtnActivo: { backgroundColor: '#ffffff', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
-  tipoText: { fontSize: 14, color: '#6b7280', fontWeight: '600' },
-  tipoTextActivo: { color: '#111827' },
-  navRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 12,
-  },
-  navBtn: { padding: 6, borderRadius: 8 },
-  periodoLabel: { fontSize: 15, fontWeight: '600', color: '#111827', textTransform: 'capitalize' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  scrollContent: { padding: 16, paddingBottom: 40 },
-  balanceCard: {
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    marginBottom: 12,
-  },
-  balanceCardGanancia: { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' },
-  balanceCardPerdida: { backgroundColor: '#fef2f2', borderColor: '#fecaca' },
-  balanceLabel: { fontSize: 14, fontWeight: '600', color: '#4b5563', marginBottom: 4 },
-  balanceMonto: { fontSize: 32, fontWeight: '800' },
-  textoGanancia: { color: '#15803d' },
-  textoPerdida: { color: '#b91c1c' },
-  dosColumnas: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  miniCard: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  miniCardIngreso: {},
-  miniCardEgreso: {},
-  miniLabel: { fontSize: 12, color: '#6b7280', marginTop: 6 },
-  miniMonto: { fontSize: 18, fontWeight: '700', marginTop: 2 },
-  seccion: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginBottom: 12,
-  },
-  seccionTitulo: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 8 },
-  fila: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  filaTotal: { borderTopWidth: 1, borderTopColor: '#f3f4f6', marginTop: 4, paddingTop: 10 },
-  filaEtiqueta: { fontSize: 14, color: '#4b5563' },
-  filaValor: { fontSize: 14, color: '#111827', fontWeight: '500' },
-  filaTextoTotal: { fontWeight: '700', color: '#111827' },
-  proyeccionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#eff6ff',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-  },
-  iconMargin: { marginRight: 4 },
-  proyeccionTexto: { flex: 1, marginLeft: 4 },
-  proyeccionLabel: { fontSize: 13, fontWeight: '600', color: '#1e3a8a' },
-  proyeccionSub: { fontSize: 11, color: '#3b82f6', marginTop: 2 },
-  proyeccionMonto: { fontSize: 16, fontWeight: '700', marginLeft: 8 },
-  errorText: { fontSize: 15, color: '#ef4444', textAlign: 'center', marginTop: 12, marginBottom: 16 },
-  retryButton: { backgroundColor: '#3b82f6', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
-  retryButtonText: { color: '#ffffff', fontWeight: '600', fontSize: 14 },
-})
+function Fila({ etiqueta, valor, total }: { etiqueta: string; valor: string; total?: boolean }) {
+  const { paleta } = useTema()
+  return (
+    <View
+      style={[
+        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: espacio.s },
+        total ? { borderTopWidth: 1, borderTopColor: paleta.borde, marginTop: espacio.xs, paddingTop: espacio.m } : null,
+      ]}
+    >
+      <Text style={[total ? tipografia.h3 : tipografia.cuerpo, { color: total ? paleta.texto : paleta.texto2 }]}>
+        {etiqueta}
+      </Text>
+      <Text style={[total ? tipografia.h3 : tipografia.cuerpo, tabular, { color: paleta.texto }]}>{valor}</Text>
+    </View>
+  )
+}

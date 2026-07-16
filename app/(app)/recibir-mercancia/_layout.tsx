@@ -7,19 +7,10 @@ export default function RecibirMercanciaLayout() {
   if (requireModulo) return requireModulo
 
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: '#ffffff' },
-        headerShadowVisible: false,
-        headerTintColor: '#111827',
-        headerTitleStyle: { fontWeight: '600' },
-        contentStyle: { backgroundColor: '#f9fafb' },
-        headerTitleAlign: 'center',
-      }}
-    >
-      <Stack.Screen name="index" options={{ title: 'Entradas de Mercancía' }} />
-      <Stack.Screen name="nueva" options={{ title: 'Nueva Entrada' }} />
-      <Stack.Screen name="[id]" options={{ title: 'Completar Entrada' }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="nueva" />
+      <Stack.Screen name="[id]" />
     </Stack>
   )
 }

@@ -3,19 +3,23 @@ import {
   View,
   Text,
   TextInput,
-  StyleSheet,
   ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Modal,
-  FlatList,
   Platform,
   KeyboardAvoidingView,
-  Pressable
 } from 'react-native'
 import { useRouter } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import {
+  ArrowLeft,
+  CircleCheckBig,
+  CirclePlus,
+  Package,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react-native'
 import { useAuth, useRequireModulo } from '../../../lib/auth'
 import {
   listarProveedores,
@@ -29,9 +33,10 @@ import {
   guardarCalzado,
   type ProductoCalzado
 } from '../../../lib/inventario'
-
-// 7 fixed categories defined in PRD
-const CATEGORIAS_CALZADO = ['Chanclas', 'Escolar', 'Botas caucho', 'Deportivo', 'Tennis', 'Clásico', 'Otros']
+import { CATEGORIAS } from '../../../lib/excel'
+import { useTema } from '../../../lib/tema'
+import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
+import { Boton, CampoTexto, Chip, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
 
 interface SelectedItem {
   producto_calzado_id: string
@@ -51,6 +56,8 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
   const requireModulo = useRequireModulo('recibir-mercancia')
   const { perfil } = useAuth()
   const router = useRouter()
+  const { paleta } = useTema()
+  const { mostrar } = useToast()
 
   const esDueno = perfil?.rol === 'dueno'
   const esAdmin = perfil?.rol === 'admin'
@@ -65,7 +72,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
   // Data states
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState<string>('')
-  
+
   // Selected items list
   const [items, setItems] = useState<SelectedItem[]>([])
 
@@ -131,7 +138,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
         setProveedores(data)
       } catch (err: any) {
         console.error('Error al cargar proveedores:', err)
-        Alert.alert('Error', 'No se pudieron cargar los proveedores.')
+        mostrar('No se pudieron cargar los proveedores.', 'error')
       } finally {
         setLoadingProveedores(false)
       }
@@ -173,7 +180,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
   const handleSelectCalzado = (prod: ProductoCalzado) => {
     const exists = items.find(i => i.producto_calzado_id === prod.id)
     if (exists) {
-      Alert.alert('Producto ya agregado', 'El producto ya está en la lista de recepción. Puedes modificar su cantidad directamente.')
+      mostrar('El producto ya está en la lista de recepción. Puedes modificar su cantidad directamente.', 'info')
     } else {
       setItems(prev => [...prev, {
         producto_calzado_id: prod.id,
@@ -210,7 +217,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
   // Handle supplier inline creation
   const handleCrearProveedor = async () => {
     if (!provNombre.trim()) {
-      Alert.alert('Campo obligatorio', 'El nombre del proveedor es requerido.')
+      mostrar('El nombre del proveedor es requerido.', 'error')
       return
     }
 
@@ -234,7 +241,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
       const actualizados = await listarProveedores({ activo: true })
       setProveedores(actualizados)
       setProveedorSeleccionado(nuevo.id)
-      
+
       // Clean form and close
       setProvNombre('')
       setProvNit('')
@@ -243,10 +250,10 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
       setProvEmail('')
       setProvNotas('')
       setShowProviderModal(false)
-      Alert.alert('Éxito', `Proveedor "${nuevo.nombre}" creado y seleccionado.`)
+      mostrar(`Proveedor "${nuevo.nombre}" creado y seleccionado.`)
     } catch (err: any) {
       console.error(err)
-      Alert.alert('Error', err.message || 'No se pudo registrar el proveedor.')
+      mostrar(err.message || 'No se pudo registrar el proveedor.', 'error')
     } finally {
       setCreandoProveedor(false)
     }
@@ -255,11 +262,11 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
   // Handle footwear inline creation
   const handleCrearCalzado = async () => {
     if (!calzadoDescripcion.trim()) {
-      Alert.alert('Campo obligatorio', 'La descripción es obligatoria.')
+      mostrar('La descripción es obligatoria.', 'error')
       return
     }
     if (!calzadoPrecioMin || !calzadoPrecioMax) {
-      Alert.alert('Campos obligatorios', 'Los precios mínimo y máximo son requeridos.')
+      mostrar('Los precios mínimo y máximo son requeridos.', 'error')
       return
     }
 
@@ -267,7 +274,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
     const max = parseFloat(calzadoPrecioMax)
 
     if (isNaN(min) || isNaN(max) || min < 0 || max < min) {
-      Alert.alert('Precios inválidos', 'Los precios deben ser números válidos y el precio máximo debe ser mayor o igual al mínimo.')
+      mostrar('Los precios deben ser números válidos y el precio máximo debe ser mayor o igual al mínimo.', 'error')
       return
     }
 
@@ -310,10 +317,10 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
       setCalzadoStockMin('1')
       setCalzadoCategoria('Otros')
       setShowCalzadoModal(false)
-      Alert.alert('Éxito', 'Nuevo calzado registrado e incorporado a la recepción.')
+      mostrar('Nuevo calzado registrado e incorporado a la recepción.')
     } catch (err: any) {
       console.error(err)
-      Alert.alert('Error', err.message || 'No se pudo guardar el calzado.')
+      mostrar(err.message || 'No se pudo guardar el calzado.', 'error')
     } finally {
       setCreandoCalzado(false)
     }
@@ -322,19 +329,19 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
   // Handle final form submit
   const handleGuardar = async () => {
     if (!proveedorSeleccionado) {
-      Alert.alert('Falta proveedor', 'Por favor selecciona un proveedor.')
+      mostrar('Por favor selecciona un proveedor.', 'error')
       return
     }
 
     if (items.length === 0) {
-      Alert.alert('Lista vacía', 'Por favor añade al menos un producto.')
+      mostrar('Por favor añade al menos un producto.', 'error')
       return
     }
 
     // Validation
     for (const it of items) {
       if (it.cantidad <= 0) {
-        Alert.alert('Cantidad inválida', `El producto "${it.descripcion}" debe tener una cantidad mayor a cero.`)
+        mostrar(`El producto "${it.descripcion}" debe tener una cantidad mayor a cero.`, 'error')
         return
       }
     }
@@ -345,7 +352,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
         // Validation for direct purchase costs
         for (const it of items) {
           if (it.costo_unitario < 0) {
-            Alert.alert('Costo inválido', `El producto "${it.descripcion}" no puede tener costo negativo.`)
+            mostrar(`El producto "${it.descripcion}" no puede tener costo negativo.`, 'error')
             return
           }
         }
@@ -387,12 +394,11 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
         })
       }
 
-      Alert.alert('Registro completado', 'La recepción de mercancía se guardó correctamente.', [
-        { text: 'Aceptar', onPress: () => router.replace('/') }
-      ])
+      mostrar('La recepción de mercancía se guardó correctamente.')
+      router.replace('/')
     } catch (err: any) {
       console.error(err)
-      Alert.alert('Error', err.message || 'No se pudo guardar la recepción.')
+      mostrar(err.message || 'No se pudo guardar la recepción.', 'error')
     } finally {
       setLoading(false)
     }
@@ -405,234 +411,231 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.container}
+      style={{ flex: 1, backgroundColor: paleta.fondo }}
       {...props}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={16}>
-            <Ionicons name="arrow-back" size={24} color="#111827" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Recibir Mercancía</Text>
-        </View>
+      {/* Header */}
+      <View style={{
+        flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+        paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+      }}>
+        <Presionable accessibilityRole="button" accessibilityLabel="Volver"
+          onPress={() => router.back()} hitSlop={12}>
+          <ArrowLeft size={24} color={paleta.texto} />
+        </Presionable>
+        <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Recibir Mercancía</Text>
+      </View>
 
+      <ScrollView
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* 1. SELECCIÓN DE PROVEEDOR */}
-        <View style={styles.card}>
-          <View style={styles.cardHeaderRow}>
-            <Text style={styles.sectionTitle}>Proveedor *</Text>
-            {puedeCrearProveedor && (
-              <TouchableOpacity
-                style={styles.inlineButton}
-                onPress={() => setShowProviderModal(true)}
-                testID="btn-crear-proveedor-inline"
-              >
-                <Ionicons name="add-circle-outline" size={16} color="#3b82f6" />
-                <Text style={styles.inlineButtonText}>Crear Proveedor</Text>
-              </TouchableOpacity>
-            )}
+        <Tarjeta>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: espacio.m }}>
+            <Text style={[tipografia.h3, { color: paleta.texto }]}>Proveedor *</Text>
           </View>
-
-          {loadingProveedores ? (
-            <ActivityIndicator size="small" color="#3b82f6" style={{ marginVertical: 8 }} />
-          ) : (
-            <View style={styles.pickerWrapper}>
-              <FlatList
-                data={proveedores}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={p => p.id}
-                contentContainerStyle={styles.proveedorScroll}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.proveedorChip,
-                      proveedorSeleccionado === item.id && styles.proveedorChipActive
-                    ]}
-                    onPress={() => setProveedorSeleccionado(item.id)}
-                    testID={`chip-proveedor-${item.id}`}
-                  >
-                    <Text
-                      style={[
-                        styles.proveedorChipText,
-                        proveedorSeleccionado === item.id && styles.proveedorChipTextActive
-                      ]}
-                    >
-                      {item.nombre}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                ListEmptyComponent={
-                  <Text style={styles.emptyText}>No hay proveedores activos.</Text>
-                }
+          {puedeCrearProveedor && (
+            <View style={{ alignSelf: 'flex-start', marginBottom: espacio.m }}>
+              <Boton
+                titulo="Crear Proveedor"
+                variante="secundario"
+                tamano="md"
+                icono={<CirclePlus size={18} color={paleta.primario} />}
+                onPress={() => setShowProviderModal(true)}
               />
             </View>
           )}
-        </View>
+
+          {loadingProveedores ? (
+            <ActivityIndicator size="small" color={paleta.primario} style={{ marginVertical: espacio.s }} />
+          ) : proveedores.length === 0 ? (
+            <Text style={[tipografia.cuerpo, { color: paleta.texto3, fontStyle: 'italic' }]}>
+              No hay proveedores activos.
+            </Text>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', gap: espacio.s }}>
+                {proveedores.map((p) => (
+                  <Chip
+                    key={p.id}
+                    etiqueta={p.nombre}
+                    activo={proveedorSeleccionado === p.id}
+                    onPress={() => setProveedorSeleccionado(p.id)}
+                  />
+                ))}
+              </View>
+            </ScrollView>
+          )}
+        </Tarjeta>
 
         {/* 2. BÚSQUEDA Y ADICIÓN DE CALZADO */}
-        <View style={styles.card}>
-          <View style={styles.cardHeaderRow}>
-            <Text style={styles.sectionTitle}>Buscar Calzado</Text>
-            <TouchableOpacity
-              style={styles.inlineButton}
+        <Tarjeta>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: espacio.m }}>
+            <Text style={[tipografia.h3, { color: paleta.texto }]}>Buscar Calzado</Text>
+          </View>
+          <View style={{ alignSelf: 'flex-start', marginBottom: espacio.m }}>
+            <Boton
+              titulo="Crear Calzado Nuevo"
+              variante="secundario"
+              tamano="md"
+              icono={<CirclePlus size={18} color={paleta.primario} />}
               onPress={() => setShowCalzadoModal(true)}
-              testID="btn-crear-calzado-inline"
-            >
-              <Ionicons name="add-circle-outline" size={16} color="#3b82f6" />
-              <Text style={styles.inlineButtonText}>Crear Calzado Nuevo</Text>
-            </TouchableOpacity>
+            />
           </View>
 
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#6b7280" />
+          <View style={{
+            flexDirection: 'row', alignItems: 'center', gap: espacio.s,
+            backgroundColor: paleta.superficie2, borderRadius: radio.md, paddingHorizontal: espacio.m, height: 44,
+          }}>
+            <Search size={20} color={paleta.texto3} />
             <TextInput
-              style={styles.searchInput}
+              style={[tipografia.cuerpo, { flex: 1, color: paleta.texto }]}
               placeholder="Buscar por descripción, referencia, color..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={paleta.textoDeshabilitado}
               value={searchQuery}
               onChangeText={setSearchQuery}
               testID="input-buscar-calzado"
             />
-            {searchingCalzado && <ActivityIndicator size="small" color="#3b82f6" style={{ marginLeft: 8 }} />}
+            {searchingCalzado && <ActivityIndicator size="small" color={paleta.primario} />}
           </View>
 
           {/* Resultados de búsqueda */}
           {searchResults.length > 0 && (
-            <View style={styles.searchResultsContainer}>
+            <View style={{ marginTop: espacio.m, gap: 2 }}>
               {searchResults.map(prod => (
-                <TouchableOpacity
+                <Presionable
                   key={prod.id}
-                  style={styles.searchResultItem}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Agregar ${prod.descripcion}`}
                   onPress={() => handleSelectCalzado(prod)}
-                  testID={`item-resultado-${prod.id}`}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+                    paddingVertical: espacio.m, borderBottomWidth: 1, borderBottomColor: paleta.borde,
+                  }}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.resultTitle}>{prod.descripcion}</Text>
-                    <Text style={styles.resultSubtitle}>
+                    <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>{prod.descripcion}</Text>
+                    <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
                       {prod.marca ? `${prod.marca} • ` : ''}Ref: {prod.referencia || 'N/A'} • Talla: {prod.talla || 'N/A'} • Color: {prod.color || 'N/A'}
                     </Text>
                   </View>
-                  <Ionicons name="add-outline" size={20} color="#10b981" />
-                </TouchableOpacity>
+                  <Plus size={20} color={paleta.exito} />
+                </Presionable>
               ))}
             </View>
           )}
-        </View>
+        </Tarjeta>
 
         {/* 3. LISTA DE ITEMS SELECCIONADOS */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Productos a Ingresar ({items.length})</Text>
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>Productos a Ingresar ({items.length})</Text>
 
           {items.length === 0 ? (
-            <View style={styles.emptyItemsContainer}>
-              <Ionicons name="cube-outline" size={40} color="#9ca3af" />
-              <Text style={styles.emptyItemsText}>Busca o crea productos para agregarlos a la recepción.</Text>
-            </View>
+            <EstadoVacio
+              icono={<Package />}
+              titulo="Sin productos"
+              mensaje="Busca o crea productos para agregarlos a la recepción."
+            />
           ) : (
-            <View style={{ gap: 12 }}>
+            <View>
               {items.map((item, idx) => (
-                <View key={item.producto_calzado_id ?? `item-${idx}`} style={styles.itemRow} testID={`item-agregado-${item.producto_calzado_id}`}>
-                  <View style={{ flex: 1, marginRight: 8 }}>
-                    <Text style={styles.itemTitle}>{item.descripcion}</Text>
-                    <Text style={styles.itemSubText}>
-                      {item.marca ? `${item.marca} • ` : ''}Ref: {item.referencia || 'N/A'} • Talla: {item.talla || 'N/A'} • Color: {item.color || 'N/A'}
-                    </Text>
+                <View
+                  key={item.producto_calzado_id ?? `item-${idx}`}
+                  testID={`item-agregado-${item.producto_calzado_id}`}
+                  style={{
+                    paddingTop: espacio.m, marginTop: espacio.m,
+                    borderTopWidth: 1, borderTopColor: paleta.borde,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: espacio.s }}>
+                    <View style={{ flex: 1, marginRight: espacio.s }}>
+                      <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>{item.descripcion}</Text>
+                      <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+                        {item.marca ? `${item.marca} • ` : ''}Ref: {item.referencia || 'N/A'} • Talla: {item.talla || 'N/A'} • Color: {item.color || 'N/A'}
+                      </Text>
+                    </View>
+                    <Presionable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Quitar ${item.descripcion}`}
+                      onPress={() => handleRemoveItem(idx)}
+                      hitSlop={12}
+                      testID={`btn-remover-${item.producto_calzado_id}`}
+                    >
+                      <Trash2 size={18} color={paleta.peligro} />
+                    </Presionable>
                   </View>
 
-                  <View style={styles.inputsRow}>
-                    {/* Cantidad Input */}
-                    <View style={styles.miniInputGroup}>
-                      <Text style={styles.miniLabel}>Cant.</Text>
-                      <TextInput
-                        style={styles.miniInput}
-                        value={String(item.cantidad)}
+                  <View style={{ flexDirection: 'row', gap: espacio.m }}>
+                    <View style={{ width: 96 }}>
+                      <CampoTexto
+                        etiqueta="Cantidad"
                         keyboardType="number-pad"
+                        value={String(item.cantidad)}
                         onChangeText={(val) => handleUpdateCantidad(idx, val)}
                         testID={`input-cant-${item.producto_calzado_id}`}
                       />
                     </View>
 
-                    {/* Costo Input (Andrés Only) */}
                     {esDueno && (
-                      <View style={[styles.miniInputGroup, { width: 90 }]}>
-                        <Text style={styles.miniLabel}>Costo c/u</Text>
-                        <TextInput
-                          style={styles.miniInput}
-                          value={String(item.costo_unitario)}
-                          keyboardType="numeric"
+                      <View style={{ width: 120 }}>
+                        <CampoTexto
+                          etiqueta="Costo c/u"
+                          keyboardType="number-pad"
                           placeholder="$"
+                          value={String(item.costo_unitario)}
                           onChangeText={(val) => handleUpdateCosto(idx, val)}
                           testID={`input-costo-${item.producto_calzado_id}`}
                         />
                       </View>
                     )}
-
-                    {/* Remove Button */}
-                    <TouchableOpacity
-                      style={styles.removeBtn}
-                      onPress={() => handleRemoveItem(idx)}
-                      hitSlop={12}
-                      testID={`btn-remover-${item.producto_calzado_id}`}
-                    >
-                      <Ionicons name="trash-outline" size={18} color="#ef4444" />
-                    </TouchableOpacity>
                   </View>
                 </View>
               ))}
             </View>
           )}
-        </View>
+        </Tarjeta>
 
         {/* 4. CONDICIONES FINANCIERAS (Dueño / Andrés Only) */}
         {esDueno && (
-          <View style={styles.card} testID="financial-purchase-panel">
-            <Text style={styles.sectionTitle}>Información Financiera (Compra Directa)</Text>
-            
-            <Text style={styles.label}>Condición de Pago *</Text>
-            <View style={styles.conditionRow}>
-              <TouchableOpacity
-                style={[
-                  styles.conditionBtn,
-                  condicionPago === 'contado' && styles.conditionBtnActive
-                ]}
-                onPress={() => setCondicionPago('contado')}
-                testID="btn-condicion-contado"
-              >
-                <Text
-                  style={[
-                    styles.conditionBtnText,
-                    condicionPago === 'contado' && styles.conditionBtnTextActive
-                  ]}
-                >
-                  Contado
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.conditionBtn,
-                  condicionPago === 'credito' && styles.conditionBtnActive
-                ]}
-                onPress={() => setCondicionPago('credito')}
-                testID="btn-condicion-credito"
-              >
-                <Text
-                  style={[
-                    styles.conditionBtnText,
-                    condicionPago === 'credito' && styles.conditionBtnTextActive
-                  ]}
-                >
-                  Crédito
-                </Text>
-              </TouchableOpacity>
+          <Tarjeta>
+            <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.m }]}>
+              Información Financiera (Compra Directa)
+            </Text>
+
+            <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>
+              Condición de Pago *
+            </Text>
+            <View style={{ flexDirection: 'row', gap: espacio.s, marginBottom: espacio.m }}>
+              {(['contado', 'credito'] as const).map((c) => {
+                const activo = condicionPago === c
+                return (
+                  <Presionable
+                    key={c}
+                    accessibilityRole="button"
+                    accessibilityLabel={c === 'contado' ? 'Contado' : 'Crédito'}
+                    accessibilityState={{ selected: activo }}
+                    onPress={() => setCondicionPago(c)}
+                    style={{
+                      flex: 1, paddingVertical: espacio.m, borderRadius: radio.sm, alignItems: 'center',
+                      backgroundColor: activo ? paleta.primario : paleta.superficie2,
+                      borderWidth: 1, borderColor: activo ? paleta.primario : paleta.borde,
+                    }}
+                  >
+                    <Text style={[tipografia.cuerpoLg, { color: activo ? paleta.sobrePrimario : paleta.texto2 }]}>
+                      {c === 'contado' ? 'Contado' : 'Crédito'}
+                    </Text>
+                  </Presionable>
+                )
+              })}
             </View>
 
             {condicionPago === 'credito' && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Fecha de Vencimiento (AAAA-MM-DD)</Text>
-                <TextInput
-                  style={styles.input}
+              <View style={{ marginBottom: espacio.m }}>
+                <CampoTexto
+                  etiqueta="Fecha de Vencimiento (AAAA-MM-DD)"
                   placeholder="Ej. 2026-07-16"
-                  placeholderTextColor="#9ca3af"
                   value={fechaVencimiento}
                   onChangeText={setFechaVencimiento}
                   testID="input-vencimiento"
@@ -640,12 +643,10 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
               </View>
             )}
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Notas y Observaciones</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
+            <View style={{ marginBottom: espacio.m }}>
+              <CampoTexto
+                etiqueta="Notas y Observaciones"
                 placeholder="Ingresa notas relacionadas a la compra..."
-                placeholderTextColor="#9ca3af"
                 multiline
                 numberOfLines={3}
                 value={notas}
@@ -655,38 +656,27 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
             </View>
 
             {/* Total summary */}
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total Unidades:</Text>
-              <Text style={styles.summaryValue}>{totalItems}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: espacio.xs }}>
+              <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Total Unidades:</Text>
+              <Text style={[tipografia.cuerpo, tabular, { color: paleta.texto }]}>{totalItems}</Text>
             </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total Compra:</Text>
-              <Text style={[styles.summaryValue, { color: '#10b981', fontWeight: 'bold' }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: espacio.xs }}>
+              <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Total Compra:</Text>
+              <Text style={[tipografia.h3, tabular, { color: paleta.exitoTexto }]}>
                 ${totalCosto.toLocaleString('es-CO')}
               </Text>
             </View>
-          </View>
+          </Tarjeta>
         )}
 
         {/* SUBMIT BUTTON */}
-        <TouchableOpacity
-          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+        <Boton
+          titulo={esDueno ? 'Registrar Compra y Stock' : 'Confirmar Entrada Física'}
           onPress={handleGuardar}
-          disabled={loading}
-          activeOpacity={0.8}
-          testID="btn-guardar-recepcion"
-        >
-          {loading ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <>
-              <Ionicons name="checkmark-circle-outline" size={22} color="#ffffff" style={styles.submitIcon} />
-              <Text style={styles.submitButtonText}>
-                {esDueno ? 'Registrar Compra y Stock' : 'Confirmar Entrada Física'}
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
+          cargando={loading}
+          deshabilitado={loading}
+          icono={<CircleCheckBig size={20} color={paleta.sobrePrimario} />}
+        />
       </ScrollView>
 
       {/* ================= MODAL CREAR PROVEEDOR ================= */}
@@ -696,105 +686,76 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
         transparent={true}
         onRequestClose={() => setShowProviderModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Registrar Nuevo Proveedor</Text>
-              <TouchableOpacity onPress={() => setShowProviderModal(false)} hitSlop={12} testID="btn-cerrar-modal-prov">
-                <Ionicons name="close" size={24} color="#374151" />
-              </TouchableOpacity>
+        <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
+          <View style={{
+            backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '85%',
+          }}>
+            <View style={{
+              flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+              padding: espacio.xl, borderBottomWidth: 1, borderBottomColor: paleta.borde,
+            }}>
+              <Text style={[tipografia.h3, { color: paleta.texto }]}>Registrar Nuevo Proveedor</Text>
+              <Presionable accessibilityRole="button" accessibilityLabel="Cerrar"
+                onPress={() => setShowProviderModal(false)} hitSlop={12}>
+                <X size={24} color={paleta.texto2} />
+              </Presionable>
             </View>
 
-            <ScrollView contentContainerStyle={styles.modalFormScroll} keyboardShouldPersistTaps="handled">
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Nombre *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Distribuidora del Norte"
-                  placeholderTextColor="#9ca3af"
-                  value={provNombre}
-                  onChangeText={setProvNombre}
-                  testID="input-prov-nombre"
-                />
-              </View>
+            <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.m }} keyboardShouldPersistTaps="handled">
+              <CampoTexto
+                etiqueta="Nombre *"
+                placeholder="Distribuidora del Norte"
+                value={provNombre}
+                onChangeText={setProvNombre}
+                testID="input-prov-nombre"
+              />
+              <CampoTexto
+                etiqueta="NIT / CC"
+                placeholder="12345678-9"
+                value={provNit}
+                onChangeText={setProvNit}
+                testID="input-prov-nit"
+              />
+              <CampoTexto
+                etiqueta="Teléfono"
+                placeholder="3123456789"
+                keyboardType="phone-pad"
+                value={provTelefono}
+                onChangeText={setProvTelefono}
+                testID="input-prov-telefono"
+              />
+              <CampoTexto
+                etiqueta="Ciudad / Dirección"
+                placeholder="Florencia, Caquetá"
+                value={provCiudad}
+                onChangeText={setProvCiudad}
+                testID="input-prov-ciudad"
+              />
+              <CampoTexto
+                etiqueta="Correo Electrónico (Email)"
+                placeholder="contacto@proveedor.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={provEmail}
+                onChangeText={setProvEmail}
+                testID="input-prov-email"
+              />
+              <CampoTexto
+                etiqueta="Notas y Observaciones"
+                placeholder="Notas adicionales..."
+                multiline
+                numberOfLines={3}
+                value={provNotas}
+                onChangeText={setProvNotas}
+                testID="input-prov-notas"
+              />
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>NIT / CC</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="12345678-9"
-                  placeholderTextColor="#9ca3af"
-                  value={provNit}
-                  onChangeText={setProvNit}
-                  testID="input-prov-nit"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Teléfono</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="3123456789"
-                  keyboardType="phone-pad"
-                  placeholderTextColor="#9ca3af"
-                  value={provTelefono}
-                  onChangeText={setProvTelefono}
-                  testID="input-prov-telefono"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Ciudad / Dirección</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Florencia, Caquetá"
-                  placeholderTextColor="#9ca3af"
-                  value={provCiudad}
-                  onChangeText={setProvCiudad}
-                  testID="input-prov-ciudad"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Correo Electrónico (Email)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="contacto@proveedor.com"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholderTextColor="#9ca3af"
-                  value={provEmail}
-                  onChangeText={setProvEmail}
-                  testID="input-prov-email"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Notas y Observaciones</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  placeholder="Notas adicionales..."
-                  placeholderTextColor="#9ca3af"
-                  multiline
-                  numberOfLines={3}
-                  value={provNotas}
-                  onChangeText={setProvNotas}
-                  testID="input-prov-notas"
-                />
-              </View>
-
-              <TouchableOpacity
-                style={[styles.modalSubmitButton, creandoProveedor && styles.submitButtonDisabled]}
+              <Boton
+                titulo="Registrar Proveedor"
                 onPress={handleCrearProveedor}
-                disabled={creandoProveedor}
-                testID="btn-prov-submit"
-              >
-                {creandoProveedor ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text style={styles.modalSubmitText}>Registrar Proveedor</Text>
-                )}
-              </TouchableOpacity>
+                cargando={creandoProveedor}
+                deshabilitado={creandoProveedor}
+              />
             </ScrollView>
           </View>
         </View>
@@ -838,122 +799,88 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
           }
         }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Registrar Nuevo Calzado</Text>
-              <TouchableOpacity onPress={() => setShowCalzadoModal(false)} hitSlop={12} testID="btn-cerrar-modal-calzado">
-                <Ionicons name="close" size={24} color="#374151" />
-              </TouchableOpacity>
+        <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
+          <View style={{
+            backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '85%',
+          }}>
+            <View style={{
+              flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+              padding: espacio.xl, borderBottomWidth: 1, borderBottomColor: paleta.borde,
+            }}>
+              <Text style={[tipografia.h3, { color: paleta.texto }]}>Registrar Nuevo Calzado</Text>
+              <Presionable accessibilityRole="button" accessibilityLabel="Cerrar"
+                onPress={() => setShowCalzadoModal(false)} hitSlop={12}>
+                <X size={24} color={paleta.texto2} />
+              </Presionable>
             </View>
 
-            <ScrollView contentContainerStyle={styles.modalFormScroll} keyboardShouldPersistTaps="handled">
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Categoría *</Text>
-                <View style={styles.categoriesContainer}>
-                  {CATEGORIAS_CALZADO.map(cat => (
-                    <TouchableOpacity
+            <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.m }} keyboardShouldPersistTaps="handled">
+              <View>
+                <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>Categoría *</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s }}>
+                  {CATEGORIAS.map(cat => (
+                    <Chip
                       key={cat}
-                      style={[
-                        styles.categoryChip,
-                        calzadoCategoria === cat && styles.categoryChipActive
-                      ]}
+                      etiqueta={cat}
+                      activo={calzadoCategoria === cat}
                       onPress={() => setCalzadoCategoria(cat)}
-                      testID={`chip-cat-${cat}`}
-                    >
-                      <Text
-                        style={[
-                          styles.categoryChipText,
-                          calzadoCategoria === cat && styles.categoryChipTextActive
-                        ]}
-                      >
-                        {cat}
-                      </Text>
-                    </TouchableOpacity>
+                    />
                   ))}
                 </View>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Descripción / Nombre *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ej. Smash"
-                  placeholderTextColor="#9ca3af"
-                  value={calzadoDescripcion}
-                  onChangeText={setCalzadoDescripcion}
-                  testID="input-calzado-desc"
-                />
-              </View>
+              <CampoTexto
+                etiqueta="Descripción / Nombre *"
+                placeholder="Ej. Smash"
+                value={calzadoDescripcion}
+                onChangeText={setCalzadoDescripcion}
+                testID="input-calzado-desc"
+              />
+              <CampoTexto
+                etiqueta="Marca"
+                placeholder="Ej. Puma"
+                value={calzadoMarca}
+                onChangeText={setCalzadoMarca}
+                testID="input-calzado-marca"
+              />
+              <CampoTexto
+                etiqueta="Referencia"
+                placeholder="Ej. PM-048"
+                value={calzadoReferencia}
+                onChangeText={setCalzadoReferencia}
+                testID="input-calzado-ref"
+              />
+              <CampoTexto
+                etiqueta="Talla"
+                placeholder="Ej. 38"
+                value={calzadoTalla}
+                onChangeText={setCalzadoTalla}
+                testID="input-calzado-talla"
+              />
+              <CampoTexto
+                etiqueta="Color"
+                placeholder="Ej. Blanco / Negro"
+                value={calzadoColor}
+                onChangeText={setCalzadoColor}
+                testID="input-calzado-color"
+              />
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Marca</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ej. Puma"
-                  placeholderTextColor="#9ca3af"
-                  value={calzadoMarca}
-                  onChangeText={setCalzadoMarca}
-                  testID="input-calzado-marca"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Referencia</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ej. PM-048"
-                  placeholderTextColor="#9ca3af"
-                  value={calzadoReferencia}
-                  onChangeText={setCalzadoReferencia}
-                  testID="input-calzado-ref"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Talla</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ej. 38"
-                  placeholderTextColor="#9ca3af"
-                  value={calzadoTalla}
-                  onChangeText={setCalzadoTalla}
-                  testID="input-calzado-talla"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Color</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ej. Blanco / Negro"
-                  placeholderTextColor="#9ca3af"
-                  value={calzadoColor}
-                  onChangeText={setCalzadoColor}
-                  testID="input-calzado-color"
-                />
-              </View>
-
-              <View style={styles.row}>
-                <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.label}>Precio Mínimo *</Text>
-                  <TextInput
-                    style={styles.input}
+              <View style={{ flexDirection: 'row', gap: espacio.m }}>
+                <View style={{ flex: 1 }}>
+                  <CampoTexto
+                    etiqueta="Precio Mínimo *"
                     placeholder="90000"
-                    keyboardType="numeric"
-                    placeholderTextColor="#9ca3af"
+                    keyboardType="number-pad"
                     value={calzadoPrecioMin}
                     onChangeText={setCalzadoPrecioMin}
                     testID="input-calzado-preciomin"
                   />
                 </View>
-                <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                  <Text style={styles.label}>Precio Máximo *</Text>
-                  <TextInput
-                    style={styles.input}
+                <View style={{ flex: 1 }}>
+                  <CampoTexto
+                    etiqueta="Precio Máximo *"
                     placeholder="120000"
-                    keyboardType="numeric"
-                    placeholderTextColor="#9ca3af"
+                    keyboardType="number-pad"
                     value={calzadoPrecioMax}
                     onChangeText={setCalzadoPrecioMax}
                     testID="input-calzado-preciomax"
@@ -961,31 +888,21 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
                 </View>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Stock Mínimo (Alerta)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="1"
-                  keyboardType="number-pad"
-                  placeholderTextColor="#9ca3af"
-                  value={calzadoStockMin}
-                  onChangeText={setCalzadoStockMin}
-                  testID="input-calzado-stockmin"
-                />
-              </View>
+              <CampoTexto
+                etiqueta="Stock Mínimo (Alerta)"
+                placeholder="1"
+                keyboardType="number-pad"
+                value={calzadoStockMin}
+                onChangeText={setCalzadoStockMin}
+                testID="input-calzado-stockmin"
+              />
 
-              <TouchableOpacity
-                style={[styles.modalSubmitButton, creandoCalzado && styles.submitButtonDisabled]}
+              <Boton
+                titulo="Registrar y Agregar Calzado"
                 onPress={handleCrearCalzado}
-                disabled={creandoCalzado}
-                testID="btn-calzado-submit"
-              >
-                {creandoCalzado ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text style={styles.modalSubmitText}>Registrar y Agregar Calzado</Text>
-                )}
-              </TouchableOpacity>
+                cargando={creandoCalzado}
+                deshabilitado={creandoCalzado}
+              />
             </ScrollView>
           </View>
         </View>
@@ -993,230 +910,6 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
     </KeyboardAvoidingView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  scrollContent: { padding: 16, paddingBottom: 60 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: 12,
-    marginBottom: 16,
-    marginTop: Platform.OS === 'ios' ? 44 : 12,
-  },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  inlineButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    backgroundColor: '#eff6ff',
-  },
-  inlineButtonText: { fontSize: 13, fontWeight: '600', color: '#3b82f6' },
-  pickerWrapper: { marginTop: 4 },
-  proveedorScroll: { gap: 8, paddingVertical: 4 },
-  proveedorChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  proveedorChipActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-  },
-  proveedorChipText: { fontSize: 14, fontWeight: '500', color: '#4b5563' },
-  proveedorChipTextActive: { color: '#ffffff' },
-  emptyText: { fontSize: 14, color: '#6b7280', fontStyle: 'italic', paddingVertical: 8 },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
-  },
-  searchInput: { flex: 1, marginLeft: 8, fontSize: 15, color: '#111827' },
-  searchResultsContainer: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
-    maxHeight: 200,
-    overflow: 'scroll',
-  },
-  searchResultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  resultTitle: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  resultSubtitle: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  emptyItemsContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 24,
-    gap: 8,
-  },
-  emptyItemsText: { fontSize: 13, color: '#6b7280', textAlign: 'center', paddingHorizontal: 16 },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  itemTitle: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  itemSubText: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  inputsRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
-  miniInputGroup: { width: 50 },
-  miniLabel: { fontSize: 11, fontWeight: '600', color: '#6b7280', marginBottom: 4, textAlign: 'center' },
-  miniInput: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    height: 36,
-    textAlign: 'center',
-    fontSize: 14,
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  removeBtn: {
-    height: 36,
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  inputGroup: { marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 6 },
-  input: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  textArea: { height: 80, textAlignVertical: 'top' },
-  row: { flexDirection: 'row' },
-  conditionRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  conditionBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: '#f3f4f6',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    alignItems: 'center',
-  },
-  conditionBtnActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-  },
-  conditionBtnText: { fontSize: 15, fontWeight: '600', color: '#4b5563' },
-  conditionBtnTextActive: { color: '#ffffff' },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
-  },
-  summaryLabel: { fontSize: 15, color: '#4b5563' },
-  summaryValue: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  submitButton: {
-    backgroundColor: '#3b82f6',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  submitButtonDisabled: { opacity: 0.7 },
-  submitIcon: { marginRight: 8 },
-  submitButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
-  
-  // Modals styling
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '85%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  modalFormScroll: { padding: 20, paddingBottom: 40 },
-  modalSubmitButton: {
-    backgroundColor: '#3b82f6',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  modalSubmitText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
-  
-  // Category chip styles for footwear creation
-  categoriesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginVertical: 4,
-  },
-  categoryChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#f3f4f6',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  categoryChipActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-  },
-  categoryChipText: { fontSize: 13, color: '#4b5563' },
-  categoryChipTextActive: { color: '#ffffff', fontWeight: '500' },
-})
 
 // Define defaultProps using getters to bind to active state setter closures
 ;(RecepcionMercanciaNuevaScreen as any).defaultProps = {
@@ -1235,4 +928,3 @@ const styles = StyleSheet.create({
     }
   }
 }
-

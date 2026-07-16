@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { orIlike } from './busqueda'
-import type { ItemCarrito, PagoInput, ProductoVendible } from './carrito'
+import { detalleCalzado, type ItemCarrito, type PagoInput, type ProductoVendible } from './carrito'
 
 export interface VentaResumen {
   id: string
@@ -24,12 +24,12 @@ export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
 
   let calzadoQ = supabase
     .from('productos_calzado')
-    .select('id, descripcion, referencia, talla, color, precio_minimo, precio_maximo, stock_actual')
+    .select('id, descripcion, marca, referencia, talla, color, precio_minimo, precio_maximo, stock_actual')
     .eq('activo', true)
     .gt('stock_actual', 0)
     .limit(10)
   if (termino) {
-    calzadoQ = calzadoQ.or(orIlike(['descripcion', 'referencia', 'talla', 'color'], termino))
+    calzadoQ = calzadoQ.or(orIlike(['descripcion', 'marca', 'referencia', 'talla', 'color'], termino))
   }
 
   let variosQ = supabase
@@ -47,7 +47,7 @@ export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
     tipo: 'calzado',
     id: c.id,
     titulo: c.descripcion,
-    detalle: [c.talla ? `Talla ${c.talla}` : null, c.color].filter(Boolean).join(' · '),
+    detalle: detalleCalzado({ marca: c.marca, talla: c.talla, color: c.color }),
     precio: Number(c.precio_maximo),
     precioMin: Number(c.precio_minimo),
     precioMax: Number(c.precio_maximo),

@@ -157,7 +157,8 @@ export default function ReportesPeriodos() {
               <Fila etiqueta="Nº de ventas" valor={String(data.num_ventas)} />
               <Fila etiqueta="Efectivo" valor={pesos(data.efectivo)} />
               <Fila etiqueta="Nequi" valor={pesos(data.nequi)} />
-              <Fila etiqueta="Daviplata" valor={pesos(data.daviplata)} />
+              <Fila etiqueta="Bre-B" valor={pesos(data.bre_b)} />
+              <Fila etiqueta="Otro" valor={pesos(data.otro)} />
             </View>
           </View>
 

@@ -19,6 +19,7 @@ export default function CalzadoEditorScreen() {
   
   const [categoria, setCategoria] = useState('')
   const [descripcion, setDescripcion] = useState('')
+  const [marca, setMarca] = useState('')
   const [referencia, setReferencia] = useState('')
   const [talla, setTalla] = useState('')
   const [color, setColor] = useState('')
@@ -53,6 +54,7 @@ export default function CalzadoEditorScreen() {
         
         setCategoria(data.categoria || '')
         setDescripcion(data.descripcion || '')
+        setMarca(data.marca || '')
         setReferencia(data.referencia || '')
         setTalla(data.talla || '')
         setColor(data.color || '')
@@ -155,6 +157,7 @@ export default function CalzadoEditorScreen() {
         id: id || undefined,
         categoria,
         descripcion,
+        marca: marca || null,
         referencia: referencia || null,
         talla: talla || null,
         color: color || null,
@@ -237,7 +240,11 @@ export default function CalzadoEditorScreen() {
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Descripción *</Text>
-            <TextInput style={styles.input} value={descripcion} onChangeText={setDescripcion} placeholder="Ej. Nike Air Max" placeholderTextColor="#9ca3af" />
+            <TextInput style={styles.input} value={descripcion} onChangeText={setDescripcion} placeholder="Ej. Air Max" placeholderTextColor="#9ca3af" />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Marca</Text>
+            <TextInput style={styles.input} value={marca} onChangeText={setMarca} placeholder="Ej. Nike" placeholderTextColor="#9ca3af" />
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Referencia</Text>

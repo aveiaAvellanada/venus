@@ -797,7 +797,8 @@ export default function NuevaDevolucionScreen() {
 const METODOS: { value: MetodoDinero; label: string }[] = [
   { value: 'efectivo', label: 'Efectivo' },
   { value: 'nequi', label: 'Nequi' },
-  { value: 'daviplata', label: 'Daviplata' },
+  { value: 'bre_b', label: 'Bre-B' },
+  { value: 'otro', label: 'Otro' },
 ]
 
 function MetodoPicker({
@@ -900,6 +901,7 @@ function BuscadorReemplazoModal({
                     <Text style={styles.resultTitle}>{prod.descripcion}</Text>
                     <Text style={styles.resultSubtitle}>
                       {[
+                        prod.marca,
                         prod.referencia && `Ref: ${prod.referencia}`,
                         prod.talla && `T: ${prod.talla}`,
                         prod.color && `C: ${prod.color}`,

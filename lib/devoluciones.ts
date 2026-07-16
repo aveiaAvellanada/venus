@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 
 export type TipoDevolucion = 'total' | 'parcial' | 'cambio'
-export type MetodoDinero = 'efectivo' | 'nequi' | 'daviplata'
+export type MetodoDinero = 'efectivo' | 'nequi' | 'bre_b' | 'otro'
 
 export function calcularDiferenciaCambio(
   precioOriginal: number, precioReemplazo: number, cantidad: number

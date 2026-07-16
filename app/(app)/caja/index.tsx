@@ -29,7 +29,8 @@ export default function CajaDashboard() {
           total_ventas: caja.total_ventas,
           total_efectivo: caja.total_efectivo,
           total_nequi: caja.total_nequi,
-          total_daviplata: caja.total_daviplata
+          total_bre_b: caja.total_bre_b,
+          total_otro: caja.total_otro
         })
       }
     } catch (e) {
@@ -126,8 +127,12 @@ export default function CajaDashboard() {
               <Text style={styles.cardValue}>{pesos(resumen.total_nequi)}</Text>
             </View>
             <View style={styles.cardInfoMini}>
-              <Text style={styles.cardLabel}>Daviplata</Text>
-              <Text style={styles.cardValue}>{pesos(resumen.total_daviplata)}</Text>
+              <Text style={styles.cardLabel}>Bre-B</Text>
+              <Text style={styles.cardValue}>{pesos(resumen.total_bre_b)}</Text>
+            </View>
+            <View style={styles.cardInfoMini}>
+              <Text style={styles.cardLabel}>Otro</Text>
+              <Text style={styles.cardValue}>{pesos(resumen.total_otro)}</Text>
             </View>
           </View>
         </View>

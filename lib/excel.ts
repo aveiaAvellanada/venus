@@ -43,6 +43,10 @@ export function validarFilas(filas: any[]) {
 
     const categoria = getColValue(fila, ['categoria']);
     const descripcion = getColValue(fila, ['descripcion']);
+    const marca = getColValue(fila, ['marca']);
+    const referencia = getColValue(fila, ['referencia', 'ref']);
+    const talla = getColValue(fila, ['talla']);
+    const color = getColValue(fila, ['color']);
     const precioMin = getColValue(fila, ['preciominimo', 'preciomin']);
     const precioMax = getColValue(fila, ['preciomaximo', 'preciomax']);
     const costo = getColValue(fila, ['costo', 'costocompra']);
@@ -97,6 +101,10 @@ export function validarFilas(filas: any[]) {
       validas.push({
         categoria: validCategory,
         descripcion: String(descripcion).trim(),
+        marca: marca ? String(marca).trim() : null,
+        referencia: referencia != null && String(referencia).trim() !== '' ? String(referencia).trim() : null,
+        talla: talla != null && String(talla).trim() !== '' ? String(talla).trim() : null,
+        color: color ? String(color).trim() : null,
         precio_min: nPrecioMin,
         precio_max: nPrecioMax,
         costo: nCosto,

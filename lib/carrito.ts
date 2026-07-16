@@ -1,5 +1,5 @@
 export type TipoProducto = 'calzado' | 'varios'
-export type MetodoPago = 'efectivo' | 'nequi' | 'daviplata'
+export type MetodoPago = 'efectivo' | 'nequi' | 'bre_b' | 'otro'
 
 export interface ProductoVendible {
   tipo: TipoProducto
@@ -31,6 +31,12 @@ export type AccionCarrito =
   | { tipo: 'cambiarPrecio'; id: string; precio: number }
   | { tipo: 'quitar'; id: string }
   | { tipo: 'limpiar' }
+
+// Subtítulo legible de un calzado: marca · Talla N · color (omite los campos vacíos).
+// Sin marca, conserva el formato previo "Talla N · color".
+export function detalleCalzado(c: { marca?: string | null; talla?: string | null; color?: string | null }): string {
+  return [c.marca, c.talla ? `Talla ${c.talla}` : null, c.color].filter(Boolean).join(' · ')
+}
 
 export const redondear = (n: number): number => Math.round(n * 100) / 100
 

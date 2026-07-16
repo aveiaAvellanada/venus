@@ -88,6 +88,7 @@ export default function CalzadoDetailScreen() {
 
         <View style={styles.infoCard}>
           <Text style={styles.title}>{producto.descripcion}</Text>
+          {producto.marca ? <Text style={styles.brand}>{producto.marca}</Text> : null}
           <Text style={styles.reference}>Ref: {producto.referencia || 'Sin referencia'}</Text>
 
           <View style={styles.attributesRow}>
@@ -185,6 +186,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   title: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 4 },
+  brand: { fontSize: 16, fontWeight: '600', color: '#3b82f6', marginBottom: 4 },
   reference: { fontSize: 15, color: '#6b7280', marginBottom: 24 },
   attributesRow: {
     flexDirection: 'row',

@@ -25,7 +25,8 @@ export async function abrirCaja() {
       total_general: 0,
       total_efectivo: 0,
       total_nequi: 0,
-      total_daviplata: 0,
+      total_bre_b: 0,
+      total_otro: 0,
     })
     .select()
     .single()
@@ -68,7 +69,8 @@ export async function obtenerResumenEnVivo() {
     total_general: Number(resumen?.total_general || 0),
     total_efectivo: Number(resumen?.total_efectivo || 0),
     total_nequi: Number(resumen?.total_nequi || 0),
-    total_daviplata: Number(resumen?.total_daviplata || 0)
+    total_bre_b: Number(resumen?.total_bre_b || 0),
+    total_otro: Number(resumen?.total_otro || 0)
   }
 }
 
@@ -88,7 +90,8 @@ export async function cerrarCaja(params: { efectivo_contado: number, diferencia:
       total_general: resumen.total_general,
       total_efectivo: resumen.total_efectivo,
       total_nequi: resumen.total_nequi,
-      total_daviplata: resumen.total_daviplata,
+      total_bre_b: resumen.total_bre_b,
+      total_otro: resumen.total_otro,
       efectivo_contado: params.efectivo_contado,
       diferencia: params.diferencia,
       diferencia_nota: params.nota || null,

@@ -2,7 +2,7 @@ import { supabase } from './supabase'
 
 export type Balance = {
   ingresos: {
-    efectivo: number; nequi: number; daviplata: number
+    efectivo: number; nequi: number; bre_b: number; otro: number
     reembolsos: number; cobros_cambios: number; total_neto: number
   }
   egresos: {

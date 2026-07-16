@@ -53,7 +53,7 @@ export default function CalzadoListScreen() {
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle} numberOfLines={1}>{item.descripcion}</Text>
         <Text style={styles.cardSubtitle}>
-          Ref: {item.referencia || 'N/A'} • Talla: {item.talla || 'N/A'}
+          {item.marca ? `${item.marca} • ` : ''}Ref: {item.referencia || 'N/A'} • Talla: {item.talla || 'N/A'}
         </Text>
         <View style={styles.cardFooter}>
           <Text style={styles.cardPrice}>${item.precio_minimo.toLocaleString()} - ${item.precio_maximo.toLocaleString()}</Text>

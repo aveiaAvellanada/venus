@@ -19,7 +19,7 @@ export async function listarCalzado(filtros?: {
   }
   
   if (filtros?.busqueda) {
-    query = query.or(orIlike(['descripcion', 'referencia', 'talla', 'color'], filtros.busqueda))
+    query = query.or(orIlike(['descripcion', 'marca', 'referencia', 'talla', 'color'], filtros.busqueda))
   }
   
   if (filtros?.estado === 'disponible') {
@@ -37,6 +37,7 @@ export async function guardarCalzado(datos: {
   id?: string | null
   categoria: string
   descripcion: string
+  marca?: string | null
   referencia?: string | null
   talla?: string | null
   color?: string | null
@@ -53,6 +54,7 @@ export async function guardarCalzado(datos: {
     p_id: datos.id || (null as any),
     p_categoria: datos.categoria,
     p_descripcion: datos.descripcion,
+    p_marca: datos.marca || (null as any),
     p_referencia: datos.referencia || (null as any),
     p_talla: datos.talla || (null as any),
     p_color: datos.color || (null as any),

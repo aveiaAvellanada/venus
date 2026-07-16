@@ -12,8 +12,8 @@ import { buscarProductos, registrarVenta } from '../../../lib/ventas'
 import { obtenerCajaHoy } from '../../../lib/caja'
 
 type Etapa = 'carrito' | 'cobrar' | 'confirmacion'
-const METODOS: MetodoPago[] = ['efectivo', 'nequi', 'daviplata']
-const ETIQUETA: Record<MetodoPago, string> = { efectivo: 'Efectivo', nequi: 'Nequi', daviplata: 'Daviplata' }
+const METODOS: MetodoPago[] = ['efectivo', 'nequi', 'bre_b', 'otro']
+const ETIQUETA: Record<MetodoPago, string> = { efectivo: 'Efectivo', nequi: 'Nequi', bre_b: 'Bre-B', otro: 'Otro' }
 const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
 const soloEntero = (t: string) => t.replace(/[^0-9]/g, '')
 const soloDecimal = (t: string) => {
@@ -117,7 +117,7 @@ export default function NuevaVenta() {
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [metodos, setMetodos] = useState<MetodoPago[]>([])
-  const [montos, setMontos] = useState<Record<MetodoPago, string>>({ efectivo: '', nequi: '', daviplata: '' })
+  const [montos, setMontos] = useState<Record<MetodoPago, string>>({ efectivo: '', nequi: '', bre_b: '', otro: '' })
   const [recibido, setRecibido] = useState('')
   const [cliente, setCliente] = useState({ nombre: '', apellido: '', telefono: '' })
   const [guardando, setGuardando] = useState(false)
@@ -227,7 +227,7 @@ export default function NuevaVenta() {
   function nuevaVenta() {
     dispatch({ tipo: 'limpiar' })
     setMetodos([])
-    setMontos({ efectivo: '', nequi: '', daviplata: '' })
+    setMontos({ efectivo: '', nequi: '', bre_b: '', otro: '' })
     setRecibido('')
     setCliente({ nombre: '', apellido: '', telefono: '' })
     setNumeroVenta(null)
@@ -257,7 +257,7 @@ export default function NuevaVenta() {
         <Pressable
           onPress={() => {
             setMetodos([])
-            setMontos({ efectivo: '', nequi: '', daviplata: '' })
+            setMontos({ efectivo: '', nequi: '', bre_b: '', otro: '' })
             setRecibido('')
             setEtapa('carrito')
           }}

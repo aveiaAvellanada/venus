@@ -169,7 +169,8 @@ export default function ReportesIndex() {
             <View style={styles.desglose}>
               <Fila etiqueta="Efectivo" valor={pesos(hoy.total_efectivo)} />
               <Fila etiqueta="Nequi" valor={pesos(hoy.total_nequi)} />
-              <Fila etiqueta="Daviplata" valor={pesos(hoy.total_daviplata)} />
+              <Fila etiqueta="Bre-B" valor={pesos(hoy.total_bre_b)} />
+              <Fila etiqueta="Otro" valor={pesos(hoy.total_otro)} />
             </View>
           </View>
 

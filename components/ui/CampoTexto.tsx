@@ -4,7 +4,7 @@ import { useTema } from '../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../lib/theme'
 
 interface Props extends TextInputProps {
-  etiqueta: string
+  etiqueta?: string
   error?: string
   gigante?: boolean
 }
@@ -17,7 +17,7 @@ export function CampoTexto({ etiqueta, error, gigante = false, onFocus, onBlur, 
 
   return (
     <View style={{ gap: 6 }}>
-      <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>{etiqueta}</Text>
+      {etiqueta ? <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>{etiqueta}</Text> : null}
       <TextInput
         placeholderTextColor={paleta.textoDeshabilitado}
         onFocus={(e) => {

@@ -43,6 +43,13 @@ jest.mock('../lib/dashboard', () => ({
   obtenerGastosPeriodo: (...args: unknown[]) => mockGastosPeriodo(...args),
 }))
 
+const mockListarCalzado = jest.fn()
+const mockListarVarios = jest.fn()
+jest.mock('../lib/inventario', () => ({
+  listarCalzado: (...args: unknown[]) => mockListarCalzado(...args),
+  listarVarios: (...args: unknown[]) => mockListarVarios(...args),
+}))
+
 import { rangoParaPeriodo } from './dashboard'
 import { TemaProvider } from './tema'
 import Movimientos from '../app/(app)/(tabs)/movimientos'
@@ -141,22 +148,71 @@ describe('Movimientos', () => {
   })
 })
 
-describe('Productos', () => {
-  beforeEach(() => jest.clearAllMocks())
+const CALZADO = [
+  {
+    id: 'c1', descripcion: 'Nike Air Max', marca: 'Nike', referencia: '4521', categoria: 'Deportivo',
+    talla: '40', color: 'Negro', precio_minimo: 150000, precio_maximo: 220000, stock_actual: 5,
+    stock_minimo: 1, foto_url: null, proveedor_id: null, activo: true,
+  },
+  {
+    id: 'c2', descripcion: 'Nike Air Max', marca: 'Nike', referencia: '4521', categoria: 'Deportivo',
+    talla: '39', color: 'Blanco', precio_minimo: 140000, precio_maximo: 200000, stock_actual: 2,
+    stock_minimo: 1, foto_url: null, proveedor_id: null, activo: true,
+  },
+  {
+    id: 'c3', descripcion: 'Croydon Urbano', marca: 'Croydon', referencia: '3310', categoria: 'Clásico',
+    talla: '41', color: 'Café', precio_minimo: 95000, precio_maximo: 95000, stock_actual: 0,
+    stock_minimo: 1, foto_url: null, proveedor_id: null, activo: true,
+  },
+]
 
-  it('Calzado navega; empleado ve Recibir mercancía pero no Carga inicial', async () => {
-    conRol('empleado')
-    const arbol = await montar(<Productos />)
-    expect(existeTexto(arbol, 'Recibir mercancía')).toBe(true)
-    expect(existeTexto(arbol, 'Carga inicial')).toBe(false)
-    const filas = botones(arbol)
-    await act(async () => filas[0].props.onPress!())
-    expect(mockPush).toHaveBeenCalledWith('/inventario/calzado')
+const VARIOS = [
+  { id: 'g1', nombre: 'Huevos', unidad_medida: 'unidad', precio_sugerido: null, foto_url: null, activo: true },
+]
+
+describe('Productos', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockListarCalzado.mockResolvedValue(CALZADO)
+    mockListarVarios.mockResolvedValue(VARIOS)
   })
 
-  it('admin ve Carga inicial', async () => {
-    conRol('admin')
+  it('agrupa por referencia: un card por modelo, con agotado, y navega al detalle', async () => {
+    conRol('empleado')
     const arbol = await montar(<Productos />)
-    expect(existeTexto(arbol, 'Carga inicial')).toBe(true)
+    const cards = botones(arbol).filter((n: Nodo) => n.props.accessibilityLabel === 'Nike Air Max')
+    expect(cards).toHaveLength(1)
+    expect(existeTexto(arbol, 'AGOTADO')).toBe(true)
+    await act(async () => cards[0].props.onPress!())
+    expect(mockPush).toHaveBeenCalledWith('/productos/4521')
+  })
+
+  it('la búsqueda filtra los modelos', async () => {
+    conRol('empleado')
+    const arbol = await montar(<Productos />)
+    const input = arbol.root.findByType(require('react-native').TextInput)
+    await act(async () => input.props.onChangeText('croydon'))
+    expect(botones(arbol).filter((n: Nodo) => n.props.accessibilityLabel === 'Nike Air Max')).toHaveLength(0)
+    expect(
+      botones(arbol).filter((n: Nodo) => n.props.accessibilityLabel === 'Croydon Urbano').length
+    ).toBeGreaterThan(0)
+  })
+
+  it('toggle Granja lista los productos varios', async () => {
+    conRol('empleado')
+    const arbol = await montar(<Productos />)
+    await act(async () => tabs(arbol)[1].props.onPress!())
+    expect(mockListarVarios).toHaveBeenCalled()
+    expect(existeTexto(arbol, 'Huevos')).toBe(true)
+  })
+
+  it('empleado ve Recibir mercancía pero no Carga inicial; admin sí', async () => {
+    conRol('empleado')
+    const a = await montar(<Productos />)
+    expect(existeTexto(a, 'Recibir mercancía')).toBe(true)
+    expect(existeTexto(a, 'Carga inicial')).toBe(false)
+    conRol('admin')
+    const b = await montar(<Productos />)
+    expect(existeTexto(b, 'Carga inicial')).toBe(true)
   })
 })

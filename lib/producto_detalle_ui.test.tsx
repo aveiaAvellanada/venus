@@ -32,6 +32,10 @@ jest.mock('expo-router', () => {
 jest.mock('./supabase', () => ({ supabase: {} }))
 jest.mock('../lib/supabase', () => ({ supabase: {} }))
 
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
+
 const mockUseAuth = jest.fn()
 jest.mock('../lib/auth', () => ({ useAuth: () => mockUseAuth() }))
 
@@ -40,8 +44,10 @@ jest.mock('../lib/inventario', () => ({
   listarCalzado: (...args: unknown[]) => mockListarCalzado(...args),
 }))
 
+import { Text } from 'react-native'
 import { TemaProvider } from './tema'
 import { CarritoProvider } from './carrito-contexto'
+import { ToastProvider } from '../components/ui'
 import ProductoDetalleScreen from '../app/(app)/productos/[ref]'
 
 const CALZADO = [
@@ -71,9 +77,11 @@ async function montar() {
   await act(async () => {
     arbol = renderer.create(
       <TemaProvider>
-        <CarritoProvider>
-          <ProductoDetalleScreen />
-        </CarritoProvider>
+        <ToastProvider>
+          <CarritoProvider>
+            <ProductoDetalleScreen />
+          </CarritoProvider>
+        </ToastProvider>
       </TemaProvider>
     )
   })
@@ -143,5 +151,22 @@ describe('Detalle de producto', () => {
       .find((n: Nodo) => n.props.onPress)!
     await act(async () => cta.props.onPress!())
     expect(mockPush).toHaveBeenCalledWith('/ventas/nueva')
+  })
+
+  it('agregar al carrito muestra toast "Agregado: talla N · Color"', async () => {
+    conRol('empleado')
+    const arbol = await montar()
+    const negro = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Negro')!
+    await act(async () => negro.props.onPress!())
+    const talla40 = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Talla 40: 5 disponibles')!
+    await act(async () => talla40.props.onPress!())
+    const cta = arbol.root
+      .findAllByProps({ accessibilityLabel: 'Agregar al carrito' })
+      .find((n: Nodo) => n.props.onPress)!
+    await act(async () => cta.props.onPress!())
+    const textos = arbol.root
+      .findAllByType(Text)
+      .map((t: { props: { children?: unknown } }) => JSON.stringify(t.props.children))
+    expect(textos.join(' ')).toContain('Agregado: talla 40 · Negro')
   })
 })

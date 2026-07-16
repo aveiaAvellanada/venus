@@ -11,7 +11,7 @@ import { agruparPorReferencia } from '../../../lib/productos'
 import type { ModeloCalzado } from '../../../lib/productos'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
-import { Boton, ChipTalla, Esqueleto, EstadoVacio, PillColor } from '../../../components/ui'
+import { Boton, ChipTalla, Esqueleto, EstadoVacio, PillColor, useToast } from '../../../components/ui'
 
 const formatear = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
@@ -20,6 +20,7 @@ export default function ProductoDetalleScreen() {
   const { perfil } = useAuth()
   const { paleta } = useTema()
   const { dispatch } = useCarrito()
+  const { mostrar } = useToast()
   const router = useRouter()
 
   const [cargando, setCargando] = useState(true)
@@ -173,6 +174,7 @@ export default function ProductoDetalleScreen() {
                   },
                 })
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+                mostrar(`Agregado: talla ${variante.talla} · ${variante.color}`)
                 router.push('/ventas/nueva')
               }}
             />

@@ -1,97 +1,187 @@
-import { useState } from 'react'
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native'
+import { ChevronRight } from 'lucide-react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useAuth } from '../../lib/auth'
 import { USUARIOS, type UsuarioPicker } from '../../lib/usuarios'
+import { useTema } from '../../lib/tema'
+import { espacio, motion, radio, tipografia } from '../../lib/theme'
+import { TecladoPin } from '../../components/ui'
+
+function Avatar({ nombre, tamano }: { nombre: string; tamano: number }) {
+  const { paleta } = useTema()
+  return (
+    <View
+      style={{
+        width: tamano,
+        height: tamano,
+        borderRadius: radio.full,
+        backgroundColor: paleta.primarioSoft,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Text style={[tamano >= 56 ? tipografia.h2 : tipografia.h3, { color: paleta.primario }]}>
+        {nombre.trim().charAt(0).toUpperCase()}
+      </Text>
+    </View>
+  )
+}
 
 export default function Login() {
   const { iniciarSesion } = useAuth()
+  const { paleta } = useTema()
   const [usuario, setUsuario] = useState<UsuarioPicker | null>(null)
   const [pin, setPin] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [cargando, setCargando] = useState(false)
+  const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  async function entrar() {
-    if (!usuario || pin.length < 4) return
+  useEffect(() => {
+    return () => {
+      if (temporizador.current) clearTimeout(temporizador.current)
+    }
+  }, [])
+
+  // Auto-envío al 4º dígito (spec §7.1): sin botón "Entrar".
+  useEffect(() => {
+    if (pin.length !== 4 || cargando || !usuario) return
+    let vigente = true
     setCargando(true)
     setError(null)
-    try {
-      const res = await iniciarSesion(usuario.email, pin)
-      if (res.error) {
-        setError(res.error)
-        setPin('')
-      }
-      // Si entra bien, onAuthStateChange + (auth)/_layout redirigen a "/".
-    } catch {
-      setError('No se pudo conectar. Intenta de nuevo.')
-      setPin('')
-    } finally {
-      setCargando(false)
+    iniciarSesion(usuario.email, pin)
+      .then((res) => {
+        if (!vigente) return
+        if (res.error) fallar(res.error)
+        // Si entra bien, onAuthStateChange + (auth)/_layout redirigen a "/".
+      })
+      .catch(() => {
+        if (vigente) fallar('No se pudo conectar. Intenta de nuevo.')
+      })
+      .finally(() => {
+        if (vigente) setCargando(false)
+      })
+    return () => {
+      vigente = false
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pin])
+
+  function fallar(mensaje: string) {
+    setError(mensaje)
+    if (temporizador.current) clearTimeout(temporizador.current)
+    temporizador.current = setTimeout(() => {
+      setPin('')
+      setError(null)
+    }, 600)
+  }
+
+  function cambiarUsuario() {
+    if (temporizador.current) clearTimeout(temporizador.current)
+    setUsuario(null)
+    setPin('')
+    setError(null)
+    setCargando(false)
   }
 
   if (!usuario) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.titulo}>¿Quién eres?</Text>
-        {USUARIOS.map(u => (
-          <Pressable key={u.email} style={styles.userBtn} onPress={() => setUsuario(u)}>
-            <Text style={styles.userBtnText}>{u.nombre}</Text>
-          </Pressable>
-        ))}
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: espacio.xxl, gap: espacio.m }}
+        >
+          <Text style={[tipografia.h1, { color: paleta.texto, textAlign: 'center', marginBottom: espacio.l }]}>
+            ¿Quién eres?
+          </Text>
+          {USUARIOS.map((u, i) => (
+            <Animated.View key={u.email} entering={FadeInDown.duration(220).delay(i * 40)}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={u.nombre}
+                onPress={() => setUsuario(u)}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: espacio.m,
+                  minHeight: 64,
+                  paddingHorizontal: espacio.l,
+                  paddingVertical: espacio.m,
+                  borderRadius: radio.md,
+                  borderWidth: 1,
+                  borderColor: paleta.borde,
+                  backgroundColor: pressed ? paleta.superficie2 : paleta.superficie,
+                  transform: [{ scale: pressed ? motion.escalaPress : 1 }],
+                })}
+              >
+                <Avatar nombre={u.nombre} tamano={44} />
+                <Text style={[tipografia.h3, { color: paleta.texto, flex: 1 }]}>{u.nombre}</Text>
+                <ChevronRight size={20} color={paleta.texto3} />
+              </Pressable>
+            </Animated.View>
+          ))}
+        </ScrollView>
       </View>
     )
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.titulo}>{usuario.nombre}</Text>
-      <Text style={styles.sub}>Escribe tu PIN</Text>
-      <TextInput
-        style={styles.pinInput}
-        value={pin}
-        onChangeText={t => setPin(t.replace(/[^0-9]/g, '').slice(0, 4))}
-        keyboardType="number-pad"
-        secureTextEntry
-        maxLength={4}
-        autoFocus
-      />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+    <View style={{ flex: 1, backgroundColor: paleta.fondo, padding: espacio.xxl, paddingTop: 56 }}>
       <Pressable
-        style={[styles.primaryBtn, (cargando || pin.length < 4) && styles.btnDisabled]}
-        onPress={entrar}
-        disabled={cargando || pin.length < 4}
+        accessibilityRole="button"
+        accessibilityLabel="Cambiar usuario"
+        hitSlop={12}
+        onPress={cambiarUsuario}
+        style={{ alignSelf: 'flex-start' }}
       >
-        {cargando ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Entrar</Text>}
+        <Text style={[tipografia.etiqueta, { color: paleta.primario }]}>← Cambiar usuario</Text>
       </Pressable>
+
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: espacio.l }}>
+        <Avatar nombre={usuario.nombre} tamano={56} />
+        <View style={{ alignItems: 'center', gap: espacio.xs }}>
+          <Text style={[tipografia.h2, { color: paleta.texto }]}>
+            {`Hola, ${usuario.nombre.split(' ')[0]}`}
+          </Text>
+          <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+            Escribe tu clave para entrar
+          </Text>
+        </View>
+
+        <TecladoPin
+          valor={pin}
+          error={!!error}
+          deshabilitado={cargando}
+          onDigito={(d) => {
+            if (pin.length < 4 && !cargando) setPin(pin + d)
+          }}
+          onBorrar={() => setPin(pin.slice(0, -1))}
+        />
+
+        <View style={{ minHeight: 24, justifyContent: 'center' }}>
+          {cargando ? (
+            <ActivityIndicator color={paleta.primario} />
+          ) : error ? (
+            <Text
+              accessibilityLiveRegion="polite"
+              style={[tipografia.caption, { color: paleta.peligroTexto, textAlign: 'center' }]}
+            >
+              {error}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+
       <Pressable
-        style={styles.linkBtn}
-        onPress={() => {
-          setUsuario(null)
-          setPin('')
-          setError(null)
-          setCargando(false)
-        }}
+        accessibilityRole="button"
+        accessibilityLabel="¿Se te olvidó tu clave?"
+        hitSlop={12}
+        onPress={() =>
+          Alert.alert('¿Se te olvidó tu clave?', 'Pídele a Andrés que te asigne una nueva.')
+        }
+        style={{ alignSelf: 'center', paddingVertical: espacio.l }}
       >
-        <Text style={styles.link}>← Cambiar usuario</Text>
+        <Text style={[tipografia.etiqueta, { color: paleta.primario }]}>¿Se te olvidó tu clave?</Text>
       </Pressable>
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24, gap: 16, backgroundColor: '#fff' },
-  titulo: { fontSize: 32, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
-  sub: { fontSize: 18, textAlign: 'center', color: '#444' },
-  userBtn: { backgroundColor: '#1E66F5', borderRadius: 16, paddingVertical: 24, alignItems: 'center' },
-  userBtnText: { color: '#fff', fontSize: 24, fontWeight: '600' },
-  pinInput: {
-    borderWidth: 2, borderColor: '#1E66F5', borderRadius: 16, fontSize: 32,
-    textAlign: 'center', letterSpacing: 12, paddingVertical: 16,
-  },
-  primaryBtn: { backgroundColor: '#1E66F5', borderRadius: 16, paddingVertical: 20, alignItems: 'center' },
-  primaryBtnText: { color: '#fff', fontSize: 22, fontWeight: '700' },
-  btnDisabled: { opacity: 0.5 },
-  error: { color: '#D20F39', fontSize: 16, textAlign: 'center' },
-  link: { color: '#1E66F5', fontSize: 16, textAlign: 'center', marginTop: 8 },
-  linkBtn: { paddingVertical: 16, alignItems: 'center' },
-})

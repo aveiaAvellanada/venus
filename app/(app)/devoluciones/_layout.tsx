@@ -6,11 +6,10 @@ export default function DevolucionesLayout() {
   if (requireModulo) return requireModulo
   return (
     <Stack screenOptions={{
+      headerShown: false,
       headerStyle: { backgroundColor: '#ffffff' }, headerShadowVisible: false,
       headerTintColor: '#111827', headerTitleStyle: { fontWeight: '600' },
       contentStyle: { backgroundColor: '#f9fafb' }, headerTitleAlign: 'center',
-    }}>
-      <Stack.Screen name="nueva" options={{ title: 'Nueva Devolución' }} />
-    </Stack>
+    }} />
   )
 }

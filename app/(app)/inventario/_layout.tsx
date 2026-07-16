@@ -4,6 +4,7 @@ export default function InventarioLayout() {
   return (
     <Stack
       screenOptions={{
+        headerShown: false,
         headerStyle: { backgroundColor: '#ffffff' },
         headerShadowVisible: false,
         headerTintColor: '#111827',
@@ -11,7 +12,7 @@ export default function InventarioLayout() {
         contentStyle: { backgroundColor: '#f9fafb' },
       }}
     >
-      <Stack.Screen name="calzado/[id]" options={{ title: 'Detalle del Calzado', presentation: 'card' }} />
+      <Stack.Screen name="calzado/[id]" options={{ presentation: 'card' }} />
     </Stack>
   )
 }

@@ -9,11 +9,11 @@ export default function GastosLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerTitleAlign: 'center', headerBackVisible: false }}>
-      <Stack.Screen name="index" options={{ title: 'Gastos Variables' }} />
-      <Stack.Screen name="fijos" options={{ title: 'Gastos Fijos' }} />
-      <Stack.Screen name="fijos-editor" options={{ title: 'Nuevo Gasto Fijo', presentation: 'modal' }} />
-      <Stack.Screen name="pagar" options={{ title: 'Pagar Gasto Fijo', presentation: 'modal' }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="fijos" />
+      <Stack.Screen name="fijos-editor" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="pagar" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }

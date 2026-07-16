@@ -1,270 +1,208 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../../lib/supabase';
-import { Database } from '../../../lib/database.types';
+import React, { useState, useCallback } from 'react'
+import { View, Text, FlatList, ActivityIndicator } from 'react-native'
+import { useRouter, useFocusEffect } from 'expo-router'
+import { ArrowLeft, FileText, Plus } from 'lucide-react-native'
+import { supabase } from '../../../lib/supabase'
+import { Database } from '../../../lib/database.types'
+import { useTema } from '../../../lib/tema'
+import type { Paleta } from '../../../lib/theme'
+import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
+import { Badge, ControlSegmentado, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import type { TipoBadge } from '../../../components/ui'
 
-type GastoFijoRow = Database['public']['Tables']['gastos_fijos']['Row'];
-type GastoFijoPagoRow = Database['public']['Tables']['gastos_fijos_pagos']['Row'];
+type GastoFijoRow = Database['public']['Tables']['gastos_fijos']['Row']
+type GastoFijoPagoRow = Database['public']['Tables']['gastos_fijos_pagos']['Row']
 
 interface GastoConPagos extends GastoFijoRow {
-  gastos_fijos_pagos: GastoFijoPagoRow[];
+  gastos_fijos_pagos: GastoFijoPagoRow[]
+}
+
+// Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
+function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: espacio.m,
+        paddingHorizontal: espacio.xl,
+        paddingTop: 56,
+        paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={onVolver} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Gastos Fijos</Text>
+    </View>
+  )
 }
 
 export default function GastosFijosScreen() {
-  const router = useRouter();
-  
-  const [gastos, setGastos] = useState<GastoConPagos[]>([]);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter()
+  const { paleta } = useTema()
+  const { mostrar } = useToast()
+
+  const [gastos, setGastos] = useState<GastoConPagos[]>([])
+  const [loading, setLoading] = useState(true)
 
   const loadData = async () => {
     try {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
+      const startOfMonth = new Date()
+      startOfMonth.setDate(1)
+      startOfMonth.setHours(0, 0, 0, 0)
 
-      const endOfMonth = new Date(startOfMonth);
-      endOfMonth.setMonth(endOfMonth.getMonth() + 1);
-      endOfMonth.setDate(0);
-      endOfMonth.setHours(23, 59, 59, 999);
+      const endOfMonth = new Date(startOfMonth)
+      endOfMonth.setMonth(endOfMonth.getMonth() + 1)
+      endOfMonth.setDate(0)
+      endOfMonth.setHours(23, 59, 59, 999)
 
       // Traer gastos fijos activos y sus pagos en el mes actual
       const { data, error } = await supabase
         .from('gastos_fijos')
-        .select(`
+        .select(
+          `
           *,
           gastos_fijos_pagos (
             *
           )
-        `)
+        `
+        )
         .eq('activo', true)
         .gte('gastos_fijos_pagos.fecha_pago', startOfMonth.toISOString())
         .lte('gastos_fijos_pagos.fecha_pago', endOfMonth.toISOString())
-        .order('nombre', { ascending: true });
+        .order('nombre', { ascending: true })
 
-      if (error) throw error;
-      setGastos(data as unknown as GastoConPagos[]);
+      if (error) throw error
+      setGastos(data as unknown as GastoConPagos[])
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      mostrar(error.message, 'error')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
+      loadData()
     }, [])
-  );
+  )
 
   const renderItem = ({ item }: { item: GastoConPagos }) => {
-    const yaPagado = item.gastos_fijos_pagos && item.gastos_fijos_pagos.length > 0;
-    
-    let statusColor = '#E0E0E0';
-    let statusText = 'Desconocido';
-    
+    const yaPagado = item.gastos_fijos_pagos && item.gastos_fijos_pagos.length > 0
+
+    let tipoBadge: TipoBadge = 'neutro'
+    let statusText = 'Desconocido'
+
     if (yaPagado) {
-      statusColor = '#34C759'; // Verde
-      statusText = 'Pagado';
+      tipoBadge = 'exito'
+      statusText = 'Pagado'
     } else {
-      const hoy = new Date().getDate();
-      const diaPago = item.dia_pago || 1;
-      const diasRestantes = diaPago - hoy;
-      
+      const hoy = new Date().getDate()
+      const diaPago = item.dia_pago || 1
+      const diasRestantes = diaPago - hoy
+
       if (diasRestantes < 0) {
-        statusColor = '#FF3B30'; // Rojo
-        statusText = 'Atrasado';
+        tipoBadge = 'peligro'
+        statusText = 'Atrasado'
       } else if (diasRestantes <= 5) {
-        statusColor = '#FFCC00'; // Amarillo
-        statusText = `Vence en ${diasRestantes} días`;
+        tipoBadge = 'advertencia'
+        statusText = `Vence en ${diasRestantes} días`
       } else {
-        statusColor = '#8E8E93'; // Gris
-        statusText = `Vence el ${diaPago}`;
+        tipoBadge = 'neutro'
+        statusText = `Vence el ${diaPago}`
       }
     }
 
-    return (
-      <TouchableOpacity 
-        style={styles.card}
-        onPress={() => {
-          if (!yaPagado) {
-            router.push(`/gastos/pagar?id=${item.id}&nombre=${encodeURIComponent(item.nombre)}&monto=${item.monto_aproximado}`);
-          }
-        }}
-      >
-        <View style={styles.cardContent}>
-          <View style={styles.cardInfo}>
-            <Text style={styles.nombreText}>{item.nombre}</Text>
-            <Text style={styles.montoText}>Aprox. ${item.monto_aproximado.toLocaleString()}</Text>
-            <Text style={styles.beneficiarioText}>{item.beneficiario || 'Sin beneficiario'}</Text>
-          </View>
-          <View style={styles.statusContainer}>
-            <View style={[styles.semaforo, { backgroundColor: statusColor }]} />
-            <Text style={[styles.statusText, { color: statusColor === '#FFCC00' ? '#D4A000' : statusColor }]}>
-              {statusText}
-            </Text>
-          </View>
+    const contenido = (
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ flex: 1, marginRight: espacio.m }}>
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>{item.nombre}</Text>
+          <Text style={[tipografia.cuerpo, tabular, { color: paleta.texto2, marginTop: 2 }]}>
+            Aprox. ${item.monto_aproximado.toLocaleString()}
+          </Text>
+          <Text style={[tipografia.caption, { color: paleta.texto3, marginTop: 2 }]}>
+            {item.beneficiario || 'Sin beneficiario'}
+          </Text>
         </View>
-      </TouchableOpacity>
-    );
-  };
+        <Badge texto={statusText} tipo={tipoBadge} />
+      </View>
+    )
+
+    return (
+      <Tarjeta estilo={{ marginBottom: espacio.m }}>
+        {yaPagado ? (
+          contenido
+        ) : (
+          <Presionable
+            accessibilityRole="button"
+            accessibilityLabel={`Pagar ${item.nombre}`}
+            onPress={() =>
+              router.push(`/gastos/pagar?id=${item.id}&nombre=${encodeURIComponent(item.nombre)}&monto=${item.monto_aproximado}`)
+            }
+          >
+            {contenido}
+          </Presionable>
+        )}
+      </Tarjeta>
+    )
+  }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.tabContainer}>
-        <TouchableOpacity style={styles.tab} onPress={() => router.replace('/gastos')}>
-          <Text style={styles.tabLabel}>Variables</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, styles.activeTab]} disabled>
-          <Text style={[styles.tabLabel, styles.activeTabLabel]}>Fijos</Text>
-        </TouchableOpacity>
+    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+      <Encabezado paleta={paleta} onVolver={() => router.back()} />
+
+      <View style={{ paddingHorizontal: espacio.xl, marginBottom: espacio.m }}>
+        <ControlSegmentado
+          opciones={['Variables', 'Fijos']}
+          indice={1}
+          onCambio={(i) => {
+            if (i === 0) router.replace('/gastos')
+          }}
+        />
       </View>
 
       {loading ? (
-        <ActivityIndicator style={styles.loader} size="large" color="#007AFF" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
+        </View>
       ) : (
         <FlatList
           data={gastos}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={{ padding: espacio.xl, paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="documents-outline" size={60} color="#ccc" />
-              <Text style={styles.emptyText}>No hay contratos/gastos fijos registrados</Text>
-            </View>
+            <EstadoVacio icono={<FileText />} titulo="No hay contratos/gastos fijos registrados" />
           }
         />
       )}
 
-      <TouchableOpacity style={styles.fab} onPress={() => router.push('/gastos/fijos-editor')}>
-        <Ionicons name="add" size={30} color="#fff" />
-      </TouchableOpacity>
+      <Presionable
+        accessibilityRole="button"
+        accessibilityLabel="Agregar gasto fijo"
+        onPress={() => router.push('/gastos/fijos-editor')}
+        hitSlop={8}
+        style={{
+          position: 'absolute',
+          bottom: espacio.xl,
+          right: espacio.xl,
+          width: 56,
+          height: 56,
+          borderRadius: radio.full,
+          backgroundColor: paleta.primario,
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: paleta.sombraFab,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 1,
+          shadowRadius: 10,
+          elevation: 6,
+        }}
+      >
+        <Plus size={28} color={paleta.sobrePrimario} />
+      </Presionable>
     </View>
-  );
+  )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F7F8FA',
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EAEAEE',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  activeTab: {
-    backgroundColor: '#007AFF',
-  },
-  tabLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#8E8E93',
-  },
-  activeTabLabel: {
-    color: '#fff',
-  },
-  loader: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 100,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-    borderLeftWidth: 4,
-    borderLeftColor: '#007AFF',
-  },
-  cardContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  cardInfo: {
-    flex: 1,
-  },
-  nombreText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 4,
-  },
-  montoText: {
-    fontSize: 15,
-    color: '#555',
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  beneficiarioText: {
-    fontSize: 13,
-    color: '#A0A0A0',
-  },
-  statusContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 90,
-  },
-  semaforo: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    marginBottom: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 3,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 60,
-  },
-  emptyText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#8E8E93',
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 30,
-    right: 30,
-    backgroundColor: '#007AFF',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#007AFF',
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 5,
-  },
-});

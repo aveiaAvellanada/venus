@@ -1,142 +1,192 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert, Image, ScrollView, RefreshControl } from 'react-native';
-import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from '@expo/vector-icons';
-import { obtenerGastosVariables, guardarGastoVariable } from '../../../lib/gastos';
-import { useAuth } from '../../../lib/auth';
-import { Database } from '../../../lib/database.types';
+import React, { useState, useEffect } from 'react'
+import { View, Text, FlatList, Modal, ActivityIndicator, Image, ScrollView, RefreshControl } from 'react-native'
+import { useRouter } from 'expo-router'
+import * as ImagePicker from 'expo-image-picker'
+import { ArrowLeft, Camera, Plus, Receipt, X } from 'lucide-react-native'
+import { obtenerGastosVariables, guardarGastoVariable } from '../../../lib/gastos'
+import { useAuth } from '../../../lib/auth'
+import { Database } from '../../../lib/database.types'
+import { useTema } from '../../../lib/tema'
+import type { Paleta } from '../../../lib/theme'
+import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
+import { Badge, Boton, CampoTexto, ControlSegmentado, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
 
-type GastoVariableRow = Database['public']['Tables']['gastos_variables']['Row'];
+type GastoVariableRow = Database['public']['Tables']['gastos_variables']['Row']
+
+// Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
+function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: espacio.m,
+        paddingHorizontal: espacio.xl,
+        paddingTop: 56,
+        paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={onVolver} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Gastos Variables</Text>
+    </View>
+  )
+}
 
 export default function GastosVariablesScreen() {
-  const router = useRouter();
-  const { session } = useAuth();
-  
-  const [gastos, setGastos] = useState<GastoVariableRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const router = useRouter()
+  const { session } = useAuth()
+  const { paleta } = useTema()
+  const { mostrar } = useToast()
+
+  const [gastos, setGastos] = useState<GastoVariableRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [modalVisible, setModalVisible] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   // Form
-  const [categoria, setCategoria] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [monto, setMonto] = useState('');
-  const [fotoUri, setFotoUri] = useState<string | null>(null);
+  const [categoria, setCategoria] = useState('')
+  const [descripcion, setDescripcion] = useState('')
+  const [monto, setMonto] = useState('')
+  const [fotoUri, setFotoUri] = useState<string | null>(null)
 
   const loadData = async () => {
     try {
-      const now = new Date();
-      const data = await obtenerGastosVariables(now.getMonth() + 1, now.getFullYear());
-      setGastos(data);
+      const now = new Date()
+      const data = await obtenerGastosVariables(now.getMonth() + 1, now.getFullYear())
+      setGastos(data)
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      mostrar(error.message, 'error')
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setLoading(false)
+      setRefreshing(false)
     }
-  };
+  }
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData()
+  }, [])
 
   const handleRefresh = () => {
-    setRefreshing(true);
-    loadData();
-  };
+    setRefreshing(true)
+    loadData()
+  }
 
   const pickImage = async () => {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       quality: 0.8,
-    });
-    
+    })
+
     if (!result.canceled) {
-      setFotoUri(result.assets[0].uri);
+      setFotoUri(result.assets[0].uri)
     }
-  };
+  }
 
   const handleSave = async () => {
     if (!descripcion || !monto || !categoria) {
-      Alert.alert('Error', 'Por favor llena todos los campos obligatorios');
-      return;
+      mostrar('Por favor llena todos los campos obligatorios', 'error')
+      return
     }
 
-    setSaving(true);
+    setSaving(true)
     try {
-      await guardarGastoVariable({
-        categoria,
-        descripcion,
-        monto: parseFloat(monto),
-        fecha: new Date().toISOString(),
-      }, fotoUri || undefined);
-      
-      Alert.alert('Éxito', 'Gasto guardado correctamente');
-      setModalVisible(false);
-      resetForm();
-      loadData();
+      await guardarGastoVariable(
+        {
+          categoria,
+          descripcion,
+          monto: parseFloat(monto),
+          fecha: new Date().toISOString(),
+        },
+        fotoUri || undefined
+      )
+
+      mostrar('Gasto guardado correctamente')
+      setModalVisible(false)
+      resetForm()
+      loadData()
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      mostrar(error.message, 'error')
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   const resetForm = () => {
-    setCategoria('');
-    setDescripcion('');
-    setMonto('');
-    setFotoUri(null);
-  };
+    setCategoria('')
+    setDescripcion('')
+    setMonto('')
+    setFotoUri(null)
+  }
 
   const renderItem = ({ item }: { item: GastoVariableRow }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.badgeContainer}>
-          <Text style={styles.badgeText}>{item.categoria}</Text>
-        </View>
-        <Text style={styles.montoText}>${item.monto.toLocaleString()}</Text>
+    <Tarjeta estilo={{ marginBottom: espacio.m }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: espacio.s }}>
+        <Badge texto={item.categoria} />
+        <Text style={[tipografia.h3, tabular, { color: paleta.texto }]}>${item.monto.toLocaleString()}</Text>
       </View>
-      <Text style={styles.descripcionText}>{item.descripcion}</Text>
-      <Text style={styles.fechaText}>{new Date(item.fecha).toLocaleDateString()}</Text>
-    </View>
-  );
+      <Text style={[tipografia.cuerpo, { color: paleta.texto2, marginBottom: espacio.s }]}>{item.descripcion}</Text>
+      <Text style={[tipografia.caption, { color: paleta.texto3 }]}>{new Date(item.fecha).toLocaleDateString()}</Text>
+    </Tarjeta>
+  )
 
   return (
-    <View style={styles.container}>
-      <View style={styles.tabContainer}>
-        <TouchableOpacity style={[styles.tab, styles.activeTab]} disabled>
-          <Text style={[styles.tabLabel, styles.activeTabLabel]}>Variables</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tab} onPress={() => router.replace('/gastos/fijos')}>
-          <Text style={styles.tabLabel}>Fijos</Text>
-        </TouchableOpacity>
+    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+      <Encabezado paleta={paleta} onVolver={() => router.back()} />
+
+      <View style={{ paddingHorizontal: espacio.xl, marginBottom: espacio.m }}>
+        <ControlSegmentado
+          opciones={['Variables', 'Fijos']}
+          indice={0}
+          onCambio={(i) => {
+            if (i === 1) router.replace('/gastos/fijos')
+          }}
+        />
       </View>
 
       {loading ? (
-        <ActivityIndicator style={styles.loader} size="large" color="#007AFF" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
+        </View>
       ) : (
         <FlatList
           data={gastos}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="receipt-outline" size={60} color="#ccc" />
-              <Text style={styles.emptyText}>No hay gastos variables este mes</Text>
-            </View>
-          }
+          contentContainerStyle={{ padding: espacio.xl, paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={paleta.primario} />}
+          ListEmptyComponent={<EstadoVacio icono={<Receipt />} titulo="No hay gastos variables este mes" />}
         />
       )}
 
-      <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
-        <Ionicons name="add" size={30} color="#fff" />
-      </TouchableOpacity>
+      <Presionable
+        accessibilityRole="button"
+        accessibilityLabel="Agregar gasto variable"
+        onPress={() => setModalVisible(true)}
+        hitSlop={8}
+        style={{
+          position: 'absolute',
+          bottom: espacio.xl,
+          right: espacio.xl,
+          width: 56,
+          height: 56,
+          borderRadius: radio.full,
+          backgroundColor: paleta.primario,
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: paleta.sombraFab,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 1,
+          shadowRadius: 10,
+          elevation: 6,
+        }}
+      >
+        <Plus size={28} color={paleta.sobrePrimario} />
+      </Presionable>
 
       <Modal
         animationType="slide"
@@ -144,253 +194,88 @@ export default function GastosVariablesScreen() {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <ScrollView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Nuevo Gasto Variable</Text>
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Ionicons name="close" size={28} color="#333" />
-            </TouchableOpacity>
+        <ScrollView
+          style={{ flex: 1, backgroundColor: paleta.fondo }}
+          contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: espacio.xxl,
+              marginTop: espacio.s,
+            }}
+          >
+            <Text style={[tipografia.h1, { color: paleta.texto }]}>Nuevo Gasto Variable</Text>
+            <Presionable accessibilityRole="button" accessibilityLabel="Cerrar" onPress={() => setModalVisible(false)} hitSlop={12}>
+              <X size={28} color={paleta.texto2} />
+            </Presionable>
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Categoría (ej: Fletes, Insumos)</Text>
-            <TextInput
-              style={styles.input}
+          <View style={{ gap: espacio.l }}>
+            <CampoTexto
+              etiqueta="Categoría (ej: Fletes, Insumos)"
               value={categoria}
               onChangeText={setCategoria}
               placeholder="Escribe la categoría"
             />
-          </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Descripción</Text>
-            <TextInput
-              style={styles.input}
+            <CampoTexto
+              etiqueta="Descripción"
               value={descripcion}
               onChangeText={setDescripcion}
               placeholder="¿Qué compraste?"
+              multiline
             />
-          </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Monto</Text>
-            <TextInput
-              style={styles.input}
+            <CampoTexto
+              etiqueta="Monto"
               value={monto}
               onChangeText={setMonto}
               placeholder="0.00"
-              keyboardType="numeric"
+              keyboardType="number-pad"
             />
-          </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Foto de Factura (Opcional)</Text>
-            <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
-              <Ionicons name="camera-outline" size={24} color="#007AFF" />
-              <Text style={styles.photoButtonText}>
-                {fotoUri ? 'Cambiar Foto' : 'Tomar Foto'}
+            <View>
+              <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>
+                Foto de Factura (Opcional)
               </Text>
-            </TouchableOpacity>
-            {fotoUri && (
-              <Image source={{ uri: fotoUri }} style={styles.previewImage} />
-            )}
-          </View>
+              <Presionable
+                accessibilityRole="button"
+                accessibilityLabel={fotoUri ? 'Cambiar foto de factura' : 'Tomar foto de factura'}
+                onPress={pickImage}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: espacio.s,
+                  backgroundColor: paleta.primarioSoft,
+                  padding: espacio.l,
+                  borderRadius: radio.sm,
+                  borderWidth: 1,
+                  borderColor: paleta.primario,
+                  borderStyle: 'dashed',
+                }}
+              >
+                <Camera size={22} color={paleta.primario} />
+                <Text style={[tipografia.cuerpoLg, { color: paleta.primario }]}>
+                  {fotoUri ? 'Cambiar Foto' : 'Tomar Foto'}
+                </Text>
+              </Presionable>
+              {fotoUri && (
+                <Image
+                  source={{ uri: fotoUri }}
+                  style={{ width: '100%', height: 200, borderRadius: radio.sm, marginTop: espacio.m }}
+                />
+              )}
+            </View>
 
-          <TouchableOpacity 
-            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-            onPress={handleSave}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.saveButtonText}>Guardar Gasto</Text>
-            )}
-          </TouchableOpacity>
-          <View style={{height: 40}}/>
+            <Boton titulo="Guardar Gasto" onPress={handleSave} cargando={saving} deshabilitado={saving} />
+          </View>
         </ScrollView>
       </Modal>
     </View>
-  );
+  )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F7F8FA',
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EAEAEE',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  activeTab: {
-    backgroundColor: '#007AFF',
-  },
-  tabLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#8E8E93',
-  },
-  activeTabLabel: {
-    color: '#fff',
-  },
-  loader: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 100,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  badgeContainer: {
-    backgroundColor: '#E5F1FF',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  badgeText: {
-    color: '#007AFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  montoText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  descripcionText: {
-    fontSize: 15,
-    color: '#555',
-    marginBottom: 8,
-  },
-  fechaText: {
-    fontSize: 13,
-    color: '#A0A0A0',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 60,
-  },
-  emptyText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#8E8E93',
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 30,
-    right: 30,
-    backgroundColor: '#007AFF',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#007AFF',
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 5,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 30,
-    marginTop: 10,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-  },
-  formGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#F7F8FA',
-    borderWidth: 1,
-    borderColor: '#EAEAEE',
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-    color: '#333',
-  },
-  photoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#E5F1FF',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#B3D4FF',
-    borderStyle: 'dashed',
-  },
-  photoButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 10,
-  },
-  previewImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    marginTop: 15,
-  },
-  saveButton: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  saveButtonDisabled: {
-    backgroundColor: '#A0CFFF',
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});

@@ -223,7 +223,7 @@ export default function Productos() {
                   titulo={v.nombre}
                   subtitulo={`Por ${v.unidad_medida} · precio al vender`}
                   chevron
-                  onPress={() => router.push('/inventario/granja')}
+                  onPress={() => router.push(`/inventario/granja/editor?id=${v.id}`)}
                 />
               </View>
             ))}

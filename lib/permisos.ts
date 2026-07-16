@@ -13,10 +13,10 @@ const STAFF_ADMIN: Rol[] = ['dueno', 'admin']
 const SOLO_DUENO: Rol[] = ['dueno']
 
 export const MODULOS: Modulo[] = [
-  { id: 'ventas',             titulo: 'Ventas',             icono: '🛒', roles: TODOS, ruta: '/ventas' },
-  { id: 'devoluciones',       titulo: 'Devoluciones',       icono: '↩️', roles: TODOS, ruta: '/devoluciones' },
-  { id: 'inventario-calzado', titulo: 'Inventario calzado', icono: '👟', roles: TODOS, ruta: '/inventario/calzado' },
-  { id: 'granja',             titulo: 'Granja',             icono: '🥚', roles: TODOS, ruta: '/inventario/granja' },
+  { id: 'ventas',             titulo: 'Ventas',             icono: '🛒', roles: TODOS, ruta: '/ventas/nueva' },
+  { id: 'devoluciones',       titulo: 'Devoluciones',       icono: '↩️', roles: TODOS, ruta: '/movimientos' },
+  { id: 'inventario-calzado', titulo: 'Inventario calzado', icono: '👟', roles: TODOS, ruta: '/productos' },
+  { id: 'granja',             titulo: 'Granja',             icono: '🥚', roles: TODOS, ruta: '/productos' },
   { id: 'recibir-mercancia',  titulo: 'Recibir mercancía',  icono: '📥', roles: TODOS, ruta: '/recibir-mercancia' },
   { id: 'caja',               titulo: 'Caja',               icono: '🧾', roles: TODOS, ruta: '/caja' },
   { id: 'gastos-variables',   titulo: 'Gastos variables',   icono: '💸', roles: TODOS, ruta: '/gastos' },

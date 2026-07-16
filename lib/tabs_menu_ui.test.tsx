@@ -52,6 +52,7 @@ jest.mock('../lib/dashboard', () => ({
 
 import { rangoParaPeriodo } from './dashboard'
 import { TemaProvider } from './tema'
+import { ToastProvider } from '../components/ui'
 import Menu from '../app/(app)/(tabs)/index'
 
 const REPORTE = {
@@ -95,7 +96,9 @@ async function montar() {
   await act(async () => {
     arbol = renderer.create(
       <TemaProvider>
-        <Menu />
+        <ToastProvider>
+          <Menu />
+        </ToastProvider>
       </TemaProvider>
     )
   })

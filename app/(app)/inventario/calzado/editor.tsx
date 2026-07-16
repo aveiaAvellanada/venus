@@ -36,7 +36,7 @@ export default function CalzadoEditorScreen() {
   useEffect(() => {
     // Si ya cargó el perfil y no es dueño ni admin, expulsar
     if (perfil && !esDueno && !esAdmin) {
-      router.replace('/(app)/inventario/calzado')
+      router.replace('/productos')
     }
   }, [perfil, esDueno, esAdmin])
 

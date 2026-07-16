@@ -11,7 +11,6 @@ export default function InventarioLayout() {
         contentStyle: { backgroundColor: '#f9fafb' },
       }}
     >
-      <Stack.Screen name="calzado/index" options={{ title: 'Inventario de Calzado' }} />
       <Stack.Screen name="calzado/[id]" options={{ title: 'Detalle del Calzado', presentation: 'card' }} />
     </Stack>
   )

@@ -42,6 +42,7 @@ import {
   SelectorRango,
   Tarjeta,
   TarjetaMetrica,
+  useToast,
 } from '../../../components/ui'
 import type { TipoBadge, TonoIcono } from '../../../components/ui'
 
@@ -54,11 +55,11 @@ const BADGE_CAJA: Record<EstadoCaja, { texto: string; tipo: TipoBadge; punto: bo
   cerrada: { texto: 'CERRADA', tipo: 'peligro', punto: false },
 }
 
-const ACCESOS: { id: string; titulo: string; sub: string; ruta: string; Icono: LucideIcon; tono: TonoIcono }[] = [
+const ACCESOS: { id: string; titulo: string; sub: string; ruta?: string; Icono: LucideIcon; tono: TonoIcono }[] = [
   { id: 'proveedores', titulo: 'Proveedores', sub: 'Datos, cuentas y deudas', ruta: '/proveedores', Icono: Truck, tono: 'primario' },
   { id: 'reportes', titulo: 'Reportes', sub: 'El negocio a fondo', ruta: '/reportes', Icono: ChartColumn, tono: 'primario' },
   { id: 'balance', titulo: 'Balance', sub: 'Ingresos − egresos', ruta: '/balance', Icono: Scale, tono: 'primario' },
-  { id: 'analisis-ia', titulo: 'Análisis IA', sub: 'Recomendaciones de compra', ruta: '/modulo/analisis-ia', Icono: Sparkles, tono: 'acento' },
+  { id: 'analisis-ia', titulo: 'Análisis IA', sub: 'Recomendaciones de compra', Icono: Sparkles, tono: 'acento' },
 ]
 
 const PERIODOS: { clave: Periodo; etiqueta: string }[] = [
@@ -91,6 +92,7 @@ export default function Menu() {
   const { perfil } = useAuth()
   const { paleta } = useTema()
   const router = useRouter()
+  const { mostrar } = useToast()
 
   const esStaff = perfil?.rol === 'dueno' || perfil?.rol === 'admin'
 
@@ -348,7 +350,7 @@ export default function Menu() {
                   titulo={a.titulo}
                   subtitulo={a.sub}
                   chevron
-                  onPress={() => router.push(a.ruta)}
+                  onPress={() => (a.ruta ? router.push(a.ruta) : mostrar('Análisis IA estará disponible pronto', 'info'))}
                 />
               </View>
             ))}

@@ -27,7 +27,7 @@ export default function GranjaEditorScreen() {
   
   useEffect(() => {
     if (perfil && !esDueno && !esAdmin) {
-      router.replace('/(app)/inventario/granja')
+      router.replace('/productos')
     }
   }, [perfil, esDueno, esAdmin])
 

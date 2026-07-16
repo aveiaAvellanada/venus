@@ -10,7 +10,6 @@ export default function DevolucionesLayout() {
       headerTintColor: '#111827', headerTitleStyle: { fontWeight: '600' },
       contentStyle: { backgroundColor: '#f9fafb' }, headerTitleAlign: 'center',
     }}>
-      <Stack.Screen name="index" options={{ title: 'Devoluciones' }} />
       <Stack.Screen name="nueva" options={{ title: 'Nueva Devolución' }} />
     </Stack>
   )

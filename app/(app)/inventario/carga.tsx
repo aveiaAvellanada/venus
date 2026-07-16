@@ -77,7 +77,7 @@ export default function CargaMasivaInventario() {
       }
 
       Alert.alert('Éxito', `Se han cargado ${guardados} productos correctamente.`, [
-        { text: 'OK', onPress: () => router.push('/inventario/calzado') }
+        { text: 'OK', onPress: () => router.push('/productos') }
       ]);
       
       setFilasValidas([]);

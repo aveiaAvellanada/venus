@@ -1,7 +1,20 @@
 import { useCallback } from 'react'
 import { Stack } from 'expo-router'
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native'
+import { StatusBar } from 'expo-status-bar'
+import * as SplashScreen from 'expo-splash-screen'
+import {
+  useFonts,
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans'
 import { AuthProvider, useAuth } from '../lib/auth'
+import { TemaProvider, useTema } from '../lib/tema'
+
+SplashScreen.preventAutoHideAsync().catch(() => {})
 
 function Navegacion() {
   const { cargando, session, perfil, cerrarSesion } = useAuth()
@@ -39,11 +52,30 @@ function Navegacion() {
   return <Stack screenOptions={{ headerShown: false }} />
 }
 
+function BarraEstado() {
+  const { esOscuro } = useTema()
+  return <StatusBar style={esOscuro ? 'light' : 'dark'} />
+}
+
 export default function RootLayout() {
+  const [fuentesListas] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  })
+
+  if (fuentesListas) SplashScreen.hideAsync().catch(() => {})
+  if (!fuentesListas) return null
+
   return (
-    <AuthProvider>
-      <Navegacion />
-    </AuthProvider>
+    <TemaProvider>
+      <BarraEstado />
+      <AuthProvider>
+        <Navegacion />
+      </AuthProvider>
+    </TemaProvider>
   )
 }
 

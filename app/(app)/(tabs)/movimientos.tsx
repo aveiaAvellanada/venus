@@ -33,6 +33,7 @@ import {
   Esqueleto,
   EstadoVacio,
   FilaLista,
+  SelectorRango,
   Tarjeta,
 } from '../../../components/ui'
 import type { TonoIcono } from '../../../components/ui'
@@ -67,7 +68,8 @@ export default function Movimientos() {
   const esStaff = perfil?.rol === 'dueno' || perfil?.rol === 'admin'
 
   const [vista, setVista] = useState(0)
-  const [periodo, setPeriodo] = useState<Periodo>('hoy')
+  const [periodo, setPeriodo] = useState<Periodo | 'rango'>('hoy')
+  const [rangoCustom, setRangoCustom] = useState<{ desde: string; hasta: string } | null>(null)
   const [cargando, setCargando] = useState(true)
   const [refrescando, setRefrescando] = useState(false)
   const [ventas, setVentas] = useState<VentaListado[]>([])
@@ -76,7 +78,10 @@ export default function Movimientos() {
 
   const cargar = useCallback(async () => {
     if (!perfil) return
-    const rango = rangoParaPeriodo(esStaff ? periodo : 'hoy')
+    const rango =
+      esStaff && periodo === 'rango' && rangoCustom
+        ? rangoCustom
+        : rangoParaPeriodo(esStaff && periodo !== 'rango' ? periodo : 'hoy')
     try {
       if (vista === 0) setVentas(await listarVentasPeriodo(rango.desde, rango.hasta))
       else if (vista === 1) setDevoluciones(await listarDevoluciones(rango.desde, rango.hasta))
@@ -86,7 +91,7 @@ export default function Movimientos() {
     } finally {
       setCargando(false)
     }
-  }, [perfil, esStaff, periodo, vista])
+  }, [perfil, esStaff, periodo, rangoCustom, vista])
 
   useFocusEffect(
     useCallback(() => {
@@ -137,7 +142,7 @@ export default function Movimientos() {
         />
 
         {esStaff ? (
-          <View style={{ flexDirection: 'row', gap: espacio.s }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s }}>
             {PERIODOS.map((p) => (
               <Chip
                 key={p.clave}
@@ -151,6 +156,14 @@ export default function Movimientos() {
                 }}
               />
             ))}
+            <SelectorRango
+              activo={periodo === 'rango'}
+              onAplicar={(desde, hasta) => {
+                setCargando(true)
+                setRangoCustom({ desde, hasta })
+                setPeriodo('rango')
+              }}
+            />
           </View>
         ) : null}
 

@@ -57,7 +57,12 @@ function Tab({
       <Animated.View style={animado}>
         <Icono size={24} color={color} strokeWidth={activo ? 2.4 : 2} />
       </Animated.View>
-      <Text style={[tipografia.micro, { color, fontSize: 10 }]}>{label}</Text>
+      <Text
+        numberOfLines={1}
+        style={[tipografia.micro, { color, fontSize: 8.5, letterSpacing: 0.3, lineHeight: 11 }]}
+      >
+        {label}
+      </Text>
     </Pressable>
   )
 }

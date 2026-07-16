@@ -16,6 +16,7 @@ import type { LucideIcon } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
 import { obtenerCajaHoy } from '../../../lib/caja'
 import {
+  granularidadParaRango,
   obtenerGastosPeriodo,
   obtenerVentasPorSubperiodo,
   rangoParaPeriodo,
@@ -38,6 +39,7 @@ import {
   Esqueleto,
   FilaLista,
   GraficoBarras,
+  SelectorRango,
   Tarjeta,
   TarjetaMetrica,
 } from '../../../components/ui'
@@ -93,7 +95,8 @@ export default function Menu() {
   const esStaff = perfil?.rol === 'dueno' || perfil?.rol === 'admin'
 
   const [estadoCaja, setEstadoCaja] = useState<EstadoCaja>('cargando')
-  const [periodo, setPeriodo] = useState<Periodo>('hoy')
+  const [periodo, setPeriodo] = useState<Periodo | 'rango'>('hoy')
+  const [rangoCustom, setRangoCustom] = useState<{ desde: string; hasta: string } | null>(null)
   const [granularidad, setGranularidad] = useState<Granularidad>('dia')
   const [cargando, setCargando] = useState(true)
   const [refrescando, setRefrescando] = useState(false)
@@ -117,7 +120,10 @@ export default function Menu() {
     setErrorCarga(false)
     try {
       if (esStaff) {
-        const rango = rangoParaPeriodo(periodo)
+        const rango =
+          periodo === 'rango' && rangoCustom
+            ? { ...rangoCustom, granularidad: granularidadParaRango(rangoCustom.desde, rangoCustom.hasta) }
+            : rangoParaPeriodo(periodo === 'rango' ? 'hoy' : periodo)
         setGranularidad(rango.granularidad)
         const [rep, vb, g] = await Promise.all([
           obtenerReportePeriodo(rango.desde, rango.hasta),
@@ -136,7 +142,7 @@ export default function Menu() {
     } finally {
       setCargando(false)
     }
-  }, [perfil, esStaff, periodo])
+  }, [perfil, esStaff, periodo, rangoCustom])
 
   useFocusEffect(
     useCallback(() => {
@@ -202,6 +208,14 @@ export default function Menu() {
                 />
               </View>
             ))}
+            <SelectorRango
+              activo={periodo === 'rango'}
+              onAplicar={(desde, hasta) => {
+                setCargando(true)
+                setRangoCustom({ desde, hasta })
+                setPeriodo('rango')
+              }}
+            />
           </ScrollView>
         ) : null}
 

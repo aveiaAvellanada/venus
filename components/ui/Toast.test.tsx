@@ -8,6 +8,10 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 )
 jest.useFakeTimers()
 
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
+
 import { TemaProvider } from '../../lib/tema'
 import { ToastProvider, useToast } from './Toast'
 

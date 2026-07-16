@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { Text, View } from 'react-native'
+import { Text } from 'react-native'
 import { CircleAlert, CircleCheck, Info } from 'lucide-react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Animated, { FadeIn, FadeInDown, FadeOut, useReducedMotion } from 'react-native-reanimated'
 import { useTema } from '../../lib/tema'
 import { espacio, radio, tipografia } from '../../lib/theme'
@@ -42,6 +43,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 function VistaToast({ mensaje, tipo }: { mensaje: string; tipo: TipoToast }) {
   const { paleta } = useTema()
   const reducido = useReducedMotion()
+  const insets = useSafeAreaInsets()
 
   const Icono = { exito: CircleCheck, error: CircleAlert, info: Info }[tipo]
   const color = {
@@ -60,7 +62,7 @@ function VistaToast({ mensaje, tipo }: { mensaje: string; tipo: TipoToast }) {
         position: 'absolute',
         left: espacio.xl,
         right: espacio.xl,
-        bottom: 96,
+        bottom: 64 + insets.bottom + espacio.l,
         flexDirection: 'row',
         alignItems: 'center',
         gap: espacio.s,

@@ -2,18 +2,25 @@ import React, { useState, useCallback } from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
-  TextInput,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
   Platform,
   KeyboardAvoidingView,
-  SafeAreaView,
 } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import {
+  ArrowLeft,
+  Ban,
+  Calendar,
+  CircleAlert,
+  CircleCheckBig,
+  Info,
+  Receipt,
+  Save,
+  User,
+  Wallet,
+} from 'lucide-react-native'
 import { useRequireModulo } from '../../../lib/auth'
 import {
   listarEmpleados,
@@ -28,6 +35,10 @@ import {
   type Empleado,
   type PagoEmpleado,
 } from '../../../lib/empleados'
+import { useTema } from '../../../lib/tema'
+import type { Paleta } from '../../../lib/theme'
+import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
+import { Badge, Boton, CampoTexto, CirculoIcono, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
 
 const pesos = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
@@ -39,10 +50,35 @@ function hoyISO(): string {
   return `${anio}-${mes}-${dia}`
 }
 
+// Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
+function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: espacio.m,
+        paddingHorizontal: espacio.xl,
+        paddingTop: 56,
+        paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={onVolver} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]} numberOfLines={1}>
+        Empleado
+      </Text>
+    </View>
+  )
+}
+
 export default function EmpleadoDetalleScreen() {
   const requireModulo = useRequireModulo('gestion-empleado')
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
+  const { paleta } = useTema()
+  const toast = useToast()
 
   // ─── Estado de carga ───────────────────────────────────────────────────────
   const [empleado, setEmpleado] = useState<Empleado | null>(null)
@@ -130,12 +166,12 @@ export default function EmpleadoDetalleScreen() {
     if (!empleado) return
     const nombreTrimmed = nombre.trim()
     if (!nombreTrimmed) {
-      Alert.alert('Validación', 'El nombre no puede estar vacío.')
+      toast.mostrar('El nombre no puede estar vacío.', 'error')
       return
     }
     const sueldo = parseInt(sueldoTexto.replace(/[^0-9]/g, ''), 10)
     if (isNaN(sueldo) || sueldo < 0) {
-      Alert.alert('Validación', 'El sueldo mensual debe ser un número válido.')
+      toast.mostrar('El sueldo mensual debe ser un número válido.', 'error')
       return
     }
     const diasSemana =
@@ -143,19 +179,19 @@ export default function EmpleadoDetalleScreen() {
         ? parseInt(diasSemanaTexto.replace(/[^0-9]/g, ''), 10)
         : null
     if (diasSemana !== null && (isNaN(diasSemana) || diasSemana < 1 || diasSemana > 7)) {
-      Alert.alert('Validación', 'Los días de trabajo por semana deben estar entre 1 y 7.')
+      toast.mostrar('Los días de trabajo por semana deben estar entre 1 y 7.', 'error')
       return
     }
     const fechaInicioParsed = fechaInicio.trim() || null
     if (fechaInicioParsed) {
       const regexFecha = /^\d{4}-\d{2}-\d{2}$/
       if (!regexFecha.test(fechaInicioParsed)) {
-        Alert.alert('Validación', 'La fecha de inicio debe tener el formato AAAA-MM-DD.')
+        toast.mostrar('La fecha de inicio debe tener el formato AAAA-MM-DD.', 'error')
         return
       }
       const d = new Date(fechaInicioParsed + 'T00:00:00')
       if (isNaN(d.getTime())) {
-        Alert.alert('Validación', 'La fecha de inicio no es una fecha válida.')
+        toast.mostrar('La fecha de inicio no es una fecha válida.', 'error')
         return
       }
     }
@@ -168,11 +204,11 @@ export default function EmpleadoDetalleScreen() {
         fecha_inicio: fechaInicioParsed,
         dias_trabajo_semana: diasSemana,
       })
-      Alert.alert('Guardado', 'Los datos del empleado se guardaron correctamente.')
+      toast.mostrar('Los datos del empleado se guardaron correctamente.', 'exito')
       await cargarDatos()
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al guardar'
-      Alert.alert('Error', msg)
+      toast.mostrar(msg, 'error')
     } finally {
       setGuardando(false)
     }
@@ -199,7 +235,7 @@ export default function EmpleadoDetalleScreen() {
             await cargarDatos()
           } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Error al cambiar estado'
-            Alert.alert('Error', msg)
+            toast.mostrar(msg, 'error')
           } finally {
             setCambiandoActivo(false)
           }
@@ -213,7 +249,7 @@ export default function EmpleadoDetalleScreen() {
     if (!empleado) return
     const monto = parseInt(montoTexto.replace(/[^0-9]/g, ''), 10)
     if (isNaN(monto) || monto <= 0) {
-      Alert.alert('Validación', 'El monto del pago debe ser mayor a cero.')
+      toast.mostrar('El monto del pago debe ser mayor a cero.', 'error')
       return
     }
 
@@ -243,12 +279,12 @@ export default function EmpleadoDetalleScreen() {
                 periodo_fin: periodoFin,
                 dias_trabajados: diasEsteMes,
               })
-              Alert.alert('Pago registrado', 'El pago se registró correctamente.')
+              toast.mostrar('El pago se registró correctamente.', 'exito')
               const pagosActualizados = await historialPagos(empleado.id)
               setPagos(pagosActualizados)
             } catch (err: unknown) {
               const msg = err instanceof Error ? err.message : 'Error al registrar pago'
-              Alert.alert('Error', msg)
+              toast.mostrar(msg, 'error')
             } finally {
               setRegistrandoPago(false)
             }
@@ -261,24 +297,24 @@ export default function EmpleadoDetalleScreen() {
   // ─── Pantalla de carga ─────────────────────────────────────────────────────
   if (cargando) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.loadingText}>Cargando empleado...</Text>
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado paleta={paleta} onVolver={() => router.back()} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: espacio.m }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Cargando empleado...</Text>
+        </View>
       </View>
     )
   }
 
   if (errorCarga || !empleado) {
     return (
-      <View style={styles.center}>
-        <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
-        <Text style={styles.errorText}>{errorCarga ?? 'Empleado no encontrado.'}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => cargarDatos()}>
-          <Text style={styles.retryButtonText}>Reintentar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.backLink} onPress={() => router.back()}>
-          <Text style={styles.backLinkText}>Volver al listado</Text>
-        </TouchableOpacity>
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado paleta={paleta} onVolver={() => router.back()} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, gap: espacio.l }}>
+          <EstadoVacio icono={<CircleAlert />} titulo={errorCarga ?? 'Empleado no encontrado.'} />
+          <Boton titulo="Reintentar" variante="secundario" tamano="md" onPress={() => cargarDatos()} />
+        </View>
       </View>
     )
   }
@@ -293,81 +329,66 @@ export default function EmpleadoDetalleScreen() {
   const montoSug = montoSugeridoPago(sueldoNum, diasEsteMes, diasEsp)
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}
-      >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
+    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+      <Encabezado paleta={paleta} onVolver={() => router.back()} />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+          showsVerticalScrollIndicator={false}
+        >
           {/* ── Cabecera del empleado ── */}
-          <View style={styles.card}>
-            <View style={styles.headerRow}>
-              <View style={styles.avatarCircle}>
-                <Ionicons name="person" size={28} color="#3b82f6" />
-              </View>
-              <View style={styles.headerInfo}>
-                <Text style={styles.headerNombre}>{empleado.nombre}</Text>
-                <Text style={styles.headerRol}>{rolLabel}</Text>
+          <Tarjeta>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.m }}>
+              <CirculoIcono tono="primario" tamano={52}>
+                <User />
+              </CirculoIcono>
+              <View style={{ flex: 1 }}>
+                <Text style={[tipografia.h3, { color: paleta.texto }]}>{empleado.nombre}</Text>
+                <Text style={[tipografia.caption, { color: paleta.texto2 }]}>{rolLabel}</Text>
                 {empleado.email ? (
-                  <Text style={styles.headerEmail} numberOfLines={1}>
+                  <Text style={[tipografia.caption, { color: paleta.texto3 }]} numberOfLines={1}>
                     {empleado.email}
                   </Text>
                 ) : null}
               </View>
-              <View style={[styles.badge, empleado.activo ? styles.badgeActivo : styles.badgeInactivo]}>
-                <View style={[styles.badgeDot, empleado.activo ? styles.dotActivo : styles.dotInactivo]} />
-                <Text style={[styles.badgeText, empleado.activo ? styles.badgeTextActivo : styles.badgeTextInactivo]}>
-                  {empleado.activo ? 'Activo' : 'Inactivo'}
-                </Text>
-              </View>
+              <Badge texto={empleado.activo ? 'Activo' : 'Inactivo'} tipo={empleado.activo ? 'exito' : 'peligro'} punto={empleado.activo} />
             </View>
-          </View>
+          </Tarjeta>
 
           {/* ── Sección 1: Datos ── */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Datos del empleado</Text>
+          <Tarjeta>
+            <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.l }]}>Datos del empleado</Text>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nombre *</Text>
-              <TextInput
-                style={styles.input}
+            <View style={{ gap: espacio.m }}>
+              <CampoTexto
+                etiqueta="Nombre *"
                 value={nombre}
                 onChangeText={setNombre}
                 placeholder="Nombre completo"
                 testID="input-nombre"
               />
-            </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Sueldo mensual (COP) *</Text>
-              <TextInput
-                style={styles.input}
+              <CampoTexto
+                etiqueta="Sueldo mensual (COP) *"
                 value={sueldoTexto}
                 onChangeText={(t) => setSueldoTexto(t.replace(/[^0-9]/g, ''))}
                 placeholder="Ej. 1300000"
-                keyboardType="numeric"
+                keyboardType="number-pad"
                 testID="input-sueldo"
               />
-            </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Días de trabajo por semana (opcional)</Text>
-              <TextInput
-                style={styles.input}
+              <CampoTexto
+                etiqueta="Días de trabajo por semana (opcional)"
                 value={diasSemanaTexto}
                 onChangeText={(t) => setDiasSemanaTexto(t.replace(/[^0-9]/g, ''))}
                 placeholder="Ej. 6  (predeterminado: 6)"
-                keyboardType="numeric"
+                keyboardType="number-pad"
                 maxLength={1}
                 testID="input-dias-semana"
               />
-            </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Fecha de inicio (AAAA-MM-DD, opcional)</Text>
-              <TextInput
-                style={styles.input}
+              <CampoTexto
+                etiqueta="Fecha de inicio (AAAA-MM-DD, opcional)"
                 value={fechaInicio}
                 onChangeText={setFechaInicio}
                 placeholder="Ej. 2025-01-15"
@@ -376,336 +397,196 @@ export default function EmpleadoDetalleScreen() {
               />
             </View>
 
-            <TouchableOpacity
-              style={[styles.primaryButton, guardando && styles.buttonDisabled]}
-              onPress={handleGuardar}
+            {/* Boton no acepta testID; se usa un Presionable con los mismos tokens (testID requerido por la suite) */}
+            <Presionable
+              accessibilityRole="button"
+              accessibilityLabel="Guardar"
+              accessibilityState={{ disabled: guardando, busy: guardando }}
               disabled={guardando}
+              onPress={guardando ? undefined : handleGuardar}
               testID="btn-guardar"
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: espacio.s,
+                height: 56,
+                borderRadius: radio.md,
+                backgroundColor: paleta.primario,
+                opacity: guardando ? 0.45 : 1,
+                marginTop: espacio.l,
+              }}
             >
               {guardando ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <ActivityIndicator color={paleta.sobrePrimario} />
               ) : (
-                <>
-                  <Ionicons name="save-outline" size={18} color="#ffffff" style={styles.btnIcon} />
-                  <Text style={styles.primaryButtonText}>Guardar</Text>
-                </>
+                <Save size={20} color={paleta.sobrePrimario} />
               )}
-            </TouchableOpacity>
-          </View>
+              <Text style={[tipografia.cuerpoLg, { color: paleta.sobrePrimario }]}>Guardar</Text>
+            </Presionable>
+          </Tarjeta>
 
           {/* ── Sección 2: Estado (Activar / Desactivar) ── */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Estado del empleado</Text>
-            <Text style={styles.estadoDesc}>
+          <Tarjeta>
+            <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.m }]}>Estado del empleado</Text>
+            <Text style={[tipografia.cuerpo, { color: paleta.texto2, marginBottom: espacio.l }]}>
               {empleado.activo
                 ? 'El empleado puede iniciar sesión en la app.'
                 : 'El empleado no puede iniciar sesión. Actívalo para restablecer el acceso.'}
             </Text>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                empleado.activo ? styles.toggleButtonDesactivar : styles.toggleButtonActivar,
-                cambiandoActivo && styles.buttonDisabled,
-              ]}
-              onPress={handleToggleActivo}
+            {/* Boton no acepta testID; se usa un Presionable con los mismos tokens (testID requerido por la suite) */}
+            <Presionable
+              accessibilityRole="button"
+              accessibilityLabel={empleado.activo ? 'Desactivar empleado' : 'Activar empleado'}
+              accessibilityState={{ disabled: cambiandoActivo, busy: cambiandoActivo }}
               disabled={cambiandoActivo}
+              onPress={cambiandoActivo ? undefined : handleToggleActivo}
               testID="btn-toggle-activo"
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: espacio.s,
+                height: 56,
+                borderRadius: radio.md,
+                backgroundColor: empleado.activo ? paleta.peligro : paleta.exito,
+                opacity: cambiandoActivo ? 0.45 : 1,
+              }}
             >
               {cambiandoActivo ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <ActivityIndicator color={paleta.sobrePrimario} />
+              ) : empleado.activo ? (
+                <Ban size={20} color={paleta.sobrePrimario} />
               ) : (
-                <>
-                  <Ionicons
-                    name={empleado.activo ? 'ban-outline' : 'checkmark-circle-outline'}
-                    size={18}
-                    color="#ffffff"
-                    style={styles.btnIcon}
-                  />
-                  <Text style={styles.toggleButtonText}>
-                    {empleado.activo ? 'Desactivar empleado' : 'Activar empleado'}
-                  </Text>
-                </>
+                <CircleCheckBig size={20} color={paleta.sobrePrimario} />
               )}
-            </TouchableOpacity>
-          </View>
+              <Text style={[tipografia.cuerpoLg, { color: paleta.sobrePrimario }]}>
+                {empleado.activo ? 'Desactivar empleado' : 'Activar empleado'}
+              </Text>
+            </Presionable>
+          </Tarjeta>
 
           {/* ── Sección 3: Días este mes ── */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Días trabajados este mes</Text>
-            <View style={styles.diasRow}>
-              <Ionicons name="calendar-outline" size={32} color="#3b82f6" />
-              <View style={styles.diasInfo}>
-                <Text style={styles.diasNumero}>{diasEsteMes}</Text>
-                <Text style={styles.diasLabel}>días registrados</Text>
+          <Tarjeta>
+            <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.l }]}>Días trabajados este mes</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.l }}>
+              <CirculoIcono tono="primario" tamano={48}>
+                <Calendar />
+              </CirculoIcono>
+              <View style={{ flex: 1 }}>
+                <Text style={[tipografia.display, tabular, { color: paleta.texto }]}>{diasEsteMes}</Text>
+                <Text style={[tipografia.caption, { color: paleta.texto3 }]}>días registrados</Text>
               </View>
-              <View style={styles.diasExpected}>
-                <Text style={styles.diasEspLabel}>Esperados</Text>
-                <Text style={styles.diasEspNumero}>{diasEsp}</Text>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={[tipografia.micro, { color: paleta.texto3 }]}>Esperados</Text>
+                <Text style={[tipografia.h2, tabular, { color: paleta.texto2 }]}>{diasEsp}</Text>
               </View>
             </View>
-          </View>
+          </Tarjeta>
 
           {/* ── Sección 4: Registrar pago ── */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Registrar pago</Text>
+          <Tarjeta>
+            <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.l }]}>Registrar pago</Text>
 
-            <View style={styles.montoSugeridoBanner}>
-              <Ionicons name="information-circle-outline" size={16} color="#1d4ed8" />
-              <Text style={styles.montoSugeridoText}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: espacio.s,
+                backgroundColor: paleta.primarioSoft,
+                borderRadius: radio.sm,
+                padding: espacio.m,
+                marginBottom: espacio.l,
+              }}
+            >
+              <Info size={16} color={paleta.primario} />
+              <Text style={[tipografia.cuerpo, tabular, { color: paleta.primario, flex: 1 }]}>
                 Monto proporcional sugerido: {pesos(montoSug)} ({diasEsteMes}/{diasEsp} días)
               </Text>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Monto a pagar (COP) *</Text>
-              <TextInput
-                style={styles.input}
-                value={montoTexto}
-                onChangeText={(t) => setMontoTexto(t.replace(/[^0-9]/g, ''))}
-                keyboardType="numeric"
-                placeholder="Ej. 650000"
-                testID="input-monto-pago"
-              />
-            </View>
+            <CampoTexto
+              etiqueta="Monto a pagar (COP) *"
+              value={montoTexto}
+              onChangeText={(t) => setMontoTexto(t.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              placeholder="Ej. 650000"
+              testID="input-monto-pago"
+            />
 
-            <TouchableOpacity
-              style={[styles.primaryButton, registrandoPago && styles.buttonDisabled]}
-              onPress={handleRegistrarPago}
+            {/* Boton no acepta testID; se usa un Presionable con los mismos tokens (testID requerido por la suite) */}
+            <Presionable
+              accessibilityRole="button"
+              accessibilityLabel="Registrar pago"
+              accessibilityState={{ disabled: registrandoPago, busy: registrandoPago }}
               disabled={registrandoPago}
+              onPress={registrandoPago ? undefined : handleRegistrarPago}
               testID="btn-registrar-pago"
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: espacio.s,
+                height: 56,
+                borderRadius: radio.md,
+                backgroundColor: paleta.primario,
+                opacity: registrandoPago ? 0.45 : 1,
+                marginTop: espacio.l,
+              }}
             >
               {registrandoPago ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <ActivityIndicator color={paleta.sobrePrimario} />
               ) : (
-                <>
-                  <Ionicons name="cash-outline" size={18} color="#ffffff" style={styles.btnIcon} />
-                  <Text style={styles.primaryButtonText}>Registrar pago</Text>
-                </>
+                <Wallet size={20} color={paleta.sobrePrimario} />
               )}
-            </TouchableOpacity>
-          </View>
+              <Text style={[tipografia.cuerpoLg, { color: paleta.sobrePrimario }]}>Registrar pago</Text>
+            </Presionable>
+          </Tarjeta>
 
           {/* ── Sección 5: Historial de pagos ── */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Historial de pagos</Text>
+          <Tarjeta>
+            <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.m }]}>Historial de pagos</Text>
 
             {pagos.length === 0 ? (
-              <View style={styles.emptyHistorial}>
-                <Ionicons name="receipt-outline" size={36} color="#d1d5db" />
-                <Text style={styles.emptyHistorialText}>Sin pagos registrados.</Text>
-              </View>
+              <EstadoVacio icono={<Receipt />} titulo="Sin pagos registrados." />
             ) : (
-              pagos.map((pago) => (
-                <View key={pago.id} style={styles.pagoRow}>
-                  <View style={styles.pagoIcono}>
-                    <Ionicons name="checkmark-circle" size={20} color="#10b981" />
-                  </View>
-                  <View style={styles.pagoInfo}>
-                    <Text style={styles.pagoMonto}>{pesos(pago.monto)}</Text>
-                    <Text style={styles.pagoFecha}>
-                      {new Date(pago.fecha_pago + 'T12:00:00').toLocaleDateString('es-CO', {
-                        day: '2-digit',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </Text>
-                    {pago.dias_trabajados != null && (
-                      <Text style={styles.pagoMeta}>Días: {pago.dias_trabajados}</Text>
-                    )}
-                    {pago.periodo_inicio && pago.periodo_fin && (
-                      <Text style={styles.pagoMeta}>
-                        Período: {pago.periodo_inicio} → {pago.periodo_fin}
+              pagos.map((pago, idx) => (
+                <View key={pago.id}>
+                  <View style={{ flexDirection: 'row', gap: espacio.m, paddingVertical: espacio.m }}>
+                    <CirculoIcono tono="exito" tamano={36}>
+                      <CircleCheckBig />
+                    </CirculoIcono>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text style={[tipografia.h3, tabular, { color: paleta.texto }]}>{pesos(pago.monto)}</Text>
+                      <Text style={[tipografia.caption, { color: paleta.texto2 }]}>
+                        {new Date(pago.fecha_pago + 'T12:00:00').toLocaleDateString('es-CO', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
                       </Text>
-                    )}
-                    {pago.nota ? <Text style={styles.pagoNota}>{pago.nota}</Text> : null}
+                      {pago.dias_trabajados != null && (
+                        <Text style={[tipografia.caption, { color: paleta.texto3 }]}>Días: {pago.dias_trabajados}</Text>
+                      )}
+                      {pago.periodo_inicio && pago.periodo_fin && (
+                        <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+                          Período: {pago.periodo_inicio} → {pago.periodo_fin}
+                        </Text>
+                      )}
+                      {pago.nota ? (
+                        <Text style={[tipografia.caption, { color: paleta.texto3, fontStyle: 'italic' }]}>{pago.nota}</Text>
+                      ) : null}
+                    </View>
                   </View>
+                  {idx < pagos.length - 1 ? (
+                    <View style={{ height: 1, backgroundColor: paleta.borde }} />
+                  ) : null}
                 </View>
               ))
             )}
-          </View>
-
+          </Tarjeta>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   )
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f9fafb' },
-  flex: { flex: 1 },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#f9fafb',
-  },
-  loadingText: { marginTop: 12, color: '#4b5563', fontSize: 15 },
-  errorText: {
-    fontSize: 15,
-    color: '#ef4444',
-    textAlign: 'center',
-    marginTop: 12,
-    marginBottom: 16,
-    paddingHorizontal: 20,
-  },
-  retryButton: {
-    backgroundColor: '#3b82f6',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  retryButtonText: { color: '#ffffff', fontWeight: '600', fontSize: 14 },
-  backLink: { paddingVertical: 8 },
-  backLinkText: { color: '#6b7280', fontSize: 14, textDecorationLine: 'underline' },
-
-  scrollContent: { padding: 16, paddingBottom: 48 },
-
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-
-  // Cabecera
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#dbeafe',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerInfo: { flex: 1 },
-  headerNombre: { fontSize: 17, fontWeight: '700', color: '#111827' },
-  headerRol: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  headerEmail: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  badgeActivo: { backgroundColor: '#dcfce7' },
-  badgeInactivo: { backgroundColor: '#fee2e2' },
-  badgeDot: { width: 6, height: 6, borderRadius: 3, marginRight: 5 },
-  dotActivo: { backgroundColor: '#16a34a' },
-  dotInactivo: { backgroundColor: '#dc2626' },
-  badgeText: { fontSize: 12, fontWeight: '600' },
-  badgeTextActivo: { color: '#15803d' },
-  badgeTextInactivo: { color: '#b91c1c' },
-
-  // Secciones
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 14,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-
-  // Inputs
-  inputGroup: { marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '600', color: '#4b5563', marginBottom: 6 },
-  input: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    fontSize: 14,
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-
-  // Botones
-  primaryButton: {
-    backgroundColor: '#3b82f6',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 13,
-    borderRadius: 10,
-    marginTop: 4,
-  },
-  primaryButtonText: { color: '#ffffff', fontWeight: '600', fontSize: 15 },
-  btnIcon: { marginRight: 7 },
-  buttonDisabled: { opacity: 0.55 },
-
-  toggleButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 13,
-    borderRadius: 10,
-    marginTop: 4,
-  },
-  toggleButtonActivar: { backgroundColor: '#10b981' },
-  toggleButtonDesactivar: { backgroundColor: '#ef4444' },
-  toggleButtonText: { color: '#ffffff', fontWeight: '600', fontSize: 15 },
-
-  estadoDesc: { fontSize: 13, color: '#6b7280', marginBottom: 12, lineHeight: 18 },
-
-  // Días
-  diasRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  diasInfo: { flex: 1 },
-  diasNumero: { fontSize: 36, fontWeight: '800', color: '#111827', lineHeight: 40 },
-  diasLabel: { fontSize: 13, color: '#6b7280' },
-  diasExpected: { alignItems: 'flex-end' },
-  diasEspLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase' },
-  diasEspNumero: { fontSize: 22, fontWeight: '700', color: '#4b5563' },
-
-  // Pago
-  montoSugeridoBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#eff6ff',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 14,
-    gap: 8,
-  },
-  montoSugeridoText: { flex: 1, fontSize: 13, color: '#1d4ed8', lineHeight: 18 },
-
-  // Historial
-  emptyHistorial: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    gap: 8,
-  },
-  emptyHistorialText: { fontSize: 14, color: '#9ca3af' },
-  pagoRow: {
-    flexDirection: 'row',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-    gap: 12,
-  },
-  pagoIcono: { paddingTop: 2 },
-  pagoInfo: { flex: 1 },
-  pagoMonto: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  pagoFecha: { fontSize: 13, color: '#4b5563', marginTop: 2 },
-  pagoMeta: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  pagoNota: { fontSize: 12, color: '#9ca3af', fontStyle: 'italic', marginTop: 2 },
-})

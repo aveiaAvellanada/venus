@@ -1,26 +1,43 @@
 import React, { useState, useCallback } from 'react'
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  RefreshControl,
-  SafeAreaView,
-} from 'react-native'
+import { View, Text, FlatList, ActivityIndicator, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import { ArrowLeft, Calendar, ChevronRight, CircleAlert, ShieldCheck, User, Users, Wallet } from 'lucide-react-native'
 import { useRequireModulo } from '../../../lib/auth'
 import { listarEmpleados, diasTrabajadosMes, type Empleado } from '../../../lib/empleados'
+import { useTema } from '../../../lib/tema'
+import type { Paleta } from '../../../lib/theme'
+import { espacio, tabular, tipografia } from '../../../lib/theme'
+import { Badge, Boton, CirculoIcono, EstadoVacio, Presionable, Tarjeta } from '../../../components/ui'
 
 const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
 
 type EmpleadoConDias = Empleado & { diasEsteMes: number }
 
+// Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
+function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: espacio.m,
+        paddingHorizontal: espacio.xl,
+        paddingTop: 56,
+        paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={onVolver} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Empleados</Text>
+    </View>
+  )
+}
+
 export default function EmpleadosIndex() {
   const requireModulo = useRequireModulo('gestion-empleado')
   const router = useRouter()
+  const { paleta } = useTema()
 
   const [empleados, setEmpleados] = useState<EmpleadoConDias[]>([])
   const [loading, setLoading] = useState(true)
@@ -83,222 +100,86 @@ export default function EmpleadosIndex() {
     const sueldo = item.config?.sueldo_mensual
 
     return (
-      <View style={styles.cardWrapper}>
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => router.push('/empleados/' + item.id)}
-          activeOpacity={0.7}
+      <Tarjeta estilo={{ marginBottom: espacio.m }} onPress={() => router.push('/empleados/' + item.id)}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.m }}>
+          <CirculoIcono tono="primario">
+            <User />
+          </CirculoIcono>
+          <View style={{ flex: 1 }}>
+            <Text style={[tipografia.h3, { color: paleta.texto }]} numberOfLines={1}>
+              {item.nombre}
+            </Text>
+            <Text style={[tipografia.caption, { color: paleta.texto3 }]}>{rolLabel(item.rol)}</Text>
+          </View>
+          <ChevronRight size={20} color={paleta.texto3} />
+        </View>
+
+        <View
+          style={{
+            marginTop: espacio.m,
+            paddingTop: espacio.m,
+            borderTopWidth: 1,
+            borderTopColor: paleta.borde,
+            gap: espacio.s,
+          }}
         >
-          <View style={styles.cardHeader}>
-            <View style={styles.nameRow}>
-              <Ionicons name="person-circle-outline" size={20} color="#4b5563" style={styles.iconMargin} />
-              <Text style={styles.cardTitle} numberOfLines={1}>
-                {item.nombre}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s }}>
+            <Wallet size={14} color={paleta.texto3} />
+            <Text style={[tipografia.cuerpo, tabular, { color: paleta.texto2 }]}>
+              {sueldo != null ? pesos(sueldo) + '/mes' : 'Sueldo no configurado'}
+            </Text>
           </View>
-
-          <View style={styles.cardDetails}>
-            <View style={styles.detailRow}>
-              <Ionicons name="briefcase-outline" size={14} color="#6b7280" style={styles.iconMargin} />
-              <Text style={styles.detailText}>{rolLabel(item.rol)}</Text>
-            </View>
-
-            <View style={styles.detailRow}>
-              <Ionicons name="cash-outline" size={14} color="#6b7280" style={styles.iconMargin} />
-              <Text style={styles.detailText}>
-                {sueldo != null ? pesos(sueldo) + '/mes' : 'Sueldo no configurado'}
-              </Text>
-            </View>
-
-            <View style={styles.detailRow}>
-              <Ionicons name="calendar-outline" size={14} color="#6b7280" style={styles.iconMargin} />
-              <Text style={styles.detailText}>Días este mes: {item.diasEsteMes}</Text>
-            </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s }}>
+            <Calendar size={14} color={paleta.texto3} />
+            <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Días este mes: {item.diasEsteMes}</Text>
           </View>
+        </View>
 
-          <View style={styles.cardFooter}>
-            <View style={[styles.badge, item.activo ? styles.badgeActivo : styles.badgeInactivo]}>
-              <View style={[styles.badgeDot, item.activo ? styles.dotActivo : styles.dotInactivo]} />
-              <Text style={[styles.badgeText, item.activo ? styles.badgeTextActivo : styles.badgeTextInactivo]}>
-                {item.activo ? 'Activo' : 'Inactivo'}
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </View>
+        <View style={{ marginTop: espacio.m, paddingTop: espacio.m, borderTopWidth: 1, borderTopColor: paleta.borde }}>
+          <Badge texto={item.activo ? 'Activo' : 'Inactivo'} tipo={item.activo ? 'exito' : 'peligro'} punto={item.activo} />
+        </View>
+      </Tarjeta>
     )
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.banner}>
-        <Ionicons name="shield-checkmark-outline" size={20} color="#0d9488" />
-        <Text style={styles.bannerText}>
-          Gestiona el equipo: sueldo, días trabajados, activar/desactivar y pagos.
-        </Text>
-      </View>
+    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+      <Encabezado paleta={paleta} onVolver={() => router.back()} />
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#3b82f6" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
         </View>
       ) : error ? (
-        <View style={styles.center}>
-          <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => cargarDatos()}>
-            <Text style={styles.retryButtonText}>Reintentar</Text>
-          </TouchableOpacity>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, gap: espacio.l }}>
+          <EstadoVacio icono={<CircleAlert />} titulo={error} />
+          <Boton titulo="Reintentar" variante="secundario" tamano="md" onPress={() => cargarDatos()} />
         </View>
       ) : (
         <FlatList
           data={empleados}
           keyExtractor={(item) => item.id}
           renderItem={renderEmpleado}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl }}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#3b82f6']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={paleta.primario} />
+          }
+          ListHeaderComponent={
+            <Tarjeta estilo={{ flexDirection: 'row', alignItems: 'center', gap: espacio.m, marginBottom: espacio.m }}>
+              <CirculoIcono tono="exito" tamano={36}>
+                <ShieldCheck />
+              </CirculoIcono>
+              <Text style={[tipografia.cuerpo, { color: paleta.texto2, flex: 1 }]}>
+                Gestiona el equipo: sueldo, días trabajados, activar/desactivar y pagos.
+              </Text>
+            </Tarjeta>
           }
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="people-outline" size={56} color="#9ca3af" />
-              <Text style={styles.emptyText}>No hay empleados registrados.</Text>
-            </View>
+            <EstadoVacio icono={<Users />} titulo="No hay empleados registrados." />
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    marginTop: 12,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    gap: 8,
-  },
-  bannerText: {
-    flex: 1,
-    fontSize: 13,
-    color: '#4b5563',
-    lineHeight: 18,
-  },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  listContent: { padding: 16, paddingBottom: 40 },
-  cardWrapper: { marginBottom: 12 },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 8,
-  },
-  iconMargin: { marginRight: 6 },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    flex: 1,
-  },
-  cardDetails: {
-    gap: 6,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    paddingTop: 10,
-    marginBottom: 10,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  detailText: {
-    fontSize: 13,
-    color: '#4b5563',
-  },
-  cardFooter: {
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    paddingTop: 10,
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  badgeActivo: { backgroundColor: '#dcfce7' },
-  badgeInactivo: { backgroundColor: '#fee2e2' },
-  badgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  dotActivo: { backgroundColor: '#16a34a' },
-  dotInactivo: { backgroundColor: '#dc2626' },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  badgeTextActivo: { color: '#15803d' },
-  badgeTextInactivo: { color: '#b91c1c' },
-  errorText: {
-    fontSize: 15,
-    color: '#ef4444',
-    textAlign: 'center',
-    marginTop: 12,
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: '#3b82f6',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 80,
-  },
-  emptyText: {
-    color: '#9ca3af',
-    fontSize: 15,
-    marginTop: 12,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-})

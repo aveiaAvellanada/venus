@@ -5,10 +5,16 @@ process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'dummy-key'
 // @ts-ignore
 import renderer, { act } from 'react-test-renderer'
 
-// Mock AsyncStorage
+// Mock AsyncStorage (usado por TemaProvider para persistir el modo)
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
+jest.useFakeTimers()
+
+// El Toast usa los insets de safe-area al mostrarse (Regla global de pantallas con useToast)
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
 
 // Mock Supabase (both relative and absolute paths)
 jest.mock('./supabase', () => ({
@@ -27,16 +33,6 @@ jest.mock('../lib/supabase', () => ({
     rpc: jest.fn().mockResolvedValue({ data: 0, error: null }),
   },
 }))
-
-// Mock @expo/vector-icons
-jest.mock('@expo/vector-icons', () => {
-  const React = require('react')
-  const { Text } = require('react-native')
-  return {
-    Ionicons: (props: { name?: string; [key: string]: unknown }) =>
-      React.createElement(Text, props, props.name),
-  }
-})
 
 // Mock expo-router
 const mockUseLocalSearchParams = jest.fn(() => ({ id: 'emp-uuid-1' }))
@@ -104,8 +100,30 @@ jest.mock('../lib/empleados', () => {
 
 // Import screens AFTER all mocks
 import EmpleadosLayout from '../app/(app)/empleados/_layout'
-import EmpleadosIndex from '../app/(app)/empleados/index'
-import EmpleadoDetalleScreen from '../app/(app)/empleados/[id]'
+import EmpleadosIndexRaw from '../app/(app)/empleados/index'
+import EmpleadoDetalleScreenRaw from '../app/(app)/empleados/[id]'
+import { TemaProvider } from './tema'
+import { ToastProvider } from '../components/ui'
+
+// Las 2 pantallas ahora usan useTema() (y [id] usa useToast()); se envuelven con los
+// mismos nombres que ya usa toda la suite para no tocar cada call-site.
+function EmpleadosIndex(props: any) {
+  return (
+    <TemaProvider>
+      <EmpleadosIndexRaw {...props} />
+    </TemaProvider>
+  )
+}
+
+function EmpleadoDetalleScreen(props: any) {
+  return (
+    <TemaProvider>
+      <ToastProvider>
+        <EmpleadoDetalleScreenRaw {...props} />
+      </ToastProvider>
+    </TemaProvider>
+  )
+}
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -552,16 +570,17 @@ describe('Empleados UI — tests de integración', () => {
 
       const root = tree!.root
 
-      // Find any pressable element (host component) that has an onPress prop
-      // react-test-renderer renders TouchableOpacity as a host View with onPress
-      const pressables = root.findAll(
-        (el: renderer.ReactTestInstance) => typeof el.props.onPress === 'function'
-      )
-      expect(pressables.length).toBeGreaterThan(0)
+      // La Tarjeta navegable se identifica por su testID ('tarjeta'); el header también
+      // tiene un Presionable con onPress (Volver), así que no basta con "el primero".
+      // findAllByProps también matchea el Presionable interno de la Tarjeta a varios
+      // niveles (composite + host de Reanimated); nos quedamos con el que trae onPress.
+      const tarjetas = root
+        .findAllByProps({ testID: 'tarjeta' })
+        .filter((t: renderer.ReactTestInstance) => typeof t.props.onPress === 'function')
+      expect(tarjetas.length).toBeGreaterThan(0)
 
-      // The first pressable with onPress is the card that navigates to the employee detail
       await act(async () => {
-        pressables[0].props.onPress()
+        tarjetas[0].props.onPress()
       })
 
       expect(mockRouter.push).toHaveBeenCalledWith('/empleados/' + EMPLEADO_ACTIVO.id)

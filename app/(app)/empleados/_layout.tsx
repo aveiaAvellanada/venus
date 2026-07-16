@@ -5,18 +5,9 @@ export default function EmpleadosLayout() {
   const requireModulo = useRequireModulo('gestion-empleado')
   if (requireModulo) return requireModulo
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: '#ffffff' },
-        headerShadowVisible: false,
-        headerTintColor: '#111827',
-        headerTitleStyle: { fontWeight: '600' },
-        contentStyle: { backgroundColor: '#f9fafb' },
-        headerTitleAlign: 'center',
-      }}
-    >
-      <Stack.Screen name="index" options={{ title: 'Empleados' }} />
-      <Stack.Screen name="[id]" options={{ title: 'Empleado' }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="[id]" />
     </Stack>
   )
 }

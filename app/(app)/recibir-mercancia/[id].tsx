@@ -35,6 +35,20 @@ export default function RecepcionDetalleFinancieroScreen() {
     return <Redirect href="/" />
   }
 
+  // Header component used in all render branches
+  const Encabezado = () => (
+    <View style={{
+      flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+      paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+    }}>
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver"
+        onPress={() => router.back()} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Completar Entrada</Text>
+    </View>
+  )
+
   useEffect(() => {
     async function cargarCompra() {
       if (!id) return
@@ -134,22 +148,28 @@ export default function RecepcionDetalleFinancieroScreen() {
 
   if (cargandoCompra || cargando) {
     return (
-      <View style={{ flex: 1, backgroundColor: paleta.fondo, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, gap: espacio.m }}>
-        <ActivityIndicator size="large" color={paleta.primario} />
-        <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Cargando recepción...</Text>
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, gap: espacio.m }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Cargando recepción...</Text>
+        </View>
       </View>
     )
   }
 
   if (compra && compra.estado !== 'pendiente_revision') {
     return (
-      <View style={{ flex: 1, backgroundColor: paleta.fondo, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, gap: espacio.m }}>
-        <CircleCheckBig size={64} color={paleta.exito} />
-        <Text style={[tipografia.h2, { color: paleta.texto, textAlign: 'center' }]}>Recepción Completada</Text>
-        <Text style={[tipografia.cuerpo, { color: paleta.texto2, textAlign: 'center' }]}>
-          Esta mercancía ya cuenta con información financiera registrada.
-        </Text>
-        <Boton titulo="Volver al listado" variante="secundario" tamano="md" onPress={() => router.back()} />
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, gap: espacio.m }}>
+          <CircleCheckBig size={64} color={paleta.exito} />
+          <Text style={[tipografia.h2, { color: paleta.texto, textAlign: 'center' }]}>Recepción Completada</Text>
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2, textAlign: 'center' }]}>
+            Esta mercancía ya cuenta con información financiera registrada.
+          </Text>
+          <Boton titulo="Volver al listado" variante="secundario" tamano="md" onPress={() => router.back()} />
+        </View>
       </View>
     )
   }
@@ -163,17 +183,7 @@ export default function RecepcionDetalleFinancieroScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1, backgroundColor: paleta.fondo }}
     >
-      {/* Header */}
-      <View style={{
-        flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-        paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
-      }}>
-        <Presionable accessibilityRole="button" accessibilityLabel="Volver"
-          onPress={() => router.back()} hitSlop={12}>
-          <ArrowLeft size={24} color={paleta.texto} />
-        </Presionable>
-        <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Completar Entrada</Text>
-      </View>
+      <Encabezado />
 
       <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: 120, gap: espacio.l }}>
         {/* Card de cabecera */}

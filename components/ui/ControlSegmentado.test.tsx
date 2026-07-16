@@ -40,7 +40,7 @@ describe('ControlSegmentado', () => {
     const arbol = await montar(
       <ControlSegmentado opciones={['Ventas', 'Devoluciones', 'Gastos']} indice={0} onCambio={() => {}} />
     )
-    const tabs = arbol.root.findAllByProps({ accessibilityRole: 'tab' }).filter((n) => n.props.onPress)
+    const tabs = arbol.root.findAllByProps({ accessibilityRole: 'tab' }).filter((n: { props: { onPress?: unknown } }) => n.props.onPress)
     expect(tabs).toHaveLength(3)
     expect(tabs[0].props.accessibilityState).toEqual({ selected: true })
     expect(tabs[1].props.accessibilityState).toEqual({ selected: false })
@@ -51,7 +51,7 @@ describe('ControlSegmentado', () => {
     const arbol = await montar(
       <ControlSegmentado opciones={['Calzado', 'Granja']} indice={0} onCambio={onCambio} />
     )
-    const tabs = arbol.root.findAllByProps({ accessibilityRole: 'tab' }).filter((n) => n.props.onPress)
+    const tabs = arbol.root.findAllByProps({ accessibilityRole: 'tab' }).filter((n: { props: { onPress?: unknown } }) => n.props.onPress)
     await act(async () => {
       tabs[1].props.onPress()
     })

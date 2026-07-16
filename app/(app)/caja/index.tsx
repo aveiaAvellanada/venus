@@ -1,14 +1,51 @@
-import { useCallback, useEffect, useState } from 'react'
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { View, Text, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
-import { useRequireModulo } from '../../../lib/auth'
+import { ArrowLeft, History, Settings } from 'lucide-react-native'
+import { useAuth, useRequireModulo } from '../../../lib/auth'
 import { obtenerCajaHoy, abrirCaja, reabrirCaja, obtenerResumenEnVivo } from '../../../lib/caja'
+import { useTema } from '../../../lib/tema'
+import type { Paleta } from '../../../lib/theme'
+import { espacio, tipografia } from '../../../lib/theme'
+import { Badge, Boton, Presionable, TarjetaMetrica } from '../../../components/ui'
 
 const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
+
+// Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
+function Encabezado({
+  paleta,
+  onVolver,
+  derecha,
+}: {
+  paleta: Paleta
+  onVolver: () => void
+  derecha?: ReactNode
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: espacio.m,
+        paddingHorizontal: espacio.xl,
+        paddingTop: 56,
+        paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={onVolver} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Caja del Día</Text>
+      {derecha}
+    </View>
+  )
+}
 
 export default function CajaDashboard() {
   const redir = useRequireModulo('caja')
   const router = useRouter()
+  const { perfil } = useAuth()
+  const { paleta } = useTema()
 
   const [estadoCaja, setEstadoCaja] = useState<any>(null)
   const [resumen, setResumen] = useState<any>(null)
@@ -47,17 +84,29 @@ export default function CajaDashboard() {
 
   if (redir) return redir
 
+  const esDuenoAdmin = perfil?.rol === 'dueno' || perfil?.rol === 'admin'
+  const derecha = esDuenoAdmin ? (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.l }}>
+      {perfil?.rol === 'dueno' && (
+        <Presionable accessibilityRole="button" accessibilityLabel="Configurar caja" onPress={() => router.push('/caja/config')} hitSlop={10}>
+          <Settings size={22} color={paleta.primario} />
+        </Presionable>
+      )}
+      <Presionable accessibilityRole="button" accessibilityLabel="Ver historial de cierres" onPress={() => router.push('/caja/historial')} hitSlop={10}>
+        <History size={22} color={paleta.primario} />
+      </Presionable>
+    </View>
+  ) : undefined
+
   if (loading) {
     return (
-      <View style={[styles.container, styles.centro]}>
-        <ActivityIndicator size="large" color="#1E66F5" />
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado paleta={paleta} onVolver={() => router.back()} derecha={derecha} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
+        </View>
       </View>
     )
-  }
-
-  const onRefresh = () => {
-    setRefreshing(true)
-    cargarDatos()
   }
 
   async function handleAbrir() {
@@ -86,90 +135,65 @@ export default function CajaDashboard() {
 
   if (!estadoCaja) {
     return (
-      <View style={[styles.container, styles.centro]}>
-        <Text style={styles.tituloGrande}>Caja del Día</Text>
-        <Text style={styles.sub}>Aún no se ha abierto la caja para hoy.</Text>
-        <Pressable style={styles.btnGigante} onPress={handleAbrir} disabled={abriendo}>
-          {abriendo ? <ActivityIndicator color="#fff" size="large" /> : <Text style={styles.btnGiganteText}>Abrir Caja del Día</Text>}
-        </Pressable>
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado paleta={paleta} onVolver={() => router.back()} derecha={derecha} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, gap: espacio.xl }}>
+          <Text style={[tipografia.h1, { color: paleta.texto, textAlign: 'center' }]}>Caja del Día</Text>
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2, textAlign: 'center' }]}>
+            Aún no se ha abierto la caja para hoy.
+          </Text>
+          <View style={{ alignSelf: 'stretch' }}>
+            <Boton titulo="Abrir Caja del Día" onPress={handleAbrir} cargando={abriendo} deshabilitado={abriendo} />
+          </View>
+        </View>
       </View>
     )
   }
 
   const isAbierto = estadoCaja.estado === 'abierta'
 
+  const onRefresh = () => {
+    setRefreshing(true)
+    cargarDatos()
+  }
+
   return (
-    <ScrollView 
-      style={styles.container} 
-      contentContainerStyle={styles.scrollContent}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <Text style={styles.tituloGrande}>{isAbierto ? 'Dashboard de Caja' : 'Resumen Final de Caja'}</Text>
-      <Text style={[styles.estadoBadge, isAbierto ? styles.badgeAbierto : styles.badgeCerrado]}>
-        {isAbierto ? 'ABIERTA' : 'CERRADA'}
-      </Text>
-
-      {resumen && (
-        <View style={styles.dashboard}>
-          <View style={styles.cardInfo}>
-            <Text style={styles.cardLabel}>Total General</Text>
-            <Text style={styles.cardValueGigante}>{pesos(resumen.total_general)}</Text>
-            <Text style={styles.cardSub}>{resumen.total_ventas} ventas en total</Text>
-          </View>
-
-          <View style={styles.grid}>
-            <View style={styles.cardInfoMini}>
-              <Text style={styles.cardLabel}>Efectivo</Text>
-              <Text style={styles.cardValue}>{pesos(resumen.total_efectivo)}</Text>
-            </View>
-            <View style={styles.cardInfoMini}>
-              <Text style={styles.cardLabel}>Nequi</Text>
-              <Text style={styles.cardValue}>{pesos(resumen.total_nequi)}</Text>
-            </View>
-            <View style={styles.cardInfoMini}>
-              <Text style={styles.cardLabel}>Bre-B</Text>
-              <Text style={styles.cardValue}>{pesos(resumen.total_bre_b)}</Text>
-            </View>
-            <View style={styles.cardInfoMini}>
-              <Text style={styles.cardLabel}>Otro</Text>
-              <Text style={styles.cardValue}>{pesos(resumen.total_otro)}</Text>
-            </View>
-          </View>
+    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+      <Encabezado paleta={paleta} onVolver={() => router.back()} derecha={derecha} />
+      <ScrollView
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.xl }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={paleta.primario} />}
+      >
+        <View style={{ alignItems: 'center', gap: espacio.m }}>
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>
+            {isAbierto ? 'Dashboard de Caja' : 'Resumen Final de Caja'}
+          </Text>
+          <Badge texto={isAbierto ? 'ABIERTA' : 'CERRADA'} tipo={isAbierto ? 'exito' : 'peligro'} punto={isAbierto} />
         </View>
-      )}
 
-      {isAbierto ? (
-        <Pressable style={styles.btnCerrar} onPress={() => router.push('/caja/cierre')}>
-          <Text style={styles.btnCerrarText}>Ir a Cerrar Caja</Text>
-        </Pressable>
-      ) : (
-        <Pressable style={styles.btnGigante} onPress={handleReabrir} disabled={abriendo}>
-          {abriendo ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnGiganteText}>Abrir caja de nuevo</Text>}
-        </Pressable>
-      )}
-    </ScrollView>
+        {resumen && (
+          <View style={{ gap: espacio.m }}>
+            <TarjetaMetrica
+              etiqueta="Total General"
+              valor={pesos(resumen.total_general)}
+              sub={`${resumen.total_ventas} ventas en total`}
+            />
+            <View style={{ flexDirection: 'row', gap: espacio.m, flexWrap: 'wrap' }}>
+              <TarjetaMetrica mini etiqueta="Efectivo" valor={pesos(resumen.total_efectivo)} />
+              <TarjetaMetrica mini etiqueta="Nequi" valor={pesos(resumen.total_nequi)} />
+              <TarjetaMetrica mini etiqueta="Bre-B" valor={pesos(resumen.total_bre_b)} />
+              <TarjetaMetrica mini etiqueta="Otro" valor={pesos(resumen.total_otro)} />
+            </View>
+          </View>
+        )}
+
+        {isAbierto ? (
+          <Boton titulo="Ir a Cerrar Caja" variante="peligro" onPress={() => router.push('/caja/cierre')} />
+        ) : (
+          <Boton titulo="Abrir caja de nuevo" onPress={handleReabrir} cargando={abriendo} deshabilitado={abriendo} />
+        )}
+      </ScrollView>
+    </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  centro: { alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16 },
-  scrollContent: { padding: 24, paddingTop: 60, alignItems: 'center', gap: 20 },
-  tituloGrande: { fontSize: 32, fontWeight: '800', textAlign: 'center' },
-  sub: { fontSize: 16, color: '#666', textAlign: 'center' },
-  btnGigante: { backgroundColor: '#1E66F5', paddingVertical: 24, paddingHorizontal: 32, borderRadius: 24, marginTop: 20 },
-  btnGiganteText: { color: '#fff', fontSize: 24, fontWeight: '800' },
-  estadoBadge: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 12, overflow: 'hidden', fontWeight: '800', fontSize: 14 },
-  badgeAbierto: { backgroundColor: '#E3F2E8', color: '#1E7A34' },
-  badgeCerrado: { backgroundColor: '#FDECEF', color: '#D20F39' },
-  dashboard: { width: '100%', gap: 12, marginTop: 12 },
-  cardInfo: { backgroundColor: '#F8FAFC', padding: 24, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
-  cardLabel: { fontSize: 14, color: '#64748B', fontWeight: '600', textTransform: 'uppercase' },
-  cardValueGigante: { fontSize: 40, fontWeight: '800', color: '#0F172A', marginVertical: 8 },
-  cardSub: { fontSize: 14, color: '#64748B' },
-  grid: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
-  cardInfoMini: { flex: 1, minWidth: 100, backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
-  cardValue: { fontSize: 20, fontWeight: '700', color: '#0F172A', marginTop: 8 },
-  btnCerrar: { width: '100%', backgroundColor: '#D20F39', paddingVertical: 18, borderRadius: 16, marginTop: 24, alignItems: 'center' },
-  btnCerrarText: { color: '#fff', fontSize: 18, fontWeight: '700' },
-})

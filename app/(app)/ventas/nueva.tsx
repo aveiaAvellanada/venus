@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useRequireModulo } from '../../../lib/auth'
+import { useCarrito } from '../../../lib/carrito-contexto'
 import {
-  bajoMinimo, calcularCambio, carritoReducer, montoEfectivo, pagosCuadran, totalCarrito,
+  bajoMinimo, calcularCambio, montoEfectivo, pagosCuadran, totalCarrito,
   type AccionCarrito, type ItemCarrito, type MetodoPago, type PagoInput, type ProductoVendible,
 } from '../../../lib/carrito'
 import { buscarProductos, registrarVenta } from '../../../lib/ventas'
@@ -109,7 +110,8 @@ export default function NuevaVenta() {
   const router = useRouter()
 
   const [etapa, setEtapa] = useState<Etapa>('carrito')
-  const [items, dispatch] = useReducer(carritoReducer, [])
+  // Carrito compartido: el detalle de producto (tab Productos) también agrega aquí.
+  const { items, dispatch } = useCarrito()
   const [query, setQuery] = useState('')
   const [resultados, setResultados] = useState<ProductoVendible[]>([])
   const [buscando, setBuscando] = useState(false)
@@ -364,7 +366,7 @@ export default function NuevaVenta() {
 
       <View style={styles.carrito}>
         <ScrollView style={styles.carritoLista}>
-          {items.map(i => (
+          {items.map((i: ItemCarrito) => (
             <LineaCarrito key={`${i.producto.tipo}-${i.producto.id}`} item={i} dispatch={dispatch} />
           ))}
         </ScrollView>

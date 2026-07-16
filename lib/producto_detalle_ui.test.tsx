@@ -10,6 +10,11 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 jest.useFakeTimers()
 
+jest.mock('expo-haptics', () => ({
+  impactAsync: jest.fn(() => Promise.resolve()),
+  ImpactFeedbackStyle: { Light: 'light' },
+}))
+
 const mockPush = jest.fn()
 jest.mock('expo-router', () => {
   const ReactMock = require('react')
@@ -36,6 +41,7 @@ jest.mock('../lib/inventario', () => ({
 }))
 
 import { TemaProvider } from './tema'
+import { CarritoProvider } from './carrito-contexto'
 import ProductoDetalleScreen from '../app/(app)/productos/[ref]'
 
 const CALZADO = [
@@ -65,7 +71,9 @@ async function montar() {
   await act(async () => {
     arbol = renderer.create(
       <TemaProvider>
-        <ProductoDetalleScreen />
+        <CarritoProvider>
+          <ProductoDetalleScreen />
+        </CarritoProvider>
       </TemaProvider>
     )
   })
@@ -121,5 +129,19 @@ describe('Detalle de producto', () => {
     conRol('empleado')
     const arbol = await montar()
     expect(arbol.root.findAllByProps({ accessibilityLabel: 'Ver ficha' })).toHaveLength(0)
+  })
+
+  it('elegir talla habilita Agregar al carrito y navega a Nueva Venta', async () => {
+    conRol('empleado')
+    const arbol = await montar()
+    const negro = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Negro')!
+    await act(async () => negro.props.onPress!())
+    const talla40 = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Talla 40: 5 disponibles')!
+    await act(async () => talla40.props.onPress!())
+    const cta = arbol.root
+      .findAllByProps({ accessibilityLabel: 'Agregar al carrito' })
+      .find((n: Nodo) => n.props.onPress)!
+    await act(async () => cta.props.onPress!())
+    expect(mockPush).toHaveBeenCalledWith('/ventas/nueva')
   })
 })

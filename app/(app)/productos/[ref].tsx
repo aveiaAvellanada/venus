@@ -1,8 +1,11 @@
 import React, { useCallback, useState } from 'react'
 import { Image, Pressable, ScrollView, Text, View } from 'react-native'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
-import { ArrowLeft, Footprints } from 'lucide-react-native'
+import { ArrowLeft, Footprints, ShoppingCart } from 'lucide-react-native'
+import * as Haptics from 'expo-haptics'
 import { useAuth } from '../../../lib/auth'
+import { detalleCalzado } from '../../../lib/carrito'
+import { useCarrito } from '../../../lib/carrito-contexto'
 import { listarCalzado } from '../../../lib/inventario'
 import { agruparPorReferencia } from '../../../lib/productos'
 import type { ModeloCalzado } from '../../../lib/productos'
@@ -16,6 +19,7 @@ export default function ProductoDetalleScreen() {
   const { ref } = useLocalSearchParams<{ ref: string }>()
   const { perfil } = useAuth()
   const { paleta } = useTema()
+  const { dispatch } = useCarrito()
   const router = useRouter()
 
   const [cargando, setCargando] = useState(true)
@@ -145,10 +149,38 @@ export default function ProductoDetalleScreen() {
               </View>
             </View>
 
+            <Boton
+              titulo="Agregar al carrito"
+              icono={<ShoppingCart size={20} color={paleta.sobrePrimario} />}
+              deshabilitado={!variante || Number(variante.stock_actual) <= 0}
+              onPress={() => {
+                if (!variante || !modelo) return
+                dispatch({
+                  tipo: 'agregar',
+                  producto: {
+                    tipo: 'calzado',
+                    id: variante.id,
+                    titulo: modelo.nombre,
+                    detalle: detalleCalzado({
+                      marca: modelo.marca,
+                      talla: variante.talla,
+                      color: variante.color,
+                    }),
+                    precio: Number(variante.precio_maximo),
+                    stock: Number(variante.stock_actual),
+                    precioMin: Number(variante.precio_minimo),
+                    precioMax: Number(variante.precio_maximo),
+                  },
+                })
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+                router.push('/ventas/nueva')
+              }}
+            />
             {esStaff ? (
               <Boton
                 titulo="Ver ficha"
                 variante="secundario"
+                tamano="md"
                 deshabilitado={!variante}
                 onPress={() => {
                   if (variante) router.push(`/inventario/calzado/${variante.id}`)

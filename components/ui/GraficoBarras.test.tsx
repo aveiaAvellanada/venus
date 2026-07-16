@@ -8,6 +8,8 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
 
+jest.mock('../../lib/supabase', () => ({ supabase: { rpc: jest.fn() } }))
+
 jest.useFakeTimers()
 
 import { TemaProvider } from '../../lib/tema'

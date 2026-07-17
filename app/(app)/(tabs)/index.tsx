@@ -4,12 +4,8 @@ import { useFocusEffect, useRouter } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
 import {
   Banknote,
-  ChartColumn,
   CreditCard,
-  Scale,
   Smartphone,
-  Sparkles,
-  Truck,
   Zap,
 } from 'lucide-react-native'
 import type { LucideIcon } from 'lucide-react-native'
@@ -28,23 +24,20 @@ import {
   obtenerResumenDia,
 } from '../../../lib/reportes'
 import type { ReportePeriodo, ResumenDia } from '../../../lib/reportes'
-import { puedeAcceder } from '../../../lib/permisos'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
 import {
   Badge,
   Chip,
-  CirculoIcono,
   ContadorDinero,
   Esqueleto,
-  FilaLista,
   GraficoBarras,
   SelectorRango,
   Tarjeta,
   TarjetaMetrica,
   useToast,
 } from '../../../components/ui'
-import type { TipoBadge, TonoIcono } from '../../../components/ui'
+import type { TipoBadge } from '../../../components/ui'
 
 type EstadoCaja = 'cargando' | 'sin-abrir' | 'abierta' | 'cerrada'
 
@@ -54,13 +47,6 @@ const BADGE_CAJA: Record<EstadoCaja, { texto: string; tipo: TipoBadge; punto: bo
   abierta: { texto: 'ABIERTA', tipo: 'exito', punto: true },
   cerrada: { texto: 'CERRADA', tipo: 'peligro', punto: false },
 }
-
-const ACCESOS: { id: string; titulo: string; sub: string; ruta?: string; Icono: LucideIcon; tono: TonoIcono }[] = [
-  { id: 'proveedores', titulo: 'Proveedores', sub: 'Datos, cuentas y deudas', ruta: '/proveedores', Icono: Truck, tono: 'primario' },
-  { id: 'reportes', titulo: 'Reportes', sub: 'El negocio a fondo', ruta: '/reportes', Icono: ChartColumn, tono: 'primario' },
-  { id: 'balance', titulo: 'Balance', sub: 'Ingresos − egresos', ruta: '/balance', Icono: Scale, tono: 'primario' },
-  { id: 'analisis-ia', titulo: 'Análisis IA', sub: 'Recomendaciones de compra', Icono: Sparkles, tono: 'acento' },
-]
 
 const PERIODOS: { clave: Periodo; etiqueta: string }[] = [
   { clave: 'hoy', etiqueta: 'Hoy' },
@@ -159,7 +145,6 @@ export default function Menu() {
   if (!perfil) return null
 
   const badge = BADGE_CAJA[estadoCaja]
-  const accesos = ACCESOS.filter((a) => puedeAcceder(perfil.rol, a.id))
   const total = esStaff ? (reporte?.total_vendido ?? 0) : (resumenHoy?.total_general ?? 0)
   const numVentas = esStaff ? (reporte?.num_ventas ?? 0) : (resumenHoy?.total_ventas ?? 0)
   const metodos = esStaff
@@ -365,27 +350,6 @@ export default function Menu() {
             ) : null}
           </>
         )}
-
-        {accesos.length > 0 ? (
-          <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
-            {accesos.map((a, i) => (
-              <View key={a.id}>
-                {i > 0 ? <View style={{ height: 1, backgroundColor: paleta.borde, marginLeft: 56 }} /> : null}
-                <FilaLista
-                  icono={
-                    <CirculoIcono tono={a.tono}>
-                      <a.Icono />
-                    </CirculoIcono>
-                  }
-                  titulo={a.titulo}
-                  subtitulo={a.sub}
-                  chevron
-                  onPress={() => (a.ruta ? router.push(a.ruta) : mostrar('Análisis IA estará disponible pronto', 'info'))}
-                />
-              </View>
-            ))}
-          </Tarjeta>
-        ) : null}
       </ScrollView>
     </View>
   )

@@ -132,12 +132,12 @@ describe('Menú — dashboard', () => {
     mockResumenDia.mockResolvedValue(RESUMEN_HOY)
   })
 
-  it('dueño: hero con total, métodos, gastos con total y accesos', async () => {
+  it('dueño: hero con total, métodos y gastos con total', async () => {
     conPerfil('dueno')
     const arbol = await montar()
     expect(existeTexto(arbol, 'Total vendido')).toBe(true)
     expect(arbol.root.findAllByProps({ accessibilityLabel: '$1.250.000' }).length).toBeGreaterThan(0)
-    for (const t of ['Efectivo', 'Nequi', 'Bre-B', 'Arriendo', 'Domicilio', 'Total gastos', 'Proveedores']) {
+    for (const t of ['Efectivo', 'Nequi', 'Bre-B', 'Arriendo', 'Domicilio', 'Total gastos']) {
       expect({ [t]: existeTexto(arbol, t) }).toEqual({ [t]: true })
     }
     expect(existeTexto(arbol, '$315.000')).toBe(true)

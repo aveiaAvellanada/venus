@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router'
 import { ChevronRight, Egg, Footprints, PackagePlus, Pencil, Search, SlidersHorizontal } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
 import { useCarrito } from '../../../lib/carrito-contexto'
+import { confirmarCompraRapida } from '../../../lib/compraRapida'
 import { CATEGORIAS } from '../../../lib/excel'
 import { listarCalzado, listarVarios } from '../../../lib/inventario'
 import type { ProductoVarios } from '../../../lib/inventario'
@@ -103,7 +104,7 @@ export default function Productos() {
   const { perfil } = useAuth()
   const { paleta } = useTema()
   const router = useRouter()
-  const { dispatch } = useCarrito()
+  const { dispatch, items } = useCarrito()
   const { mostrar } = useToast()
 
   const [modo, setModo] = useState(0)
@@ -324,22 +325,25 @@ export default function Productos() {
         }}
         onCompraRapida={(cantidad, precio) => {
           if (!productoGranja) return
-          dispatch({ tipo: 'limpiar' })
-          dispatch({
-            tipo: 'agregarConCantidad',
-            cantidad,
-            producto: {
-              tipo: 'varios',
-              id: productoGranja.id,
-              titulo: productoGranja.nombre,
-              detalle: `por ${productoGranja.unidad_medida}`,
-              precio,
-              stock: Number.POSITIVE_INFINITY,
-              unidad: productoGranja.unidad_medida,
-            },
+          const granja = productoGranja
+          confirmarCompraRapida(items.length, () => {
+            dispatch({ tipo: 'limpiar' })
+            dispatch({
+              tipo: 'agregarConCantidad',
+              cantidad,
+              producto: {
+                tipo: 'varios',
+                id: granja.id,
+                titulo: granja.nombre,
+                detalle: `por ${granja.unidad_medida}`,
+                precio,
+                stock: Number.POSITIVE_INFINITY,
+                unidad: granja.unidad_medida,
+              },
+            })
+            setProductoGranja(null)
+            router.push('/ventas/nueva?modo=rapida')
           })
-          setProductoGranja(null)
-          router.push('/ventas/nueva?modo=rapida')
         }}
       />
 

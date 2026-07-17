@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics'
 import { useAuth } from '../../../lib/auth'
 import { detalleCalzado } from '../../../lib/carrito'
 import { useCarrito } from '../../../lib/carrito-contexto'
+import { confirmarCompraRapida } from '../../../lib/compraRapida'
 import { listarCalzado } from '../../../lib/inventario'
 import { agruparPorReferencia } from '../../../lib/productos'
 import type { ModeloCalzado } from '../../../lib/productos'
@@ -19,7 +20,7 @@ export default function ProductoDetalleScreen() {
   const { ref } = useLocalSearchParams<{ ref: string }>()
   const { perfil } = useAuth()
   const { paleta } = useTema()
-  const { dispatch } = useCarrito()
+  const { dispatch, items } = useCarrito()
   const { mostrar } = useToast()
   const router = useRouter()
 
@@ -185,26 +186,28 @@ export default function ProductoDetalleScreen() {
               deshabilitado={!variante || Number(variante.stock_actual) <= 0 || !variante.activo}
               onPress={() => {
                 if (!variante || !modelo) return
-                dispatch({ tipo: 'limpiar' })
-                dispatch({
-                  tipo: 'agregar',
-                  producto: {
-                    tipo: 'calzado',
-                    id: variante.id,
-                    titulo: modelo.nombre,
-                    detalle: detalleCalzado({
-                      marca: modelo.marca,
-                      talla: variante.talla,
-                      color: variante.color,
-                    }),
-                    precio: Number(variante.precio_maximo),
-                    stock: Number(variante.stock_actual),
-                    precioMin: Number(variante.precio_minimo),
-                    precioMax: Number(variante.precio_maximo),
-                  },
+                confirmarCompraRapida(items.length, () => {
+                  dispatch({ tipo: 'limpiar' })
+                  dispatch({
+                    tipo: 'agregar',
+                    producto: {
+                      tipo: 'calzado',
+                      id: variante.id,
+                      titulo: modelo.nombre,
+                      detalle: detalleCalzado({
+                        marca: modelo.marca,
+                        talla: variante.talla,
+                        color: variante.color,
+                      }),
+                      precio: Number(variante.precio_maximo),
+                      stock: Number(variante.stock_actual),
+                      precioMin: Number(variante.precio_minimo),
+                      precioMax: Number(variante.precio_maximo),
+                    },
+                  })
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+                  router.push('/ventas/nueva?modo=rapida')
                 })
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
-                router.push('/ventas/nueva?modo=rapida')
               }}
             />
             {esStaff ? (

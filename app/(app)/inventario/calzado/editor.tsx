@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, Image, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, ScrollView, Image, ActivityIndicator, Alert, Switch } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, Camera, Pencil, Save } from 'lucide-react-native'
 import * as ImagePicker from 'expo-image-picker'
@@ -37,6 +37,7 @@ export default function CalzadoEditorScreen() {
   const [stockActual, setStockActual] = useState('')
   const [stockMinimo, setStockMinimo] = useState('1')
   const [fotoUrl, setFotoUrl] = useState<string | null>(null)
+  const [activo, setActivo] = useState(true)
 
   const esDueno = perfil?.rol === 'dueno'
   const esAdmin = perfil?.rol === 'admin'
@@ -71,6 +72,7 @@ export default function CalzadoEditorScreen() {
         setStockActual(data.stock_actual?.toString() || '')
         setStockMinimo(data.stock_minimo?.toString() || '')
         setFotoUrl(data.foto_url || null)
+        setActivo(data.activo ?? true)
 
         if (esDueno) {
           const { data: historial } = await supabase
@@ -191,6 +193,7 @@ export default function CalzadoEditorScreen() {
         stock_actual: parseInt(stockActual, 10),
         stock_minimo: parseInt(stockMinimo, 10),
         foto_url: fotoUrl || null,
+        activo,
       })
 
       if (!id) {
@@ -324,6 +327,17 @@ export default function CalzadoEditorScreen() {
 
         <Tarjeta>
           <Text style={[tipografia.h3, { color: paleta.texto }]}>Inventario</Text>
+          {id ? (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: espacio.m, marginBottom: espacio.m }}>
+              <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>Producto activo</Text>
+              <Switch
+                value={activo}
+                onValueChange={setActivo}
+                trackColor={{ false: paleta.borde, true: paleta.primarioSoft }}
+                thumbColor={activo ? paleta.primario : paleta.superficie}
+              />
+            </View>
+          ) : null}
           <View style={{ flexDirection: 'row', gap: espacio.m, marginTop: espacio.m }}>
             <View style={{ flex: 1 }}>
               <CampoTexto

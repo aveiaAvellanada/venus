@@ -35,7 +35,9 @@ export default function ProductoDetalleScreen() {
         .then((filas) => {
           const clave = decodeURIComponent(ref)
           const encontrado =
-            agruparPorReferencia(filas).find((m) => m.clave.toLowerCase() === clave.toLowerCase()) ?? null
+            agruparPorReferencia(filas, { incluirInactivos: true }).find(
+              (m) => m.clave.toLowerCase() === clave.toLowerCase()
+            ) ?? null
           setModelo(encontrado)
           if (encontrado && encontrado.colores.length === 1) setColor(encontrado.colores[0])
         })
@@ -153,7 +155,7 @@ export default function ProductoDetalleScreen() {
             <Boton
               titulo="Agregar al carrito"
               icono={<ShoppingCart size={20} color={paleta.sobrePrimario} />}
-              deshabilitado={!variante || Number(variante.stock_actual) <= 0}
+              deshabilitado={!variante || Number(variante.stock_actual) <= 0 || !variante.activo}
               onPress={() => {
                 if (!variante || !modelo) return
                 dispatch({
@@ -180,7 +182,7 @@ export default function ProductoDetalleScreen() {
             <Boton
               titulo="Compra rápida"
               variante="secundario"
-              deshabilitado={!variante || Number(variante.stock_actual) <= 0}
+              deshabilitado={!variante || Number(variante.stock_actual) <= 0 || !variante.activo}
               onPress={() => {
                 if (!variante || !modelo) return
                 dispatch({ tipo: 'limpiar' })

@@ -87,7 +87,9 @@ function CardModelo({ modelo, onPress }: { modelo: ModeloCalzado; onPress: () =>
             .join(' · ')}
         </Text>
       </View>
-      {modelo.agotado ? (
+      {!modelo.activo ? (
+        <Badge texto="DESCONTINUADO" tipo="neutro" />
+      ) : modelo.agotado ? (
         <Badge texto="AGOTADO" tipo="peligro" />
       ) : (
         <Text style={[tipografia.etiqueta, tabular, { color: paleta.primario }]}>{rango}</Text>
@@ -115,11 +117,12 @@ export default function Productos() {
   const [filtrosVisibles, setFiltrosVisibles] = useState(false)
   const [marcasFiltro, setMarcasFiltro] = useState<string[]>([])
   const [precioMaxFiltro, setPrecioMaxFiltro] = useState<number | null>(null)
+  const [verDescontinuados, setVerDescontinuados] = useState(false)
 
   const cargar = useCallback(async () => {
     if (!perfil) return
     try {
-      if (modo === 0) setModelos(agruparPorReferencia(await listarCalzado()))
+      if (modo === 0) setModelos(agruparPorReferencia(await listarCalzado(), { incluirInactivos: true }))
       else setVarios((await listarVarios()).filter((v) => v.activo))
     } catch {
       // estado vacío + pull-to-refresh para reintentar
@@ -137,8 +140,9 @@ export default function Productos() {
   if (!perfil) return null
 
   const q = busqueda.trim().toLowerCase()
+  const modelosBase = verDescontinuados ? modelos : modelos.filter((m) => m.activo)
   const modelosVisibles = filtrarModelos(
-    categoria === 'Todas' ? modelos : modelos.filter((m) => m.categoria === categoria),
+    categoria === 'Todas' ? modelosBase : modelosBase.filter((m) => m.categoria === categoria),
     busqueda
   )
   const variosVisibles = q ? varios.filter((v) => v.nombre.toLowerCase().includes(q)) : varios
@@ -222,6 +226,11 @@ export default function Productos() {
                 onPress={() => setCategoria(c.valor)}
               />
             ))}
+            <Chip
+              etiqueta="Ver descontinuados"
+              activo={verDescontinuados}
+              onPress={() => setVerDescontinuados((v) => !v)}
+            />
           </ScrollView>
         ) : null}
 

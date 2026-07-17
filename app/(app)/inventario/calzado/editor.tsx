@@ -1,22 +1,30 @@
 import { useEffect, useState } from 'react'
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, ScrollView, Image, ActivityIndicator, Alert, Switch } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import { ArrowLeft, Camera, Pencil, Save } from 'lucide-react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { useAuth, useRequireModulo } from '../../../../lib/auth'
 import { supabase } from '../../../../lib/supabase'
 import { guardarCalzado } from '../../../../lib/inventario'
 import { comprimirYSubirImagen } from '../../../../lib/imagenes'
+import { CATEGORIAS } from '../../../../lib/excel'
+import { usePaddingInferior } from '../../../../hooks/usePaddingInferior'
+import { useTema } from '../../../../lib/tema'
+import { espacio, radio, tipografia } from '../../../../lib/theme'
+import { Boton, CampoTexto, Chip, Presionable, Tarjeta, useToast } from '../../../../components/ui'
 
 export default function CalzadoEditorScreen() {
   const requireModulo = useRequireModulo('inventario-calzado')
   const { id } = useLocalSearchParams<{ id?: string }>()
   const router = useRouter()
   const { perfil } = useAuth()
+  const { paleta } = useTema()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
+  const { mostrar } = useToast()
 
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(!!id)
-  
+
   const [categoria, setCategoria] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [marca, setMarca] = useState('')
@@ -29,14 +37,15 @@ export default function CalzadoEditorScreen() {
   const [stockActual, setStockActual] = useState('')
   const [stockMinimo, setStockMinimo] = useState('1')
   const [fotoUrl, setFotoUrl] = useState<string | null>(null)
-  
+  const [activo, setActivo] = useState(true)
+
   const esDueno = perfil?.rol === 'dueno'
   const esAdmin = perfil?.rol === 'admin'
-  
+
   useEffect(() => {
     // Si ya cargó el perfil y no es dueño ni admin, expulsar
     if (perfil && !esDueno && !esAdmin) {
-      router.replace('/(app)/inventario/calzado')
+      router.replace('/productos')
     }
   }, [perfil, esDueno, esAdmin])
 
@@ -49,9 +58,9 @@ export default function CalzadoEditorScreen() {
           .select('*')
           .eq('id', id)
           .single()
-          
+
         if (error) throw error
-        
+
         setCategoria(data.categoria || '')
         setDescripcion(data.descripcion || '')
         setMarca(data.marca || '')
@@ -63,7 +72,8 @@ export default function CalzadoEditorScreen() {
         setStockActual(data.stock_actual?.toString() || '')
         setStockMinimo(data.stock_minimo?.toString() || '')
         setFotoUrl(data.foto_url || null)
-        
+        setActivo(data.activo ?? true)
+
         if (esDueno) {
           const { data: historial } = await supabase
             .from('historial_precios_calzado')
@@ -73,20 +83,20 @@ export default function CalzadoEditorScreen() {
             .order('created_at', { ascending: false })
             .limit(1)
             .single()
-            
+
           if (historial) {
             setCostoCompra(historial.costo_compra?.toString() || '')
           }
         }
       } catch (err) {
         console.error(err)
-        Alert.alert('Error', 'No se pudo cargar el producto')
+        mostrar('No se pudo cargar el producto', 'error')
         router.back()
       } finally {
         setFetching(false)
       }
     }
-    
+
     if (perfil && (esDueno || esAdmin)) {
       fetchProducto()
     }
@@ -97,6 +107,22 @@ export default function CalzadoEditorScreen() {
   if (!perfil || (!esDueno && !esAdmin)) {
     return null
   }
+
+  const Encabezado = () => (
+    <View
+      style={{
+        flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+        paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>
+        {id ? 'Editar Calzado' : 'Nuevo Calzado'}
+      </Text>
+    </View>
+  )
 
   const handleSeleccionarImagen = async () => {
     Alert.alert(
@@ -139,7 +165,7 @@ export default function CalzadoEditorScreen() {
       setFotoUrl(url)
     } catch (err: any) {
       console.error(err)
-      Alert.alert('Error', 'No se pudo subir la imagen: ' + err.message)
+      mostrar('No se pudo subir la imagen: ' + err.message, 'error')
     } finally {
       setLoading(false)
     }
@@ -147,10 +173,10 @@ export default function CalzadoEditorScreen() {
 
   const handleGuardar = async () => {
     if (!categoria || !descripcion || !precioMinimo || !precioMaximo || !stockActual || !stockMinimo) {
-      Alert.alert('Campos requeridos', 'Por favor llena los campos obligatorios (*).')
+      mostrar('Por favor llena los campos obligatorios (*).', 'error')
       return
     }
-    
+
     try {
       setLoading(true)
       await guardarCalzado({
@@ -167,8 +193,9 @@ export default function CalzadoEditorScreen() {
         stock_actual: parseInt(stockActual, 10),
         stock_minimo: parseInt(stockMinimo, 10),
         foto_url: fotoUrl || null,
+        activo,
       })
-      
+
       if (!id) {
         Alert.alert(
           'Guardado exitoso',
@@ -179,7 +206,7 @@ export default function CalzadoEditorScreen() {
               onPress: () => {
                 setTalla('')
                 setColor('')
-                Alert.alert('Listo', 'Ingresa la nueva talla y color.')
+                mostrar('Ingresa la nueva talla y color.')
               }
             },
             {
@@ -189,12 +216,12 @@ export default function CalzadoEditorScreen() {
           ]
         )
       } else {
-        Alert.alert('Guardado exitoso', 'El producto ha sido actualizado.')
+        mostrar('El producto ha sido actualizado.')
         router.back()
       }
     } catch (err: any) {
       console.error(err)
-      Alert.alert('Error', 'Hubo un error al guardar el producto.')
+      mostrar('Hubo un error al guardar el producto.', 'error')
     } finally {
       setLoading(false)
     }
@@ -202,259 +229,181 @@ export default function CalzadoEditorScreen() {
 
   if (fetching) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
+        </View>
       </View>
     )
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.imageSection}>
-          <TouchableOpacity onPress={handleSeleccionarImagen} style={styles.imagePickerContainer} activeOpacity={0.8}>
+    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+      <Encabezado />
+
+      <ScrollView
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ alignItems: 'center' }}>
+          <Presionable
+            accessibilityRole="button"
+            accessibilityLabel="Añadir foto"
+            onPress={handleSeleccionarImagen}
+            style={{
+              width: 140, height: 140, borderRadius: radio.full,
+              backgroundColor: paleta.superficie2, alignItems: 'center', justifyContent: 'center',
+            }}
+          >
             {fotoUrl ? (
-              <Image source={{ uri: fotoUrl }} style={styles.imagePreview} />
+              <Image source={{ uri: fotoUrl }} style={{ width: 140, height: 140, borderRadius: radio.full }} />
             ) : (
-              <View style={styles.imagePlaceholder}>
-                <Ionicons name="camera-outline" size={48} color="#9ca3af" />
-                <Text style={styles.imagePlaceholderText}>Añadir foto</Text>
+              <View style={{ alignItems: 'center', gap: espacio.s }}>
+                <Camera size={40} color={paleta.texto3} />
+                <Text style={[tipografia.caption, { color: paleta.texto3 }]}>Añadir foto</Text>
               </View>
             )}
             {loading && (
-              <View style={styles.imageLoadingOverlay}>
-                <ActivityIndicator color="#ffffff" size="large" />
+              <View
+                style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: paleta.overlay, borderRadius: radio.full,
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <ActivityIndicator color={paleta.sobrePrimario} size="large" />
               </View>
             )}
-            <View style={styles.editIconBadge}>
-              <Ionicons name="pencil" size={16} color="#ffffff" />
+            <View
+              style={{
+                position: 'absolute', bottom: 0, right: 0, width: 36, height: 36, borderRadius: radio.full,
+                backgroundColor: paleta.primario, alignItems: 'center', justifyContent: 'center',
+                borderWidth: 3, borderColor: paleta.fondo,
+              }}
+            >
+              <Pencil size={16} color={paleta.sobrePrimario} />
             </View>
-          </TouchableOpacity>
+          </Presionable>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Información Principal</Text>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Categoría *</Text>
-            <TextInput style={styles.input} value={categoria} onChangeText={setCategoria} placeholder="Ej. Zapatillas" placeholderTextColor="#9ca3af" />
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>Información principal</Text>
+          <View style={{ gap: 6, marginTop: espacio.m }}>
+            <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>Categoría *</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s }}>
+              {CATEGORIAS.map((cat) => (
+                <Chip
+                  key={cat.valor}
+                  etiqueta={cat.etiqueta}
+                  activo={categoria === cat.valor}
+                  onPress={() => setCategoria(cat.valor)}
+                />
+              ))}
+            </View>
           </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Descripción *</Text>
-            <TextInput style={styles.input} value={descripcion} onChangeText={setDescripcion} placeholder="Ej. Air Max" placeholderTextColor="#9ca3af" />
+          <View style={{ marginTop: espacio.m }}>
+            <CampoTexto etiqueta="Descripción *" value={descripcion} onChangeText={setDescripcion} placeholder="Ej. Air Max" />
           </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Marca</Text>
-            <TextInput style={styles.input} value={marca} onChangeText={setMarca} placeholder="Ej. Nike" placeholderTextColor="#9ca3af" />
+          <View style={{ marginTop: espacio.m }}>
+            <CampoTexto etiqueta="Marca" value={marca} onChangeText={setMarca} placeholder="Ej. Nike" />
           </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Referencia</Text>
-            <TextInput style={styles.input} value={referencia} onChangeText={setReferencia} placeholder="Ej. NK-001" placeholderTextColor="#9ca3af" />
+          <View style={{ marginTop: espacio.m }}>
+            <CampoTexto etiqueta="Referencia" value={referencia} onChangeText={setReferencia} placeholder="Ej. NK-001" />
           </View>
-        </View>
+        </Tarjeta>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Variantes</Text>
-          <View style={styles.row}>
-            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-              <Text style={styles.label}>Talla</Text>
-              <TextInput style={styles.input} value={talla} onChangeText={setTalla} placeholder="Ej. 42" placeholderTextColor="#9ca3af" />
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>Variantes</Text>
+          <View style={{ flexDirection: 'row', gap: espacio.m, marginTop: espacio.m }}>
+            <View style={{ flex: 1 }}>
+              <CampoTexto etiqueta="Talla" value={talla} onChangeText={setTalla} placeholder="Ej. 42" />
             </View>
-            <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-              <Text style={styles.label}>Color</Text>
-              <TextInput style={styles.input} value={color} onChangeText={setColor} placeholder="Ej. Blanco" placeholderTextColor="#9ca3af" />
+            <View style={{ flex: 1 }}>
+              <CampoTexto etiqueta="Color" value={color} onChangeText={setColor} placeholder="Ej. Blanco" />
             </View>
           </View>
-        </View>
+        </Tarjeta>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Inventario</Text>
-          <View style={styles.row}>
-            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-              <Text style={styles.label}>Stock Actual *</Text>
-              <TextInput style={styles.input} value={stockActual} onChangeText={setStockActual} placeholder="0" keyboardType="numeric" placeholderTextColor="#9ca3af" />
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>Inventario</Text>
+          {id ? (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: espacio.m, marginBottom: espacio.m }}>
+              <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>Producto activo</Text>
+              <Switch
+                value={activo}
+                onValueChange={setActivo}
+                trackColor={{ false: paleta.borde, true: paleta.primarioSoft }}
+                thumbColor={activo ? paleta.primario : paleta.superficie}
+              />
             </View>
-            <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-              <Text style={styles.label}>Stock Mínimo *</Text>
-              <TextInput style={styles.input} value={stockMinimo} onChangeText={setStockMinimo} placeholder="1" keyboardType="numeric" placeholderTextColor="#9ca3af" />
+          ) : null}
+          <View style={{ flexDirection: 'row', gap: espacio.m, marginTop: espacio.m }}>
+            <View style={{ flex: 1 }}>
+              <CampoTexto
+                etiqueta="Stock actual *"
+                value={stockActual}
+                onChangeText={setStockActual}
+                placeholder="0"
+                keyboardType="number-pad"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <CampoTexto
+                etiqueta="Stock mínimo *"
+                value={stockMinimo}
+                onChangeText={setStockMinimo}
+                placeholder="1"
+                keyboardType="number-pad"
+              />
             </View>
           </View>
-        </View>
+        </Tarjeta>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Precios</Text>
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>Precios</Text>
           {esDueno && (
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Costo de Compra</Text>
-              <TextInput style={styles.input} value={costoCompra} onChangeText={setCostoCompra} placeholder="0.00" keyboardType="numeric" placeholderTextColor="#9ca3af" />
+            <View style={{ marginTop: espacio.m }}>
+              <CampoTexto
+                etiqueta="Costo de compra"
+                value={costoCompra}
+                onChangeText={setCostoCompra}
+                placeholder="0.00"
+                keyboardType="number-pad"
+              />
             </View>
           )}
-          <View style={styles.row}>
-            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-              <Text style={styles.label}>Precio Mínimo *</Text>
-              <TextInput style={styles.input} value={precioMinimo} onChangeText={setPrecioMinimo} placeholder="0.00" keyboardType="numeric" placeholderTextColor="#9ca3af" />
+          <View style={{ flexDirection: 'row', gap: espacio.m, marginTop: espacio.m }}>
+            <View style={{ flex: 1 }}>
+              <CampoTexto
+                etiqueta="Precio mínimo *"
+                value={precioMinimo}
+                onChangeText={setPrecioMinimo}
+                placeholder="0.00"
+                keyboardType="number-pad"
+              />
             </View>
-            <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-              <Text style={styles.label}>Precio Máximo *</Text>
-              <TextInput style={styles.input} value={precioMaximo} onChangeText={setPrecioMaximo} placeholder="0.00" keyboardType="numeric" placeholderTextColor="#9ca3af" />
+            <View style={{ flex: 1 }}>
+              <CampoTexto
+                etiqueta="Precio máximo *"
+                value={precioMaximo}
+                onChangeText={setPrecioMaximo}
+                placeholder="0.00"
+                keyboardType="number-pad"
+              />
             </View>
           </View>
-        </View>
+        </Tarjeta>
       </ScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
+      <View style={{ padding: espacio.l, paddingBottom: paddingInferior, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
+        <Boton
+          titulo={id ? 'Actualizar producto' : 'Guardar producto'}
           onPress={handleGuardar}
-          disabled={loading}
-          activeOpacity={0.8}
-        >
-          {loading ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <>
-              <Ionicons name="save-outline" size={20} color="#ffffff" style={styles.buttonIcon} />
-              <Text style={styles.saveButtonText}>{id ? 'Actualizar Producto' : 'Guardar Producto'}</Text>
-            </>
-          )}
-        </TouchableOpacity>
+          cargando={loading}
+          icono={<Save size={20} color={paleta.sobrePrimario} />}
+        />
       </View>
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { paddingBottom: 100, padding: 16 },
-  imageSection: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  imagePickerContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
-    position: 'relative',
-  },
-  imagePreview: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 70,
-  },
-  imagePlaceholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imagePlaceholderText: {
-    color: '#9ca3af',
-    fontSize: 14,
-    marginTop: 8,
-    fontWeight: '500',
-  },
-  imageLoadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    borderRadius: 70,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  editIconBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#3b82f6',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#f9fafb',
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 16,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4b5563',
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  row: {
-    flexDirection: 'row',
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#ffffff',
-    padding: 16,
-    paddingBottom: 32,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  saveButton: {
-    backgroundColor: '#3b82f6',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  saveButtonDisabled: {
-    opacity: 0.7,
-  },
-  buttonIcon: {
-    marginRight: 8,
-  },
-  saveButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-})

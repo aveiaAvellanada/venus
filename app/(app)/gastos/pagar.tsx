@@ -1,192 +1,150 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from '@expo/vector-icons';
-import { registrarPagoFijo } from '../../../lib/gastos';
+import React, { useState } from 'react'
+import { View, Text, ScrollView, Image, KeyboardAvoidingView, Platform } from 'react-native'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import * as ImagePicker from 'expo-image-picker'
+import { ArrowLeft, Camera } from 'lucide-react-native'
+import { registrarPagoFijo } from '../../../lib/gastos'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { useTema } from '../../../lib/tema'
+import type { Paleta } from '../../../lib/theme'
+import { espacio, radio, tipografia } from '../../../lib/theme'
+import { Boton, CampoTexto, Presionable, Tarjeta, useToast } from '../../../components/ui'
+
+// Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
+function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: espacio.m,
+        paddingHorizontal: espacio.xl,
+        paddingTop: 56,
+        paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={onVolver} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Pagar Gasto Fijo</Text>
+    </View>
+  )
+}
 
 export default function PagarGastoFijoScreen() {
-  const router = useRouter();
-  const { id, nombre, monto } = useLocalSearchParams();
+  const router = useRouter()
+  const { id, nombre, monto } = useLocalSearchParams()
+  const { paleta } = useTema()
+  const { mostrar } = useToast()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
 
-  const [montoPagado, setMontoPagado] = useState(monto ? String(monto) : '');
-  const [fotoUri, setFotoUri] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [montoPagado, setMontoPagado] = useState(monto ? String(monto) : '')
+  const [fotoUri, setFotoUri] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
   const pickImage = async () => {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       quality: 0.8,
-    });
-    
+    })
+
     if (!result.canceled) {
-      setFotoUri(result.assets[0].uri);
+      setFotoUri(result.assets[0].uri)
     }
-  };
+  }
 
   const handleSave = async () => {
     if (!montoPagado) {
-      Alert.alert('Error', 'Por favor ingresa el monto pagado');
-      return;
+      mostrar('Por favor ingresa el monto pagado', 'error')
+      return
     }
 
-    setSaving(true);
+    setSaving(true)
     try {
-      const now = new Date();
+      const now = new Date()
       // Periodo: ej. '2026-06'
-      const periodo = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const periodo = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
-      await registrarPagoFijo({
-        gasto_fijo_id: id as string,
-        monto_pagado: parseFloat(montoPagado),
-        fecha_pago: now.toISOString(),
-        periodo: periodo
-      }, fotoUri || undefined);
-      
-      Alert.alert('Éxito', 'Pago registrado correctamente', [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
+      await registrarPagoFijo(
+        {
+          gasto_fijo_id: id as string,
+          monto_pagado: parseFloat(montoPagado),
+          fecha_pago: now.toISOString(),
+          periodo: periodo,
+        },
+        fotoUri || undefined
+      )
+
+      mostrar('Pago registrado correctamente')
+      router.back()
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      mostrar(error.message, 'error')
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: paleta.fondo }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerSubtitle}>Registrando pago para:</Text>
-          <Text style={styles.headerTitle}>{nombre}</Text>
-        </View>
+      <Encabezado paleta={paleta} onVolver={() => router.back()} />
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Monto exacto pagado *</Text>
-          <TextInput
-            style={styles.input}
-            value={montoPagado}
-            onChangeText={setMontoPagado}
-            placeholder="0.00"
-            keyboardType="numeric"
-          />
-        </View>
+      <ScrollView
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Tarjeta estilo={{ backgroundColor: paleta.primarioSoft, borderColor: paleta.primario }}>
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Registrando pago para:</Text>
+          <Text style={[tipografia.h2, { color: paleta.primario, marginTop: 4 }]}>{nombre}</Text>
+        </Tarjeta>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Foto del Recibo (Opcional pero recomendado)</Text>
-          <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
-            <Ionicons name="camera-outline" size={24} color="#007AFF" />
-            <Text style={styles.photoButtonText}>
+        <CampoTexto
+          etiqueta="Monto exacto pagado *"
+          value={montoPagado}
+          onChangeText={setMontoPagado}
+          placeholder="0.00"
+          keyboardType="number-pad"
+        />
+
+        <View>
+          <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>
+            Foto del Recibo (Opcional pero recomendado)
+          </Text>
+          <Presionable
+            accessibilityRole="button"
+            accessibilityLabel={fotoUri ? 'Cambiar foto del recibo' : 'Tomar foto del recibo'}
+            onPress={pickImage}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: espacio.s,
+              backgroundColor: paleta.primarioSoft,
+              padding: espacio.l,
+              borderRadius: radio.sm,
+              borderWidth: 1,
+              borderColor: paleta.primario,
+              borderStyle: 'dashed',
+            }}
+          >
+            <Camera size={22} color={paleta.primario} />
+            <Text style={[tipografia.cuerpoLg, { color: paleta.primario }]}>
               {fotoUri ? 'Cambiar Foto' : 'Tomar Foto'}
             </Text>
-          </TouchableOpacity>
+          </Presionable>
           {fotoUri && (
-            <Image source={{ uri: fotoUri }} style={styles.previewImage} />
+            <Image
+              source={{ uri: fotoUri }}
+              style={{ width: '100%', height: 200, borderRadius: radio.sm, marginTop: espacio.m }}
+            />
           )}
         </View>
 
-        <TouchableOpacity 
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>Guardar Pago</Text>
-          )}
-        </TouchableOpacity>
+        <Boton titulo="Guardar Pago" onPress={handleSave} cargando={saving} deshabilitado={saving} />
       </ScrollView>
     </KeyboardAvoidingView>
-  );
+  )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  headerInfo: {
-    backgroundColor: '#F0F7FF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-    borderLeftWidth: 4,
-    borderLeftColor: '#007AFF',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#555',
-    marginBottom: 4,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#007AFF',
-  },
-  formGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#F7F8FA',
-    borderWidth: 1,
-    borderColor: '#EAEAEE',
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-    color: '#333',
-    fontWeight: 'bold',
-  },
-  photoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#E5F1FF',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#B3D4FF',
-    borderStyle: 'dashed',
-  },
-  photoButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 10,
-  },
-  previewImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    marginTop: 15,
-  },
-  saveButton: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  saveButtonDisabled: {
-    backgroundColor: '#A0CFFF',
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});

@@ -5,19 +5,10 @@ export default function ReportesLayout() {
   const requireModulo = useRequireModulo('reportes')
   if (requireModulo) return requireModulo
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: '#ffffff' },
-        headerShadowVisible: false,
-        headerTintColor: '#111827',
-        headerTitleStyle: { fontWeight: '600' },
-        contentStyle: { backgroundColor: '#f9fafb' },
-        headerTitleAlign: 'center',
-      }}
-    >
-      <Stack.Screen name="index" options={{ title: 'Reportes' }} />
-      <Stack.Screen name="periodos" options={{ title: 'Reporte de período' }} />
-      <Stack.Screen name="config" options={{ title: 'Reportes automáticos' }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="periodos" />
+      <Stack.Screen name="config" />
     </Stack>
   )
 }

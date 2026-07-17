@@ -1,22 +1,40 @@
 import React, { useState, useCallback } from 'react'
-import {
-  View,
-  Text,
-  Switch,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  SafeAreaView,
-  Alert,
-} from 'react-native'
-import { useFocusEffect, Redirect } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import { View, Text, Switch, ActivityIndicator } from 'react-native'
+import { useFocusEffect, useRouter, Redirect } from 'expo-router'
+import { ArrowLeft, Info } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
 import { obtenerReporteConfig, guardarReporteConfig } from '../../../lib/reporteDiario'
+import { useTema } from '../../../lib/tema'
+import type { Paleta } from '../../../lib/theme'
+import { espacio, tipografia } from '../../../lib/theme'
+import { Boton, CampoTexto, Presionable, Tarjeta, useToast } from '../../../components/ui'
+
+// Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
+function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: espacio.m,
+        paddingHorizontal: espacio.xl,
+        paddingTop: 56,
+        paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={onVolver} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Reportes automáticos</Text>
+    </View>
+  )
+}
 
 export default function ReportesConfig() {
   const { perfil } = useAuth()
+  const router = useRouter()
+  const { paleta } = useTema()
+  const { mostrar } = useToast()
 
   const [whatsappOn, setWhatsappOn] = useState(true)
   const [correoOn, setCorreoOn] = useState(false)
@@ -51,7 +69,7 @@ export default function ReportesConfig() {
 
   const guardar = async () => {
     if (correoOn && !correoDestino.includes('@')) {
-      Alert.alert('Correo inválido', 'Ingresa un correo válido para el envío automático.')
+      mostrar('Ingresa un correo válido para el envío automático.', 'error')
       return
     }
     setSaving(true)
@@ -61,9 +79,9 @@ export default function ReportesConfig() {
         correo_on: correoOn,
         correo_destino: correoDestino.trim() || null,
       })
-      Alert.alert('Guardado', 'La configuración se actualizó.')
+      mostrar('La configuración se actualizó.')
     } catch (e: unknown) {
-      Alert.alert('Error', 'No se pudo guardar. Intenta de nuevo.')
+      mostrar('No se pudo guardar. Intenta de nuevo.', 'error')
       console.warn('Error al guardar config:', e)
     } finally {
       setSaving(false)
@@ -72,78 +90,79 @@ export default function ReportesConfig() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#3b82f6" />
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado paleta={paleta} onVolver={() => router.back()} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
         </View>
-      </SafeAreaView>
+      </View>
     )
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.body}>
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitulo}>WhatsApp</Text>
-              <Text style={styles.rowSub}>Mostrar el resumen para enviar al cerrar la caja.</Text>
+    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+      <Encabezado paleta={paleta} onVolver={() => router.back()} />
+
+      <View style={{ padding: espacio.xl, gap: espacio.l }}>
+        <Tarjeta>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, marginRight: espacio.m }}>
+              <Text style={[tipografia.h3, { color: paleta.texto }]}>WhatsApp</Text>
+              <Text style={[tipografia.caption, { color: paleta.texto3, marginTop: 2 }]}>
+                Mostrar el resumen para enviar al cerrar la caja.
+              </Text>
             </View>
-            <Switch testID="sw-whatsapp" value={whatsappOn} onValueChange={setWhatsappOn} />
+            <Switch
+              testID="sw-whatsapp"
+              value={whatsappOn}
+              onValueChange={setWhatsappOn}
+              trackColor={{ false: paleta.borde, true: paleta.primarioSoft }}
+              thumbColor={whatsappOn ? paleta.primario : paleta.superficie2}
+            />
           </View>
 
-          <View style={styles.divider} />
+          <View style={{ height: 1, backgroundColor: paleta.borde, marginVertical: espacio.m }} />
 
-          <View style={styles.row}>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitulo}>Correo automático</Text>
-              <Text style={styles.rowSub}>Enviar el resumen por correo al cerrar la caja.</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, marginRight: espacio.m }}>
+              <Text style={[tipografia.h3, { color: paleta.texto }]}>Correo automático</Text>
+              <Text style={[tipografia.caption, { color: paleta.texto3, marginTop: 2 }]}>
+                Enviar el resumen por correo al cerrar la caja.
+              </Text>
             </View>
-            <Switch testID="sw-correo" value={correoOn} onValueChange={setCorreoOn} />
+            <Switch
+              testID="sw-correo"
+              value={correoOn}
+              onValueChange={setCorreoOn}
+              trackColor={{ false: paleta.borde, true: paleta.primarioSoft }}
+              thumbColor={correoOn ? paleta.primario : paleta.superficie2}
+            />
           </View>
 
           {correoOn && (
-            <TextInput
-              testID="input-correo"
-              style={styles.input}
-              value={correoDestino}
-              onChangeText={setCorreoDestino}
-              placeholder="correo@ejemplo.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <View style={{ marginTop: espacio.m }}>
+              <CampoTexto
+                testID="input-correo"
+                value={correoDestino}
+                onChangeText={setCorreoDestino}
+                placeholder="correo@ejemplo.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
           )}
-        </View>
+        </Tarjeta>
 
-        <View style={styles.nota}>
-          <Ionicons name="information-circle-outline" size={16} color="#6b7280" />
-          <Text style={styles.notaText}>
+        <View style={{ flexDirection: 'row', gap: espacio.s, alignItems: 'flex-start', paddingHorizontal: espacio.xs }}>
+          <Info size={16} color={paleta.texto3} />
+          <Text style={[tipografia.caption, { color: paleta.texto3, flex: 1 }]}>
             El correo automático requiere configurar la clave del proveedor de envío en el servidor.
           </Text>
         </View>
 
-        <TouchableOpacity testID="btn-guardar-config" style={styles.boton} onPress={guardar} disabled={saving}>
-          <Text style={styles.botonText}>{saving ? 'Guardando…' : 'Guardar'}</Text>
-        </TouchableOpacity>
+        <Boton titulo="Guardar" cargando={saving} onPress={guardar} />
       </View>
-    </SafeAreaView>
+    </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  body: { padding: 16 },
-  card: { backgroundColor: '#ffffff', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#e5e7eb', marginBottom: 12 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 },
-  rowText: { flex: 1, marginRight: 12 },
-  rowTitulo: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  rowSub: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  divider: { height: 1, backgroundColor: '#f3f4f6', marginVertical: 12 },
-  input: { marginTop: 12, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, color: '#111827' },
-  nota: { flexDirection: 'row', gap: 6, alignItems: 'flex-start', marginBottom: 16, paddingHorizontal: 4 },
-  notaText: { flex: 1, fontSize: 12, color: '#6b7280', lineHeight: 17 },
-  boton: { backgroundColor: '#3b82f6', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
-  botonText: { color: '#ffffff', fontWeight: '700', fontSize: 15 },
-})

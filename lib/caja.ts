@@ -74,7 +74,7 @@ export async function obtenerResumenEnVivo() {
   }
 }
 
-export async function cerrarCaja(params: { efectivo_contado: number, diferencia: number, nota: string | null }) {
+export async function cerrarCaja(params: { efectivo_contado: number | null, diferencia: number | null, nota: string | null }) {
   const caja = await obtenerCajaHoy()
   if (!caja) throw new Error('No hay caja abierta para cerrar hoy.')
   if (caja.estado === 'cerrada') throw new Error('La caja de hoy ya se cerró.')
@@ -99,7 +99,19 @@ export async function cerrarCaja(params: { efectivo_contado: number, diferencia:
     .eq('id', caja.id)
     .select()
     .single()
-    
+
   if (error) throw error
   return data
+}
+
+export async function cerrarCajaSinDiferencia() {
+  return cerrarCaja({ efectivo_contado: null, diferencia: null, nota: null })
+}
+
+export async function obtenerModoCierre(): Promise<'con_diferencia' | 'sin_diferencia'> {
+  // Vía RPC SECURITY DEFINER: caja_config es de lectura solo-dueño por RLS, pero
+  // todos los roles cierran caja y necesitan el modo configurado.
+  const { data, error } = await supabase.rpc('obtener_modo_cierre')
+  if (error) throw error
+  return (data ?? 'con_diferencia') as 'con_diferencia' | 'sin_diferencia'
 }

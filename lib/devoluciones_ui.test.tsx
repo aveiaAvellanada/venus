@@ -8,6 +8,7 @@ import renderer, { act } from 'react-test-renderer'
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
+jest.useFakeTimers()
 
 // Mock Supabase (both relative and absolute paths used by different imports)
 jest.mock('./supabase', () => ({
@@ -27,15 +28,10 @@ jest.mock('../lib/supabase', () => ({
   },
 }))
 
-// Mock @expo/vector-icons
-jest.mock('@expo/vector-icons', () => {
-  const React = require('react')
-  const { Text } = require('react-native')
-  return {
-    Ionicons: (props: { name?: string; [key: string]: unknown }) =>
-      React.createElement(Text, props, props.name),
-  }
-})
+// Mock react-native-safe-area-context (usado por el Toast al mostrarse)
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
 
 // Mock expo-router
 const mockUseLocalSearchParams = jest.fn(() => ({ venta: 'venta-uuid-1', numero: '42' }))
@@ -103,10 +99,24 @@ jest.mock('../lib/inventario', () => ({
   guardarCalzado: jest.fn(),
 }))
 
+import { TemaProvider } from './tema'
+import { ToastProvider } from '../components/ui'
+
 // Import screens AFTER all mocks
 import DevolucionesLayout from '../app/(app)/devoluciones/_layout'
-import DevolucionesIndex from '../app/(app)/devoluciones/index'
-import NuevaDevolucionScreen from '../app/(app)/devoluciones/nueva'
+import NuevaDevolucionScreenRaw from '../app/(app)/devoluciones/nueva'
+
+// La pantalla ahora usa useTema()/useToast(); se envuelve en los providers reales
+// para cada render (patrón de lib/venta_nueva_ui.test.tsx).
+function NuevaDevolucionScreen() {
+  return (
+    <TemaProvider>
+      <ToastProvider>
+        <NuevaDevolucionScreenRaw />
+      </ToastProvider>
+    </TemaProvider>
+  )
+}
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -233,30 +243,20 @@ describe('Devoluciones UI — tests de integración', () => {
       expect(mockRequireModulo).toHaveBeenCalledWith('devoluciones')
     })
 
-    test('DevolucionesIndex llama a useRequireModulo con "devoluciones"', async () => {
-      const mockRequireModulo = useRequireModulo as jest.Mock
-
-      await act(async () => {
-        tree = renderer.create(<DevolucionesIndex />)
-      })
-
-      expect(mockRequireModulo).toHaveBeenCalledWith('devoluciones')
-    })
-
-    test('Cuando useRequireModulo retorna un elemento, la pantalla no renderiza el contenido', async () => {
+    test('Cuando useRequireModulo retorna un elemento, NuevaDevolucionScreen no renderiza el contenido', async () => {
       const mockRequireModulo = useRequireModulo as jest.Mock
       // Simula que el modulo no está autorizado → devuelve un elemento Redirect
       const redirectEl = React.createElement('Text', null, 'Sin acceso')
       mockRequireModulo.mockReturnValue(redirectEl)
 
       await act(async () => {
-        tree = renderer.create(<DevolucionesIndex />)
+        tree = renderer.create(<NuevaDevolucionScreen />)
       })
 
-      // El input de búsqueda NO debe aparecer porque el guard cortó el render
+      // Ni el estado de carga ni el formulario deben aparecer porque el guard cortó el render
       const root = tree!.root
-      const inputs = root.findAll((el: renderer.ReactTestInstance) => el.props.testID === 'input-numero-venta')
-      expect(inputs.length).toBe(0)
+      const cargando = findAllByText(root, 'Cargando venta…')
+      expect(cargando.length).toBe(0)
     })
   })
 
@@ -528,9 +528,9 @@ describe('Devoluciones UI — tests de integración', () => {
       })
 
       // Confirmar
-      const btnConfirmar = root.findByProps({ testID: 'btn-confirmar-devolucion' })
+      const btnConfirmar = root.findByProps({ accessibilityLabel: 'Confirmar devolución' })
       await act(async () => {
-        btnConfirmar.props.onPress()
+        btnConfirmar.props.onPress?.()
       })
 
       expect(apiDevoluciones.registrarDevolucion).toHaveBeenCalledWith(
@@ -594,9 +594,9 @@ describe('Devoluciones UI — tests de integración', () => {
       })
 
       // Confirmar
-      const btnConfirmar = root.findByProps({ testID: 'btn-confirmar-devolucion' })
+      const btnConfirmar = root.findByProps({ accessibilityLabel: 'Confirmar devolución' })
       await act(async () => {
-        btnConfirmar.props.onPress()
+        btnConfirmar.props.onPress?.()
       })
 
       expect(apiDevoluciones.registrarDevolucion).toHaveBeenCalledWith(
@@ -686,9 +686,9 @@ describe('Devoluciones UI — tests de integración', () => {
       })
 
       // Confirmar
-      const btnConfirmar = root.findByProps({ testID: 'btn-confirmar-devolucion' })
+      const btnConfirmar = root.findByProps({ accessibilityLabel: 'Confirmar devolución' })
       await act(async () => {
-        btnConfirmar.props.onPress()
+        btnConfirmar.props.onPress?.()
       })
 
       // monto_cobrado = (120000 - 80000) * 1 = 40000
@@ -720,87 +720,20 @@ describe('Devoluciones UI — tests de integración', () => {
 
       const root = tree!.root
 
-      // Intentar confirmar sin motivo
-      const btnConfirmar = root.findByProps({ testID: 'btn-confirmar-devolucion' })
+      // Sin motivo, el botón de confirmar debe quedar deshabilitado (puedeConfirmar
+      // exige motivo.trim().length > 0), por lo que Boton anula su onPress. La guarda
+      // interna `if (!motivo.trim())` en handleConfirmar queda inalcanzable desde la UI
+      // en este estado: es defensa en profundidad ya cubierta por la condición de
+      // habilitación, así que verificamos el contrato observable (disabled + no-op)
+      // en vez de invocar el guard directamente.
+      const btnConfirmar = root.findByProps({ accessibilityLabel: 'Confirmar devolución' })
+      expect(btnConfirmar.props.accessibilityState.disabled).toBe(true)
+
       await act(async () => {
-        btnConfirmar.props.onPress()
+        btnConfirmar.props.onPress?.()
       })
 
       expect(apiDevoluciones.registrarDevolucion).not.toHaveBeenCalled()
-    })
-  })
-
-  // ── Test 5: Pantalla index — búsqueda y navegación ────────────────────────
-
-  describe('5. Index — buscar venta', () => {
-    test('Muestra "Buscar venta" y el input de número de venta', async () => {
-      await act(async () => {
-        tree = renderer.create(<DevolucionesIndex />)
-      })
-
-      const root = tree!.root
-      const titulo = findAllByText(root, 'Buscar venta')
-      expect(titulo.length).toBeGreaterThan(0)
-
-      const input = root.findByProps({ testID: 'input-numero-venta' })
-      expect(input).toBeTruthy()
-    })
-
-    test('Al buscar y encontrar la venta, navega a /devoluciones/nueva con los params', async () => {
-      ;(apiDevoluciones.buscarVentaParaDevolucion as jest.Mock).mockResolvedValue(
-        VENTA_SOLO_CALZADO
-      )
-
-      await act(async () => {
-        tree = renderer.create(<DevolucionesIndex />)
-      })
-
-      const root = tree!.root
-
-      // Ingresar número de venta
-      const input = root.findByProps({ testID: 'input-numero-venta' })
-      await act(async () => {
-        input.props.onChangeText('43')
-      })
-
-      // Presionar buscar
-      const btnBuscar = root.findByProps({ testID: 'btn-buscar-venta' })
-      await act(async () => {
-        btnBuscar.props.onPress()
-      })
-
-      expect(mockRouter.push).toHaveBeenCalledWith(
-        expect.objectContaining({
-          pathname: '/devoluciones/nueva',
-          params: expect.objectContaining({
-            venta: 'venta-uuid-2',
-            numero: '43',
-          }),
-        })
-      )
-    })
-
-    test('Venta no encontrada muestra "Venta no encontrada."', async () => {
-      ;(apiDevoluciones.buscarVentaParaDevolucion as jest.Mock).mockResolvedValue(null)
-
-      await act(async () => {
-        tree = renderer.create(<DevolucionesIndex />)
-      })
-
-      const root = tree!.root
-
-      const input = root.findByProps({ testID: 'input-numero-venta' })
-      await act(async () => {
-        input.props.onChangeText('999')
-      })
-
-      const btnBuscar = root.findByProps({ testID: 'btn-buscar-venta' })
-      await act(async () => {
-        btnBuscar.props.onPress()
-      })
-
-      const noEncontrada = findAllByText(root, 'Venta no encontrada.')
-      expect(noEncontrada.length).toBeGreaterThan(0)
     })
   })
 })

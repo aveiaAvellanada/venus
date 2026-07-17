@@ -78,11 +78,20 @@ export async function obtenerGastosFijos(): Promise<GastoFijoRow[]> {
   return data || [];
 }
 
-export async function guardarGastoFijo(datos: GastoFijoInsert): Promise<GastoFijoRow> {
+export async function guardarGastoFijo(
+  datos: GastoFijoInsert,
+  imagenUri?: string
+): Promise<GastoFijoRow> {
+  let comprobanteUrl: string | null = null;
+  if (imagenUri) {
+    comprobanteUrl = await comprimirYSubirComprobante(imagenUri);
+  }
+  const payload = comprobanteUrl ? { ...datos, comprobante_url: comprobanteUrl } : datos;
+
   if (datos.id) {
     const { data, error } = await supabase
       .from('gastos_fijos')
-      .update(datos)
+      .update(payload)
       .eq('id', datos.id)
       .select()
       .single();
@@ -91,7 +100,7 @@ export async function guardarGastoFijo(datos: GastoFijoInsert): Promise<GastoFij
   } else {
     const { data, error } = await supabase
       .from('gastos_fijos')
-      .insert(datos)
+      .insert(payload)
       .select()
       .single();
     if (error) throw error;
@@ -130,4 +139,44 @@ export async function registrarPagoFijo(
 
   if (error) throw error;
   return data;
+}
+
+export interface GastoFijoPorVencer {
+  id: string;
+  nombre: string;
+  monto_aproximado: number;
+  dia_pago: number;
+  dias_restantes: number;
+}
+
+export async function obtenerGastosFijosPorVencer(): Promise<GastoFijoPorVencer[]> {
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  const endOfMonth = new Date(startOfMonth);
+  endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+  endOfMonth.setDate(0);
+  endOfMonth.setHours(23, 59, 59, 999);
+
+  const { data, error } = await supabase
+    .from('gastos_fijos')
+    .select('*, gastos_fijos_pagos(*)')
+    .eq('activo', true)
+    .gte('gastos_fijos_pagos.fecha_pago', startOfMonth.toISOString())
+    .lte('gastos_fijos_pagos.fecha_pago', endOfMonth.toISOString());
+
+  if (error) throw error;
+
+  const hoy = new Date().getDate();
+  return ((data ?? []) as unknown as (GastoFijoRow & { gastos_fijos_pagos: GastoFijoPagoRow[] })[])
+    .filter((g) => !g.gastos_fijos_pagos || g.gastos_fijos_pagos.length === 0)
+    .map((g) => ({
+      id: g.id,
+      nombre: g.nombre,
+      monto_aproximado: g.monto_aproximado,
+      dia_pago: g.dia_pago ?? 1,
+      dias_restantes: (g.dia_pago ?? 1) - hoy,
+    }))
+    .filter((g) => g.dias_restantes <= 3)
+    .sort((a, b) => a.dias_restantes - b.dias_restantes);
 }

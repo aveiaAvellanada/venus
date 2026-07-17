@@ -27,6 +27,7 @@ export interface PagoInput {
 
 export type AccionCarrito =
   | { tipo: 'agregar'; producto: ProductoVendible }
+  | { tipo: 'agregarConCantidad'; producto: ProductoVendible; cantidad: number }
   | { tipo: 'cambiarCantidad'; id: string; cantidad: number }
   | { tipo: 'cambiarPrecio'; id: string; precio: number }
   | { tipo: 'quitar'; id: string }
@@ -63,6 +64,21 @@ export function carritoReducer(items: ItemCarrito[], accion: AccionCarrito): Ite
         )
       }
       const nuevo = linea(accion.producto, 1, precioInicial(accion.producto))
+      return nuevo.cantidad > 0 ? [...items, nuevo] : items
+    }
+    case 'agregarConCantidad': {
+      // Como 'agregar' pero con una cantidad arbitraria (Granja se vende por
+      // peso: libras, media libra, decimales de báscula). linea() conserva el
+      // decimal para 'varios' y lo redondea a entero para 'calzado'.
+      const existente = items.find(i => i.producto.id === accion.producto.id)
+      if (existente) {
+        return items.map(i =>
+          i.producto.id === accion.producto.id
+            ? linea(i.producto, i.cantidad + accion.cantidad, i.precio)
+            : i,
+        )
+      }
+      const nuevo = linea(accion.producto, accion.cantidad, precioInicial(accion.producto))
       return nuevo.cantidad > 0 ? [...items, nuevo] : items
     }
     case 'cambiarCantidad':

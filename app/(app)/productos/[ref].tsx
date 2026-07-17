@@ -6,12 +6,13 @@ import * as Haptics from 'expo-haptics'
 import { useAuth } from '../../../lib/auth'
 import { detalleCalzado } from '../../../lib/carrito'
 import { useCarrito } from '../../../lib/carrito-contexto'
+import { confirmarCompraRapida } from '../../../lib/compraRapida'
 import { listarCalzado } from '../../../lib/inventario'
 import { agruparPorReferencia } from '../../../lib/productos'
 import type { ModeloCalzado } from '../../../lib/productos'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
-import { Boton, ChipTalla, Esqueleto, EstadoVacio, PillColor } from '../../../components/ui'
+import { Boton, ChipTalla, Esqueleto, EstadoVacio, PillColor, useToast } from '../../../components/ui'
 
 const formatear = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
@@ -19,7 +20,8 @@ export default function ProductoDetalleScreen() {
   const { ref } = useLocalSearchParams<{ ref: string }>()
   const { perfil } = useAuth()
   const { paleta } = useTema()
-  const { dispatch } = useCarrito()
+  const { dispatch, items } = useCarrito()
+  const { mostrar } = useToast()
   const router = useRouter()
 
   const [cargando, setCargando] = useState(true)
@@ -34,7 +36,9 @@ export default function ProductoDetalleScreen() {
         .then((filas) => {
           const clave = decodeURIComponent(ref)
           const encontrado =
-            agruparPorReferencia(filas).find((m) => m.clave.toLowerCase() === clave.toLowerCase()) ?? null
+            agruparPorReferencia(filas, { incluirInactivos: true }).find(
+              (m) => m.clave.toLowerCase() === clave.toLowerCase()
+            ) ?? null
           setModelo(encontrado)
           if (encontrado && encontrado.colores.length === 1) setColor(encontrado.colores[0])
         })
@@ -152,7 +156,7 @@ export default function ProductoDetalleScreen() {
             <Boton
               titulo="Agregar al carrito"
               icono={<ShoppingCart size={20} color={paleta.sobrePrimario} />}
-              deshabilitado={!variante || Number(variante.stock_actual) <= 0}
+              deshabilitado={!variante || Number(variante.stock_actual) <= 0 || !variante.activo}
               onPress={() => {
                 if (!variante || !modelo) return
                 dispatch({
@@ -173,7 +177,37 @@ export default function ProductoDetalleScreen() {
                   },
                 })
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
-                router.push('/ventas/nueva')
+                mostrar(`Agregado: talla ${variante.talla} · ${variante.color}`)
+              }}
+            />
+            <Boton
+              titulo="Compra rápida"
+              variante="secundario"
+              deshabilitado={!variante || Number(variante.stock_actual) <= 0 || !variante.activo}
+              onPress={() => {
+                if (!variante || !modelo) return
+                confirmarCompraRapida(items.length, () => {
+                  dispatch({ tipo: 'limpiar' })
+                  dispatch({
+                    tipo: 'agregar',
+                    producto: {
+                      tipo: 'calzado',
+                      id: variante.id,
+                      titulo: modelo.nombre,
+                      detalle: detalleCalzado({
+                        marca: modelo.marca,
+                        talla: variante.talla,
+                        color: variante.color,
+                      }),
+                      precio: Number(variante.precio_maximo),
+                      stock: Number(variante.stock_actual),
+                      precioMin: Number(variante.precio_minimo),
+                      precioMax: Number(variante.precio_maximo),
+                    },
+                  })
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+                  router.push('/ventas/nueva?modo=rapida')
+                })
               }}
             />
             {esStaff ? (

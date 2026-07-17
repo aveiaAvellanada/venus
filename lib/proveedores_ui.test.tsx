@@ -1,21 +1,67 @@
 import React from 'react'
+process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://dummy-url.supabase.co'
+process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'dummy-key'
 // @ts-ignore
 import renderer, { act } from 'react-test-renderer'
-import { Linking, Alert, TextInput, Switch } from 'react-native'
-import ProveedoresIndex from '../app/(app)/proveedores/index'
-import ProveedorDetailScreen from '../app/(app)/proveedores/[id]'
-import ProveedorEditorScreen from '../app/(app)/proveedores/editor'
+import { Linking, TextInput, Switch, Text } from 'react-native'
+
+// El barrel de components/ui importa transitivamente lib/supabase (vía GraficoBarras → lib/dashboard);
+// se mockea para no requerir credenciales reales (patrón de lib/producto_detalle_ui.test.tsx).
+jest.mock('./supabase', () => ({ supabase: {} }))
+jest.mock('../lib/supabase', () => ({ supabase: {} }))
+
+// Mock AsyncStorage (usado por TemaProvider para persistir el modo)
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+)
+jest.useFakeTimers()
+
+// El Toast usa los insets de safe-area al mostrarse (Regla global de pantallas con useToast)
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
+
+import ProveedoresIndexRaw from '../app/(app)/proveedores/index'
+import ProveedorDetailScreenRaw from '../app/(app)/proveedores/[id]'
+import ProveedorEditorScreenRaw from '../app/(app)/proveedores/editor'
+import { TemaProvider } from './tema'
+import { ToastProvider } from '../components/ui'
 import { useAuth } from './auth'
 import * as api from './proveedores'
 
-// Mock @expo/vector-icons
-jest.mock('@expo/vector-icons', () => {
-  const React = require('react')
-  const { Text } = require('react-native')
-  return {
-    Ionicons: (props: any) => React.createElement(Text, props, props.name),
-  }
-})
+// Las 3 pantallas ahora usan useTema() (y [id]/editor usan useToast()); se envuelven
+// con los mismos nombres que ya usa toda la suite para no tocar cada call-site.
+function ProveedoresIndex(props: any) {
+  return (
+    <TemaProvider>
+      <ProveedoresIndexRaw {...props} />
+    </TemaProvider>
+  )
+}
+
+function ProveedorDetailScreen(props: any) {
+  return (
+    <TemaProvider>
+      <ToastProvider>
+        <ProveedorDetailScreenRaw {...props} />
+      </ToastProvider>
+    </TemaProvider>
+  )
+}
+
+function ProveedorEditorScreen(props: any) {
+  return (
+    <TemaProvider>
+      <ToastProvider>
+        <ProveedorEditorScreenRaw {...props} />
+      </ToastProvider>
+    </TemaProvider>
+  )
+}
+
+// Extrae el texto plano visible en el árbol (usado para verificar mensajes de useToast)
+const textosVisibles = (root: any): string =>
+  root.findAllByType(Text).map((t: any) => t.props.children).flat().join(' ')
 
 // Mock Expo Router
 const mockUseLocalSearchParams = jest.fn(() => ({ id: 'test-prov-id' } as any))
@@ -242,8 +288,10 @@ describe('Proveedores Module Component Tests', () => {
         tree = renderer.create(<ProveedorDetailScreen />)
       })
       // Flush microtasks
+      // Bajo fake timers, flush explícito de microtasks pendientes (Promises encadenadas
+      // de la carga async), en vez del setTimeout(0) real usado antes de jest.useFakeTimers().
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0))
+        await jest.advanceTimersByTimeAsync(0)
       })
 
       // Check endpoints were called
@@ -345,9 +393,7 @@ describe('Proveedores Module Component Tests', () => {
       mockUseLocalSearchParams.mockReturnValue({}) // default is creation mode
     })
 
-    test('displays alert validation error when saving with empty nombre', async () => {
-      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
-
+    test('displays toast validation error when saving with empty nombre', async () => {
       let tree: any
       await act(async () => {
         tree = renderer.create(<ProveedorEditorScreen />)
@@ -360,14 +406,12 @@ describe('Proveedores Module Component Tests', () => {
         saveBtn.props.onPress()
       })
 
-      expect(alertSpy).toHaveBeenCalledWith('Campo obligatorio', 'El nombre del proveedor es requerido.')
+      expect(textosVisibles(root)).toContain('El nombre del proveedor es requerido.')
       expect(api.crearProveedor).not.toHaveBeenCalled()
-      alertSpy.mockRestore()
     })
 
     test('submits correctly when saving with only mandatory fields', async () => {
-      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
-      ;(api.crearProveedor as jest.Mock).mockResolvedValue({ id: 'new-id' })
+      (api.crearProveedor as jest.Mock).mockResolvedValue({ id: 'new-id' })
 
       let tree: any
       await act(async () => {
@@ -394,13 +438,11 @@ describe('Proveedores Module Component Tests', () => {
         notas: null,
         activo: true,
       })
-      expect(alertSpy).toHaveBeenCalledWith('Éxito', 'El proveedor ha sido registrado correctamente.', expect.any(Array))
-      
-      alertSpy.mockRestore()
+      expect(textosVisibles(root)).toContain('El proveedor ha sido registrado correctamente.')
+      expect(mockRouter.back).toHaveBeenCalled()
     })
 
     test('loads existing provider data, maps fields, and updates on save', async () => {
-      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
       mockUseLocalSearchParams.mockReturnValue({ id: 'edit-prov-id' })
       
       ;(api.obtenerProveedorPorId as jest.Mock).mockResolvedValue({
@@ -420,8 +462,10 @@ describe('Proveedores Module Component Tests', () => {
       })
 
       // Flush microtasks to allow the loading of provider data
+      // Bajo fake timers, flush explícito de microtasks pendientes (Promises encadenadas
+      // de la carga async), en vez del setTimeout(0) real usado antes de jest.useFakeTimers().
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0))
+        await jest.advanceTimersByTimeAsync(0)
       })
 
       const root = tree.root
@@ -463,20 +507,16 @@ describe('Proveedores Module Component Tests', () => {
         notas: 'Email: nuevo@test.com\nNotas internas del proveedor',
         activo: false,
       })
-      expect(alertSpy).toHaveBeenCalledWith('Éxito', 'El proveedor ha sido actualizado correctamente.', expect.any(Array))
-
-      alertSpy.mockRestore()
+      expect(textosVisibles(root)).toContain('El proveedor ha sido actualizado correctamente.')
+      expect(mockRouter.back).toHaveBeenCalled()
     })
   })
 
   describe('Register Payment Modal Logic', () => {
     let root: any
-    let alertSpy: any
     let payRowBtn: any
 
     beforeEach(async () => {
-      alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
-      
       // Setup owner profile
       mockUseAuth.mockReturnValue({
         session: { user: { id: 'owner-id' } },
@@ -505,17 +545,15 @@ describe('Proveedores Module Component Tests', () => {
       await act(async () => {
         tree = renderer.create(<ProveedorDetailScreen />)
       })
+      // Bajo fake timers, flush explícito de microtasks pendientes (Promises encadenadas
+      // de la carga async), en vez del setTimeout(0) real usado antes de jest.useFakeTimers().
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0))
+        await jest.advanceTimersByTimeAsync(0)
       })
       root = tree.root
 
       // Find the payment button on the purchase row using helper
       payRowBtn = getButtonByText(root, 'Registrar Pago')
-    })
-
-    afterEach(() => {
-      alertSpy.mockRestore()
     })
 
     test('opens modal when clicking pay button on purchase row', async () => {
@@ -526,18 +564,18 @@ describe('Proveedores Module Component Tests', () => {
       })
 
       // Once pressed, the modal inputs should be available
-      const amountInput = root.findByProps({ placeholder: 'Monto en COP' })
+      const amountInput = root.findByProps({ testID: 'input-monto-pago' })
       expect(amountInput).toBeDefined()
     })
 
-    test('displays alert for negative value or zero payment', async () => {
+    test('displays toast for negative value or zero payment', async () => {
       // Open modal
       await act(async () => {
         payRowBtn.props.onPress()
       })
 
-      const amountInput = root.findByProps({ placeholder: 'Monto en COP' })
-      
+      const amountInput = root.findByProps({ testID: 'input-monto-pago' })
+
       // Find modal submit button: the one that isn't the row button
       const allPayButtons = getButtonsByText(root, 'Registrar Pago')
       const modalSaveBtn = allPayButtons.find((btn: any) => btn !== payRowBtn)
@@ -551,11 +589,10 @@ describe('Proveedores Module Component Tests', () => {
         modalSaveBtn.props.onPress()
       })
 
-      expect(alertSpy).toHaveBeenCalledWith('Monto inválido', 'El monto debe ser un número mayor a cero.')
+      expect(textosVisibles(root)).toContain('El monto debe ser un número mayor a cero.')
       expect(api.registrarPagoProveedor).not.toHaveBeenCalled()
 
       // Test zero
-      alertSpy.mockClear()
       await act(async () => {
         amountInput.props.onChangeText('0')
       })
@@ -563,18 +600,18 @@ describe('Proveedores Module Component Tests', () => {
         modalSaveBtn.props.onPress()
       })
 
-      expect(alertSpy).toHaveBeenCalledWith('Monto inválido', 'El monto debe ser un número mayor a cero.')
+      expect(textosVisibles(root)).toContain('El monto debe ser un número mayor a cero.')
       expect(api.registrarPagoProveedor).not.toHaveBeenCalled()
     })
 
-    test('displays alert when payment amount exceeds pending balance', async () => {
+    test('displays toast when payment amount exceeds pending balance', async () => {
       // Open modal
       await act(async () => {
         payRowBtn.props.onPress()
       })
 
-      const amountInput = root.findByProps({ placeholder: 'Monto en COP' })
-      
+      const amountInput = root.findByProps({ testID: 'input-monto-pago' })
+
       const allPayButtons = getButtonsByText(root, 'Registrar Pago')
       const modalSaveBtn = allPayButtons.find((btn: any) => btn !== payRowBtn)
 
@@ -586,7 +623,7 @@ describe('Proveedores Module Component Tests', () => {
         modalSaveBtn.props.onPress()
       })
 
-      expect(alertSpy).toHaveBeenCalledWith('Monto excedido', 'El monto del pago supera el saldo pendiente de la compra.')
+      expect(textosVisibles(root)).toContain('El monto del pago supera el saldo pendiente de la compra.')
       expect(api.registrarPagoProveedor).not.toHaveBeenCalled()
     })
 
@@ -596,9 +633,9 @@ describe('Proveedores Module Component Tests', () => {
         payRowBtn.props.onPress()
       })
 
-      const amountInput = root.findByProps({ placeholder: 'Monto en COP' })
-      const notesInput = root.findByProps({ placeholder: 'Comprobante, Nequi ref, etc.' })
-      
+      const amountInput = root.findByProps({ testID: 'input-monto-pago' })
+      const notesInput = root.findByProps({ testID: 'input-notas-pago' })
+
       const allPayButtons = getButtonsByText(root, 'Registrar Pago')
       const modalSaveBtn = allPayButtons.find((btn: any) => btn !== payRowBtn)
 
@@ -620,7 +657,7 @@ describe('Proveedores Module Component Tests', () => {
         monto: 200000,
         notas: 'Abono parcial ref 9876',
       })
-      expect(alertSpy).toHaveBeenCalledWith('Éxito', 'Pago registrado correctamente.')
+      expect(textosVisibles(root)).toContain('Pago registrado correctamente.')
     })
   })
 })

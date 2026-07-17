@@ -1,6 +1,5 @@
 import { supabase } from './supabase'
-import { orIlike } from './busqueda'
-import { detalleCalzado, type ItemCarrito, type PagoInput, type ProductoVendible } from './carrito'
+import { type ItemCarrito, type PagoInput } from './carrito'
 
 export interface VentaResumen {
   id: string
@@ -16,53 +15,6 @@ function inicioDeHoyBogota(): string {
   const bog = new Date(Date.now() - offsetMs)
   const medianoche = Date.UTC(bog.getUTCFullYear(), bog.getUTCMonth(), bog.getUTCDate())
   return new Date(medianoche + offsetMs).toISOString()
-}
-
-export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
-  const termino = q.trim()
-  const like = `%${termino}%`
-
-  let calzadoQ = supabase
-    .from('productos_calzado')
-    .select('id, descripcion, marca, referencia, talla, color, precio_minimo, precio_maximo, stock_actual')
-    .eq('activo', true)
-    .gt('stock_actual', 0)
-    .limit(10)
-  if (termino) {
-    calzadoQ = calzadoQ.or(orIlike(['descripcion', 'marca', 'referencia', 'talla', 'color'], termino))
-  }
-
-  let variosQ = supabase
-    .from('productos_varios')
-    .select('id, nombre, unidad_medida, precio_sugerido')
-    .eq('activo', true)
-    .limit(10)
-  if (termino) variosQ = variosQ.ilike('nombre', like)
-
-  const [calzado, varios] = await Promise.all([calzadoQ, variosQ])
-  if (calzado.error) throw calzado.error
-  if (varios.error) throw varios.error
-
-  const deCalzado: ProductoVendible[] = (calzado.data ?? []).map(c => ({
-    tipo: 'calzado',
-    id: c.id,
-    titulo: c.descripcion,
-    detalle: detalleCalzado({ marca: c.marca, talla: c.talla, color: c.color }),
-    precio: Number(c.precio_maximo),
-    precioMin: Number(c.precio_minimo),
-    precioMax: Number(c.precio_maximo),
-    stock: Number(c.stock_actual),
-  }))
-  const deVarios: ProductoVendible[] = (varios.data ?? []).map(v => ({
-    tipo: 'varios',
-    id: v.id,
-    titulo: v.nombre,
-    detalle: `por ${v.unidad_medida}`,
-    precio: v.precio_sugerido == null ? 0 : Number(v.precio_sugerido),
-    stock: Number.POSITIVE_INFINITY,
-    unidad: v.unidad_medida,
-  }))
-  return [...deCalzado, ...deVarios].slice(0, 20)
 }
 
 export interface RegistrarVentaInput {

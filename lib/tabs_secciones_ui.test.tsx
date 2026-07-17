@@ -54,6 +54,8 @@ jest.mock('../lib/inventario', () => ({
 
 import { rangoParaPeriodo } from './dashboard'
 import { TemaProvider } from './tema'
+import { CarritoProvider } from './carrito-contexto'
+import { ToastProvider } from '../components/ui'
 import Movimientos from '../app/(app)/(tabs)/movimientos'
 import Productos from '../app/(app)/(tabs)/productos'
 
@@ -87,7 +89,13 @@ function conRol(rol: string) {
 async function montar(ui: React.ReactElement) {
   let arbol!: ReturnType<typeof renderer.create>
   await act(async () => {
-    arbol = renderer.create(<TemaProvider>{ui}</TemaProvider>)
+    arbol = renderer.create(
+      <TemaProvider>
+        <CarritoProvider>
+          <ToastProvider>{ui}</ToastProvider>
+        </CarritoProvider>
+      </TemaProvider>
+    )
   })
   return arbol
 }
@@ -162,7 +170,7 @@ const CALZADO = [
     stock_minimo: 1, foto_url: null, proveedor_id: null, activo: true,
   },
   {
-    id: 'c3', descripcion: 'Croydon Urbano', marca: 'Croydon', referencia: '3310', categoria: 'Clásico',
+    id: 'c3', descripcion: 'Croydon Urbano', marca: 'Croydon', referencia: '3310', categoria: 'Clasico',
     talla: '41', color: 'Café', precio_minimo: 95000, precio_maximo: 95000, stock_actual: 0,
     stock_minimo: 1, foto_url: null, proveedor_id: null, activo: true,
   },
@@ -208,13 +216,15 @@ describe('Productos', () => {
     expect(existeTexto(arbol, 'Huevos')).toBe(true)
   })
 
-  it('empleado ve Recibir mercancía pero no Carga inicial; admin sí', async () => {
+  // Carga inicial ya no vive aquí para ningún rol: se movió a Perfil.
+  it('todos ven Recibir mercancía; nadie ve Carga inicial', async () => {
     conRol('empleado')
     const a = await montar(<Productos />)
     expect(existeTexto(a, 'Recibir mercancía')).toBe(true)
     expect(existeTexto(a, 'Carga inicial')).toBe(false)
     conRol('admin')
     const b = await montar(<Productos />)
-    expect(existeTexto(b, 'Carga inicial')).toBe(true)
+    expect(existeTexto(b, 'Recibir mercancía')).toBe(true)
+    expect(existeTexto(b, 'Carga inicial')).toBe(false)
   })
 })

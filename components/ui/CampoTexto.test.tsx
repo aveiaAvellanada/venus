@@ -50,6 +50,32 @@ describe('CampoTexto', () => {
     expect(aplanar(input.props.style).borderColor).toBe(paletaClara.peligro)
     expect(arbol.root.findByProps({ children: 'Está por debajo del precio mínimo' })).toBeTruthy()
   })
+
+  it('multiline: crece con minHeight y alinea el texto arriba (no cae en la altura fija de 52)', async () => {
+    const arbol = await montar(
+      <CampoTexto etiqueta="Motivo" multiline numberOfLines={3} />
+    )
+    const input = arbol.root.findByType(TextInput)
+    const estilo = aplanar(input.props.style)
+    expect(estilo.textAlignVertical).toBe('top')
+    expect(estilo.minHeight).toBe(100)
+    expect(estilo.height).toBeUndefined()
+  })
+
+  it('single-line sigue con altura fija 52 (comportamiento sin cambios)', async () => {
+    const arbol = await montar(<CampoTexto etiqueta="Nombre" />)
+    const input = arbol.root.findByType(TextInput)
+    const estilo = aplanar(input.props.style)
+    expect(estilo.height).toBe(52)
+    expect(estilo.textAlignVertical).toBeUndefined()
+  })
+
+  it('gigante sigue con altura fija 64 (comportamiento sin cambios)', async () => {
+    const arbol = await montar(<CampoTexto gigante />)
+    const input = arbol.root.findByType(TextInput)
+    const estilo = aplanar(input.props.style)
+    expect(estilo.height).toBe(64)
+  })
 })
 
 describe('FilaLista', () => {

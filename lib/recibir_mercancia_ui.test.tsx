@@ -9,6 +9,12 @@ import { Redirect } from 'expo-router'
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
+jest.useFakeTimers()
+
+// El Toast usa los insets de safe-area al mostrarse (Regla global de pantallas con useToast)
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
 
 // Mock Supabase
 jest.mock('./supabase', () => ({
@@ -27,9 +33,45 @@ jest.mock('../lib/supabase', () => ({
 }))
 
 // Mock de pantallas
-import RecibirMercanciaIndex from '../app/(app)/recibir-mercancia/index'
-import RecibirMercanciaNueva from '../app/(app)/recibir-mercancia/nueva'
-import RecepcionDetalleFinancieroScreen from '../app/(app)/recibir-mercancia/[id]'
+import RecibirMercanciaIndexRaw from '../app/(app)/recibir-mercancia/index'
+import RecibirMercanciaNuevaRaw from '../app/(app)/recibir-mercancia/nueva'
+import RecepcionDetalleFinancieroScreenRaw from '../app/(app)/recibir-mercancia/[id]'
+import { TemaProvider } from './tema'
+import { ToastProvider } from '../components/ui'
+
+// Las 3 pantallas ahora usan useTema() (y nueva/[id] usan useToast()); se envuelven
+// con los mismos nombres que ya usa toda la suite para no tocar cada call-site.
+function RecibirMercanciaIndex(props: any) {
+  return (
+    <TemaProvider>
+      <RecibirMercanciaIndexRaw {...props} />
+    </TemaProvider>
+  )
+}
+
+function RecibirMercanciaNueva(props: any) {
+  return (
+    <TemaProvider>
+      <ToastProvider>
+        <RecibirMercanciaNuevaRaw {...props} />
+      </ToastProvider>
+    </TemaProvider>
+  )
+}
+// El hook de pruebas de nueva.tsx cuelga defaultProps (getters) del componente real;
+// se reexpone en el mismo objeto para que el override de renderer.create() más abajo
+// (que referencia RecibirMercanciaNueva.defaultProps) siga funcionando igual.
+;(RecibirMercanciaNueva as any).defaultProps = (RecibirMercanciaNuevaRaw as any).defaultProps
+
+function RecepcionDetalleFinancieroScreen(props: any) {
+  return (
+    <TemaProvider>
+      <ToastProvider>
+        <RecepcionDetalleFinancieroScreenRaw {...props} />
+      </ToastProvider>
+    </TemaProvider>
+  )
+}
 
 let testTree: any = null
 
@@ -75,15 +117,6 @@ const originalCreate = renderer.create
 import { useAuth } from './auth'
 import * as apiProveedores from './proveedores'
 import * as apiInventario from './inventario'
-
-// Mock de iconos vectoriales
-jest.mock('@expo/vector-icons', () => {
-  const React = require('react')
-  const { Text } = require('react-native')
-  return {
-    Ionicons: (props: any) => React.createElement(Text, props, props.name),
-  }
-})
 
 // Mocks de navegación de expo-router
 const mockUseLocalSearchParams = jest.fn(() => ({ id: 'test-compra-id' } as any))
@@ -428,7 +461,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
         costInput.props.onChangeText('45000')
       })
 
-      const contadoBtn = root.findByProps({ testID: 'payment-contado' })
+      const contadoBtn = getButtonByText(root, 'Contado')
       await act(async () => {
         contadoBtn.props.onPress()
       })
@@ -438,9 +471,9 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
         notesInput.props.onChangeText('Nota de prueba')
       })
 
-      const submitBtn = root.findByProps({ testID: 'submit-button' })
+      const submitBtn = getButtonByText(root, 'Guardar y Completar Recepción')
       await act(async () => {
-        submitBtn.props.onPress()
+        submitBtn.props.onPress?.()
       })
 
       expect(apiProveedores.completarInformacionFinanciera).toHaveBeenCalledWith({

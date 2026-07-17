@@ -42,7 +42,7 @@ describe('permisos', () => {
   })
 
   test('ventas conserva su ruta dedicada', () => {
-    expect(MODULOS.find(m => m.id === 'ventas')?.ruta).toBe('/ventas')
+    expect(MODULOS.find(m => m.id === 'ventas')?.ruta).toBe('/ventas/nueva')
   })
 
   test('proveedores conserva su ruta dedicada', () => {
@@ -54,11 +54,11 @@ describe('permisos', () => {
   })
 
   test('inventario-calzado conserva su ruta dedicada', () => {
-    expect(MODULOS.find(m => m.id === 'inventario-calzado')?.ruta).toBe('/inventario/calzado')
+    expect(MODULOS.find(m => m.id === 'inventario-calzado')?.ruta).toBe('/productos')
   })
 
   test('granja conserva su ruta dedicada', () => {
-    expect(MODULOS.find(m => m.id === 'granja')?.ruta).toBe('/inventario/granja')
+    expect(MODULOS.find(m => m.id === 'granja')?.ruta).toBe('/productos')
   })
 
   test('gastos-variables conserva su ruta dedicada', () => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { ChevronRight } from 'lucide-react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useAuth } from '../../lib/auth'
@@ -171,17 +171,6 @@ export default function Login() {
         </View>
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="¿Se te olvidó tu clave?"
-        hitSlop={12}
-        onPress={() =>
-          Alert.alert('¿Se te olvidó tu clave?', 'Pídele a Andrés que te asigne una nueva.')
-        }
-        style={{ alignSelf: 'center', paddingVertical: espacio.l }}
-      >
-        <Text style={[tipografia.etiqueta, { color: paleta.primario }]}>¿Se te olvidó tu clave?</Text>
-      </Pressable>
     </View>
   )
 }

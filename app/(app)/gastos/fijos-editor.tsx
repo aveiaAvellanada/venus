@@ -1,188 +1,186 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { guardarGastoFijo } from '../../../lib/gastos';
+import React, { useState } from 'react'
+import { View, Text, ScrollView, Image, KeyboardAvoidingView, Platform } from 'react-native'
+import { useRouter } from 'expo-router'
+import * as ImagePicker from 'expo-image-picker'
+import { ArrowLeft, Camera } from 'lucide-react-native'
+import { guardarGastoFijo } from '../../../lib/gastos'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { useTema } from '../../../lib/tema'
+import type { Paleta } from '../../../lib/theme'
+import { espacio, radio, tipografia } from '../../../lib/theme'
+import { Boton, CampoTexto, Presionable, useToast } from '../../../components/ui'
+
+// Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
+function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: espacio.m,
+        paddingHorizontal: espacio.xl,
+        paddingTop: 56,
+        paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={onVolver} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Registrar Nuevo Contrato</Text>
+    </View>
+  )
+}
 
 export default function GastosFijosEditorScreen() {
-  const router = useRouter();
+  const router = useRouter()
+  const { paleta } = useTema()
+  const { mostrar } = useToast()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
 
-  const [nombre, setNombre] = useState('');
-  const [montoAproximado, setMontoAproximado] = useState('');
-  const [diaPago, setDiaPago] = useState('');
-  const [beneficiario, setBeneficiario] = useState('');
-  const [notas, setNotas] = useState('');
-  
-  const [saving, setSaving] = useState(false);
+  const [nombre, setNombre] = useState('')
+  const [montoAproximado, setMontoAproximado] = useState('')
+  const [diaPago, setDiaPago] = useState('')
+  const [beneficiario, setBeneficiario] = useState('')
+  const [notas, setNotas] = useState('')
+  const [fotoUri, setFotoUri] = useState<string | null>(null)
+
+  const [saving, setSaving] = useState(false)
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+    })
+    if (!result.canceled) {
+      setFotoUri(result.assets[0].uri)
+    }
+  }
 
   const handleSave = async () => {
     if (!nombre || !montoAproximado || !diaPago) {
-      Alert.alert('Error', 'Por favor llena los campos obligatorios: Nombre, Monto y Día de Pago');
-      return;
+      mostrar('Por favor llena los campos obligatorios: Nombre, Monto y Día de Pago', 'error')
+      return
     }
 
-    const dia = parseInt(diaPago, 10);
+    const dia = parseInt(diaPago, 10)
     if (isNaN(dia) || dia < 1 || dia > 31) {
-      Alert.alert('Error', 'El día de pago debe ser entre 1 y 31');
-      return;
+      mostrar('El día de pago debe ser entre 1 y 31', 'error')
+      return
     }
 
-    setSaving(true);
+    setSaving(true)
     try {
-      await guardarGastoFijo({
-        nombre,
-        monto_aproximado: parseFloat(montoAproximado),
-        dia_pago: dia,
-        beneficiario: beneficiario || null,
-        notas: notas || null,
-        activo: true,
-      });
-      
-      Alert.alert('Éxito', 'Contrato de gasto fijo guardado', [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
+      await guardarGastoFijo(
+        {
+          nombre,
+          monto_aproximado: parseFloat(montoAproximado),
+          dia_pago: dia,
+          beneficiario: beneficiario || null,
+          notas: notas || null,
+          activo: true,
+        },
+        fotoUri || undefined
+      )
+
+      mostrar('Contrato de gasto fijo guardado')
+      router.back()
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      mostrar(error.message, 'error')
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: paleta.fondo }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.headerTitle}>Registrar Nuevo Contrato</Text>
-        <Text style={styles.headerSubtitle}>Ej: Arriendo, Luz, Internet</Text>
+      <Encabezado paleta={paleta} onVolver={() => router.back()} />
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Nombre del Gasto *</Text>
-          <TextInput
-            style={styles.input}
-            value={nombre}
-            onChangeText={setNombre}
-            placeholder="Ej: Arriendo Local"
-          />
+      <ScrollView
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Ej: Arriendo, Luz, Internet</Text>
+
+        <CampoTexto
+          etiqueta="Nombre del Gasto *"
+          value={nombre}
+          onChangeText={setNombre}
+          placeholder="Ej: Arriendo Local"
+        />
+
+        <CampoTexto
+          etiqueta="Monto Aproximado *"
+          value={montoAproximado}
+          onChangeText={setMontoAproximado}
+          placeholder="1500000"
+          keyboardType="number-pad"
+        />
+
+        <CampoTexto
+          etiqueta="Día de Pago (1-31) *"
+          value={diaPago}
+          onChangeText={setDiaPago}
+          placeholder="5"
+          keyboardType="number-pad"
+          maxLength={2}
+        />
+
+        <CampoTexto
+          etiqueta="Beneficiario (Opcional)"
+          value={beneficiario}
+          onChangeText={setBeneficiario}
+          placeholder="Ej: Inmobiliaria XYZ"
+        />
+
+        <CampoTexto
+          etiqueta="Notas adicionales (Opcional)"
+          value={notas}
+          onChangeText={setNotas}
+          placeholder="Alguna nota sobre el pago"
+          multiline
+          numberOfLines={3}
+        />
+
+        <View>
+          <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>
+            Foto del Contrato/Recibo (Opcional)
+          </Text>
+          <Presionable
+            accessibilityRole="button"
+            accessibilityLabel={fotoUri ? 'Cambiar foto del contrato' : 'Tomar foto del contrato'}
+            onPress={pickImage}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: espacio.s,
+              backgroundColor: paleta.primarioSoft,
+              padding: espacio.l,
+              borderRadius: radio.sm,
+              borderWidth: 1,
+              borderColor: paleta.primario,
+              borderStyle: 'dashed',
+            }}
+          >
+            <Camera size={22} color={paleta.primario} />
+            <Text style={[tipografia.cuerpoLg, { color: paleta.primario }]}>
+              {fotoUri ? 'Cambiar Foto' : 'Tomar Foto'}
+            </Text>
+          </Presionable>
+          {fotoUri ? (
+            <Image
+              source={{ uri: fotoUri }}
+              style={{ width: '100%', height: 200, borderRadius: radio.sm, marginTop: espacio.m }}
+            />
+          ) : null}
         </View>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Monto Aproximado *</Text>
-          <TextInput
-            style={styles.input}
-            value={montoAproximado}
-            onChangeText={setMontoAproximado}
-            placeholder="1500000"
-            keyboardType="numeric"
-          />
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Día de Pago (1-31) *</Text>
-          <TextInput
-            style={styles.input}
-            value={diaPago}
-            onChangeText={setDiaPago}
-            placeholder="5"
-            keyboardType="number-pad"
-            maxLength={2}
-          />
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Beneficiario (Opcional)</Text>
-          <TextInput
-            style={styles.input}
-            value={beneficiario}
-            onChangeText={setBeneficiario}
-            placeholder="Ej: Inmobiliaria XYZ"
-          />
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Notas adicionales (Opcional)</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={notas}
-            onChangeText={setNotas}
-            placeholder="Alguna nota sobre el pago"
-            multiline
-            numberOfLines={3}
-          />
-        </View>
-
-        <TouchableOpacity 
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>Guardar Contrato</Text>
-          )}
-        </TouchableOpacity>
+        <Boton titulo="Guardar Contrato" onPress={handleSave} cargando={saving} deshabilitado={saving} />
       </ScrollView>
     </KeyboardAvoidingView>
-  );
+  )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 15,
-    color: '#8E8E93',
-    marginBottom: 30,
-  },
-  formGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#F7F8FA',
-    borderWidth: 1,
-    borderColor: '#EAEAEE',
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-    color: '#333',
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  saveButton: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  saveButtonDisabled: {
-    backgroundColor: '#A0CFFF',
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});

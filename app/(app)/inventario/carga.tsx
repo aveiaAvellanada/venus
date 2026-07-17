@@ -1,14 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter, Redirect } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
+import { ArrowLeft, CircleAlert, CircleCheckBig, FileSpreadsheet } from 'lucide-react-native';
 import { useAuth } from '../../../lib/auth';
 import { leerExcel, validarFilas } from '../../../lib/excel';
 import { guardarCalzado } from '../../../lib/inventario';
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior';
+import { useTema } from '../../../lib/tema';
+import { espacio, radio, tipografia } from '../../../lib/theme';
+import { Boton, Presionable, Tarjeta, useToast } from '../../../components/ui';
 
 export default function CargaMasivaInventario() {
   const { perfil } = useAuth();
   const router = useRouter();
+  const { paleta } = useTema();
+  const { mostrar } = useToast();
+  const paddingInferior = usePaddingInferior(espacio.xxxl);
 
   const [loadingFile, setLoadingFile] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -42,7 +50,7 @@ export default function CargaMasivaInventario() {
       setErrores(validadas.errores);
       setSeleccionado(true);
     } catch (error: any) {
-      Alert.alert('Error', 'No se pudo leer el archivo Excel: ' + error.message);
+      mostrar('No se pudo leer el archivo Excel: ' + error.message, 'error');
     } finally {
       setLoadingFile(false);
     }
@@ -76,141 +84,95 @@ export default function CargaMasivaInventario() {
         setProgreso(guardados);
       }
 
-      Alert.alert('Éxito', `Se han cargado ${guardados} productos correctamente.`, [
-        { text: 'OK', onPress: () => router.push('/inventario/calzado') }
-      ]);
-      
+      mostrar(`Se han cargado ${guardados} productos correctamente.`);
+      router.push('/productos');
+
       setFilasValidas([]);
       setErrores([]);
       setSeleccionado(false);
       setProgreso(0);
 
     } catch (error: any) {
-      Alert.alert('Error', 'Hubo un problema al guardar en la base de datos: ' + error.message);
+      mostrar('Hubo un problema al guardar en la base de datos: ' + error.message, 'error');
     } finally {
       setUploading(false);
     }
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Carga Inicial de Inventario</Text>
+    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+      <View
+        style={{
+          flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+          paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+        }}
+      >
+        <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
+          <ArrowLeft size={24} color={paleta.texto} />
+        </Presionable>
+        <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Carga Inicial de Inventario</Text>
+      </View>
 
-      {!uploading && (
-        <TouchableOpacity style={styles.button} onPress={seleccionarArchivo} disabled={loadingFile}>
-          {loadingFile ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Subir Archivo Excel</Text>}
-        </TouchableOpacity>
-      )}
+      <ScrollView
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
+        showsVerticalScrollIndicator={false}
+      >
+        {!uploading && (
+          <Boton
+            titulo="Subir archivo Excel"
+            onPress={seleccionarArchivo}
+            cargando={loadingFile}
+            icono={<FileSpreadsheet size={20} color={paleta.sobrePrimario} />}
+          />
+        )}
 
-      {seleccionado && !uploading && (
-        <View style={styles.resumenContainer}>
-          <Text style={styles.resumenTitle}>Resumen de Carga</Text>
-          <Text>Productos listos para subir: {filasValidas.length}</Text>
-          <Text style={{ color: errores.length > 0 ? 'red' : 'green', marginBottom: 10 }}>
-            Errores encontrados: {errores.length}
-          </Text>
+        {seleccionado && !uploading && (
+          <Tarjeta>
+            <Text style={[tipografia.h3, { color: paleta.texto }]}>Resumen de carga</Text>
+            <Text style={[tipografia.cuerpo, { color: paleta.texto2, marginTop: espacio.m }]}>
+              Productos listos para subir: {filasValidas.length}
+            </Text>
+            <Text style={[tipografia.cuerpo, { color: errores.length > 0 ? paleta.peligroTexto : paleta.exitoTexto, marginTop: 4 }]}>
+              Errores encontrados: {errores.length}
+            </Text>
 
-          {errores.length > 0 && (
-            <View style={styles.erroresList}>
-              <Text style={styles.erroresTitle}>Detalle de Errores:</Text>
-              {errores.map((err, idx) => (
-                <View key={idx} style={styles.errorItem}>
-                  <Text style={styles.errorText}>Fila {err.fila}:</Text>
-                  {err.errores.map((e: string, i: number) => (
-                     <Text key={i} style={styles.errorDetail}>- {e}</Text>
-                  ))}
+            {errores.length > 0 && (
+              <View style={{ marginTop: espacio.m, padding: espacio.m, borderRadius: radio.sm, backgroundColor: paleta.peligroSoft, gap: espacio.s }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s }}>
+                  <CircleAlert size={16} color={paleta.peligroTexto} />
+                  <Text style={[tipografia.etiqueta, { color: paleta.peligroTexto }]}>Detalle de errores</Text>
                 </View>
-              ))}
+                {errores.map((err, idx) => (
+                  <View key={idx}>
+                    <Text style={[tipografia.etiqueta, { color: paleta.peligroTexto }]}>Fila {err.fila}:</Text>
+                    {err.errores.map((e: string, i: number) => (
+                      <Text key={i} style={[tipografia.caption, { color: paleta.peligroTexto, marginLeft: espacio.s }]}>- {e}</Text>
+                    ))}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <View style={{ marginTop: espacio.l }}>
+              <Boton
+                titulo="Confirmar y subir"
+                onPress={cargarMasivamente}
+                deshabilitado={errores.length > 0 || filasValidas.length === 0}
+                icono={<CircleCheckBig size={20} color={paleta.sobrePrimario} />}
+              />
             </View>
-          )}
+          </Tarjeta>
+        )}
 
-          <TouchableOpacity 
-            style={[styles.button, (errores.length > 0 || filasValidas.length === 0) ? styles.buttonDisabled : null]} 
-            onPress={cargarMasivamente}
-            disabled={errores.length > 0 || filasValidas.length === 0}
-          >
-            <Text style={styles.buttonText}>Confirmar y Subir</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {uploading && (
-        <View style={styles.uploadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.uploadingText}>Cargando ({progreso}/{filasValidas.length})...</Text>
-        </View>
-      )}
-    </ScrollView>
+        {uploading && (
+          <View style={{ marginTop: espacio.xxxl, alignItems: 'center', gap: espacio.m }}>
+            <ActivityIndicator size="large" color={paleta.primario} />
+            <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>
+              Cargando ({progreso}/{filasValidas.length})…
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  buttonDisabled: {
-    backgroundColor: '#A0A0A0',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  resumenContainer: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-  },
-  resumenTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  erroresList: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: '#ffe6e6',
-    borderRadius: 8,
-  },
-  erroresTitle: {
-    fontWeight: 'bold',
-    color: '#d32f2f',
-    marginBottom: 5,
-  },
-  errorItem: {
-    marginBottom: 10,
-  },
-  errorText: {
-    fontWeight: 'bold',
-    color: '#b71c1c',
-  },
-  errorDetail: {
-    marginLeft: 10,
-    color: '#c62828',
-  },
-  uploadingContainer: {
-    marginTop: 40,
-    alignItems: 'center',
-  },
-  uploadingText: {
-    marginTop: 10,
-    fontSize: 18,
-    color: '#333',
-  },
-});

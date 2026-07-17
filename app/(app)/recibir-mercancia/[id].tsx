@@ -2,24 +2,27 @@ import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
-  TextInput,
-  TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Platform,
   KeyboardAvoidingView,
 } from 'react-native'
 import { useLocalSearchParams, useRouter, Redirect } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import { ArrowLeft, CircleCheckBig, Wallet } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
 import { obtenerCompraPorId, completarInformacionFinanciera } from '../../../lib/proveedores'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { useTema } from '../../../lib/tema'
+import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
+import { Boton, CampoTexto, Presionable, Tarjeta, useToast } from '../../../components/ui'
 
 export default function RecepcionDetalleFinancieroScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const { perfil, cargando } = useAuth()
+  const { paleta } = useTema()
+  const { mostrar } = useToast()
+  const paddingBarraInferior = usePaddingInferior(espacio.l)
 
   const [compra, setCompra] = useState<any>(null)
   const [cargandoCompra, setCargandoCompra] = useState(true)
@@ -34,6 +37,20 @@ export default function RecepcionDetalleFinancieroScreen() {
     return <Redirect href="/" />
   }
 
+  // Header component used in all render branches
+  const Encabezado = () => (
+    <View style={{
+      flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+      paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+    }}>
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver"
+        onPress={() => router.back()} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Completar Entrada</Text>
+    </View>
+  )
+
   useEffect(() => {
     async function cargarCompra() {
       if (!id) return
@@ -45,7 +62,7 @@ export default function RecepcionDetalleFinancieroScreen() {
           setCondicionPago(data.condicion_pago === 'credito' ? 'credito' : 'contado')
           setFechaVencimiento(data.fecha_vencimiento || '')
           setNotas(data.notas || '')
-          
+
           // Initialise item costs
           const initialCostos = (data.items || []).map((item: any) => ({
             item_id: item.id,
@@ -53,12 +70,12 @@ export default function RecepcionDetalleFinancieroScreen() {
           }))
           setItemsCostos(initialCostos)
         } else {
-          Alert.alert('Error', 'No se encontró la recepción física seleccionada.')
+          mostrar('No se encontró la recepción física seleccionada.', 'error')
           router.back()
         }
       } catch (err: any) {
         console.error('Error al cargar la recepción:', err)
-        Alert.alert('Error', 'No se pudo cargar la información de la recepción.')
+        mostrar('No se pudo cargar la información de la recepción.', 'error')
       } finally {
         setCargandoCompra(false)
       }
@@ -89,12 +106,12 @@ export default function RecepcionDetalleFinancieroScreen() {
     // Validations
     const inputsInvalidos = itemsCostos.some(c => c.costo_unitario <= 0)
     if (inputsInvalidos) {
-      Alert.alert('Validación', 'El costo unitario de todos los productos debe ser mayor a cero.')
+      mostrar('El costo unitario de todos los productos debe ser mayor a cero.', 'error')
       return
     }
 
     if (condicionPago === 'credito' && !fechaVencimiento.trim()) {
-      Alert.alert('Validación', 'La fecha de vencimiento es requerida para compras a crédito.')
+      mostrar('La fecha de vencimiento es requerida para compras a crédito.', 'error')
       return
     }
 
@@ -102,7 +119,7 @@ export default function RecepcionDetalleFinancieroScreen() {
     if (condicionPago === 'credito') {
       const regexFecha = /^\d{4}-\d{2}-\d{2}$/
       if (!regexFecha.test(fechaVencimiento)) {
-        Alert.alert('Validación', 'La fecha de vencimiento debe tener el formato AAAA-MM-DD.')
+        mostrar('La fecha de vencimiento debe tener el formato AAAA-MM-DD.', 'error')
         return
       }
     }
@@ -121,11 +138,11 @@ export default function RecepcionDetalleFinancieroScreen() {
         }))
       })
 
-      Alert.alert('Éxito', 'Información financiera guardada correctamente.')
+      mostrar('Información financiera guardada correctamente.')
       router.replace('/recibir-mercancia')
     } catch (err: any) {
       console.error('Error al guardar finanzas:', err)
-      Alert.alert('Error', err.message || 'Ocurrió un error al guardar los datos.')
+      mostrar(err.message || 'Ocurrió un error al guardar los datos.', 'error')
     } finally {
       setGuardando(false)
     }
@@ -133,22 +150,28 @@ export default function RecepcionDetalleFinancieroScreen() {
 
   if (cargandoCompra || cargando) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.loadingText}>Cargando recepción...</Text>
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, gap: espacio.m }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Cargando recepción...</Text>
+        </View>
       </View>
     )
   }
 
   if (compra && compra.estado !== 'pendiente_revision') {
     return (
-      <View style={styles.center}>
-        <Ionicons name="checkmark-circle-outline" size={64} color="#10b981" />
-        <Text style={styles.completedTitle}>Recepción Completada</Text>
-        <Text style={styles.completedText}>Esta mercancía ya cuenta con información financiera registrada.</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Volver al listado</Text>
-        </TouchableOpacity>
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, gap: espacio.m }}>
+          <CircleCheckBig size={64} color={paleta.exito} />
+          <Text style={[tipografia.h2, { color: paleta.texto, textAlign: 'center' }]}>Recepción Completada</Text>
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2, textAlign: 'center' }]}>
+            Esta mercancía ya cuenta con información financiera registrada.
+          </Text>
+          <Boton titulo="Volver al listado" variante="secundario" tamano="md" onPress={() => router.back()} />
+        </View>
       </View>
     )
   }
@@ -160,111 +183,103 @@ export default function RecepcionDetalleFinancieroScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={{ flex: 1, backgroundColor: paleta.fondo }}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <Encabezado />
+
+      <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: 120, gap: espacio.l }}>
         {/* Card de cabecera */}
-        <View style={styles.card}>
-          <Text style={styles.cardHeaderTitle}>Detalles de Recepción</Text>
-          <Text style={styles.metaText}>
-            <Text style={styles.bold}>Proveedor: </Text>
-            {compra?.proveedor_nombre || 'Desconocido'}
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.s }]}>Detalles de Recepción</Text>
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>
+            Proveedor: {compra?.proveedor_nombre || 'Desconocido'}
           </Text>
-          <Text style={styles.metaText}>
-            <Text style={styles.bold}>Fecha Entrada: </Text>
-            {compra ? new Date(compra.created_at).toLocaleDateString('es-CO') : ''}
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2, marginTop: 4 }]}>
+            Fecha Entrada: {compra ? new Date(compra.created_at).toLocaleDateString('es-CO') : ''}
           </Text>
-          <Text style={styles.metaText}>
-            <Text style={styles.bold}>Registrado por: </Text>
-            {compra?.registrada_por_nombre || 'Empleado'}
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2, marginTop: 4 }]}>
+            Registrado por: {compra?.registrada_por_nombre || 'Empleado'}
           </Text>
-        </View>
+        </Tarjeta>
 
         {/* Card de items */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Productos Recibidos</Text>
-          {(compra?.items || []).map((item: any) => {
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.m, borderBottomWidth: 1, borderBottomColor: paleta.borde, paddingBottom: espacio.s }]}>
+            Productos Recibidos
+          </Text>
+          {(compra?.items || []).map((item: any, idx: number) => {
             const costObj = itemsCostos.find(c => c.item_id === item.id)
             const unitCost = costObj ? costObj.costo_unitario : 0
             return (
-              <View key={item.id} style={styles.itemRow}>
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemDesc}>{item.descripcion}</Text>
-                  <Text style={styles.itemMeta}>
+              <View
+                key={item.id}
+                style={{
+                  borderTopWidth: idx > 0 ? 1 : 0, borderTopColor: paleta.borde,
+                  paddingTop: idx > 0 ? espacio.m : 0, marginTop: idx > 0 ? espacio.m : 0,
+                  gap: espacio.s,
+                }}
+              >
+                <View>
+                  <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>{item.descripcion}</Text>
+                  <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
                     {item.color ? `Color: ${item.color}` : ''}
                     {item.talla ? ` | Talla: ${item.talla}` : ''}
                     {item.referencia ? ` | Ref: ${item.referencia}` : ''}
                   </Text>
-                  <Text style={styles.itemQuantity}>Cantidad recibida: {item.cantidad}</Text>
-                </View>
-                
-                <View style={styles.costInputContainer}>
-                  <Text style={styles.inputLabel}>Costo Unitario ($)</Text>
-                  <TextInput
-                    style={styles.inputCosto}
-                    keyboardType="numeric"
-                    placeholder="0"
-                    value={unitCost > 0 ? String(unitCost) : ''}
-                    onChangeText={(text) => handleCostoChange(item.id, text)}
-                    testID={`cost-input-${item.id}`}
-                  />
-                  <Text style={styles.subtotalText}>
-                    Subtotal: {formatMoneda(item.cantidad * unitCost)}
+                  <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginTop: 2 }]}>
+                    Cantidad recibida: {item.cantidad}
                   </Text>
                 </View>
+
+                <CampoTexto
+                  etiqueta="Costo Unitario ($)"
+                  keyboardType="number-pad"
+                  placeholder="0"
+                  value={unitCost > 0 ? String(unitCost) : ''}
+                  onChangeText={(text) => handleCostoChange(item.id, text)}
+                  testID={`cost-input-${item.id}`}
+                />
+                <Text style={[tipografia.caption, tabular, { color: paleta.exitoTexto, textAlign: 'right' }]}>
+                  Subtotal: {formatMoneda(item.cantidad * unitCost)}
+                </Text>
               </View>
             )
           })}
-        </View>
+        </Tarjeta>
 
         {/* Card de condiciones financieras */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Condiciones de Factura</Text>
-          
-          <Text style={styles.label}>Condición de Pago</Text>
-          <View style={styles.paymentConditionContainer}>
-            <TouchableOpacity
-              style={[
-                styles.conditionButton,
-                condicionPago === 'contado' && styles.conditionActiveButton,
-              ]}
-              onPress={() => setCondicionPago('contado')}
-              testID="payment-contado"
-            >
-              <Text
-                style={[
-                  styles.conditionButtonText,
-                  condicionPago === 'contado' && styles.conditionActiveButtonText,
-                ]}
-              >
-                Contado
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-                styles.conditionButton,
-                condicionPago === 'credito' && styles.conditionActiveButton,
-              ]}
-              onPress={() => setCondicionPago('credito')}
-              testID="payment-credito"
-            >
-              <Text
-                style={[
-                  styles.conditionButtonText,
-                  condicionPago === 'credito' && styles.conditionActiveButtonText,
-                ]}
-              >
-                Crédito
-              </Text>
-            </TouchableOpacity>
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.m }]}>Condiciones de Factura</Text>
+
+          <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>Condición de Pago</Text>
+          <View style={{ flexDirection: 'row', gap: espacio.s, marginBottom: espacio.m }}>
+            {(['contado', 'credito'] as const).map((c) => {
+              const activo = condicionPago === c
+              return (
+                <Presionable
+                  key={c}
+                  accessibilityRole="button"
+                  accessibilityLabel={c === 'contado' ? 'Contado' : 'Crédito'}
+                  accessibilityState={{ selected: activo }}
+                  onPress={() => setCondicionPago(c)}
+                  style={{
+                    flex: 1, paddingVertical: espacio.m, borderRadius: radio.sm, alignItems: 'center',
+                    backgroundColor: activo ? paleta.primarioSoft : paleta.superficie2,
+                    borderWidth: 1, borderColor: activo ? paleta.primario : paleta.borde,
+                  }}
+                >
+                  <Text style={[tipografia.cuerpoLg, { color: activo ? paleta.primario : paleta.texto2 }]}>
+                    {c === 'contado' ? 'Contado' : 'Crédito'}
+                  </Text>
+                </Presionable>
+              )
+            })}
           </View>
 
           {condicionPago === 'credito' && (
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Fecha de Vencimiento (AAAA-MM-DD)</Text>
-              <TextInput
-                style={styles.input}
+            <View style={{ marginBottom: espacio.m }}>
+              <CampoTexto
+                etiqueta="Fecha de Vencimiento (AAAA-MM-DD)"
                 placeholder="2026-07-16"
                 value={fechaVencimiento}
                 onChangeText={setFechaVencimiento}
@@ -274,157 +289,43 @@ export default function RecepcionDetalleFinancieroScreen() {
             </View>
           )}
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Notas de la compra (Opcional)</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Ej. Factura #9812, pendiente descuento..."
-              value={notas}
-              onChangeText={setNotas}
-              multiline
-              numberOfLines={3}
-              testID="notes-input"
-            />
-          </View>
-        </View>
+          <CampoTexto
+            etiqueta="Notas de la compra (Opcional)"
+            placeholder="Ej. Factura #9812, pendiente descuento..."
+            value={notas}
+            onChangeText={setNotas}
+            multiline
+            numberOfLines={3}
+            testID="notes-input"
+          />
+        </Tarjeta>
 
         {/* Resumen del total */}
-        <View style={styles.totalCard}>
-          <Text style={styles.totalLabel}>TOTAL COSTO COMPRA</Text>
-          <Text style={styles.totalValue}>{formatMoneda(calcularTotal())}</Text>
+        <View style={{
+          backgroundColor: paleta.texto, borderRadius: radio.md, padding: espacio.xl, alignItems: 'center',
+        }}>
+          <Text style={[tipografia.micro, { color: paleta.textoDeshabilitado }]}>TOTAL COSTO COMPRA</Text>
+          <Text style={[tipografia.h1, tabular, { color: paleta.fondo, marginTop: 4 }]}>
+            {formatMoneda(calcularTotal())}
+          </Text>
         </View>
       </ScrollView>
 
       {/* Botón de guardado fijo al fondo */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.submitButton, guardando && styles.submitButtonDisabled]}
+      <View style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        backgroundColor: paleta.fondo, padding: espacio.l,
+        paddingBottom: paddingBarraInferior,
+        borderTopWidth: 1, borderTopColor: paleta.borde,
+      }}>
+        <Boton
+          titulo="Guardar y Completar Recepción"
           onPress={handleCompletarFinanzas}
-          disabled={guardando}
-          testID="submit-button"
-        >
-          {guardando ? (
-            <ActivityIndicator size="small" color="#ffffff" />
-          ) : (
-            <>
-              <Ionicons name="wallet-outline" size={20} color="#ffffff" style={styles.buttonIcon} />
-              <Text style={styles.submitButtonText}>Guardar y Completar Recepción</Text>
-            </>
-          )}
-        </TouchableOpacity>
+          cargando={guardando}
+          deshabilitado={guardando}
+          icono={<Wallet size={20} color={paleta.sobrePrimario} />}
+        />
       </View>
     </KeyboardAvoidingView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#f9fafb' },
-  loadingText: { marginTop: 12, color: '#4b5563', fontSize: 15 },
-  completedTitle: { fontSize: 20, fontWeight: '700', color: '#111827', marginTop: 16, marginBottom: 8 },
-  completedText: { fontSize: 15, color: '#6b7280', textAlign: 'center', marginBottom: 24, paddingHorizontal: 20 },
-  backButton: { backgroundColor: '#3b82f6', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 10 },
-  backButtonText: { color: '#ffffff', fontWeight: '600', fontSize: 15 },
-  scrollContent: { padding: 16, paddingBottom: 120 },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardHeaderTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 12 },
-  bold: { fontWeight: '600', color: '#374151' },
-  metaText: { fontSize: 14, color: '#4b5563', marginBottom: 6 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', paddingBottom: 8 },
-  itemRow: {
-    flexDirection: 'column',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-    paddingBottom: 16,
-    marginBottom: 16,
-  },
-  itemInfo: { flex: 1, marginBottom: 10 },
-  itemDesc: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  itemMeta: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  itemQuantity: { fontSize: 13, fontWeight: '500', color: '#374151', marginTop: 4 },
-  costInputContainer: { width: '100%' },
-  inputLabel: { fontSize: 12, fontWeight: '600', color: '#4b5563', marginBottom: 4 },
-  inputCosto: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  subtotalText: { fontSize: 12, color: '#10b981', fontWeight: '600', textAlign: 'right', marginTop: 4 },
-  label: { fontSize: 13, fontWeight: '600', color: '#4b5563', marginBottom: 6 },
-  paymentConditionContainer: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  conditionButton: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  conditionActiveButton: {
-    backgroundColor: '#dbeafe',
-    borderColor: '#3b82f6',
-  },
-  conditionButtonText: { fontSize: 14, fontWeight: '600', color: '#4b5563' },
-  conditionActiveButtonText: { color: '#1d4ed8' },
-  inputGroup: { marginBottom: 16 },
-  input: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  textArea: { height: 80, textAlignVertical: 'top' },
-  totalCard: {
-    backgroundColor: '#1e293b',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  totalLabel: { fontSize: 12, fontWeight: '700', color: '#94a3b8', letterSpacing: 1 },
-  totalValue: { fontSize: 24, fontWeight: '800', color: '#ffffff', marginTop: 4 },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#ffffff',
-    padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 32 : 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-  },
-  submitButton: {
-    backgroundColor: '#3b82f6',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  submitButtonDisabled: { opacity: 0.6 },
-  buttonIcon: { marginRight: 8 },
-  submitButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
-})

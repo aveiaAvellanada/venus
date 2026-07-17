@@ -1,4 +1,4 @@
-import { validarFilas } from './excel'
+import { CATEGORIAS, validarFilas } from './excel'
 
 // Fila mínima válida (las columnas obligatorias). Las claves imitan los
 // encabezados ya parseados por XLSX.utils.sheet_to_json.
@@ -33,5 +33,52 @@ describe('validarFilas — talla, color y referencia', () => {
     expect(validas[0].talla).toBeNull()
     expect(validas[0].color).toBeNull()
     expect(validas[0].referencia).toBeNull()
+  })
+})
+
+describe('CATEGORIAS — valor vs etiqueta', () => {
+  // El CHECK de productos_calzado.categoria solo acepta los `valor`. Si alguno
+  // llevara tilde, guardar esa categoría fallaría y su chip no filtraría nada.
+  it('ningún valor lleva tilde', () => {
+    for (const { valor } of CATEGORIAS) {
+      expect(valor.normalize('NFD')).toBe(valor)
+    }
+  })
+
+  it('los valores son exactamente los que acepta el CHECK de la DB', () => {
+    expect(CATEGORIAS.map(c => c.valor)).toEqual([
+      'Chanclas',
+      'Escolar',
+      'Botas caucho',
+      'Deportivo',
+      'Tennis',
+      'Clasico',
+      'Otros',
+    ])
+  })
+
+  it('"Clasico" se muestra con tilde aunque se guarde sin ella', () => {
+    const clasico = CATEGORIAS.find(c => c.valor === 'Clasico')
+    expect(clasico?.etiqueta).toBe('Clásico')
+  })
+})
+
+describe('validarFilas — categoría', () => {
+  it('acepta "Clásico" del Excel pero devuelve el valor sin tilde que acepta la DB', () => {
+    const { validas, errores } = validarFilas([{ ...filaBase, categoria: 'Clásico' }])
+    expect(errores).toHaveLength(0)
+    expect(validas[0].categoria).toBe('Clasico')
+  })
+
+  it('acepta "Clasico" sin tilde igual de bien', () => {
+    const { validas, errores } = validarFilas([{ ...filaBase, categoria: 'Clasico' }])
+    expect(errores).toHaveLength(0)
+    expect(validas[0].categoria).toBe('Clasico')
+  })
+
+  it('rechaza una categoría que no existe', () => {
+    const { validas, errores } = validarFilas([{ ...filaBase, categoria: 'Sandalias' }])
+    expect(validas).toHaveLength(0)
+    expect(errores).toHaveLength(1)
   })
 })

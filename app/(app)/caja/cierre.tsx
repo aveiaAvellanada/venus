@@ -1,19 +1,53 @@
 import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator, Alert, ScrollView, Linking } from 'react-native'
+import { View, Text, ActivityIndicator, ScrollView, Linking } from 'react-native'
 import { useRouter } from 'expo-router'
+import { ArrowLeft, Check } from 'lucide-react-native'
 import { obtenerResumenEnVivo, cerrarCaja } from '../../../lib/caja'
 import { dispararReporteCorreo, obtenerReporteDiario, construirLinkWhatsapp } from '../../../lib/reporteDiario'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { useTema } from '../../../lib/tema'
+import type { Paleta } from '../../../lib/theme'
+import { espacio, tabular, tipografia } from '../../../lib/theme'
+import { Boton, CampoTexto, OverlayExito, Presionable, Tarjeta, useToast } from '../../../components/ui'
 
 const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
 
+// Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
+function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: espacio.m,
+        paddingHorizontal: espacio.xl,
+        paddingTop: 56,
+        paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={onVolver} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Cerrar Caja</Text>
+    </View>
+  )
+}
+
 export default function CierreCaja() {
   const router = useRouter()
+  const { paleta } = useTema()
+  const { mostrar } = useToast()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
   const [resumen, setResumen] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [guardando, setGuardando] = useState(false)
-  
+
   const [efectivoContado, setEfectivoContado] = useState('')
   const [nota, setNota] = useState('')
+
+  const [cerrada, setCerrada] = useState(false)
+  const [overlayVisible, setOverlayVisible] = useState(false)
+  const [waLink, setWaLink] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -21,7 +55,7 @@ export default function CierreCaja() {
         const res = await obtenerResumenEnVivo()
         setResumen(res)
       } catch (e: any) {
-        Alert.alert('Error', e.message)
+        mostrar(e.message, 'error')
       } finally {
         setLoading(false)
       }
@@ -31,8 +65,11 @@ export default function CierreCaja() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centro]}>
-        <ActivityIndicator size="large" color="#1E66F5" />
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado paleta={paleta} onVolver={() => router.back()} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
+        </View>
       </View>
     )
   }
@@ -41,10 +78,11 @@ export default function CierreCaja() {
   const contadoNum = parseFloat(efectivoContado) || 0
   const diferencia = contadoNum - esperado
   const hasDiferencia = Math.abs(diferencia) > 0.01
+  const esSobrante = diferencia > 0
 
   async function handleCerrar() {
     if (hasDiferencia && !nota.trim()) {
-      Alert.alert('Nota requerida', 'Como hay diferencia, debes ingresar una justificación.')
+      mostrar('Como hay diferencia, debes ingresar una justificación.', 'error')
       return
     }
 
@@ -63,99 +101,108 @@ export default function CierreCaja() {
       dispararReporteCorreo(fechaISO).catch((e) => console.warn('Reporte por correo no disparado:', e))
 
       // WhatsApp asistido: arma el link con el mensaje del día
-      let waLink: string | null = null
+      let link: string | null = null
       try {
         const rep = await obtenerReporteDiario(fechaISO)
-        waLink = construirLinkWhatsapp(null, rep.mensaje)
+        link = construirLinkWhatsapp(null, rep.mensaje)
       } catch (e) {
         console.warn('No se pudo armar el WhatsApp:', e)
       }
 
-      Alert.alert(
-        'Caja cerrada',
-        'La caja se cerró exitosamente.',
-        waLink
-          ? [
-              { text: 'Enviar por WhatsApp', onPress: () => { Linking.openURL(waLink!); router.replace('/caja') } },
-              { text: 'Listo', onPress: () => router.replace('/caja') },
-            ]
-          : [{ text: 'OK', onPress: () => router.replace('/caja') }]
-      )
+      setWaLink(link)
+      setCerrada(true)
+      setOverlayVisible(true)
     } catch (e: any) {
-      Alert.alert('Error al cerrar caja', e.message)
+      mostrar(e.message, 'error')
       setGuardando(false)
     }
   }
 
+  if (cerrada) {
+    return (
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado paleta={paleta} onVolver={() => router.replace('/caja')} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: espacio.xl, gap: espacio.l }}>
+          <Check size={64} color={paleta.exito} strokeWidth={2.5} />
+          <Text style={[tipografia.h1, { color: paleta.texto, textAlign: 'center' }]}>Caja cerrada</Text>
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2, textAlign: 'center' }]}>
+            La caja se cerró exitosamente.
+          </Text>
+          <View style={{ alignSelf: 'stretch', gap: espacio.s }}>
+            {waLink ? (
+              <Boton
+                titulo="Enviar por WhatsApp"
+                onPress={() => { Linking.openURL(waLink!); router.replace('/caja') }}
+              />
+            ) : null}
+            <Boton
+              titulo="Listo"
+              variante={waLink ? 'fantasma' : 'primario'}
+              onPress={() => router.replace('/caja')}
+            />
+          </View>
+        </View>
+        <OverlayExito visible={overlayVisible} mensaje="Caja cerrada" onFin={() => setOverlayVisible(false)} />
+      </View>
+    )
+  }
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-      <Text style={styles.titulo}>Calculadora de Cierre</Text>
+    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+      <Encabezado paleta={paleta} onVolver={() => router.back()} />
+      <ScrollView
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.xl }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Tarjeta estilo={{ alignItems: 'center' }}>
+          <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>Efectivo Esperado (Sistema)</Text>
+          <Text style={[tipografia.display, tabular, { color: paleta.texto, marginTop: espacio.s }]}>
+            {pesos(esperado)}
+          </Text>
+        </Tarjeta>
 
-      <View style={styles.resumenBox}>
-        <Text style={styles.label}>Efectivo Esperado (Sistema)</Text>
-        <Text style={styles.valorEsperado}>{pesos(esperado)}</Text>
-      </View>
+        <CampoTexto
+          etiqueta="¿Cuánto efectivo hay en gaveta?"
+          gigante
+          keyboardType="number-pad"
+          placeholder="0"
+          value={efectivoContado}
+          onChangeText={setEfectivoContado}
+        />
 
-      <Text style={styles.labelInput}>¿Cuánto efectivo hay en gaveta?</Text>
-      <TextInput
-        style={styles.inputGigante}
-        keyboardType="numeric"
-        placeholder="0"
-        value={efectivoContado}
-        onChangeText={setEfectivoContado}
-      />
+        <Tarjeta
+          estilo={{
+            alignItems: 'center',
+            backgroundColor: hasDiferencia ? (esSobrante ? paleta.exitoSoft : paleta.peligroSoft) : paleta.superficie2,
+          }}
+        >
+          <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>Diferencia</Text>
+          <Text
+            style={[
+              tipografia.h1,
+              tabular,
+              { color: hasDiferencia ? (esSobrante ? paleta.exitoTexto : paleta.peligroTexto) : paleta.texto2, marginTop: espacio.xs },
+            ]}
+          >
+            {esSobrante ? '+' : ''}{pesos(diferencia)}
+          </Text>
+          <Text style={[tipografia.caption, { color: paleta.texto3, marginTop: espacio.xs }]}>
+            {hasDiferencia ? (esSobrante ? 'Sobra' : 'Falta') : 'Cuadra exacto'}
+          </Text>
+        </Tarjeta>
 
-      <View style={[styles.diferenciaBox, hasDiferencia ? (diferencia > 0 ? styles.bgSobrante : styles.bgFaltante) : styles.bgCuadre]}>
-        <Text style={styles.labelDiferencia}>Diferencia</Text>
-        <Text style={[styles.valorDiferencia, hasDiferencia ? (diferencia > 0 ? styles.textVerde : styles.textRojo) : styles.textGris]}>
-          {diferencia > 0 ? '+' : ''}{pesos(diferencia)}
-        </Text>
-      </View>
-
-      {hasDiferencia && (
-        <View style={styles.notaBox}>
-          <Text style={styles.labelInput}>Justificación de Diferencia *</Text>
-          <TextInput
-            style={[styles.input, styles.inputArea]}
+        {hasDiferencia && (
+          <CampoTexto
+            etiqueta="Justificación de Diferencia *"
             placeholder="Explica por qué sobra o falta dinero..."
             multiline
-            numberOfLines={3}
             value={nota}
             onChangeText={setNota}
           />
-        </View>
-      )}
+        )}
 
-      <Pressable style={[styles.btnCerrar, guardando && styles.btnDisabled]} onPress={handleCerrar} disabled={guardando}>
-        {guardando ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Confirmar Cierre</Text>}
-      </Pressable>
-    </ScrollView>
+        <Boton titulo="Confirmar Cierre" onPress={handleCerrar} cargando={guardando} deshabilitado={guardando} />
+      </ScrollView>
+    </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  centro: { justifyContent: 'center', alignItems: 'center' },
-  scroll: { padding: 24, gap: 24 },
-  titulo: { fontSize: 24, fontWeight: '800', textAlign: 'center', marginBottom: 8 },
-  resumenBox: { backgroundColor: '#F8FAFC', padding: 20, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
-  label: { fontSize: 16, color: '#64748B', fontWeight: '600' },
-  valorEsperado: { fontSize: 32, fontWeight: '800', color: '#0F172A', marginTop: 8 },
-  labelInput: { fontSize: 16, fontWeight: '600', color: '#334155', marginBottom: 8 },
-  inputGigante: { fontSize: 40, fontWeight: '700', textAlign: 'center', borderBottomWidth: 2, borderBottomColor: '#CBD5E1', paddingVertical: 12, color: '#1E66F5' },
-  diferenciaBox: { padding: 20, borderRadius: 16, alignItems: 'center', marginTop: 8 },
-  bgCuadre: { backgroundColor: '#F1F5F9' },
-  bgFaltante: { backgroundColor: '#FEF2F2' },
-  bgSobrante: { backgroundColor: '#F0FDF4' },
-  labelDiferencia: { fontSize: 16, fontWeight: '600', color: '#64748B' },
-  valorDiferencia: { fontSize: 28, fontWeight: '800', marginTop: 4 },
-  textGris: { color: '#64748B' },
-  textRojo: { color: '#DC2626' },
-  textVerde: { color: '#16A34A' },
-  notaBox: { marginTop: 8 },
-  input: { borderWidth: 1, borderColor: '#CBD5E1', padding: 16, borderRadius: 12, fontSize: 16, backgroundColor: '#fff' },
-  inputArea: { height: 100, textAlignVertical: 'top' },
-  btnCerrar: { backgroundColor: '#1E66F5', paddingVertical: 18, borderRadius: 16, alignItems: 'center', marginTop: 12 },
-  btnDisabled: { opacity: 0.7 },
-  btnText: { color: '#fff', fontSize: 18, fontWeight: '700' },
-})

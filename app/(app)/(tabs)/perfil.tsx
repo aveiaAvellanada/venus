@@ -1,29 +1,39 @@
 import React from 'react'
 import { Alert, ScrollView, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
-import { LogOut, SunMoon, Users, Wallet } from 'lucide-react-native'
+import { Camera, ChartColumn, LogOut, Scale, Sparkles, SunMoon, Truck, Users, Wallet } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
-import type { Rol } from '../../../lib/permisos'
+import { puedeAcceder, type Rol } from '../../../lib/permisos'
 import { useTema } from '../../../lib/tema'
 import type { ModoTema } from '../../../lib/theme'
 import { espacio, radio, tipografia } from '../../../lib/theme'
-import { Badge, CirculoIcono, ControlSegmentado, FilaLista, Tarjeta } from '../../../components/ui'
+import { Badge, CirculoIcono, ControlSegmentado, FilaLista, Presionable, Tarjeta, useToast } from '../../../components/ui'
 
 const NOMBRE_ROL: Record<Rol, string> = {
-  dueno: 'DUEÑO',
-  admin: 'ADMINISTRATIVA',
-  empleado: 'OPERATIVO',
+  dueno: 'Dueño',
+  admin: 'Administrativa',
+  empleado: 'Operativo',
 }
 
 const MODOS: ModoTema[] = ['claro', 'oscuro', 'sistema']
+
+const NEGOCIO = [
+  { id: 'proveedores', titulo: 'Proveedores', sub: 'Datos, cuentas y deudas', ruta: '/proveedores', Icono: Truck },
+  { id: 'reportes', titulo: 'Reportes', sub: 'El negocio a fondo', ruta: '/reportes', Icono: ChartColumn },
+  { id: 'balance', titulo: 'Balance', sub: 'Ingresos − egresos', ruta: '/balance', Icono: Scale },
+  { id: 'analisis-ia', titulo: 'Análisis IA', sub: 'Recomendaciones de compra', ruta: undefined, Icono: Sparkles },
+  { id: 'carga-inicial', titulo: 'Carga inicial', sub: 'Plantilla Excel o cámara', ruta: '/inventario/carga', Icono: Camera },
+] as const
 
 export default function Perfil() {
   const { perfil, cerrarSesion } = useAuth()
   const { paleta, modo, setModo } = useTema()
   const router = useRouter()
+  const { mostrar } = useToast()
 
   if (!perfil) return null
   const esDueno = perfil.rol === 'dueno'
+  const accesosNegocio = NEGOCIO.filter((a) => puedeAcceder(perfil.rol as Rol, a.id))
 
   const confirmarSalida = () => {
     Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
@@ -87,8 +97,8 @@ export default function Perfil() {
                     <Wallet />
                   </CirculoIcono>
                 }
-                titulo="Automatización de caja"
-                subtitulo="Apertura, cierre y correo"
+                titulo="Caja"
+                subtitulo="Horario, modo de cierre e historial"
                 chevron
                 onPress={() => router.push('/caja/config')}
               />
@@ -108,16 +118,40 @@ export default function Perfil() {
           </>
         ) : null}
 
+        {accesosNegocio.length > 0 ? (
+          <>
+            <Text style={[tipografia.micro, { color: paleta.texto3 }]}>Negocio</Text>
+            <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
+              {accesosNegocio.map((a, i) => (
+                <View key={a.id}>
+                  {i > 0 ? <View style={{ height: 1, backgroundColor: paleta.borde, marginLeft: 56 }} /> : null}
+                  <FilaLista
+                    icono={
+                      <CirculoIcono tono="primario">
+                        <a.Icono />
+                      </CirculoIcono>
+                    }
+                    titulo={a.titulo}
+                    subtitulo={a.sub}
+                    chevron
+                    onPress={() => (a.ruta ? router.push(a.ruta) : mostrar('Análisis IA estará disponible pronto', 'info'))}
+                  />
+                </View>
+              ))}
+            </Tarjeta>
+          </>
+        ) : null}
+
         <Tarjeta estilo={{ paddingVertical: espacio.xs, borderColor: paleta.peligroSoft }}>
-          <FilaLista
-            icono={
-              <CirculoIcono tono="peligro">
-                <LogOut />
-              </CirculoIcono>
-            }
-            titulo="Cerrar sesión"
+          <Presionable
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar sesión"
             onPress={confirmarSalida}
-          />
+            style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.m, minHeight: 64, paddingVertical: espacio.s }}
+          >
+            <CirculoIcono tono="peligro"><LogOut /></CirculoIcono>
+            <Text style={[tipografia.h3, { color: paleta.peligroTexto }]}>Cerrar sesión</Text>
+          </Presionable>
         </Tarjeta>
       </ScrollView>
     </View>

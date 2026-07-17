@@ -1,26 +1,21 @@
 import React, { useState, useEffect } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-  Switch,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native'
+import { View, Text, ScrollView, ActivityIndicator, Switch, KeyboardAvoidingView, Platform } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import { ArrowLeft, Save } from 'lucide-react-native'
 import { obtenerProveedorPorId, crearProveedor, actualizarProveedor } from '../../../lib/proveedores'
 import { useRequireModulo } from '../../../lib/auth'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { useTema } from '../../../lib/tema'
+import { espacio, radio, tipografia } from '../../../lib/theme'
+import { CampoTexto, Presionable, Tarjeta, useToast } from '../../../components/ui'
 
 export default function ProveedorEditorScreen() {
   const requireModulo = useRequireModulo('proveedores')
   const { id } = useLocalSearchParams<{ id?: string }>()
   const router = useRouter()
+  const { paleta } = useTema()
+  const { mostrar } = useToast()
+  const paddingBarraInferior = usePaddingInferior(espacio.l)
 
   // Form Fields State
   const [nombre, setNombre] = useState('')
@@ -41,7 +36,7 @@ export default function ProveedorEditorScreen() {
       try {
         const data = await obtenerProveedorPorId(id)
         if (!data) {
-          Alert.alert('Error', 'No se encontró el proveedor especificado.')
+          mostrar('No se encontró el proveedor especificado.', 'error')
           router.back()
           return
         }
@@ -62,7 +57,7 @@ export default function ProveedorEditorScreen() {
         }
       } catch (err: any) {
         console.error('Error al cargar proveedor:', err)
-        Alert.alert('Error', 'No se pudieron cargar los datos del proveedor.')
+        mostrar('No se pudieron cargar los datos del proveedor.', 'error')
         router.back()
       } finally {
         setFetching(false)
@@ -76,7 +71,7 @@ export default function ProveedorEditorScreen() {
 
   const handleGuardar = async () => {
     if (!nombre || nombre.trim() === '') {
-      Alert.alert('Campo obligatorio', 'El nombre del proveedor es requerido.')
+      mostrar('El nombre del proveedor es requerido.', 'error')
       return
     }
 
@@ -99,28 +94,49 @@ export default function ProveedorEditorScreen() {
       setLoading(true)
       if (id) {
         await actualizarProveedor(id, payload)
-        Alert.alert('Éxito', 'El proveedor ha sido actualizado correctamente.', [
-          { text: 'Aceptar', onPress: () => router.back() },
-        ])
+        mostrar('El proveedor ha sido actualizado correctamente.')
+        router.back()
       } else {
         await crearProveedor(payload)
-        Alert.alert('Éxito', 'El proveedor ha sido registrado correctamente.', [
-          { text: 'Aceptar', onPress: () => router.back() },
-        ])
+        mostrar('El proveedor ha sido registrado correctamente.')
+        router.back()
       }
     } catch (err: any) {
       console.error('Error al guardar proveedor:', err)
-      Alert.alert('Error', err.message || 'No se pudo guardar el proveedor.')
+      mostrar(err.message || 'No se pudo guardar el proveedor.', 'error')
     } finally {
       setLoading(false)
     }
   }
 
+  const Encabezado = () => (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: espacio.m,
+        paddingHorizontal: espacio.xl,
+        paddingTop: 56,
+        paddingBottom: espacio.m,
+      }}
+    >
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>
+        {id ? 'Editar Proveedor' : 'Nuevo Proveedor'}
+      </Text>
+    </View>
+  )
+
   if (fetching) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.loadingText}>Cargando datos del proveedor...</Text>
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <Encabezado />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: espacio.m }}>
+          <ActivityIndicator size="large" color={paleta.primario} />
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Cargando datos del proveedor...</Text>
+        </View>
       </View>
     )
   }
@@ -128,206 +144,153 @@ export default function ProveedorEditorScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={{ flex: 1, backgroundColor: paleta.fondo }}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Form Container */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Datos Generales</Text>
+      <Encabezado />
 
-          {/* Nombre Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nombre del Proveedor *</Text>
-            <TextInput
-              style={styles.input}
+      <ScrollView
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: 120, gap: espacio.l }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.l }]}>Datos Generales</Text>
+
+          <View style={{ gap: espacio.l }}>
+            <CampoTexto
+              etiqueta="Nombre del Proveedor *"
               value={nombre}
               onChangeText={setNombre}
               placeholder="Ej. Distribuidora del Caquetá"
-              placeholderTextColor="#9ca3af"
               testID="input-nombre"
             />
-          </View>
 
-          {/* NIT / CC Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>NIT / Cédula</Text>
-            <TextInput
-              style={styles.input}
+            <CampoTexto
+              etiqueta="NIT / Cédula"
               value={nitCedula}
               onChangeText={setNitCedula}
               placeholder="Ej. 900123456-1"
-              placeholderTextColor="#9ca3af"
               testID="input-nit"
             />
           </View>
-        </View>
+        </Tarjeta>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Contacto y Ubicación</Text>
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.l }]}>Contacto y Ubicación</Text>
 
-          {/* Teléfono Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Teléfono de Contacto</Text>
-            <TextInput
-              style={styles.input}
+          <View style={{ gap: espacio.l }}>
+            <CampoTexto
+              etiqueta="Teléfono de Contacto"
               value={telefono}
               onChangeText={setTelefono}
               placeholder="Ej. 3123456789"
               keyboardType="phone-pad"
-              placeholderTextColor="#9ca3af"
               testID="input-telefono"
             />
-          </View>
 
-          {/* Ciudad / Dirección Input (Maps to ciudad) */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Dirección / Ciudad</Text>
-            <TextInput
-              style={styles.input}
+            <CampoTexto
+              etiqueta="Dirección / Ciudad"
               value={ciudad}
               onChangeText={setCiudad}
               placeholder="Ej. Florencia, Caquetá"
-              placeholderTextColor="#9ca3af"
               testID="input-ciudad"
             />
-          </View>
 
-          {/* Email Input (Appended to notas) */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Correo Electrónico (Email)</Text>
-            <TextInput
-              style={styles.input}
+            <CampoTexto
+              etiqueta="Correo Electrónico (Email)"
               value={email}
               onChangeText={setEmail}
               placeholder="Ej. compras@proveedor.com"
               keyboardType="email-address"
               autoCapitalize="none"
-              placeholderTextColor="#9ca3af"
               testID="input-email"
             />
           </View>
-        </View>
+        </Tarjeta>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Adicionales</Text>
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.l }]}>Adicionales</Text>
 
-          {/* Notas Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Notas y Observaciones</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={notas}
-              onChangeText={setNotas}
-              placeholder="Ingresa notas adicionales..."
-              multiline
-              numberOfLines={4}
-              placeholderTextColor="#9ca3af"
-              testID="input-notas"
-            />
-          </View>
+          <CampoTexto
+            etiqueta="Notas y Observaciones"
+            value={notas}
+            onChangeText={setNotas}
+            placeholder="Ingresa notas adicionales..."
+            multiline
+            numberOfLines={4}
+            testID="input-notas"
+          />
 
-          {/* Active Switch Toggle */}
-          <View style={styles.switchRow}>
-            <View>
-              <Text style={styles.switchLabel}>Proveedor Activo</Text>
-              <Text style={styles.switchSublabel}>Habilita o deshabilita este proveedor en compras</Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingTop: espacio.l,
+              marginTop: espacio.l,
+              borderTopWidth: 1,
+              borderTopColor: paleta.borde,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>Proveedor Activo</Text>
+              <Text style={[tipografia.caption, { color: paleta.texto3, marginTop: 2 }]}>
+                Habilita o deshabilita este proveedor en compras
+              </Text>
             </View>
             <Switch
               value={activo}
               onValueChange={setActivo}
-              trackColor={{ false: '#d1d5db', true: '#93c5fd' }}
-              thumbColor={activo ? '#3b82f6' : '#f3f4f6'}
+              trackColor={{ false: paleta.borde, true: paleta.primarioSoft }}
+              thumbColor={activo ? paleta.primario : paleta.superficie2}
               testID="switch-activo"
             />
           </View>
-        </View>
+        </Tarjeta>
       </ScrollView>
 
-      {/* Sticky Save Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-          onPress={handleGuardar}
+      {/* Botón de guardado fijo al fondo */}
+      <View
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: paleta.fondo,
+          padding: espacio.l,
+          paddingBottom: paddingBarraInferior,
+          borderTopWidth: 1,
+          borderTopColor: paleta.borde,
+        }}
+      >
+        {/* Boton no acepta testID; se usa un Presionable con los mismos tokens (testID requerido por la suite) */}
+        <Presionable
+          accessibilityRole="button"
+          accessibilityLabel={id ? 'Actualizar Proveedor' : 'Registrar Proveedor'}
+          accessibilityState={{ disabled: loading, busy: loading }}
           disabled={loading}
-          activeOpacity={0.8}
+          onPress={loading ? undefined : handleGuardar}
           testID="btn-guardar"
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: espacio.s,
+            height: 56,
+            borderRadius: radio.md,
+            backgroundColor: paleta.primario,
+            opacity: loading ? 0.45 : 1,
+          }}
         >
           {loading ? (
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator color={paleta.sobrePrimario} />
           ) : (
-            <>
-              <Ionicons name="save-outline" size={20} color="#ffffff" style={styles.buttonIcon} />
-              <Text style={styles.saveButtonText}>
-                {id ? 'Actualizar Proveedor' : 'Registrar Proveedor'}
-              </Text>
-            </>
+            <Save size={20} color={paleta.sobrePrimario} />
           )}
-        </TouchableOpacity>
+          <Text style={[tipografia.cuerpoLg, { color: paleta.sobrePrimario }]}>
+            {id ? 'Actualizar Proveedor' : 'Registrar Proveedor'}
+          </Text>
+        </Presionable>
       </View>
     </KeyboardAvoidingView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  loadingText: { marginTop: 12, color: '#4b5563', fontSize: 15 },
-  scrollContent: { padding: 16, paddingBottom: 100 },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 16 },
-  inputGroup: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: '#4b5563', marginBottom: 6 },
-  input: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  textArea: { height: 100, textAlignVertical: 'top' },
-  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 },
-  switchLabel: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  switchSublabel: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#ffffff',
-    padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 32 : 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  saveButton: {
-    backgroundColor: '#3b82f6',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  saveButtonDisabled: { opacity: 0.7 },
-  buttonIcon: { marginRight: 8 },
-  saveButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
-})

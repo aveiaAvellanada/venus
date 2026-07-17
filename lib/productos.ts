@@ -15,6 +15,7 @@ export interface ModeloCalzado {
   precioMin: number
   precioMax: number
   agotado: boolean
+  activo: boolean
   variantes: ProductoCalzado[]
 }
 
@@ -23,10 +24,14 @@ const tallaNumerica = (talla: string | null) => {
   return Number.isNaN(n) ? Number.MAX_SAFE_INTEGER : n
 }
 
-export function agruparPorReferencia(filas: ProductoCalzado[]): ModeloCalzado[] {
+export function agruparPorReferencia(
+  filas: ProductoCalzado[],
+  opciones?: { incluirInactivos?: boolean }
+): ModeloCalzado[] {
+  const incluirInactivos = opciones?.incluirInactivos ?? false
   const grupos = new Map<string, ProductoCalzado[]>()
   for (const f of filas) {
-    if (!f.activo) continue
+    if (!incluirInactivos && !f.activo) continue
     const ref = (f.referencia ?? '').trim().toLowerCase()
     const clave = ref !== '' ? ref : `desc:${f.descripcion.trim().toLowerCase()}`
     const grupo = grupos.get(clave)
@@ -54,6 +59,7 @@ export function agruparPorReferencia(filas: ProductoCalzado[]): ModeloCalzado[] 
       precioMin: Math.min(...variantes.map((v) => Number(v.precio_minimo))),
       precioMax: Math.max(...variantes.map((v) => Number(v.precio_maximo))),
       agotado: variantes.every((v) => Number(v.stock_actual) <= 0),
+      activo: variantes.some((v) => v.activo),
       variantes: ordenadas,
     }
   })

@@ -108,7 +108,7 @@ El vendedor elige qué tipo de producto va a vender:
 - Los filtros se combinan entre sí
 - Resultados muestran: foto, descripción, talla, color, precio mínimo–máximo, stock disponible
 - Productos agotados NO aparecen en la búsqueda de ventas
-- Al agregar al carrito: se puede ajustar el precio dentro del rango mínimo–máximo o fuera de él (el sistema permite el regateo libremente)
+- Al agregar al carrito: se puede ajustar el precio con un control deslizante (slider) dentro del rango mínimo–máximo definido para el zapato (el regateo ocurre dentro de esos límites; el mínimo y el máximo son topes reales de venta)
 - Indicador visual de stock al agregar: si quedan 2 unidades o menos, aparece advertencia "Quedan solo X pares"
 - Stepper +/− para cantidad, limitado al stock disponible
 
@@ -163,10 +163,10 @@ El vendedor elige qué tipo de producto va a vender:
 #### 3.1.4 Precios en zapatos
 
 Cada zapato tiene:
-- **Precio mínimo:** el precio más bajo recomendable de venta
-- **Precio máximo:** el precio más alto recomendable de venta
-- El vendedor puede ajustar el precio al agregar al carrito (el regateo es permitido y el precio final queda registrado en el item)
-- Andrés puede ver si un vendedor vendió sistemáticamente por debajo del precio mínimo
+- **Precio mínimo:** el precio más bajo al que se permite vender el zapato (tope inferior)
+- **Precio máximo:** el precio más alto al que se permite vender el zapato (tope superior)
+- El vendedor puede ajustar el precio al agregar al carrito, con un slider limitado al rango mínimo–máximo (el regateo ocurre dentro de esos topes y el precio final queda registrado en el item)
+- El precio final de cada item queda registrado, de modo que Andrés puede ver a qué precio se cerró cada venta dentro del rango
 
 #### 3.1.5 Ventas Separadas — Pago Parcial (v2 — segunda iteración)
 
@@ -764,9 +764,9 @@ de empezar a operar con Venus.
 **Libra:** unidad de peso = 500 gramos. Café y limón se venden por libra.
 **Temporada escolar:** enero y julio-agosto. Pico de ventas de calzado escolar.
 **Temporada navideña:** noviembre y diciembre. Pico más alto del año.
-**Precio mínimo:** precio más bajo recomendable al que se puede vender un zapato.
-**Precio máximo:** precio más alto recomendable al que se puede vender un zapato.
-**Regateo:** negociación del precio con el cliente. Venus permite vender a cualquier precio y registra el precio real de la venta.
+**Precio mínimo:** precio más bajo al que se permite vender un zapato (tope inferior del rango de regateo).
+**Precio máximo:** precio más alto al que se permite vender un zapato (tope superior del rango de regateo).
+**Regateo:** negociación del precio con el cliente, dentro del rango mínimo–máximo del zapato. Venus registra el precio real de la venta (dentro de esos topes).
 **Auditoría:** registro automático de quién hizo qué y cuándo en el sistema.
 **Granja:** módulo de Venus para productos que no son zapatos (huevos, café, limón, etc.).
 **Caja:** módulo de Venus para el control del día operativo del negocio.

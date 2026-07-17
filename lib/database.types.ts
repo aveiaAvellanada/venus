@@ -18,30 +18,30 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
-          hora_apertura: string | null
-          hora_cierre: string | null
+          horario_semanal: Json
           id: string
           modo_automatico: boolean
+          modo_cierre: string
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
-          hora_apertura?: string | null
-          hora_cierre?: string | null
+          horario_semanal?: Json
           id?: string
           modo_automatico?: boolean
+          modo_cierre?: string
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
-          hora_apertura?: string | null
-          hora_cierre?: string | null
+          horario_semanal?: Json
           id?: string
           modo_automatico?: boolean
+          modo_cierre?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -813,6 +813,7 @@ export type Database = {
           activo: boolean
           alerta_dias_antes: number
           beneficiario: string | null
+          comprobante_url: string | null
           created_at: string
           created_by: string | null
           dia_pago: number | null
@@ -827,6 +828,7 @@ export type Database = {
           activo?: boolean
           alerta_dias_antes?: number
           beneficiario?: string | null
+          comprobante_url?: string | null
           created_at?: string
           created_by?: string | null
           dia_pago?: number | null
@@ -841,6 +843,7 @@ export type Database = {
           activo?: boolean
           alerta_dias_antes?: number
           beneficiario?: string | null
+          comprobante_url?: string | null
           created_at?: string
           created_by?: string | null
           dia_pago?: number | null
@@ -1754,20 +1757,21 @@ export type Database = {
         Args: { p_anio: number; p_empleado_id: string; p_mes: number }
         Returns: number
       }
-      obtener_reporte_diario: { Args: { p_fecha: string }; Returns: Json }
       obtener_gastos_periodo: {
         Args: { p_desde: string; p_hasta: string }
         Returns: Json
       }
+      obtener_modo_cierre: { Args: never; Returns: string }
+      obtener_reporte_diario: { Args: { p_fecha: string }; Returns: Json }
       obtener_reporte_periodo: {
         Args: { p_desde: string; p_hasta: string }
         Returns: Json
       }
+      obtener_resumen_dia: { Args: { p_fecha: string }; Returns: Json }
       obtener_ventas_por_subperiodo: {
-        Args: { p_desde: string; p_hasta: string; p_granularidad: string }
+        Args: { p_desde: string; p_granularidad: string; p_hasta: string }
         Returns: Json
       }
-      obtener_resumen_dia: { Args: { p_fecha: string }; Returns: Json }
       registrar_devolucion: {
         Args: {
           p_items: Json

@@ -7,6 +7,12 @@ import renderer, { act } from 'react-test-renderer'
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
+jest.useFakeTimers()
+
+// El Toast/Presionable usan reanimated y los insets de safe-area (Regla global de pantallas restilizadas)
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
 
 jest.mock('./supabase', () => ({ supabase: { rpc: jest.fn(), from: jest.fn() } }))
 jest.mock('../lib/supabase', () => ({ supabase: { rpc: jest.fn(), from: jest.fn() } }))
@@ -70,8 +76,27 @@ jest.mock('../lib/reportes', () => {
 })
 
 import ReportesLayout from '../app/(app)/reportes/_layout'
-import ReportesIndex from '../app/(app)/reportes/index'
-import ReportesPeriodos from '../app/(app)/reportes/periodos'
+import ReportesIndexRaw from '../app/(app)/reportes/index'
+import ReportesPeriodosRaw from '../app/(app)/reportes/periodos'
+import { TemaProvider } from './tema'
+
+// Las pantallas ahora usan useTema(); se envuelven con los mismos nombres que ya
+// usa toda la suite para no tocar cada call-site.
+function ReportesIndex() {
+  return (
+    <TemaProvider>
+      <ReportesIndexRaw />
+    </TemaProvider>
+  )
+}
+
+function ReportesPeriodos() {
+  return (
+    <TemaProvider>
+      <ReportesPeriodosRaw />
+    </TemaProvider>
+  )
+}
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 

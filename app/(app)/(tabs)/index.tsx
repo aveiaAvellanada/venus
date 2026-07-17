@@ -1,20 +1,16 @@
 import React, { useCallback, useState } from 'react'
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
 import {
   Banknote,
-  ChartColumn,
   CreditCard,
-  Scale,
   Smartphone,
-  Sparkles,
-  Truck,
   Zap,
 } from 'lucide-react-native'
 import type { LucideIcon } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
-import { obtenerCajaHoy } from '../../../lib/caja'
+import { cerrarCajaSinDiferencia, obtenerCajaHoy, obtenerModoCierre } from '../../../lib/caja'
 import {
   granularidadParaRango,
   obtenerGastosPeriodo,
@@ -28,22 +24,22 @@ import {
   obtenerResumenDia,
 } from '../../../lib/reportes'
 import type { ReportePeriodo, ResumenDia } from '../../../lib/reportes'
+import { obtenerGastosFijosPorVencer, type GastoFijoPorVencer } from '../../../lib/gastos'
 import { puedeAcceder } from '../../../lib/permisos'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
 import {
   Badge,
   Chip,
-  CirculoIcono,
   ContadorDinero,
   Esqueleto,
-  FilaLista,
   GraficoBarras,
   SelectorRango,
   Tarjeta,
   TarjetaMetrica,
+  useToast,
 } from '../../../components/ui'
-import type { TipoBadge, TonoIcono } from '../../../components/ui'
+import type { TipoBadge } from '../../../components/ui'
 
 type EstadoCaja = 'cargando' | 'sin-abrir' | 'abierta' | 'cerrada'
 
@@ -53,13 +49,6 @@ const BADGE_CAJA: Record<EstadoCaja, { texto: string; tipo: TipoBadge; punto: bo
   abierta: { texto: 'ABIERTA', tipo: 'exito', punto: true },
   cerrada: { texto: 'CERRADA', tipo: 'peligro', punto: false },
 }
-
-const ACCESOS: { id: string; titulo: string; sub: string; ruta: string; Icono: LucideIcon; tono: TonoIcono }[] = [
-  { id: 'proveedores', titulo: 'Proveedores', sub: 'Datos, cuentas y deudas', ruta: '/proveedores', Icono: Truck, tono: 'primario' },
-  { id: 'reportes', titulo: 'Reportes', sub: 'El negocio a fondo', ruta: '/reportes', Icono: ChartColumn, tono: 'primario' },
-  { id: 'balance', titulo: 'Balance', sub: 'Ingresos − egresos', ruta: '/balance', Icono: Scale, tono: 'primario' },
-  { id: 'analisis-ia', titulo: 'Análisis IA', sub: 'Recomendaciones de compra', ruta: '/modulo/analisis-ia', Icono: Sparkles, tono: 'acento' },
-]
 
 const PERIODOS: { clave: Periodo; etiqueta: string }[] = [
   { clave: 'hoy', etiqueta: 'Hoy' },
@@ -78,23 +67,24 @@ interface Metodo {
 }
 
 function metodosDe(efectivo: number, nequi: number, breB: number, otro: number): Metodo[] {
-  const lista: Metodo[] = [
+  return [
     { clave: 'efectivo', etiqueta: 'Efectivo', monto: efectivo, Icono: Banknote },
     { clave: 'nequi', etiqueta: 'Nequi', monto: nequi, Icono: Smartphone },
     { clave: 'bre_b', etiqueta: 'Bre-B', monto: breB, Icono: Zap },
+    { clave: 'otro', etiqueta: 'Otro', monto: otro, Icono: CreditCard },
   ]
-  if (otro > 0) lista.push({ clave: 'otro', etiqueta: 'Otro', monto: otro, Icono: CreditCard })
-  return lista
 }
 
 export default function Menu() {
   const { perfil } = useAuth()
   const { paleta } = useTema()
   const router = useRouter()
+  const { mostrar } = useToast()
 
   const esStaff = perfil?.rol === 'dueno' || perfil?.rol === 'admin'
 
   const [estadoCaja, setEstadoCaja] = useState<EstadoCaja>('cargando')
+  const [modoCierre, setModoCierre] = useState<'con_diferencia' | 'sin_diferencia'>('con_diferencia')
   const [periodo, setPeriodo] = useState<Periodo | 'rango'>('hoy')
   const [rangoCustom, setRangoCustom] = useState<{ desde: string; hasta: string } | null>(null)
   const [granularidad, setGranularidad] = useState<Granularidad>('dia')
@@ -105,6 +95,7 @@ export default function Menu() {
   const [buckets, setBuckets] = useState<VentasBucket[]>([])
   const [gastos, setGastos] = useState<GastosPeriodo | null>(null)
   const [resumenHoy, setResumenHoy] = useState<ResumenDia | null>(null)
+  const [porVencer, setPorVencer] = useState<GastoFijoPorVencer[]>([])
 
   const cargarCaja = useCallback(() => {
     obtenerCajaHoy()
@@ -113,6 +104,9 @@ export default function Menu() {
         else setEstadoCaja(caja.estado === 'abierta' ? 'abierta' : 'cerrada')
       })
       .catch(() => setEstadoCaja('sin-abrir'))
+    obtenerModoCierre()
+      .then(setModoCierre)
+      .catch(() => setModoCierre('con_diferencia'))
   }, [])
 
   const cargarDatos = useCallback(async () => {
@@ -133,6 +127,9 @@ export default function Menu() {
         setReporte(rep)
         setBuckets(vb)
         setGastos(g)
+        if (puedeAcceder(perfil.rol, 'gastos-fijos')) {
+          obtenerGastosFijosPorVencer().then(setPorVencer).catch(() => setPorVencer([]))
+        }
       } else {
         const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' })
         setResumenHoy(await obtenerResumenDia(hoy))
@@ -154,7 +151,6 @@ export default function Menu() {
   if (!perfil) return null
 
   const badge = BADGE_CAJA[estadoCaja]
-  const accesos = ACCESOS.filter((a) => puedeAcceder(perfil.rol, a.id))
   const total = esStaff ? (reporte?.total_vendido ?? 0) : (resumenHoy?.total_general ?? 0)
   const numVentas = esStaff ? (reporte?.num_ventas ?? 0) : (resumenHoy?.total_ventas ?? 0)
   const metodos = esStaff
@@ -175,6 +171,32 @@ export default function Menu() {
     setRefrescando(false)
   }
 
+  const onPressCaja = () => {
+    if (estadoCaja !== 'abierta') {
+      router.push('/caja')
+      return
+    }
+    if (modoCierre === 'sin_diferencia') {
+      Alert.alert('Cerrar caja', '¿Seguro que quieres cerrar la caja?', [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Cerrar caja',
+          style: 'destructive',
+          onPress: () => {
+            cerrarCajaSinDiferencia()
+              .then(() => {
+                mostrar('Caja cerrada')
+                cargarCaja()
+              })
+              .catch((e: any) => mostrar(e.message, 'error'))
+          },
+        },
+      ])
+      return
+    }
+    router.push('/caja/cierre')
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
       <ScrollView
@@ -187,7 +209,7 @@ export default function Menu() {
           <Text style={[tipografia.h2, { color: paleta.texto }]}>
             {`Hola, ${perfil.nombre.split(' ')[0]}`}
           </Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Estado de caja" hitSlop={8} onPress={() => router.push('/caja')}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Estado de caja" hitSlop={8} onPress={onPressCaja}>
             <Badge texto={badge.texto} tipo={badge.tipo} punto={badge.punto} />
           </Pressable>
         </View>
@@ -276,19 +298,20 @@ export default function Menu() {
               </View>
             </LinearGradient>
 
-            <View style={{ flexDirection: 'row', gap: espacio.s }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: espacio.s }}>
               {metodos.map((m) => (
-                <TarjetaMetrica
-                  key={m.clave}
-                  mini
-                  etiqueta={m.etiqueta}
-                  valor={formatear(m.monto)}
-                  icono={<m.Icono size={16} color={paleta.primario} />}
-                />
+                <View key={m.clave} style={{ width: '48%' }}>
+                  <TarjetaMetrica
+                    mini
+                    etiqueta={m.etiqueta}
+                    valor={formatear(m.monto)}
+                    icono={<m.Icono size={16} color={paleta.primario} />}
+                  />
+                </View>
               ))}
             </View>
 
-            {esStaff ? (
+            {esStaff && periodo !== 'hoy' ? (
               <Tarjeta>
                 <View style={{ gap: espacio.m }}>
                   <Text style={[tipografia.micro, { color: paleta.texto3 }]}>Ventas por período</Text>
@@ -334,22 +357,37 @@ export default function Menu() {
           </>
         )}
 
-        {accesos.length > 0 ? (
-          <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
-            {accesos.map((a, i) => (
-              <View key={a.id}>
-                {i > 0 ? <View style={{ height: 1, backgroundColor: paleta.borde, marginLeft: 56 }} /> : null}
-                <FilaLista
-                  icono={
-                    <CirculoIcono tono={a.tono}>
-                      <a.Icono />
-                    </CirculoIcono>
-                  }
-                  titulo={a.titulo}
-                  subtitulo={a.sub}
-                  chevron
-                  onPress={() => router.push(a.ruta)}
-                />
+        {porVencer.length > 0 ? (
+          <Tarjeta estilo={{ borderColor: paleta.advertencia, backgroundColor: paleta.advertenciaSoft }}>
+            <Text style={[tipografia.etiqueta, { color: paleta.texto, marginBottom: espacio.s }]}>
+              Gastos fijos por vencer
+            </Text>
+            {porVencer.map((g, i) => (
+              <View key={g.id}>
+                {i > 0 ? <View style={{ height: 1, backgroundColor: paleta.borde, marginVertical: espacio.s }} /> : null}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[tipografia.cuerpo, { color: paleta.texto }]}>{g.nombre}</Text>
+                    <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+                      {formatear(g.monto_aproximado)} · {g.dias_restantes < 0 ? 'Atrasado' : g.dias_restantes === 0 ? 'Vence hoy' : `Vence en ${g.dias_restantes} días`}
+                    </Text>
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Confirmar pago de ${g.nombre}`}
+                    onPress={() => router.push(`/gastos/pagar?id=${g.id}&nombre=${encodeURIComponent(g.nombre)}&monto=${g.monto_aproximado}`)}
+                    style={({ pressed }) => ({
+                      paddingVertical: espacio.s,
+                      paddingHorizontal: espacio.m,
+                      borderRadius: radio.sm,
+                      backgroundColor: pressed ? paleta.primarioSoft : paleta.superficie,
+                      borderWidth: 1,
+                      borderColor: paleta.primario,
+                    })}
+                  >
+                    <Text style={[tipografia.etiqueta, { color: paleta.primario }]}>Confirmar pago</Text>
+                  </Pressable>
+                </View>
               </View>
             ))}
           </Tarjeta>

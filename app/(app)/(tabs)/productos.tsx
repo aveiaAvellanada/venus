@@ -1,11 +1,11 @@
 import React, { useCallback, useState } from 'react'
 import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Camera, ChevronRight, Egg, Footprints, PackagePlus, Search } from 'lucide-react-native'
+import { ChevronRight, Egg, Footprints, PackagePlus, Search } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
+import { CATEGORIAS } from '../../../lib/excel'
 import { listarCalzado, listarVarios } from '../../../lib/inventario'
 import type { ProductoVarios } from '../../../lib/inventario'
-import { puedeAcceder } from '../../../lib/permisos'
 import { agruparPorReferencia, filtrarModelos } from '../../../lib/productos'
 import type { ModeloCalzado } from '../../../lib/productos'
 import { useTema } from '../../../lib/tema'
@@ -24,8 +24,8 @@ import {
 
 const formatear = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
-// Las 7 categorías canónicas del PRD (misma lista que valida lib/excel.ts).
-const CATEGORIAS = ['Todas', 'Chanclas', 'Escolar', 'Botas caucho', 'Deportivo', 'Tennis', 'Clásico', 'Otros']
+// 'Todas' no es una categoría real: es el chip que desactiva el filtro.
+const CHIPS_CATEGORIA = [{ valor: 'Todas', etiqueta: 'Todas' }, ...CATEGORIAS]
 
 function CardModelo({ modelo, onPress }: { modelo: ModeloCalzado; onPress: () => void }) {
   const { paleta } = useTema()
@@ -150,6 +150,20 @@ export default function Productos() {
       >
         <Text style={[tipografia.h1, { color: paleta.texto }]}>Productos</Text>
 
+        <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
+          <FilaLista
+            icono={
+              <CirculoIcono tono="exito">
+                <PackagePlus />
+              </CirculoIcono>
+            }
+            titulo="Recibir mercancía"
+            subtitulo="Entrada de mercancía nueva"
+            chevron
+            onPress={() => router.push('/recibir-mercancia')}
+          />
+        </Tarjeta>
+
         <ControlSegmentado
           opciones={['Calzado', 'Granja']}
           indice={modo}
@@ -173,8 +187,13 @@ export default function Productos() {
 
         {modo === 0 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: espacio.s }}>
-            {CATEGORIAS.map((c) => (
-              <Chip key={c} etiqueta={c} activo={categoria === c} onPress={() => setCategoria(c)} />
+            {CHIPS_CATEGORIA.map((c) => (
+              <Chip
+                key={c.valor}
+                etiqueta={c.etiqueta}
+                activo={categoria === c.valor}
+                onPress={() => setCategoria(c.valor)}
+              />
             ))}
           </ScrollView>
         ) : null}
@@ -229,37 +248,6 @@ export default function Productos() {
             ))}
           </Tarjeta>
         )}
-
-        <Text style={[tipografia.micro, { color: paleta.texto3 }]}>Ingresar mercancía</Text>
-        <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
-          <FilaLista
-            icono={
-              <CirculoIcono tono="exito">
-                <PackagePlus />
-              </CirculoIcono>
-            }
-            titulo="Recibir mercancía"
-            subtitulo="Entrada de mercancía nueva"
-            chevron
-            onPress={() => router.push('/recibir-mercancia')}
-          />
-          {puedeAcceder(perfil.rol, 'carga-inicial') ? (
-            <>
-              <View style={{ height: 1, backgroundColor: paleta.borde, marginLeft: 56 }} />
-              <FilaLista
-                icono={
-                  <CirculoIcono tono="primario">
-                    <Camera />
-                  </CirculoIcono>
-                }
-                titulo="Carga inicial"
-                subtitulo="Plantilla Excel o cámara"
-                chevron
-                onPress={() => router.push('/inventario/carga')}
-              />
-            </>
-          ) : null}
-        </Tarjeta>
       </ScrollView>
     </View>
   )

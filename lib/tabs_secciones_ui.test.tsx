@@ -208,13 +208,15 @@ describe('Productos', () => {
     expect(existeTexto(arbol, 'Huevos')).toBe(true)
   })
 
-  it('empleado ve Recibir mercancía pero no Carga inicial; admin sí', async () => {
+  // Carga inicial ya no vive aquí para ningún rol: se movió a Perfil.
+  it('todos ven Recibir mercancía; nadie ve Carga inicial', async () => {
     conRol('empleado')
     const a = await montar(<Productos />)
     expect(existeTexto(a, 'Recibir mercancía')).toBe(true)
     expect(existeTexto(a, 'Carga inicial')).toBe(false)
     conRol('admin')
     const b = await montar(<Productos />)
-    expect(existeTexto(b, 'Carga inicial')).toBe(true)
+    expect(existeTexto(b, 'Recibir mercancía')).toBe(true)
+    expect(existeTexto(b, 'Carga inicial')).toBe(false)
   })
 })

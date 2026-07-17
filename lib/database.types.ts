@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       caja_config: {
@@ -1786,10 +1761,7 @@ export type Database = {
         Args: { p_desde: string; p_hasta: string }
         Returns: Json
       }
-      obtener_modo_cierre: {
-        Args: { [_ in never]: never }
-        Returns: string
-      }
+      obtener_modo_cierre: { Args: never; Returns: string }
       obtener_reporte_diario: { Args: { p_fecha: string }; Returns: Json }
       obtener_reporte_periodo: {
         Args: { p_desde: string; p_hasta: string }
@@ -1952,9 +1924,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

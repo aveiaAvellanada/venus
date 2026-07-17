@@ -16,11 +16,11 @@ import { obtenerBalance, rangoPeriodo, proyeccionMes, type Balance } from '../..
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
-import { CirculoIcono, EstadoVacio, Presionable, Tarjeta, TarjetaMetrica } from '../../../components/ui'
+import { CirculoIcono, EstadoVacio, Presionable, SelectorRango, Tarjeta, TarjetaMetrica } from '../../../components/ui'
 
 const pesos = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
-type Tipo = 'semana' | 'mes'
+type Tipo = 'semana' | 'mes' | 'anio' | 'rango'
 
 const NOMBRE_MES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -28,9 +28,15 @@ const NOMBRE_MES = [
 ]
 
 // Etiqueta legible del período que contiene refDate
-function etiquetaPeriodo(tipo: Tipo, refDate: Date): string {
+function etiquetaPeriodo(tipo: Tipo, refDate: Date, rangoCustom: { desde: string; hasta: string } | null): string {
   if (tipo === 'mes') {
     return `${NOMBRE_MES[refDate.getMonth()]} ${refDate.getFullYear()}`
+  }
+  if (tipo === 'anio') {
+    return String(refDate.getFullYear())
+  }
+  if (tipo === 'rango') {
+    return rangoCustom ? `${rangoCustom.desde} → ${rangoCustom.hasta}` : 'Elige un rango'
   }
   const { desde, hasta } = rangoPeriodo('semana', refDate)
   return `${desde} → ${hasta}`
@@ -71,6 +77,7 @@ function SelectorTipo({ tipo, onCambio }: { tipo: Tipo; onCambio: (t: Tipo) => v
   const opciones: { valor: Tipo; etiqueta: string; testID: string }[] = [
     { valor: 'semana', etiqueta: 'Semana', testID: 'btn-tipo-semana' },
     { valor: 'mes', etiqueta: 'Mes', testID: 'btn-tipo-mes' },
+    { valor: 'anio', etiqueta: 'Año', testID: 'btn-tipo-anio' },
   ]
   return (
     <View style={{ flexDirection: 'row', backgroundColor: paleta.superficie2, borderRadius: radio.full, padding: 4 }}>
@@ -108,16 +115,18 @@ export default function BalanceIndex() {
 
   const [tipo, setTipo] = useState<Tipo>('mes')
   const [refDate, setRefDate] = useState<Date>(new Date())
+  const [rangoCustom, setRangoCustom] = useState<{ desde: string; hasta: string } | null>(null)
   const [data, setData] = useState<Balance | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const cargarDatos = useCallback(async (t: Tipo, ref: Date, isRefresh = false) => {
+  const cargarDatos = useCallback(async (t: Tipo, ref: Date, custom: { desde: string; hasta: string } | null, isRefresh = false) => {
+    if (t === 'rango' && !custom) return
     if (!isRefresh) setLoading(true)
     setError(null)
     try {
-      const { desde, hasta } = rangoPeriodo(t, ref)
+      const { desde, hasta } = rangoPeriodo(t, ref, custom ?? undefined)
       const bal = await obtenerBalance(desde, hasta)
       setData(bal)
     } catch (err: unknown) {
@@ -132,8 +141,8 @@ export default function BalanceIndex() {
   useFocusEffect(
     useCallback(() => {
       // No disparar la petición si el rol no tiene acceso (el guard redirige abajo).
-      if (!requireModulo) cargarDatos(tipo, refDate)
-    }, [cargarDatos, requireModulo, tipo, refDate])
+      if (!requireModulo) cargarDatos(tipo, refDate, rangoCustom)
+    }, [cargarDatos, requireModulo, tipo, refDate, rangoCustom])
   )
 
   if (requireModulo) return requireModulo
@@ -144,9 +153,12 @@ export default function BalanceIndex() {
     setRefDate(new Date())
   }
 
-  // Mueve refDate un mes o una semana atrás (-1) o adelante (+1)
+  // Mueve refDate un año, un mes o una semana atrás (-1) o adelante (+1). No aplica a 'rango'.
   const mover = (dir: -1 | 1) => {
     setRefDate((prev) => {
+      if (tipo === 'anio') {
+        return new Date(prev.getFullYear() + dir, prev.getMonth(), 1)
+      }
       if (tipo === 'mes') {
         return new Date(prev.getFullYear(), prev.getMonth() + dir, 1)
       }
@@ -156,7 +168,7 @@ export default function BalanceIndex() {
 
   const onRefresh = () => {
     setRefreshing(true)
-    cargarDatos(tipo, refDate, true)
+    cargarDatos(tipo, refDate, rangoCustom, true)
   }
 
   const balanceNum = data?.balance ?? 0
@@ -185,33 +197,50 @@ export default function BalanceIndex() {
           borderBottomColor: paleta.borde,
         }}
       >
-        <SelectorTipo tipo={tipo} onCambio={cambiarTipo} />
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: espacio.m }}>
-          <Presionable
-            testID="btn-nav-prev"
-            accessibilityRole="button"
-            accessibilityLabel="Período anterior"
-            onPress={() => mover(-1)}
-            hitSlop={12}
-            style={{ padding: espacio.xs }}
-          >
-            <ChevronLeft size={22} color={paleta.texto2} />
-          </Presionable>
-          <Text style={[tipografia.cuerpoLg, { color: paleta.texto, textTransform: 'capitalize' }]}>
-            {etiquetaPeriodo(tipo, refDate)}
-          </Text>
-          <Presionable
-            testID="btn-nav-next"
-            accessibilityRole="button"
-            accessibilityLabel="Período siguiente"
-            onPress={() => mover(1)}
-            hitSlop={12}
-            style={{ padding: espacio.xs }}
-          >
-            <ChevronRight size={22} color={paleta.texto2} />
-          </Presionable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s }}>
+          <View style={{ flex: 1 }}>
+            <SelectorTipo tipo={tipo} onCambio={cambiarTipo} />
+          </View>
+          <SelectorRango
+            activo={tipo === 'rango'}
+            onAplicar={(desde, hasta) => {
+              setRangoCustom({ desde, hasta })
+              setTipo('rango')
+            }}
+          />
         </View>
+
+        {tipo === 'rango' ? (
+          <Text style={[tipografia.cuerpoLg, { color: paleta.texto, textTransform: 'capitalize', marginTop: espacio.m, textAlign: 'center' }]}>
+            {etiquetaPeriodo(tipo, refDate, rangoCustom)}
+          </Text>
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: espacio.m }}>
+            <Presionable
+              testID="btn-nav-prev"
+              accessibilityRole="button"
+              accessibilityLabel="Período anterior"
+              onPress={() => mover(-1)}
+              hitSlop={12}
+              style={{ padding: espacio.xs }}
+            >
+              <ChevronLeft size={22} color={paleta.texto2} />
+            </Presionable>
+            <Text style={[tipografia.cuerpoLg, { color: paleta.texto, textTransform: 'capitalize' }]}>
+              {etiquetaPeriodo(tipo, refDate, rangoCustom)}
+            </Text>
+            <Presionable
+              testID="btn-nav-next"
+              accessibilityRole="button"
+              accessibilityLabel="Período siguiente"
+              onPress={() => mover(1)}
+              hitSlop={12}
+              style={{ padding: espacio.xs }}
+            >
+              <ChevronRight size={22} color={paleta.texto2} />
+            </Presionable>
+          </View>
+        )}
       </View>
 
       {loading ? (
@@ -224,7 +253,7 @@ export default function BalanceIndex() {
             icono={<CircleAlert />}
             titulo={error}
             textoAccion="Reintentar"
-            onAccion={() => cargarDatos(tipo, refDate)}
+            onAccion={() => cargarDatos(tipo, refDate, rangoCustom)}
           />
         </View>
       ) : data ? (

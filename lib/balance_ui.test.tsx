@@ -240,6 +240,47 @@ describe('Balance UI — tests de integración', () => {
 
       expect((apiBalance.obtenerBalance as jest.Mock).mock.calls.length).toBeGreaterThan(callsAntes)
     })
+
+    test('Tocar "Año" vuelve a invocar obtenerBalance con el 1 de enero al 31 de diciembre', async () => {
+      await act(async () => {
+        tree = renderer.create(<BalanceIndex />)
+      })
+      const callsTrasMontaje = (apiBalance.obtenerBalance as jest.Mock).mock.calls.length
+
+      const root = tree!.root
+      const btnAnio = root.findByProps({ testID: 'btn-tipo-anio' })
+      await act(async () => {
+        btnAnio.props.onPress()
+      })
+
+      const mock = apiBalance.obtenerBalance as jest.Mock
+      expect(mock.mock.calls.length).toBeGreaterThan(callsTrasMontaje)
+      const [desde, hasta] = mock.mock.calls[mock.mock.calls.length - 1]
+      const anio = new Date().getFullYear()
+      expect(desde).toBe(`${anio}-01-01`)
+      expect(hasta).toBe(`${anio}-12-31`)
+    })
+
+    test('Elegir un rango personalizado invoca obtenerBalance con esas fechas y oculta las flechas prev/next', async () => {
+      await act(async () => {
+        tree = renderer.create(<BalanceIndex />)
+      })
+      const callsTrasMontaje = (apiBalance.obtenerBalance as jest.Mock).mock.calls.length
+
+      const root = tree!.root
+      const chipRango = root.findByProps({ accessibilityLabel: 'Rango ▾' })
+      await act(async () => {
+        chipRango.props.onPress()
+      })
+      const btnAplicar = root.findByProps({ accessibilityLabel: 'Aplicar' })
+      await act(async () => {
+        btnAplicar.props.onPress()
+      })
+
+      const mock = apiBalance.obtenerBalance as jest.Mock
+      expect(mock.mock.calls.length).toBeGreaterThan(callsTrasMontaje)
+      expect(root.findAllByProps({ testID: 'btn-nav-prev' }).length).toBe(0)
+    })
   })
 
   // ── 4. Totales renderizados ──────────────────────────────────────────────────

@@ -252,6 +252,36 @@ export default function Movimientos() {
           )
         ) : (
           <View style={{ gap: espacio.l }}>
+            <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
+              <FilaLista
+                icono={
+                  <CirculoIcono tono="peligro">
+                    <ReceiptText />
+                  </CirculoIcono>
+                }
+                titulo="Registrar gasto variable"
+                subtitulo="Imprevistos por categoría"
+                chevron
+                onPress={() => router.push('/gastos')}
+              />
+              {puedeAcceder(perfil.rol, 'gastos-fijos') ? (
+                <>
+                  <View style={{ height: 1, backgroundColor: paleta.borde, marginLeft: 56 }} />
+                  <FilaLista
+                    icono={
+                      <CirculoIcono tono="primario">
+                        <CalendarClock />
+                      </CirculoIcono>
+                    }
+                    titulo="Gastos fijos"
+                    subtitulo="Recurrentes y vencimientos"
+                    chevron
+                    onPress={() => router.push('/gastos/fijos')}
+                  />
+                </>
+              ) : null}
+            </Tarjeta>
+
             {esStaff && gastos ? (
               gastos.gastos.length === 0 ? (
                 <EstadoVacio icono={<ReceiptText />} titulo="Sin gastos en este período" />
@@ -288,36 +318,6 @@ export default function Movimientos() {
                 </Tarjeta>
               )
             ) : null}
-
-            <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
-              <FilaLista
-                icono={
-                  <CirculoIcono tono="peligro">
-                    <ReceiptText />
-                  </CirculoIcono>
-                }
-                titulo="Registrar gasto variable"
-                subtitulo="Imprevistos por categoría"
-                chevron
-                onPress={() => router.push('/gastos')}
-              />
-              {puedeAcceder(perfil.rol, 'gastos-fijos') ? (
-                <>
-                  <View style={{ height: 1, backgroundColor: paleta.borde, marginLeft: 56 }} />
-                  <FilaLista
-                    icono={
-                      <CirculoIcono tono="primario">
-                        <CalendarClock />
-                      </CirculoIcono>
-                    }
-                    titulo="Gastos fijos"
-                    subtitulo="Recurrentes y vencimientos"
-                    chevron
-                    onPress={() => router.push('/gastos/fijos')}
-                  />
-                </>
-              ) : null}
-            </Tarjeta>
           </View>
         )}
       </ScrollView>

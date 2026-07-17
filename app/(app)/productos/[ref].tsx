@@ -175,7 +175,34 @@ export default function ProductoDetalleScreen() {
                 })
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
                 mostrar(`Agregado: talla ${variante.talla} · ${variante.color}`)
-                router.push('/ventas/nueva')
+              }}
+            />
+            <Boton
+              titulo="Compra rápida"
+              variante="secundario"
+              deshabilitado={!variante || Number(variante.stock_actual) <= 0}
+              onPress={() => {
+                if (!variante || !modelo) return
+                dispatch({ tipo: 'limpiar' })
+                dispatch({
+                  tipo: 'agregar',
+                  producto: {
+                    tipo: 'calzado',
+                    id: variante.id,
+                    titulo: modelo.nombre,
+                    detalle: detalleCalzado({
+                      marca: modelo.marca,
+                      talla: variante.talla,
+                      color: variante.color,
+                    }),
+                    precio: Number(variante.precio_maximo),
+                    stock: Number(variante.stock_actual),
+                    precioMin: Number(variante.precio_minimo),
+                    precioMax: Number(variante.precio_maximo),
+                  },
+                })
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+                router.push('/ventas/nueva?modo=rapida')
               }}
             />
             {esStaff ? (

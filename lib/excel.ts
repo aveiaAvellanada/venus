@@ -13,15 +13,25 @@ export async function leerExcel(uri: string): Promise<any[]> {
 
 // Las 7 categorías canónicas de calzado (PRD v4.0 §3). Única fuente de verdad:
 // cualquier pantalla que muestre chips de categoría debe importar esto.
+//
+// `valor` es lo que acepta el CHECK de productos_calzado.categoria y lo único
+// que puede viajar a la base; `etiqueta` es lo que lee el usuario. Difieren solo
+// en Clasico/Clásico: la tilde nunca puede llegar a la DB.
 export const CATEGORIAS = [
-  'Chanclas',
-  'Escolar',
-  'Botas caucho',
-  'Deportivo',
-  'Tennis',
-  'Clásico',
-  'Otros'
-];
+  { valor: 'Chanclas', etiqueta: 'Chanclas' },
+  { valor: 'Escolar', etiqueta: 'Escolar' },
+  { valor: 'Botas caucho', etiqueta: 'Botas caucho' },
+  { valor: 'Deportivo', etiqueta: 'Deportivo' },
+  { valor: 'Tennis', etiqueta: 'Tennis' },
+  { valor: 'Clasico', etiqueta: 'Clásico' },
+  { valor: 'Otros', etiqueta: 'Otros' }
+] as const;
+
+export type CategoriaCalzado = (typeof CATEGORIAS)[number]['valor'];
+
+function sinTildes(texto: string): string {
+  return texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
 
 function getColValue(row: any, possibleKeys: string[]): any {
   for (const key of Object.keys(row)) {
@@ -56,12 +66,11 @@ export function validarFilas(filas: any[]) {
 
     let validCategory: string | undefined;
     if (categoria) {
-      const match = CATEGORIAS.find(c =>
-        c.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === 
-        String(categoria).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      );
+      // Se compara sin tildes para aceptar "Cl\u00e1sico" o "Clasico" del Excel,
+      // pero lo que se guarda es siempre el valor que acepta la DB.
+      const match = CATEGORIAS.find(c => sinTildes(c.valor) === sinTildes(String(categoria)));
       if (match) {
-        validCategory = match;
+        validCategory = match.valor;
       }
     }
 

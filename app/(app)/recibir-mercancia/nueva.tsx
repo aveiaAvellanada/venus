@@ -822,10 +822,10 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s }}>
                   {CATEGORIAS.map(cat => (
                     <Chip
-                      key={cat}
-                      etiqueta={cat}
-                      activo={calzadoCategoria === cat}
-                      onPress={() => setCalzadoCategoria(cat)}
+                      key={cat.valor}
+                      etiqueta={cat.etiqueta}
+                      activo={calzadoCategoria === cat.valor}
+                      onPress={() => setCalzadoCategoria(cat.valor)}
                     />
                   ))}
                 </View>

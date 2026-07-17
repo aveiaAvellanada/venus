@@ -162,7 +162,7 @@ const CALZADO = [
     stock_minimo: 1, foto_url: null, proveedor_id: null, activo: true,
   },
   {
-    id: 'c3', descripcion: 'Croydon Urbano', marca: 'Croydon', referencia: '3310', categoria: 'Clásico',
+    id: 'c3', descripcion: 'Croydon Urbano', marca: 'Croydon', referencia: '3310', categoria: 'Clasico',
     talla: '41', color: 'Café', precio_minimo: 95000, precio_maximo: 95000, stock_actual: 0,
     stock_minimo: 1, foto_url: null, proveedor_id: null, activo: true,
   },

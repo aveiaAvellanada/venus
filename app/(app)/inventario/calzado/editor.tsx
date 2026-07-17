@@ -290,7 +290,12 @@ export default function CalzadoEditorScreen() {
             <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>Categoría *</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s }}>
               {CATEGORIAS.map((cat) => (
-                <Chip key={cat} etiqueta={cat} activo={categoria === cat} onPress={() => setCategoria(cat)} />
+                <Chip
+                  key={cat.valor}
+                  etiqueta={cat.etiqueta}
+                  activo={categoria === cat.valor}
+                  onPress={() => setCategoria(cat.valor)}
+                />
               ))}
             </View>
           </View>

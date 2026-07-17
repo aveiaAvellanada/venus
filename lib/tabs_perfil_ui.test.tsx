@@ -90,19 +90,20 @@ describe('Perfil', () => {
     expect(existeTexto(arbol, 'Cerrar sesión')).toBe(true)
   })
 
-  it('dueño ve toda la sección Negocio (Proveedores, Reportes, Balance, Análisis IA)', async () => {
+  it('dueño ve toda la sección Negocio (Proveedores, Reportes, Balance, Análisis IA, Carga inicial)', async () => {
     conPerfil('dueno')
     const arbol = await montar()
-    for (const t of ['Negocio', 'Proveedores', 'Reportes', 'Balance', 'Análisis IA']) {
+    for (const t of ['Negocio', 'Proveedores', 'Reportes', 'Balance', 'Análisis IA', 'Carga inicial']) {
       expect({ [t]: existeTexto(arbol, t) }).toEqual({ [t]: true })
     }
   })
 
-  it('administrativa ve Proveedores/Reportes pero no Balance ni Análisis IA', async () => {
+  it('administrativa ve Proveedores/Reportes/Carga inicial pero no Balance ni Análisis IA', async () => {
     conPerfil('admin', 'Sandra Cardona')
     const arbol = await montar()
     expect(existeTexto(arbol, 'Proveedores')).toBe(true)
     expect(existeTexto(arbol, 'Reportes')).toBe(true)
+    expect(existeTexto(arbol, 'Carga inicial')).toBe(true)
     expect(existeTexto(arbol, 'Balance')).toBe(false)
     expect(existeTexto(arbol, 'Análisis IA')).toBe(false)
   })
@@ -112,5 +113,6 @@ describe('Perfil', () => {
     const arbol = await montar()
     expect(existeTexto(arbol, 'Negocio')).toBe(false)
     expect(existeTexto(arbol, 'Proveedores')).toBe(false)
+    expect(existeTexto(arbol, 'Carga inicial')).toBe(false)
   })
 })

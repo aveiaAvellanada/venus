@@ -1,13 +1,13 @@
 import React from 'react'
 import { Alert, ScrollView, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
-import { LogOut, SunMoon, Users, Wallet } from 'lucide-react-native'
+import { ChartColumn, LogOut, Scale, Sparkles, SunMoon, Truck, Users, Wallet } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
-import type { Rol } from '../../../lib/permisos'
+import { puedeAcceder, type Rol } from '../../../lib/permisos'
 import { useTema } from '../../../lib/tema'
 import type { ModoTema } from '../../../lib/theme'
 import { espacio, radio, tipografia } from '../../../lib/theme'
-import { Badge, CirculoIcono, ControlSegmentado, FilaLista, Presionable, Tarjeta } from '../../../components/ui'
+import { Badge, CirculoIcono, ControlSegmentado, FilaLista, Presionable, Tarjeta, useToast } from '../../../components/ui'
 
 const NOMBRE_ROL: Record<Rol, string> = {
   dueno: 'Dueño',
@@ -17,13 +17,22 @@ const NOMBRE_ROL: Record<Rol, string> = {
 
 const MODOS: ModoTema[] = ['claro', 'oscuro', 'sistema']
 
+const NEGOCIO = [
+  { id: 'proveedores', titulo: 'Proveedores', sub: 'Datos, cuentas y deudas', ruta: '/proveedores', Icono: Truck },
+  { id: 'reportes', titulo: 'Reportes', sub: 'El negocio a fondo', ruta: '/reportes', Icono: ChartColumn },
+  { id: 'balance', titulo: 'Balance', sub: 'Ingresos − egresos', ruta: '/balance', Icono: Scale },
+  { id: 'analisis-ia', titulo: 'Análisis IA', sub: 'Recomendaciones de compra', ruta: undefined, Icono: Sparkles },
+] as const
+
 export default function Perfil() {
   const { perfil, cerrarSesion } = useAuth()
   const { paleta, modo, setModo } = useTema()
   const router = useRouter()
+  const { mostrar } = useToast()
 
   if (!perfil) return null
   const esDueno = perfil.rol === 'dueno'
+  const accesosNegocio = NEGOCIO.filter((a) => puedeAcceder(perfil.rol as Rol, a.id))
 
   const confirmarSalida = () => {
     Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
@@ -104,6 +113,30 @@ export default function Perfil() {
                 chevron
                 onPress={() => router.push('/empleados')}
               />
+            </Tarjeta>
+          </>
+        ) : null}
+
+        {accesosNegocio.length > 0 ? (
+          <>
+            <Text style={[tipografia.micro, { color: paleta.texto3 }]}>Negocio</Text>
+            <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
+              {accesosNegocio.map((a, i) => (
+                <View key={a.id}>
+                  {i > 0 ? <View style={{ height: 1, backgroundColor: paleta.borde, marginLeft: 56 }} /> : null}
+                  <FilaLista
+                    icono={
+                      <CirculoIcono tono="primario">
+                        <a.Icono />
+                      </CirculoIcono>
+                    }
+                    titulo={a.titulo}
+                    subtitulo={a.sub}
+                    chevron
+                    onPress={() => (a.ruta ? router.push(a.ruta) : mostrar('Análisis IA estará disponible pronto', 'info'))}
+                  />
+                </View>
+              ))}
             </Tarjeta>
           </>
         ) : null}

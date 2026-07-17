@@ -18,11 +18,16 @@ jest.mock('expo-router', () => ({
 jest.mock('./supabase', () => ({ supabase: {} }))
 jest.mock('../lib/supabase', () => ({ supabase: {} }))
 
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
+
 const mockUseAuth = jest.fn()
 jest.mock('../lib/auth', () => ({ useAuth: () => mockUseAuth() }))
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { TemaProvider } from './tema'
+import { ToastProvider } from '../components/ui'
 import Perfil from '../app/(app)/(tabs)/perfil'
 
 function conPerfil(rol: string, nombre = 'Andrés Artunduaga') {
@@ -34,7 +39,9 @@ async function montar() {
   await act(async () => {
     arbol = renderer.create(
       <TemaProvider>
-        <Perfil />
+        <ToastProvider>
+          <Perfil />
+        </ToastProvider>
       </TemaProvider>
     )
   })
@@ -81,5 +88,29 @@ describe('Perfil', () => {
     conPerfil('dueno')
     const arbol = await montar()
     expect(existeTexto(arbol, 'Cerrar sesión')).toBe(true)
+  })
+
+  it('dueño ve toda la sección Negocio (Proveedores, Reportes, Balance, Análisis IA)', async () => {
+    conPerfil('dueno')
+    const arbol = await montar()
+    for (const t of ['Negocio', 'Proveedores', 'Reportes', 'Balance', 'Análisis IA']) {
+      expect({ [t]: existeTexto(arbol, t) }).toEqual({ [t]: true })
+    }
+  })
+
+  it('administrativa ve Proveedores/Reportes pero no Balance ni Análisis IA', async () => {
+    conPerfil('admin', 'Sandra Cardona')
+    const arbol = await montar()
+    expect(existeTexto(arbol, 'Proveedores')).toBe(true)
+    expect(existeTexto(arbol, 'Reportes')).toBe(true)
+    expect(existeTexto(arbol, 'Balance')).toBe(false)
+    expect(existeTexto(arbol, 'Análisis IA')).toBe(false)
+  })
+
+  it('operativo no ve la sección Negocio', async () => {
+    conPerfil('empleado', 'Camilo Artunduaga')
+    const arbol = await montar()
+    expect(existeTexto(arbol, 'Negocio')).toBe(false)
+    expect(existeTexto(arbol, 'Proveedores')).toBe(false)
   })
 })

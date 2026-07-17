@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react'
 import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { ChevronRight, Egg, Footprints, PackagePlus, Pencil, Search } from 'lucide-react-native'
+import { ChevronRight, Egg, Footprints, PackagePlus, Pencil, Search, SlidersHorizontal } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
 import { useCarrito } from '../../../lib/carrito-contexto'
 import { CATEGORIAS } from '../../../lib/excel'
@@ -20,6 +20,7 @@ import {
   Esqueleto,
   EstadoVacio,
   FilaLista,
+  HojaFiltrosProductos,
   HojaVenderGranja,
   Tarjeta,
   useToast,
@@ -111,6 +112,9 @@ export default function Productos() {
   const [modelos, setModelos] = useState<ModeloCalzado[]>([])
   const [varios, setVarios] = useState<ProductoVarios[]>([])
   const [productoGranja, setProductoGranja] = useState<ProductoVarios | null>(null)
+  const [filtrosVisibles, setFiltrosVisibles] = useState(false)
+  const [marcasFiltro, setMarcasFiltro] = useState<string[]>([])
+  const [precioMaxFiltro, setPrecioMaxFiltro] = useState<number | null>(null)
 
   const cargar = useCallback(async () => {
     if (!perfil) return
@@ -138,6 +142,14 @@ export default function Productos() {
     busqueda
   )
   const variosVisibles = q ? varios.filter((v) => v.nombre.toLowerCase().includes(q)) : varios
+
+  const marcasDisponibles = [...new Set(modelos.map((m) => m.marca).filter((m): m is string => !!m))].sort()
+  const precioMaxAbsoluto = modelos.length > 0 ? Math.max(...modelos.map((m) => m.precioMax)) : 0
+  const modelosFiltrados = modelosVisibles.filter((m) => {
+    const pasaMarca = marcasFiltro.length === 0 || (m.marca != null && marcasFiltro.includes(m.marca))
+    const pasaPrecio = precioMaxFiltro == null || m.precioMin <= precioMaxFiltro
+    return pasaMarca && pasaPrecio
+  })
 
   const refrescar = async () => {
     setRefrescando(true)
@@ -189,6 +201,15 @@ export default function Productos() {
               autoCorrect={false}
             />
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Filtros"
+            onPress={() => setFiltrosVisibles(true)}
+            hitSlop={8}
+            style={{ padding: espacio.s }}
+          >
+            <SlidersHorizontal size={20} color={marcasFiltro.length > 0 || precioMaxFiltro != null ? paleta.primario : paleta.texto3} />
+          </Pressable>
         </View>
 
         {modo === 0 ? (
@@ -211,7 +232,7 @@ export default function Productos() {
             <Esqueleto alto={72} />
           </View>
         ) : modo === 0 ? (
-          modelosVisibles.length === 0 ? (
+          modelosFiltrados.length === 0 ? (
             <EstadoVacio
               icono={<Footprints />}
               titulo="No hay productos que coincidan"
@@ -219,7 +240,7 @@ export default function Productos() {
             />
           ) : (
             <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
-              {modelosVisibles.map((m, i) => (
+              {modelosFiltrados.map((m, i) => (
                 <View key={m.clave}>
                   {i > 0 ? (
                     <View style={{ height: 1, backgroundColor: paleta.borde, marginLeft: 68 }} />
@@ -317,6 +338,21 @@ export default function Productos() {
           setProductoGranja(null)
           router.push('/ventas/nueva?modo=rapida')
         }}
+      />
+
+      <HojaFiltrosProductos
+        visible={filtrosVisibles}
+        marcas={marcasDisponibles}
+        marcasSeleccionadas={marcasFiltro}
+        precioMinAbsoluto={0}
+        precioMaxAbsoluto={precioMaxAbsoluto}
+        precioSeleccionado={[0, precioMaxFiltro ?? precioMaxAbsoluto]}
+        onAplicar={(marcas, [, max]) => {
+          setMarcasFiltro(marcas)
+          setPrecioMaxFiltro(max)
+          setFiltrosVisibles(false)
+        }}
+        onCerrar={() => setFiltrosVisibles(false)}
       />
     </View>
   )

@@ -1,14 +1,24 @@
 import { useEffect, useState } from 'react'
 import { View, Text, Switch, ActivityIndicator, ScrollView } from 'react-native'
 import { Redirect, useRouter } from 'expo-router'
-import { ArrowLeft } from 'lucide-react-native'
+import { ArrowLeft, History } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
 import { supabase } from '../../../lib/supabase'
+import { DIAS_SEMANA, type DiaSemana, type HorarioSemanal } from '../../../lib/cajaScheduler'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tipografia } from '../../../lib/theme'
-import { Boton, CampoTexto, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Boton, CampoTexto, CirculoIcono, ControlSegmentado, FilaLista, Presionable, Tarjeta, useToast } from '../../../components/ui'
+
+const ETIQUETA_DIA: Record<DiaSemana, string> = {
+  domingo: 'Domingo', lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles',
+  jueves: 'Jueves', viernes: 'Viernes', sabado: 'Sábado',
+}
+
+const ORDEN_DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
+
+type ModoCierre = 'con_diferencia' | 'sin_diferencia'
 
 // Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
 function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
@@ -26,10 +36,12 @@ function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void
       <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={onVolver} hitSlop={12}>
         <ArrowLeft size={24} color={paleta.texto} />
       </Presionable>
-      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Configurar Caja</Text>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Caja</Text>
     </View>
   )
 }
+
+const validHora = (t: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t)
 
 export default function CajaConfig() {
   const { perfil } = useAuth()
@@ -40,23 +52,23 @@ export default function CajaConfig() {
   const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [auto, setAuto] = useState(false)
-  const [apertura, setApertura] = useState('')   // 'HH:MM'
-  const [cierre, setCierre] = useState('')        // 'HH:MM'
+  const [horario, setHorario] = useState<HorarioSemanal>({})
+  const [modoCierre, setModoCierre] = useState<ModoCierre>('con_diferencia')
 
   useEffect(() => {
     async function load() {
       const { data } = await supabase.from('caja_config').select('*').limit(1).single()
       if (data) {
         setAuto(data.modo_automatico)
-        setApertura((data.hora_apertura ?? '').slice(0, 5))
-        setCierre((data.hora_cierre ?? '').slice(0, 5))
+        setHorario((data.horario_semanal ?? {}) as HorarioSemanal)
+        setModoCierre((data.modo_cierre ?? 'con_diferencia') as ModoCierre)
       }
       setCargando(false)
     }
     if (perfil?.rol === 'dueno') load()
   }, [perfil])
 
-  if (perfil?.rol !== 'dueno') return <Redirect href="/caja" />
+  if (perfil?.rol !== 'dueno') return <Redirect href="/" />
 
   if (cargando) {
     return (
@@ -69,22 +81,30 @@ export default function CajaConfig() {
     )
   }
 
-  const validHora = (t: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t)
+  function actualizarDia(dia: DiaSemana, campo: 'apertura' | 'cierre', valor: string) {
+    setHorario((prev) => ({ ...prev, [dia]: { ...(prev[dia] ?? { apertura: '', cierre: '' }), [campo]: valor } }))
+  }
 
   async function guardar() {
-    if (auto && (!validHora(apertura) || !validHora(cierre))) {
-      mostrar('Usa el formato HH:MM (ej. 06:00 y 23:00).', 'error')
-      return
-    }
-    if (auto && cierre <= apertura) {
-      mostrar('La hora de cierre debe ser posterior a la de apertura.', 'error')
-      return
+    if (auto) {
+      for (const dia of DIAS_SEMANA) {
+        const h = horario[dia]
+        if (!h?.apertura || !h?.cierre) continue // día sin horario = la tienda no automatiza ese día
+        if (!validHora(h.apertura) || !validHora(h.cierre)) {
+          mostrar(`Usa el formato HH:MM para ${ETIQUETA_DIA[dia]} (ej. 06:00 y 23:00).`, 'error')
+          return
+        }
+        if (h.cierre <= h.apertura) {
+          mostrar(`En ${ETIQUETA_DIA[dia]}, la hora de cierre debe ser posterior a la de apertura.`, 'error')
+          return
+        }
+      }
     }
     setGuardando(true)
     const { error } = await supabase.from('caja_config').update({
       modo_automatico: auto,
-      hora_apertura: auto ? apertura : null,
-      hora_cierre: auto ? cierre : null,
+      horario_semanal: horario as unknown as Record<string, never>,
+      modo_cierre: modoCierre,
     }).not('id', 'is', null)
     setGuardando(false)
     if (error) { mostrar(error.message, 'error'); return }
@@ -99,7 +119,7 @@ export default function CajaConfig() {
         contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[tipografia.h3, { color: paleta.texto }]}>Horario automático de Caja</Text>
+        <Text style={[tipografia.h3, { color: paleta.texto }]}>Horario automático</Text>
 
         <Tarjeta>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -115,25 +135,65 @@ export default function CajaConfig() {
 
         {auto && (
           <>
-            <CampoTexto
-              etiqueta="Hora de apertura (HH:MM)"
-              placeholder="06:00"
-              value={apertura}
-              onChangeText={setApertura}
-              keyboardType="numbers-and-punctuation"
-            />
-            <CampoTexto
-              etiqueta="Hora de cierre (HH:MM)"
-              placeholder="23:00"
-              value={cierre}
-              onChangeText={setCierre}
-              keyboardType="numbers-and-punctuation"
-            />
             <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
               El cierre automático calcula los totales del sistema y envía el reporte por correo. No cuenta el efectivo físico.
+              Deja un día sin horario si esa tienda no abre ese día.
             </Text>
+            {ORDEN_DIAS.map((dia) => (
+              <Tarjeta key={dia}>
+                <Text style={[tipografia.etiqueta, { color: paleta.texto, marginBottom: espacio.s }]}>
+                  {ETIQUETA_DIA[dia]}
+                </Text>
+                <View style={{ flexDirection: 'row', gap: espacio.m }}>
+                  <View style={{ flex: 1 }}>
+                    <CampoTexto
+                      etiqueta="Apertura"
+                      placeholder="06:00"
+                      value={horario[dia]?.apertura ?? ''}
+                      onChangeText={(v) => actualizarDia(dia, 'apertura', v)}
+                      keyboardType="numbers-and-punctuation"
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <CampoTexto
+                      etiqueta="Cierre"
+                      placeholder="23:00"
+                      value={horario[dia]?.cierre ?? ''}
+                      onChangeText={(v) => actualizarDia(dia, 'cierre', v)}
+                      keyboardType="numbers-and-punctuation"
+                    />
+                  </View>
+                </View>
+              </Tarjeta>
+            ))}
           </>
         )}
+
+        <Text style={[tipografia.h3, { color: paleta.texto, marginTop: espacio.m }]}>Modo de cierre</Text>
+        <ControlSegmentado
+          opciones={['Con diferencia', 'Sin diferencia']}
+          indice={modoCierre === 'sin_diferencia' ? 1 : 0}
+          onCambio={(i) => setModoCierre(i === 1 ? 'sin_diferencia' : 'con_diferencia')}
+        />
+        <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+          {modoCierre === 'sin_diferencia'
+            ? 'Al cerrar caja desde el menú solo se confirma; el sistema calcula el efectivo esperado, sin contar caja.'
+            : 'Al cerrar caja desde el menú se pide el efectivo contado y, si hay diferencia, una justificación.'}
+        </Text>
+
+        <Tarjeta estilo={{ paddingVertical: espacio.xs, marginTop: espacio.m }}>
+          <FilaLista
+            icono={
+              <CirculoIcono tono="primario">
+                <History />
+              </CirculoIcono>
+            }
+            titulo="Historial de cierres"
+            subtitulo="Ver cierres anteriores"
+            chevron
+            onPress={() => router.push('/caja/historial')}
+          />
+        </Tarjeta>
 
         <Boton titulo="Guardar" onPress={guardar} cargando={guardando} deshabilitado={guardando} />
       </ScrollView>

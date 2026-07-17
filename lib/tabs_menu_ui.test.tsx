@@ -1,4 +1,5 @@
 import React from 'react'
+import { Alert, type AlertButton } from 'react-native'
 process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://dummy-url.supabase.co'
 process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'dummy-key'
 // @ts-ignore
@@ -9,6 +10,10 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 )
 
 jest.mock('@react-native-community/datetimepicker', () => () => null)
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
 
 jest.useFakeTimers()
 
@@ -29,7 +34,13 @@ jest.mock('./supabase', () => ({ supabase: {} }))
 jest.mock('../lib/supabase', () => ({ supabase: {} }))
 
 const mockObtenerCajaHoy = jest.fn()
-jest.mock('../lib/caja', () => ({ obtenerCajaHoy: (...args: unknown[]) => mockObtenerCajaHoy(...args) }))
+const mockObtenerModoCierre = jest.fn()
+const mockCerrarCajaSinDiferencia = jest.fn()
+jest.mock('../lib/caja', () => ({
+  obtenerCajaHoy: (...args: unknown[]) => mockObtenerCajaHoy(...args),
+  obtenerModoCierre: (...args: unknown[]) => mockObtenerModoCierre(...args),
+  cerrarCajaSinDiferencia: (...args: unknown[]) => mockCerrarCajaSinDiferencia(...args),
+}))
 
 const mockUseAuth = jest.fn()
 jest.mock('../lib/auth', () => ({ useAuth: () => mockUseAuth() }))
@@ -114,6 +125,7 @@ describe('Menú — dashboard', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockObtenerCajaHoy.mockResolvedValue(null)
+    mockObtenerModoCierre.mockResolvedValue('con_diferencia')
     mockReportePeriodo.mockResolvedValue(REPORTE)
     mockVentasSub.mockResolvedValue(BUCKETS)
     mockGastosPeriodo.mockResolvedValue(GASTOS)
@@ -158,16 +170,46 @@ describe('Menú — dashboard', () => {
     expect(existeTexto(arbol, 'Proveedores')).toBe(false)
   })
 
-  it('badge de caja: SIN ABRIR / ABIERTA y navega a /caja', async () => {
+  it('badge de caja: SIN ABRIR / ABIERTA; cerrada navega a /caja', async () => {
     conPerfil('dueno')
     const a = await montar()
     expect(a.root.findByProps({ children: 'SIN ABRIR' })).toBeTruthy()
+    const badgeA = a.root.findByProps({ accessibilityLabel: 'Estado de caja' })
+    await act(async () => badgeA.props.onPress())
+    expect(mockPush).toHaveBeenCalledWith('/caja')
+  })
 
+  it('caja abierta + modo con_diferencia: navega directo a /caja/cierre', async () => {
+    conPerfil('dueno')
     mockObtenerCajaHoy.mockResolvedValue({ estado: 'abierta' })
+    mockObtenerModoCierre.mockResolvedValue('con_diferencia')
     const b = await montar()
     expect(b.root.findByProps({ children: 'ABIERTA' })).toBeTruthy()
     const badge = b.root.findByProps({ accessibilityLabel: 'Estado de caja' })
     await act(async () => badge.props.onPress())
-    expect(mockPush).toHaveBeenCalledWith('/caja')
+    expect(mockPush).toHaveBeenCalledWith('/caja/cierre')
+  })
+
+  it('caja abierta + modo sin_diferencia: confirma y cierra automático sin navegar', async () => {
+    conPerfil('dueno')
+    mockObtenerCajaHoy.mockResolvedValue({ estado: 'abierta' })
+    mockObtenerModoCierre.mockResolvedValue('sin_diferencia')
+    mockCerrarCajaSinDiferencia.mockResolvedValue({})
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(
+      (_title, _message, buttons?: AlertButton[]) => {
+        const confirmBtn = buttons?.find((b) => b.text === 'Cerrar caja')
+        confirmBtn?.onPress?.()
+      }
+    )
+
+    const b = await montar()
+    const badge = b.root.findByProps({ accessibilityLabel: 'Estado de caja' })
+    await act(async () => badge.props.onPress())
+
+    expect(mockCerrarCajaSinDiferencia).toHaveBeenCalled()
+    expect(mockPush).not.toHaveBeenCalledWith('/caja/cierre')
+    expect(mockPush).not.toHaveBeenCalledWith('/caja')
+
+    alertSpy.mockRestore()
   })
 })

@@ -12,36 +12,61 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       caja_config: {
         Row: {
           created_at: string
           created_by: string | null
-          hora_apertura: string | null
-          hora_cierre: string | null
+          horario_semanal: Json
           id: string
           modo_automatico: boolean
+          modo_cierre: string
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
-          hora_apertura?: string | null
-          hora_cierre?: string | null
+          horario_semanal?: Json
           id?: string
           modo_automatico?: boolean
+          modo_cierre?: string
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
-          hora_apertura?: string | null
-          hora_cierre?: string | null
+          horario_semanal?: Json
           id?: string
           modo_automatico?: boolean
+          modo_cierre?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -1754,20 +1779,20 @@ export type Database = {
         Args: { p_anio: number; p_empleado_id: string; p_mes: number }
         Returns: number
       }
-      obtener_reporte_diario: { Args: { p_fecha: string }; Returns: Json }
       obtener_gastos_periodo: {
         Args: { p_desde: string; p_hasta: string }
         Returns: Json
       }
+      obtener_reporte_diario: { Args: { p_fecha: string }; Returns: Json }
       obtener_reporte_periodo: {
         Args: { p_desde: string; p_hasta: string }
         Returns: Json
       }
+      obtener_resumen_dia: { Args: { p_fecha: string }; Returns: Json }
       obtener_ventas_por_subperiodo: {
-        Args: { p_desde: string; p_hasta: string; p_granularidad: string }
+        Args: { p_desde: string; p_granularidad: string; p_hasta: string }
         Returns: Json
       }
-      obtener_resumen_dia: { Args: { p_fecha: string }; Returns: Json }
       registrar_devolucion: {
         Args: {
           p_items: Json
@@ -1920,6 +1945,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

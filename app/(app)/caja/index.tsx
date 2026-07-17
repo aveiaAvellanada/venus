@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { View, Text, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
-import { useRouter } from 'expo-router'
-import { ArrowLeft, History, Settings } from 'lucide-react-native'
-import { useAuth, useRequireModulo } from '../../../lib/auth'
-import { obtenerCajaHoy, abrirCaja, reabrirCaja, obtenerResumenEnVivo } from '../../../lib/caja'
+import { Redirect, useRouter } from 'expo-router'
+import { ArrowLeft } from 'lucide-react-native'
+import { useRequireModulo } from '../../../lib/auth'
+import { obtenerCajaHoy, abrirCaja, reabrirCaja } from '../../../lib/caja'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tipografia } from '../../../lib/theme'
@@ -12,15 +13,7 @@ import { Badge, Boton, Presionable, TarjetaMetrica } from '../../../components/u
 const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
 
 // Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
-function Encabezado({
-  paleta,
-  onVolver,
-  derecha,
-}: {
-  paleta: Paleta
-  onVolver: () => void
-  derecha?: ReactNode
-}) {
+function Encabezado({ paleta, onVolver, derecha }: { paleta: Paleta; onVolver: () => void; derecha?: ReactNode }) {
   return (
     <View
       style={{
@@ -44,8 +37,8 @@ function Encabezado({
 export default function CajaDashboard() {
   const redir = useRequireModulo('caja')
   const router = useRouter()
-  const { perfil } = useAuth()
   const { paleta } = useTema()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
 
   const [estadoCaja, setEstadoCaja] = useState<any>(null)
   const [resumen, setResumen] = useState<any>(null)
@@ -57,17 +50,14 @@ export default function CajaDashboard() {
     try {
       const caja = await obtenerCajaHoy()
       setEstadoCaja(caja)
-      if (caja && caja.estado === 'abierta') {
-        const res = await obtenerResumenEnVivo()
-        setResumen(res)
-      } else if (caja && caja.estado === 'cerrada') {
+      if (caja && caja.estado === 'cerrada') {
         setResumen({
           total_general: caja.total_general,
           total_ventas: caja.total_ventas,
           total_efectivo: caja.total_efectivo,
           total_nequi: caja.total_nequi,
           total_bre_b: caja.total_bre_b,
-          total_otro: caja.total_otro
+          total_otro: caja.total_otro,
         })
       }
     } catch (e) {
@@ -84,29 +74,23 @@ export default function CajaDashboard() {
 
   if (redir) return redir
 
-  const esDuenoAdmin = perfil?.rol === 'dueno' || perfil?.rol === 'admin'
-  const derecha = esDuenoAdmin ? (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.l }}>
-      {perfil?.rol === 'dueno' && (
-        <Presionable accessibilityRole="button" accessibilityLabel="Configurar caja" onPress={() => router.push('/caja/config')} hitSlop={10}>
-          <Settings size={22} color={paleta.primario} />
-        </Presionable>
-      )}
-      <Presionable accessibilityRole="button" accessibilityLabel="Ver historial de cierres" onPress={() => router.push('/caja/historial')} hitSlop={10}>
-        <History size={22} color={paleta.primario} />
-      </Presionable>
-    </View>
-  ) : undefined
-
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-        <Encabezado paleta={paleta} onVolver={() => router.back()} derecha={derecha} />
+        <Encabezado paleta={paleta} onVolver={() => router.back()} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={paleta.primario} />
         </View>
       </View>
     )
+  }
+
+  // Ya no hay dashboard para la caja abierta: el ícono de Caja en el menú
+  // navega directo a /caja/cierre o muestra el modal de confirmación
+  // "sin diferencia" — si de todas formas se llega aquí con la caja
+  // abierta (deep link, back del navegador), se redirige al cierre.
+  if (estadoCaja?.estado === 'abierta') {
+    return <Redirect href="/caja/cierre" />
   }
 
   async function handleAbrir() {
@@ -136,7 +120,7 @@ export default function CajaDashboard() {
   if (!estadoCaja) {
     return (
       <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-        <Encabezado paleta={paleta} onVolver={() => router.back()} derecha={derecha} />
+        <Encabezado paleta={paleta} onVolver={() => router.back()} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, gap: espacio.xl }}>
           <Text style={[tipografia.h1, { color: paleta.texto, textAlign: 'center' }]}>Caja del Día</Text>
           <Text style={[tipografia.cuerpo, { color: paleta.texto2, textAlign: 'center' }]}>
@@ -150,8 +134,6 @@ export default function CajaDashboard() {
     )
   }
 
-  const isAbierto = estadoCaja.estado === 'abierta'
-
   const onRefresh = () => {
     setRefreshing(true)
     cargarDatos()
@@ -159,17 +141,15 @@ export default function CajaDashboard() {
 
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <Encabezado paleta={paleta} onVolver={() => router.back()} derecha={derecha} />
+      <Encabezado paleta={paleta} onVolver={() => router.back()} />
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.xl }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.xl }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={paleta.primario} />}
       >
         <View style={{ alignItems: 'center', gap: espacio.m }}>
-          <Text style={[tipografia.h3, { color: paleta.texto }]}>
-            {isAbierto ? 'Dashboard de Caja' : 'Resumen Final de Caja'}
-          </Text>
-          <Badge texto={isAbierto ? 'ABIERTA' : 'CERRADA'} tipo={isAbierto ? 'exito' : 'peligro'} punto={isAbierto} />
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>Resumen Final de Caja</Text>
+          <Badge texto="CERRADA" tipo="peligro" />
         </View>
 
         {resumen && (
@@ -188,11 +168,7 @@ export default function CajaDashboard() {
           </View>
         )}
 
-        {isAbierto ? (
-          <Boton titulo="Ir a Cerrar Caja" variante="peligro" onPress={() => router.push('/caja/cierre')} />
-        ) : (
-          <Boton titulo="Abrir caja de nuevo" onPress={handleReabrir} cargando={abriendo} deshabilitado={abriendo} />
-        )}
+        <Boton titulo="Abrir caja de nuevo" onPress={handleReabrir} cargando={abriendo} deshabilitado={abriendo} />
       </ScrollView>
     </View>
   )

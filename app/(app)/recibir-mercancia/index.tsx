@@ -28,6 +28,7 @@ export default function RecibirMercanciaIndex() {
   const router = useRouter()
   const { paleta } = useTema()
   const paddingInferior = usePaddingInferior(100)
+  const bottomFab = usePaddingInferior(espacio.xl)
 
   const [compras, setCompras] = useState<Compra[]>([])
   const [proveedoresMap, setProveedoresMap] = useState<Record<string, string>>({})
@@ -272,7 +273,7 @@ export default function RecibirMercanciaIndex() {
         testID="registrar-entrada-fab"
         style={{
           position: 'absolute',
-          bottom: espacio.xl,
+          bottom: bottomFab,
           right: espacio.xl,
           width: 56,
           height: 56,

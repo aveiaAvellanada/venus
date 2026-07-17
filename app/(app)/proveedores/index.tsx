@@ -26,6 +26,7 @@ export default function ProveedoresIndex() {
   const router = useRouter()
   const { paleta } = useTema()
   const paddingInferior = usePaddingInferior(100)
+  const bottomFab = usePaddingInferior(espacio.xl)
 
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [loading, setLoading] = useState(true)
@@ -219,7 +220,7 @@ export default function ProveedoresIndex() {
         testID="add-provider-btn"
         style={{
           position: 'absolute',
-          bottom: espacio.xl,
+          bottom: bottomFab,
           right: espacio.xl,
           width: 56,
           height: 56,

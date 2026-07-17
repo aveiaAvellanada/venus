@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, Save } from 'lucide-react-native'
 import { obtenerProveedorPorId, crearProveedor, actualizarProveedor } from '../../../lib/proveedores'
 import { useRequireModulo } from '../../../lib/auth'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tipografia } from '../../../lib/theme'
 import { CampoTexto, Presionable, Tarjeta, useToast } from '../../../components/ui'
@@ -14,6 +15,7 @@ export default function ProveedorEditorScreen() {
   const router = useRouter()
   const { paleta } = useTema()
   const { mostrar } = useToast()
+  const paddingBarraInferior = usePaddingInferior(espacio.l)
 
   // Form Fields State
   const [nombre, setNombre] = useState('')
@@ -255,7 +257,7 @@ export default function ProveedorEditorScreen() {
           right: 0,
           backgroundColor: paleta.fondo,
           padding: espacio.l,
-          paddingBottom: Platform.OS === 'ios' ? espacio.xxxl : espacio.l,
+          paddingBottom: paddingBarraInferior,
           borderTopWidth: 1,
           borderTopColor: paleta.borde,
         }}

@@ -42,6 +42,7 @@ export default function GastosVariablesScreen() {
   const { mostrar } = useToast()
   const paddingInferior100 = usePaddingInferior(100)
   const paddingInferiorXxxl = usePaddingInferior(espacio.xxxl)
+  const bottomFab = usePaddingInferior(espacio.xl)
 
   const [gastos, setGastos] = useState<GastoVariableRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -173,7 +174,7 @@ export default function GastosVariablesScreen() {
         hitSlop={8}
         style={{
           position: 'absolute',
-          bottom: espacio.xl,
+          bottom: bottomFab,
           right: espacio.xl,
           width: 56,
           height: 56,

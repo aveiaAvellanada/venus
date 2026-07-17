@@ -11,6 +11,7 @@ import { useLocalSearchParams, useRouter, Redirect } from 'expo-router'
 import { ArrowLeft, CircleCheckBig, Wallet } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
 import { obtenerCompraPorId, completarInformacionFinanciera } from '../../../lib/proveedores'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
 import { Boton, CampoTexto, Presionable, Tarjeta, useToast } from '../../../components/ui'
@@ -21,6 +22,7 @@ export default function RecepcionDetalleFinancieroScreen() {
   const { perfil, cargando } = useAuth()
   const { paleta } = useTema()
   const { mostrar } = useToast()
+  const paddingBarraInferior = usePaddingInferior(espacio.l)
 
   const [compra, setCompra] = useState<any>(null)
   const [cargandoCompra, setCargandoCompra] = useState(true)
@@ -313,7 +315,7 @@ export default function RecepcionDetalleFinancieroScreen() {
       <View style={{
         position: 'absolute', bottom: 0, left: 0, right: 0,
         backgroundColor: paleta.fondo, padding: espacio.l,
-        paddingBottom: Platform.OS === 'ios' ? espacio.xxxl : espacio.l,
+        paddingBottom: paddingBarraInferior,
         borderTopWidth: 1, borderTopColor: paleta.borde,
       }}>
         <Boton

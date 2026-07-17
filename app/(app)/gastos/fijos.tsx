@@ -44,6 +44,7 @@ export default function GastosFijosScreen() {
   const { paleta } = useTema()
   const { mostrar } = useToast()
   const paddingInferior = usePaddingInferior(100)
+  const bottomFab = usePaddingInferior(espacio.xl)
 
   const [gastos, setGastos] = useState<GastoConPagos[]>([])
   const [loading, setLoading] = useState(true)
@@ -188,7 +189,7 @@ export default function GastosFijosScreen() {
         hitSlop={8}
         style={{
           position: 'absolute',
-          bottom: espacio.xl,
+          bottom: bottomFab,
           right: espacio.xl,
           width: 56,
           height: 56,

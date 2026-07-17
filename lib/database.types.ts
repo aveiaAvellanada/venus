@@ -1786,6 +1786,10 @@ export type Database = {
         Args: { p_desde: string; p_hasta: string }
         Returns: Json
       }
+      obtener_modo_cierre: {
+        Args: { [_ in never]: never }
+        Returns: string
+      }
       obtener_reporte_diario: { Args: { p_fecha: string }; Returns: Json }
       obtener_reporte_periodo: {
         Args: { p_desde: string; p_hasta: string }

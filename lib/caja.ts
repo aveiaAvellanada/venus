@@ -109,7 +109,9 @@ export async function cerrarCajaSinDiferencia() {
 }
 
 export async function obtenerModoCierre(): Promise<'con_diferencia' | 'sin_diferencia'> {
-  const { data, error } = await supabase.from('caja_config').select('modo_cierre').limit(1).single()
+  // Vía RPC SECURITY DEFINER: caja_config es de lectura solo-dueño por RLS, pero
+  // todos los roles cierran caja y necesitan el modo configurado.
+  const { data, error } = await supabase.rpc('obtener_modo_cierre')
   if (error) throw error
-  return (data?.modo_cierre ?? 'con_diferencia') as 'con_diferencia' | 'sin_diferencia'
+  return (data ?? 'con_diferencia') as 'con_diferencia' | 'sin_diferencia'
 }

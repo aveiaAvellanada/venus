@@ -260,7 +260,13 @@ export default function NuevaVenta() {
     const item = items[0]
     return (
       <View style={{ flex: 1, backgroundColor: paleta.fondo, padding: espacio.xl, paddingTop: 56, gap: espacio.l }}>
-        <Text style={[tipografia.h2, { color: paleta.texto }]}>{item.producto.titulo}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.m }}>
+          <Presionable accessibilityRole="button" accessibilityLabel="Salir de la venta"
+            onPress={salirDelFlujo} hitSlop={12}>
+            <X size={24} color={paleta.texto} />
+          </Presionable>
+          <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>{item.producto.titulo}</Text>
+        </View>
         {item.producto.tipo === 'calzado' ? (
           <SliderPrecio
             valor={item.precio}

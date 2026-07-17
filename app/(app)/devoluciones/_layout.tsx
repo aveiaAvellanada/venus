@@ -5,11 +5,6 @@ export default function DevolucionesLayout() {
   const requireModulo = useRequireModulo('devoluciones')
   if (requireModulo) return requireModulo
   return (
-    <Stack screenOptions={{
-      headerShown: false,
-      headerStyle: { backgroundColor: '#ffffff' }, headerShadowVisible: false,
-      headerTintColor: '#111827', headerTitleStyle: { fontWeight: '600' },
-      contentStyle: { backgroundColor: '#f9fafb' }, headerTitleAlign: 'center',
-    }} />
+    <Stack screenOptions={{ headerShown: false }} />
   )
 }

@@ -290,7 +290,7 @@ export default function Menu() {
               ))}
             </View>
 
-            {esStaff ? (
+            {esStaff && periodo !== 'hoy' ? (
               <Tarjeta>
                 <View style={{ gap: espacio.m }}>
                   <Text style={[tipografia.micro, { color: paleta.texto3 }]}>Ventas por período</Text>

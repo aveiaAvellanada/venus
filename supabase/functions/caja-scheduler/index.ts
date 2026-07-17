@@ -32,8 +32,15 @@ Deno.serve(async () => {
     const { data: cfg } = await admin.from('caja_config').select('*').limit(1).single()
     if (!cfg) return json({ skipped: 'sin_config' })
 
+    // Réplica de diaSemanaDeFecha/horarioDelDia (lib/cajaScheduler.ts) — runtime Deno separado.
+    const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
+    const dia = DIAS_SEMANA[ahoraBogota.getDay()]
+    const horarioSemanal = (cfg.horario_semanal ?? {}) as Record<string, { apertura: string | null; cierre: string | null }>
+    const horarioHoy = horarioSemanal[dia] ?? { apertura: null, cierre: null }
+    const cfgResuelto = { modo_automatico: cfg.modo_automatico, hora_apertura: horarioHoy.apertura, hora_cierre: horarioHoy.cierre }
+
     const { data: caja } = await admin.from('cierres_caja').select('*').eq('fecha', fecha).maybeSingle()
-    const accion = decidirAccionCaja(cfg, horaHHMM, caja)
+    const accion = decidirAccionCaja(cfgResuelto, horaHHMM, caja)
 
     if (accion === 'abrir') {
       const { error } = await admin.from('cierres_caja').insert({

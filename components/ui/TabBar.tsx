@@ -121,11 +121,6 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
             width: 60,
             height: 60,
             borderRadius: radio.full,
-            shadowColor: paleta.primario,
-            shadowOpacity: 0.35,
-            shadowRadius: 14,
-            shadowOffset: { width: 0, height: 6 },
-            elevation: 8,
           }}
         >
           <LinearGradient

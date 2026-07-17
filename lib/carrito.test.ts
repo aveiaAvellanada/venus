@@ -145,6 +145,41 @@ describe('carrito SP-2 — precio por línea', () => {
   })
 })
 
+describe('agregarConCantidad — Granja por peso (libras, decimales)', () => {
+  test('Granja nuevo con cantidad fraccionaria: media libra', () => {
+    const items = carritoReducer([], { tipo: 'agregarConCantidad', producto: cafe, cantidad: 0.5 })
+    expect(items).toHaveLength(1)
+    expect(items[0].cantidad).toBe(0.5)
+    expect(items[0].subtotal).toBe(6000) // 12000 × 0.5
+  })
+
+  test('Granja nuevo con 1.5 libras NO redondea a 2 (el bug del bucle for)', () => {
+    const items = carritoReducer([], { tipo: 'agregarConCantidad', producto: granja(), cantidad: 1.5 })
+    expect(items[0].cantidad).toBe(1.5)
+    expect(items[0].subtotal).toBe(6000) // 4000 × 1.5
+  })
+
+  test('Granja existente: suma la cantidad fraccionaria a la que ya había', () => {
+    let items = carritoReducer([], { tipo: 'agregarConCantidad', producto: granja(), cantidad: 2 })
+    items = carritoReducer(items, { tipo: 'agregarConCantidad', producto: granja(), cantidad: 1.5 })
+    expect(items).toHaveLength(1)
+    expect(items[0].cantidad).toBe(3.5)
+  })
+
+  test('nuevo item usa el precio del producto (Granja: precio de venta ingresado)', () => {
+    const items = carritoReducer([], { tipo: 'agregarConCantidad', producto: granja({ precio: 5000 }), cantidad: 2 })
+    expect(items[0].precio).toBe(5000)
+    expect(items[0].subtotal).toBe(10000)
+  })
+
+  test('calzado sigue redondeando a entero y respetando stock', () => {
+    const items = carritoReducer([], { tipo: 'agregarConCantidad', producto: calzado({ stock: 2 }), cantidad: 5 })
+    expect(items[0].cantidad).toBe(2) // recortado por stock
+    const b = carritoReducer([], { tipo: 'agregarConCantidad', producto: calzado(), cantidad: 2.9 })
+    expect(b[0].cantidad).toBe(2) // floor
+  })
+})
+
 describe('detalleCalzado — subtítulo con marca', () => {
   test('combina marca, talla y color en ese orden', () => {
     expect(detalleCalzado({ marca: 'Nike', talla: '38', color: 'Negro' })).toBe('Nike · Talla 38 · Negro')

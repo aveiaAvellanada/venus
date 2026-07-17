@@ -307,7 +307,8 @@ export default function Productos() {
         onAgregar={(cantidad, precio) => {
           if (!productoGranja) return
           dispatch({
-            tipo: 'agregar',
+            tipo: 'agregarConCantidad',
+            cantidad,
             producto: {
               tipo: 'varios',
               id: productoGranja.id,
@@ -318,13 +319,6 @@ export default function Productos() {
               unidad: productoGranja.unidad_medida,
             },
           })
-          for (let i = 1; i < cantidad; i++) {
-            dispatch({ tipo: 'agregar', producto: {
-              tipo: 'varios', id: productoGranja.id, titulo: productoGranja.nombre,
-              detalle: `por ${productoGranja.unidad_medida}`, precio,
-              stock: Number.POSITIVE_INFINITY, unidad: productoGranja.unidad_medida,
-            } })
-          }
           setProductoGranja(null)
           mostrar(`Agregado: ${productoGranja.nombre}`)
         }}
@@ -332,7 +326,8 @@ export default function Productos() {
           if (!productoGranja) return
           dispatch({ tipo: 'limpiar' })
           dispatch({
-            tipo: 'agregar',
+            tipo: 'agregarConCantidad',
+            cantidad,
             producto: {
               tipo: 'varios',
               id: productoGranja.id,
@@ -343,7 +338,6 @@ export default function Productos() {
               unidad: productoGranja.unidad_medida,
             },
           })
-          dispatch({ tipo: 'cambiarCantidad', id: productoGranja.id, cantidad })
           setProductoGranja(null)
           router.push('/ventas/nueva?modo=rapida')
         }}

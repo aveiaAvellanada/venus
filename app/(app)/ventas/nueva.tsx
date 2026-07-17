@@ -1,24 +1,23 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { ActivityIndicator, Alert, ScrollView, Text, TextInput, View } from 'react-native'
-import { useRouter } from 'expo-router'
-import * as Haptics from 'expo-haptics'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Check, Lock, Minus, Plus, X } from 'lucide-react-native'
-import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useRequireModulo } from '../../../lib/auth'
 import { useCarrito } from '../../../lib/carrito-contexto'
 import {
-  bajoMinimo, calcularCambio, montoEfectivo, pagosCuadran, totalCarrito,
-  type AccionCarrito, type ItemCarrito, type MetodoPago, type PagoInput, type ProductoVendible,
+  calcularCambio, montoEfectivo, pagosCuadran, totalCarrito,
+  type AccionCarrito, type ItemCarrito, type MetodoPago, type PagoInput,
 } from '../../../lib/carrito'
-import { buscarProductos, registrarVenta } from '../../../lib/ventas'
+import { registrarVenta } from '../../../lib/ventas'
 import { obtenerCajaHoy } from '../../../lib/caja'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
 import {
-  Boton, CampoTexto, Chip, EstadoVacio, OverlayExito, Presionable, Tarjeta,
+  Boton, CampoTexto, Chip, EstadoVacio, OverlayExito, Presionable, SliderPrecio, Tarjeta,
 } from '../../../components/ui'
 
-type Etapa = 'carrito' | 'cobrar' | 'confirmacion'
+type Etapa = 'carrito' | 'ajustarPrecio' | 'cobrar' | 'confirmacion'
 const METODOS: MetodoPago[] = ['efectivo', 'nequi', 'bre_b', 'otro']
 const ETIQUETA: Record<MetodoPago, string> = { efectivo: 'Efectivo', nequi: 'Nequi', bre_b: 'Bre-B', otro: 'Otro' }
 const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
@@ -54,7 +53,6 @@ function LineaCarrito({ item, dispatch }: { item: ItemCarrito; dispatch: (a: Acc
   const esCalzado = item.producto.tipo === 'calzado'
   const [precioTxt, setPrecioTxt] = useState(String(item.precio))
   const [cantTxt, setCantTxt] = useState(String(item.cantidad))
-  const bajo = bajoMinimo(item)
 
   function commitPrecio() {
     dispatch({ tipo: 'cambiarPrecio', id: item.producto.id, precio: Number(soloEntero(precioTxt)) || 0 })
@@ -65,7 +63,7 @@ function LineaCarrito({ item, dispatch }: { item: ItemCarrito; dispatch: (a: Acc
 
   const inputInline = {
     borderWidth: 1.5,
-    borderColor: bajo ? paleta.peligro : paleta.bordeFuerte,
+    borderColor: paleta.bordeFuerte,
     borderRadius: radio.sm,
     paddingVertical: 6,
     paddingHorizontal: espacio.s,
@@ -83,23 +81,12 @@ function LineaCarrito({ item, dispatch }: { item: ItemCarrito; dispatch: (a: Acc
           {item.producto.titulo}
         </Text>
         {esCalzado ? (
-          <>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.xs }}>
-              <Text style={[tipografia.caption, { color: paleta.texto2 }]}>Precio c/u</Text>
-              <TextInput
-                accessibilityLabel="Precio unitario"
-                style={inputInline}
-                keyboardType="number-pad"
-                value={precioTxt}
-                onChangeText={t => setPrecioTxt(soloEntero(t))}
-                onEndEditing={commitPrecio}
-              />
-            </View>
-            <Text style={[tipografia.caption, { color: bajo ? paleta.peligroTexto : paleta.texto3 }]}>
-              Rango {pesos(item.producto.precioMin ?? 0)}–{pesos(item.producto.precioMax ?? 0)}
-              {bajo ? ' · bajo el mínimo' : ''}
-            </Text>
-          </>
+          <SliderPrecio
+            valor={item.precio}
+            minimo={item.producto.precioMin ?? 0}
+            maximo={item.producto.precioMax ?? item.precio}
+            onCambio={(v) => dispatch({ tipo: 'cambiarPrecio', id: item.producto.id, precio: v })}
+          />
         ) : (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.xs }}>
             <TextInput
@@ -152,17 +139,13 @@ function LineaCarrito({ item, dispatch }: { item: ItemCarrito; dispatch: (a: Acc
 export default function NuevaVenta() {
   const redir = useRequireModulo('ventas')
   const router = useRouter()
+  const { modo } = useLocalSearchParams<{ modo?: string }>()
   const { paleta } = useTema()
+  const paddingInferior = usePaddingInferior(espacio.xxl)
 
-  const [etapa, setEtapa] = useState<Etapa>('carrito')
   // Carrito compartido: el detalle de producto (tab Productos) también agrega aquí.
   const { items, dispatch } = useCarrito()
-  const [query, setQuery] = useState('')
-  const [resultados, setResultados] = useState<ProductoVendible[]>([])
-  const [buscando, setBuscando] = useState(false)
-  const [errorBusqueda, setErrorBusqueda] = useState<string | null>(null)
-  const [primeraCarga, setPrimeraCarga] = useState(true)
-  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [etapa, setEtapa] = useState<Etapa>(modo === 'rapida' && items.length === 1 ? 'ajustarPrecio' : 'carrito')
 
   const [metodos, setMetodos] = useState<MetodoPago[]>([])
   const [montos, setMontos] = useState<Record<MetodoPago, string>>({ efectivo: '', nequi: '', bre_b: '', otro: '' })
@@ -180,23 +163,6 @@ export default function NuevaVenta() {
         else setCajaEstado('ok')
       })
       .catch(() => setCajaEstado('bloqueado'))
-  }, [])
-
-  const buscar = useCallback((texto: string) => {
-    setQuery(texto)
-    if (debounce.current) clearTimeout(debounce.current)
-    debounce.current = setTimeout(async () => {
-      setBuscando(true)
-      setErrorBusqueda(null)
-      try {
-        setResultados(await buscarProductos(texto))
-        setPrimeraCarga(false)
-      } catch {
-        setErrorBusqueda('No se pudo buscar. Revisa tu conexión.')
-      } finally {
-        setBuscando(false)
-      }
-    }, 300)
   }, [])
 
   if (redir) return redir
@@ -287,9 +253,26 @@ export default function NuevaVenta() {
     setRecibido('')
     setCliente({ nombre: '', apellido: '', telefono: '' })
     setNumeroVenta(null)
-    setQuery('')
-    setResultados([])
     setEtapa('carrito')
+  }
+
+  if (etapa === 'ajustarPrecio') {
+    const item = items[0]
+    return (
+      <View style={{ flex: 1, backgroundColor: paleta.fondo, padding: espacio.xl, paddingTop: 56, gap: espacio.l }}>
+        <Text style={[tipografia.h2, { color: paleta.texto }]}>{item.producto.titulo}</Text>
+        {item.producto.tipo === 'calzado' ? (
+          <SliderPrecio
+            valor={item.precio}
+            minimo={item.producto.precioMin ?? 0}
+            maximo={item.producto.precioMax ?? item.precio}
+            onCambio={(v) => dispatch({ tipo: 'cambiarPrecio', id: item.producto.id, precio: v })}
+          />
+        ) : null}
+        <Text style={[tipografia.h3, tabular, { color: paleta.texto }]}>Subtotal {pesos(item.subtotal)}</Text>
+        <Boton titulo="Continuar a pago" onPress={() => setEtapa('cobrar')} />
+      </View>
+    )
   }
 
   if (etapa === 'confirmacion') {
@@ -412,65 +395,24 @@ export default function NuevaVenta() {
           onPress={salirDelFlujo} hitSlop={12}>
           <X size={24} color={paleta.texto} />
         </Presionable>
-        <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Nueva venta</Text>
+        <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Carrito</Text>
       </View>
 
-      <View style={{ paddingHorizontal: espacio.xl }}>
-        <CampoTexto
-          placeholder="Buscar producto"
-          value={query}
-          onChangeText={buscar}
-          autoFocus
+      {items.length === 0 ? (
+        <EstadoVacio
+          icono={<X />}
+          titulo="Tu carrito está vacío"
+          mensaje="Agrega productos desde la pestaña Productos"
         />
-      </View>
-
-      {buscando ? <ActivityIndicator style={{ marginVertical: espacio.s }} color={paleta.primario} /> : null}
-      {errorBusqueda ? (
-        <Text style={[tipografia.cuerpo, { color: paleta.peligroTexto, textAlign: 'center', marginVertical: espacio.xs }]}>
-          {errorBusqueda}
-        </Text>
-      ) : null}
-
-      <ScrollView style={{ flex: 1, marginTop: espacio.s, paddingHorizontal: espacio.xl }} keyboardShouldPersistTaps="handled">
-        {resultados.map((p, i) => {
-          const fila = (
-            <Presionable
-              accessibilityRole="button"
-              accessibilityLabel={`Agregar ${p.titulo}`}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
-                dispatch({ tipo: 'agregar', producto: p })
-              }}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-                paddingVertical: espacio.m, borderBottomWidth: 1, borderBottomColor: paleta.borde,
-              }}
-            >
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]} numberOfLines={1}>{p.titulo}</Text>
-                <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
-                  {p.detalle}{p.tipo === 'calzado' ? ` · Stock: ${p.stock}` : ''}
-                </Text>
-              </View>
-              <Text style={[tipografia.h3, tabular, { color: paleta.texto }]}>{pesos(p.precio)}</Text>
-            </Presionable>
-          )
-          return primeraCarga && i < 8 ? (
-            <Animated.View key={`${p.tipo}-${p.id}`} entering={FadeInDown.duration(220).delay(i * 40)}>
-              {fila}
-            </Animated.View>
-          ) : (
-            <View key={`${p.tipo}-${p.id}`}>{fila}</View>
-          )
-        })}
-      </ScrollView>
-
-      <Tarjeta estilo={{ borderRadius: 0, borderTopLeftRadius: radio.lg, borderTopRightRadius: radio.lg, borderBottomWidth: 0, gap: espacio.s, paddingBottom: espacio.xxl }}>
-        <ScrollView style={{ maxHeight: 220 }}>
+      ) : (
+        <ScrollView style={{ flex: 1, paddingHorizontal: espacio.xl }} keyboardShouldPersistTaps="handled">
           {items.map((i: ItemCarrito) => (
             <LineaCarrito key={`${i.producto.tipo}-${i.producto.id}`} item={i} dispatch={dispatch} />
           ))}
         </ScrollView>
+      )}
+
+      <Tarjeta estilo={{ borderRadius: 0, borderTopLeftRadius: radio.lg, borderTopRightRadius: radio.lg, borderBottomWidth: 0, paddingBottom: paddingInferior }}>
         <Boton
           titulo={total > 0 ? `Cobrar ${pesos(total)}` : 'Cobrar'}
           onPress={() => setEtapa('cobrar')}

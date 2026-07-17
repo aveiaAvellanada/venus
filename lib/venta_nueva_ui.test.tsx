@@ -19,21 +19,25 @@ jest.mock('expo-haptics', () => ({
 
 const mockBack = jest.fn()
 const mockReplace = jest.fn()
+let mockParams: { modo?: string } = {}
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: mockReplace, back: mockBack, canGoBack: () => true }),
+  useLocalSearchParams: () => mockParams,
 }))
 
 jest.mock('./supabase', () => ({ supabase: {} }))
 jest.mock('../lib/supabase', () => ({ supabase: {} }))
 jest.mock('../lib/auth', () => ({ useRequireModulo: () => null }))
 
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
+
 const mockObtenerCajaHoy = jest.fn()
 jest.mock('../lib/caja', () => ({ obtenerCajaHoy: () => mockObtenerCajaHoy() }))
 
-const mockBuscar = jest.fn()
 const mockRegistrar = jest.fn()
 jest.mock('../lib/ventas', () => ({
-  buscarProductos: (...a: unknown[]) => mockBuscar(...a),
   registrarVenta: (...a: unknown[]) => mockRegistrar(...a),
 }))
 
@@ -47,10 +51,20 @@ const ZAPATO = {
   precio: 180000, precioMin: 150000, precioMax: 220000, stock: 5,
 }
 
+// Siembra el ítem antes de montar `children`: en producción el dispatch
+// ocurre en la pantalla de origen, antes de navegar aquí (ver
+// app/(app)/productos/[ref].tsx), así que `NuevaVenta` siempre monta con
+// el carrito ya poblado. Si sembráramos con un efecto que corre DESPUÉS
+// de que `NuevaVenta` monta, el `useState` inicial de `etapa` (que lee
+// `items.length` una sola vez, al montar) no vería el ítem a tiempo.
 function Sembrador({ children }: { children: React.ReactNode }) {
   const { dispatch } = useCarrito()
-  React.useEffect(() => { dispatch({ tipo: 'agregar', producto: ZAPATO }) }, [dispatch])
-  return <>{children}</>
+  const [listo, setListo] = React.useState(false)
+  React.useEffect(() => {
+    dispatch({ tipo: 'agregar', producto: ZAPATO })
+    setListo(true)
+  }, [dispatch])
+  return listo ? <>{children}</> : null
 }
 
 async function montar({ conItem = false } = {}) {
@@ -83,7 +97,10 @@ const presionarPorLabel = (arbol: renderer.ReactTestRenderer, label: string) => 
 }
 
 describe('Nueva Venta restilizada', () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockParams = {}
+  })
 
   test('caja cerrada muestra estado bloqueado con acción a Caja', async () => {
     mockObtenerCajaHoy.mockResolvedValue({ estado: 'cerrada' })
@@ -128,5 +145,18 @@ describe('Nueva Venta restilizada', () => {
       presionarPorLabel(arbol, 'Confirmar venta')
     })
     expect(todoElTexto(arbol)).toContain('Venta #42 registrada')
+  })
+
+  test('carrito vacío muestra el estado vacío en vez del buscador', async () => {
+    const arbol = await montar()
+    expect(todoElTexto(arbol)).toContain('Tu carrito está vacío')
+  })
+
+  test('modo=rapida con 1 ítem entra directo a ajustar precio (sin ver el carrito completo)', async () => {
+    mockParams = { modo: 'rapida' }
+    const arbol = await montar({ conItem: true })
+    expect(todoElTexto(arbol)).toContain('Continuar a pago')
+    presionarPorLabel(arbol, 'Continuar a pago')
+    expect(todoElTexto(arbol)).toContain('Faltan')
   })
 })

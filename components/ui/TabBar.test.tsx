@@ -23,6 +23,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }))
 
 import { TemaProvider } from '../../lib/tema'
+import { CarritoProvider } from '../../lib/carrito-contexto'
 import { TabBar } from './TabBar'
 
 function propsFalsas(indiceActivo = 0) {
@@ -50,7 +51,36 @@ async function montar(props: any) {
   await act(async () => {
     arbol = renderer.create(
       <TemaProvider>
-        <TabBar {...props} />
+        <CarritoProvider>
+          <TabBar {...props} />
+        </CarritoProvider>
+      </TemaProvider>
+    )
+  })
+  return arbol
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function montarConCarrito(props: any, producto: import('../../lib/carrito').ProductoVendible, vecesAgregar: number) {
+  function Sembrador({ children }: { children: React.ReactNode }) {
+    const { dispatch } = require('../../lib/carrito-contexto').useCarrito()
+    React.useEffect(() => {
+      for (let n = 0; n < vecesAgregar; n++) {
+        dispatch({ tipo: 'agregar', producto })
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+    return <>{children}</>
+  }
+  let arbol!: ReturnType<typeof renderer.create>
+  await act(async () => {
+    arbol = renderer.create(
+      <TemaProvider>
+        <CarritoProvider>
+          <Sembrador>
+            <TabBar {...props} />
+          </Sembrador>
+        </CarritoProvider>
       </TemaProvider>
     )
   })
@@ -92,10 +122,21 @@ describe('TabBar', () => {
     expect(props.navigation.navigate).toHaveBeenCalledWith('productos')
   })
 
-  it('el FAB va a Nueva Venta', async () => {
+  it('el FAB (carrito) va a Nueva Venta', async () => {
     const arbol = await montar(propsFalsas())
-    const fab = arbol.root.findByProps({ accessibilityLabel: 'Nueva venta' })
+    const fab = arbol.root.findByProps({ accessibilityLabel: 'Carrito' })
     await act(async () => fab.props.onPress())
     expect(mockPush).toHaveBeenCalledWith('/ventas/nueva')
+  })
+
+  it('el FAB muestra el badge con la cantidad de ítems del carrito', async () => {
+    const producto = { tipo: 'calzado' as const, id: 'a', titulo: 'X', detalle: '', precio: 1, stock: 5 }
+    const arbol = await montarConCarrito(propsFalsas(), producto, 2)
+    expect(arbol.root.findAllByProps({ children: 2 }).length).toBeGreaterThan(0)
+  })
+
+  it('el FAB no muestra badge cuando el carrito está vacío', async () => {
+    const arbol = await montar(propsFalsas())
+    expect(arbol.root.findAllByProps({ children: '9+' }).length).toBe(0)
   })
 })

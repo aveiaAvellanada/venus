@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react'
 import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { ChevronRight, Egg, Footprints, PackagePlus, Search } from 'lucide-react-native'
+import { ChevronRight, Egg, Footprints, PackagePlus, Pencil, Search } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
+import { useCarrito } from '../../../lib/carrito-contexto'
 import { CATEGORIAS } from '../../../lib/excel'
 import { listarCalzado, listarVarios } from '../../../lib/inventario'
 import type { ProductoVarios } from '../../../lib/inventario'
@@ -19,7 +20,9 @@ import {
   Esqueleto,
   EstadoVacio,
   FilaLista,
+  HojaVenderGranja,
   Tarjeta,
+  useToast,
 } from '../../../components/ui'
 
 const formatear = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
@@ -97,6 +100,8 @@ export default function Productos() {
   const { perfil } = useAuth()
   const { paleta } = useTema()
   const router = useRouter()
+  const { dispatch } = useCarrito()
+  const { mostrar } = useToast()
 
   const [modo, setModo] = useState(0)
   const [busqueda, setBusqueda] = useState('')
@@ -105,6 +110,7 @@ export default function Productos() {
   const [refrescando, setRefrescando] = useState(false)
   const [modelos, setModelos] = useState<ModeloCalzado[]>([])
   const [varios, setVarios] = useState<ProductoVarios[]>([])
+  const [productoGranja, setProductoGranja] = useState<ProductoVarios | null>(null)
 
   const cargar = useCallback(async () => {
     if (!perfil) return
@@ -233,22 +239,85 @@ export default function Productos() {
             {variosVisibles.map((v, i) => (
               <View key={v.id}>
                 {i > 0 ? <View style={{ height: 1, backgroundColor: paleta.borde, marginLeft: 56 }} /> : null}
-                <FilaLista
-                  icono={
-                    <CirculoIcono tono="acento">
-                      <Egg />
-                    </CirculoIcono>
-                  }
-                  titulo={v.nombre}
-                  subtitulo={`Por ${v.unidad_medida} · precio al vender`}
-                  chevron
-                  onPress={() => router.push(`/inventario/granja/editor?id=${v.id}`)}
-                />
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ flex: 1 }}>
+                    <FilaLista
+                      icono={
+                        <CirculoIcono tono="acento">
+                          <Egg />
+                        </CirculoIcono>
+                      }
+                      titulo={v.nombre}
+                      subtitulo={`Por ${v.unidad_medida} · precio al vender`}
+                      onPress={() => setProductoGranja(v)}
+                    />
+                  </View>
+                  {perfil.rol === 'dueno' || perfil.rol === 'admin' ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Editar ${v.nombre}`}
+                      hitSlop={8}
+                      onPress={() => router.push(`/inventario/granja/editor?id=${v.id}`)}
+                      style={{ padding: espacio.m }}
+                    >
+                      <Pencil size={18} color={paleta.texto3} />
+                    </Pressable>
+                  ) : null}
+                </View>
               </View>
             ))}
           </Tarjeta>
         )}
       </ScrollView>
+
+      <HojaVenderGranja
+        visible={productoGranja != null}
+        producto={productoGranja}
+        onCerrar={() => setProductoGranja(null)}
+        onAgregar={(cantidad, precio) => {
+          if (!productoGranja) return
+          dispatch({
+            tipo: 'agregar',
+            producto: {
+              tipo: 'varios',
+              id: productoGranja.id,
+              titulo: productoGranja.nombre,
+              detalle: `por ${productoGranja.unidad_medida}`,
+              precio,
+              stock: Number.POSITIVE_INFINITY,
+              unidad: productoGranja.unidad_medida,
+            },
+          })
+          for (let i = 1; i < cantidad; i++) {
+            dispatch({ tipo: 'agregar', producto: {
+              tipo: 'varios', id: productoGranja.id, titulo: productoGranja.nombre,
+              detalle: `por ${productoGranja.unidad_medida}`, precio,
+              stock: Number.POSITIVE_INFINITY, unidad: productoGranja.unidad_medida,
+            } })
+          }
+          setProductoGranja(null)
+          mostrar(`Agregado: ${productoGranja.nombre}`)
+        }}
+        onCompraRapida={(cantidad, precio) => {
+          if (!productoGranja) return
+          dispatch({ tipo: 'limpiar' })
+          dispatch({
+            tipo: 'agregar',
+            producto: {
+              tipo: 'varios',
+              id: productoGranja.id,
+              titulo: productoGranja.nombre,
+              detalle: `por ${productoGranja.unidad_medida}`,
+              precio,
+              stock: Number.POSITIVE_INFINITY,
+              unidad: productoGranja.unidad_medida,
+            },
+          })
+          dispatch({ tipo: 'cambiarCantidad', id: productoGranja.id, cantidad })
+          setProductoGranja(null)
+          router.push('/ventas/nueva?modo=rapida')
+        }}
+      />
     </View>
   )
 }

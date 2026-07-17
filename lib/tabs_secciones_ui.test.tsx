@@ -54,6 +54,8 @@ jest.mock('../lib/inventario', () => ({
 
 import { rangoParaPeriodo } from './dashboard'
 import { TemaProvider } from './tema'
+import { CarritoProvider } from './carrito-contexto'
+import { ToastProvider } from '../components/ui'
 import Movimientos from '../app/(app)/(tabs)/movimientos'
 import Productos from '../app/(app)/(tabs)/productos'
 
@@ -87,7 +89,13 @@ function conRol(rol: string) {
 async function montar(ui: React.ReactElement) {
   let arbol!: ReturnType<typeof renderer.create>
   await act(async () => {
-    arbol = renderer.create(<TemaProvider>{ui}</TemaProvider>)
+    arbol = renderer.create(
+      <TemaProvider>
+        <CarritoProvider>
+          <ToastProvider>{ui}</ToastProvider>
+        </CarritoProvider>
+      </TemaProvider>
+    )
   })
   return arbol
 }

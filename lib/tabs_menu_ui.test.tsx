@@ -61,6 +61,11 @@ jest.mock('../lib/dashboard', () => ({
   obtenerGastosPeriodo: (...args: unknown[]) => mockGastosPeriodo(...args),
 }))
 
+const mockGastosFijosPorVencer = jest.fn()
+jest.mock('../lib/gastos', () => ({
+  obtenerGastosFijosPorVencer: (...args: unknown[]) => mockGastosFijosPorVencer(...args),
+}))
+
 import { rangoParaPeriodo } from './dashboard'
 import { TemaProvider } from './tema'
 import { ToastProvider } from '../components/ui'
@@ -130,6 +135,7 @@ describe('Menú — dashboard', () => {
     mockVentasSub.mockResolvedValue(BUCKETS)
     mockGastosPeriodo.mockResolvedValue(GASTOS)
     mockResumenDia.mockResolvedValue(RESUMEN_HOY)
+    mockGastosFijosPorVencer.mockResolvedValue([])
   })
 
   it('dueño: hero con total, métodos y gastos con total', async () => {
@@ -168,6 +174,28 @@ describe('Menú — dashboard', () => {
     expect(existeTexto(arbol, 'Semana')).toBe(false)
     expect(existeTexto(arbol, 'Total gastos')).toBe(false)
     expect(existeTexto(arbol, 'Proveedores')).toBe(false)
+  })
+
+  it('dueño: banner de gastos fijos por vencer, con botón Confirmar pago', async () => {
+    conPerfil('dueno')
+    mockGastosFijosPorVencer.mockResolvedValue([
+      { id: 'g1', nombre: 'Arriendo', monto_aproximado: 500000, dia_pago: 20, dias_restantes: 2 },
+    ])
+    const arbol = await montar()
+    expect(existeTexto(arbol, 'Gastos fijos por vencer')).toBe(true)
+    expect(existeTexto(arbol, 'Arriendo')).toBe(true)
+    const boton = arbol.root.findByProps({ accessibilityLabel: 'Confirmar pago de Arriendo' })
+    await act(async () => boton.props.onPress())
+    expect(mockPush).toHaveBeenCalledWith('/gastos/pagar?id=g1&nombre=Arriendo&monto=500000')
+  })
+
+  it('empleado: no ve el banner de gastos fijos por vencer', async () => {
+    conPerfil('empleado', 'Camilo Artunduaga')
+    mockGastosFijosPorVencer.mockResolvedValue([
+      { id: 'g1', nombre: 'Arriendo', monto_aproximado: 500000, dia_pago: 20, dias_restantes: 2 },
+    ])
+    const arbol = await montar()
+    expect(existeTexto(arbol, 'Gastos fijos por vencer')).toBe(false)
   })
 
   it('badge de caja: SIN ABRIR / ABIERTA; cerrada navega a /caja', async () => {

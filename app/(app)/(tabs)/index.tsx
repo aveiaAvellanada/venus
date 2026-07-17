@@ -24,6 +24,8 @@ import {
   obtenerResumenDia,
 } from '../../../lib/reportes'
 import type { ReportePeriodo, ResumenDia } from '../../../lib/reportes'
+import { obtenerGastosFijosPorVencer, type GastoFijoPorVencer } from '../../../lib/gastos'
+import { puedeAcceder } from '../../../lib/permisos'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
 import {
@@ -93,6 +95,7 @@ export default function Menu() {
   const [buckets, setBuckets] = useState<VentasBucket[]>([])
   const [gastos, setGastos] = useState<GastosPeriodo | null>(null)
   const [resumenHoy, setResumenHoy] = useState<ResumenDia | null>(null)
+  const [porVencer, setPorVencer] = useState<GastoFijoPorVencer[]>([])
 
   const cargarCaja = useCallback(() => {
     obtenerCajaHoy()
@@ -124,6 +127,9 @@ export default function Menu() {
         setReporte(rep)
         setBuckets(vb)
         setGastos(g)
+        if (puedeAcceder(perfil.rol, 'gastos-fijos')) {
+          obtenerGastosFijosPorVencer().then(setPorVencer).catch(() => setPorVencer([]))
+        }
       } else {
         const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' })
         setResumenHoy(await obtenerResumenDia(hoy))
@@ -350,6 +356,42 @@ export default function Menu() {
             ) : null}
           </>
         )}
+
+        {porVencer.length > 0 ? (
+          <Tarjeta estilo={{ borderColor: paleta.advertencia, backgroundColor: paleta.advertenciaSoft }}>
+            <Text style={[tipografia.etiqueta, { color: paleta.texto, marginBottom: espacio.s }]}>
+              Gastos fijos por vencer
+            </Text>
+            {porVencer.map((g, i) => (
+              <View key={g.id}>
+                {i > 0 ? <View style={{ height: 1, backgroundColor: paleta.borde, marginVertical: espacio.s }} /> : null}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[tipografia.cuerpo, { color: paleta.texto }]}>{g.nombre}</Text>
+                    <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+                      {formatear(g.monto_aproximado)} · {g.dias_restantes < 0 ? 'Atrasado' : g.dias_restantes === 0 ? 'Vence hoy' : `Vence en ${g.dias_restantes} días`}
+                    </Text>
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Confirmar pago de ${g.nombre}`}
+                    onPress={() => router.push(`/gastos/pagar?id=${g.id}&nombre=${encodeURIComponent(g.nombre)}&monto=${g.monto_aproximado}`)}
+                    style={({ pressed }) => ({
+                      paddingVertical: espacio.s,
+                      paddingHorizontal: espacio.m,
+                      borderRadius: radio.sm,
+                      backgroundColor: pressed ? paleta.primarioSoft : paleta.superficie,
+                      borderWidth: 1,
+                      borderColor: paleta.primario,
+                    })}
+                  >
+                    <Text style={[tipografia.etiqueta, { color: paleta.primario }]}>Confirmar pago</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
+          </Tarjeta>
+        ) : null}
       </ScrollView>
     </View>
   )

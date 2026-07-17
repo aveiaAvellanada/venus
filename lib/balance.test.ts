@@ -21,4 +21,14 @@ describe('rangoPeriodo', () => {
   it('semana: lunes a domingo que contiene la fecha (mié 2026-06-17)', () => {
     expect(rangoPeriodo('semana', new Date(2026, 5, 17))).toEqual({ desde: '2026-06-15', hasta: '2026-06-21' })
   })
+  it('año: primer y último día del año que contiene la fecha', () => {
+    expect(rangoPeriodo('anio', new Date(2026, 5, 17))).toEqual({ desde: '2026-01-01', hasta: '2026-12-31' })
+  })
+  it('rango: usa el rango personalizado tal cual', () => {
+    expect(rangoPeriodo('rango', new Date(2026, 5, 17), { desde: '2026-01-10', hasta: '2026-03-05' }))
+      .toEqual({ desde: '2026-01-10', hasta: '2026-03-05' })
+  })
+  it('rango: lanza error si falta rangoCustom', () => {
+    expect(() => rangoPeriodo('rango', new Date(2026, 5, 17))).toThrow()
+  })
 })

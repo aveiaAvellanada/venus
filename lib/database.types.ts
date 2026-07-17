@@ -838,6 +838,7 @@ export type Database = {
           activo: boolean
           alerta_dias_antes: number
           beneficiario: string | null
+          comprobante_url: string | null
           created_at: string
           created_by: string | null
           dia_pago: number | null
@@ -852,6 +853,7 @@ export type Database = {
           activo?: boolean
           alerta_dias_antes?: number
           beneficiario?: string | null
+          comprobante_url?: string | null
           created_at?: string
           created_by?: string | null
           dia_pago?: number | null
@@ -866,6 +868,7 @@ export type Database = {
           activo?: boolean
           alerta_dias_antes?: number
           beneficiario?: string | null
+          comprobante_url?: string | null
           created_at?: string
           created_by?: string | null
           dia_pago?: number | null

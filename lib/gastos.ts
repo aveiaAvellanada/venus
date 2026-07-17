@@ -78,11 +78,20 @@ export async function obtenerGastosFijos(): Promise<GastoFijoRow[]> {
   return data || [];
 }
 
-export async function guardarGastoFijo(datos: GastoFijoInsert): Promise<GastoFijoRow> {
+export async function guardarGastoFijo(
+  datos: GastoFijoInsert,
+  imagenUri?: string
+): Promise<GastoFijoRow> {
+  let comprobanteUrl: string | null = null;
+  if (imagenUri) {
+    comprobanteUrl = await comprimirYSubirComprobante(imagenUri);
+  }
+  const payload = comprobanteUrl ? { ...datos, comprobante_url: comprobanteUrl } : datos;
+
   if (datos.id) {
     const { data, error } = await supabase
       .from('gastos_fijos')
-      .update(datos)
+      .update(payload)
       .eq('id', datos.id)
       .select()
       .single();
@@ -91,7 +100,7 @@ export async function guardarGastoFijo(datos: GastoFijoInsert): Promise<GastoFij
   } else {
     const { data, error } = await supabase
       .from('gastos_fijos')
-      .insert(datos)
+      .insert(payload)
       .select()
       .single();
     if (error) throw error;

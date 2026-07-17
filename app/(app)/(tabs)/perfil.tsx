@@ -87,8 +87,8 @@ export default function Perfil() {
                     <Wallet />
                   </CirculoIcono>
                 }
-                titulo="Automatización de caja"
-                subtitulo="Apertura, cierre y correo"
+                titulo="Caja"
+                subtitulo="Horario, modo de cierre e historial"
                 chevron
                 onPress={() => router.push('/caja/config')}
               />

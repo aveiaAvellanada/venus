@@ -69,10 +69,10 @@ describe('Perfil', () => {
     expect(await AsyncStorage.getItem('venus.tema')).toBe('oscuro')
   })
 
-  it('empleado no ve Automatización de caja ni Empleados', async () => {
+  it('empleado no ve Caja ni Empleados', async () => {
     conPerfil('empleado', 'Camilo Artunduaga')
     const arbol = await montar()
-    expect(existeTexto(arbol, 'Automatización de caja')).toBe(false)
+    expect(existeTexto(arbol, 'Caja')).toBe(false)
     expect(existeTexto(arbol, 'Empleados')).toBe(false)
     expect(existeTexto(arbol, 'Operativo')).toBe(true)
   })

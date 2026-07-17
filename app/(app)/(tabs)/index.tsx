@@ -79,13 +79,12 @@ interface Metodo {
 }
 
 function metodosDe(efectivo: number, nequi: number, breB: number, otro: number): Metodo[] {
-  const lista: Metodo[] = [
+  return [
     { clave: 'efectivo', etiqueta: 'Efectivo', monto: efectivo, Icono: Banknote },
     { clave: 'nequi', etiqueta: 'Nequi', monto: nequi, Icono: Smartphone },
     { clave: 'bre_b', etiqueta: 'Bre-B', monto: breB, Icono: Zap },
+    { clave: 'otro', etiqueta: 'Otro', monto: otro, Icono: CreditCard },
   ]
-  if (otro > 0) lista.push({ clave: 'otro', etiqueta: 'Otro', monto: otro, Icono: CreditCard })
-  return lista
 }
 
 export default function Menu() {
@@ -278,15 +277,16 @@ export default function Menu() {
               </View>
             </LinearGradient>
 
-            <View style={{ flexDirection: 'row', gap: espacio.s }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: espacio.s }}>
               {metodos.map((m) => (
-                <TarjetaMetrica
-                  key={m.clave}
-                  mini
-                  etiqueta={m.etiqueta}
-                  valor={formatear(m.monto)}
-                  icono={<m.Icono size={16} color={paleta.primario} />}
-                />
+                <View key={m.clave} style={{ width: '48%' }}>
+                  <TarjetaMetrica
+                    mini
+                    etiqueta={m.etiqueta}
+                    valor={formatear(m.monto)}
+                    icono={<m.Icono size={16} color={paleta.primario} />}
+                  />
+                </View>
               ))}
             </View>
 

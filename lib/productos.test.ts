@@ -62,6 +62,27 @@ describe('agruparPorReferencia', () => {
     ])
     expect(modelos[0].agotado).toBe(true)
   })
+
+  it('con incluirInactivos:true, conserva las variantes inactivas y marca el modelo', () => {
+    const modelos = agruparPorReferencia(
+      [
+        fila({ referencia: '9999', activo: true, talla: '38' }),
+        fila({ referencia: '9999', activo: false, talla: '40' }),
+      ],
+      { incluirInactivos: true }
+    )
+    expect(modelos).toHaveLength(1)
+    expect(modelos[0].variantes).toHaveLength(2)
+    expect(modelos[0].activo).toBe(true) // al menos una variante activa
+  })
+
+  it('modelo con todas las variantes inactivas: activo=false', () => {
+    const modelos = agruparPorReferencia(
+      [fila({ referencia: '8888', activo: false, talla: '38' })],
+      { incluirInactivos: true }
+    )
+    expect(modelos[0].activo).toBe(false)
+  })
 })
 
 describe('filtrarModelos', () => {

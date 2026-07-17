@@ -34,3 +34,29 @@ describe('decidirAccionCaja', () => {
     expect(decidirAccionCaja(cfg, '23:00:30', { estado: 'abierta' })).toBe('cerrar_blando')
   })
 })
+
+import { diaSemanaDeFecha, horarioDelDia, type HorarioSemanal } from './cajaScheduler'
+
+describe('diaSemanaDeFecha', () => {
+  it('mapea getDay() al nombre del día en español', () => {
+    // 2026-06-17 es miércoles
+    expect(diaSemanaDeFecha(new Date(2026, 5, 17))).toBe('miercoles')
+    // 2026-06-14 es domingo
+    expect(diaSemanaDeFecha(new Date(2026, 5, 14))).toBe('domingo')
+    // 2026-06-20 es sábado
+    expect(diaSemanaDeFecha(new Date(2026, 5, 20))).toBe('sabado')
+  })
+})
+
+describe('horarioDelDia', () => {
+  const horario: HorarioSemanal = {
+    lunes: { apertura: '08:00', cierre: '19:00' },
+    sabado: { apertura: '09:00', cierre: '17:00' },
+  }
+  it('devuelve el horario configurado del día', () => {
+    expect(horarioDelDia(horario, 'lunes')).toEqual({ apertura: '08:00', cierre: '19:00' })
+  })
+  it('devuelve apertura/cierre null si el día no tiene horario configurado', () => {
+    expect(horarioDelDia(horario, 'domingo')).toEqual({ apertura: null, cierre: null })
+  })
+})

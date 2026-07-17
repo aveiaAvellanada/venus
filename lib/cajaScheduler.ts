@@ -10,6 +10,26 @@ export interface CajaHoyDec {
   estado: 'abierta' | 'cerrada'
 }
 
+export type DiaSemana = 'domingo' | 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes' | 'sabado'
+
+// Indexado igual que Date.getDay(): 0=domingo .. 6=sábado.
+export const DIAS_SEMANA: DiaSemana[] = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
+
+export interface HorarioDia {
+  apertura: string | null
+  cierre: string | null
+}
+
+export type HorarioSemanal = Partial<Record<DiaSemana, HorarioDia>>
+
+export function diaSemanaDeFecha(fecha: Date): DiaSemana {
+  return DIAS_SEMANA[fecha.getDay()]
+}
+
+export function horarioDelDia(horario: HorarioSemanal, dia: DiaSemana): HorarioDia {
+  return horario[dia] ?? { apertura: null, cierre: null }
+}
+
 const hhmm = (t: string) => t.slice(0, 5)
 
 export function decidirAccionCaja(

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Alert, ScrollView, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
-import { ChartColumn, LogOut, Scale, Sparkles, SunMoon, Truck, Users, Wallet } from 'lucide-react-native'
+import { Camera, ChartColumn, LogOut, Scale, Sparkles, SunMoon, Truck, Users, Wallet } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
 import { puedeAcceder, type Rol } from '../../../lib/permisos'
 import { useTema } from '../../../lib/tema'
@@ -22,6 +22,7 @@ const NEGOCIO = [
   { id: 'reportes', titulo: 'Reportes', sub: 'El negocio a fondo', ruta: '/reportes', Icono: ChartColumn },
   { id: 'balance', titulo: 'Balance', sub: 'Ingresos − egresos', ruta: '/balance', Icono: Scale },
   { id: 'analisis-ia', titulo: 'Análisis IA', sub: 'Recomendaciones de compra', ruta: undefined, Icono: Sparkles },
+  { id: 'carga-inicial', titulo: 'Carga inicial', sub: 'Plantilla Excel o cámara', ruta: '/inventario/carga', Icono: Camera },
 ] as const
 
 export default function Perfil() {

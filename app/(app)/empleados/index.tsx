@@ -3,6 +3,7 @@ import { View, Text, FlatList, ActivityIndicator, RefreshControl } from 'react-n
 import { useRouter, useFocusEffect } from 'expo-router'
 import { ArrowLeft, Calendar, ChevronRight, CircleAlert, ShieldCheck, User, Users, Wallet } from 'lucide-react-native'
 import { useRequireModulo } from '../../../lib/auth'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { listarEmpleados, diasTrabajadosMes, type Empleado } from '../../../lib/empleados'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
@@ -38,6 +39,7 @@ export default function EmpleadosIndex() {
   const requireModulo = useRequireModulo('gestion-empleado')
   const router = useRouter()
   const { paleta } = useTema()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
 
   const [empleados, setEmpleados] = useState<EmpleadoConDias[]>([])
   const [loading, setLoading] = useState(true)
@@ -160,7 +162,7 @@ export default function EmpleadosIndex() {
           data={empleados}
           keyExtractor={(item) => item.id}
           renderItem={renderEmpleado}
-          contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl }}
+          contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={paleta.primario} />

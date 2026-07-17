@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react-native'
 import { useRequireModulo } from '../../../lib/auth'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import {
   buscarVentaParaDevolucion,
   registrarDevolucion,
@@ -80,6 +81,7 @@ export default function NuevaDevolucionScreen() {
   const params = useLocalSearchParams<{ venta: string; numero: string }>()
   const { paleta } = useTema()
   const { mostrar } = useToast()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
 
   // ── Estado de la venta ──
   const [venta, setVenta] = useState<VentaParaDevolucion | null>(null)
@@ -476,7 +478,7 @@ export default function NuevaDevolucionScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >

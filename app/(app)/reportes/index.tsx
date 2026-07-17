@@ -16,6 +16,7 @@ import {
   Zap,
 } from 'lucide-react-native'
 import { useRequireModulo, useAuth } from '../../../lib/auth'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import {
   obtenerResumenDia,
   listarStockBajo,
@@ -65,6 +66,7 @@ export default function ReportesIndex() {
   const { perfil } = useAuth()
   const router = useRouter()
   const { paleta } = useTema()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
   const esDueno = perfil?.rol === 'dueno'
 
   const [hoy, setHoy] = useState<ResumenDia | null>(null)
@@ -136,7 +138,7 @@ export default function ReportesIndex() {
         </View>
       ) : hoy ? (
         <ScrollView
-          contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.m }}
+          contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.m }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={paleta.primario} />}
         >

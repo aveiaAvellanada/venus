@@ -4,6 +4,7 @@ import { Redirect, useRouter } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
 import { supabase } from '../../../lib/supabase'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tipografia } from '../../../lib/theme'
@@ -35,6 +36,7 @@ export default function CajaConfig() {
   const router = useRouter()
   const { paleta } = useTema()
   const { mostrar } = useToast()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
   const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [auto, setAuto] = useState(false)
@@ -94,7 +96,7 @@ export default function CajaConfig() {
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
       <Encabezado paleta={paleta} onVolver={() => router.back()} />
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
         showsVerticalScrollIndicator={false}
       >
         <Text style={[tipografia.h3, { color: paleta.texto }]}>Horario automático de Caja</Text>

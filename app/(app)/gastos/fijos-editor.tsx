@@ -3,6 +3,7 @@ import { View, Text, ScrollView, KeyboardAvoidingView, Platform } from 'react-na
 import { useRouter } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { guardarGastoFijo } from '../../../lib/gastos'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tipografia } from '../../../lib/theme'
@@ -33,6 +34,7 @@ export default function GastosFijosEditorScreen() {
   const router = useRouter()
   const { paleta } = useTema()
   const { mostrar } = useToast()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
 
   const [nombre, setNombre] = useState('')
   const [montoAproximado, setMontoAproximado] = useState('')
@@ -82,7 +84,7 @@ export default function GastosFijosEditorScreen() {
       <Encabezado paleta={paleta} onVolver={() => router.back()} />
 
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
         showsVerticalScrollIndicator={false}
       >
         <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Ej: Arriendo, Luz, Internet</Text>

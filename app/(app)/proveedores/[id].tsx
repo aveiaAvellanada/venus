@@ -24,6 +24,7 @@ import {
   X,
 } from 'lucide-react-native'
 import { useAuth, useRequireModulo } from '../../../lib/auth'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import {
   obtenerProveedorPorId,
   listarCuentasBancarias,
@@ -49,6 +50,7 @@ export default function ProveedorDetailScreen() {
   const router = useRouter()
   const { perfil } = useAuth()
   const { paleta } = useTema()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
   const { mostrar } = useToast()
 
   // General States
@@ -320,7 +322,7 @@ export default function ProveedorDetailScreen() {
       <Encabezado />
 
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
         showsVerticalScrollIndicator={false}
       >
         {/* 1. Información General */}
@@ -600,7 +602,7 @@ export default function ProveedorDetailScreen() {
             </View>
 
             <ScrollView
-              contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.l }}
+              contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.l }}
               showsVerticalScrollIndicator={false}
             >
               <CampoTexto
@@ -714,7 +716,7 @@ export default function ProveedorDetailScreen() {
 
             {compraSeleccionada && (
               <ScrollView
-                contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.l }}
+                contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.l }}
                 showsVerticalScrollIndicator={false}
               >
                 <View style={{ backgroundColor: paleta.superficie2, borderRadius: radio.sm, padding: espacio.l, gap: 4 }}>

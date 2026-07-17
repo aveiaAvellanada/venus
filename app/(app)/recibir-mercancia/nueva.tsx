@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react-native'
 import { useAuth, useRequireModulo } from '../../../lib/auth'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import {
   listarProveedores,
   crearProveedor,
@@ -58,6 +59,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
   const router = useRouter()
   const { paleta } = useTema()
   const { mostrar } = useToast()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
 
   const esDueno = perfil?.rol === 'dueno'
   const esAdmin = perfil?.rol === 'admin'
@@ -427,7 +429,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -701,7 +703,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
               </Presionable>
             </View>
 
-            <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.m }} keyboardShouldPersistTaps="handled">
+            <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.m }} keyboardShouldPersistTaps="handled">
               <CampoTexto
                 etiqueta="Nombre *"
                 placeholder="Distribuidora del Norte"
@@ -814,7 +816,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
               </Presionable>
             </View>
 
-            <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.m }} keyboardShouldPersistTaps="handled">
+            <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.m }} keyboardShouldPersistTaps="handled">
               <View>
                 <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>Categoría *</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s }}>

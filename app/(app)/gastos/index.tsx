@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { ArrowLeft, Camera, Plus, Receipt, X } from 'lucide-react-native'
 import { obtenerGastosVariables, guardarGastoVariable } from '../../../lib/gastos'
 import { useAuth } from '../../../lib/auth'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { Database } from '../../../lib/database.types'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
@@ -39,6 +40,8 @@ export default function GastosVariablesScreen() {
   const { session } = useAuth()
   const { paleta } = useTema()
   const { mostrar } = useToast()
+  const paddingInferior100 = usePaddingInferior(100)
+  const paddingInferiorXxxl = usePaddingInferior(espacio.xxxl)
 
   const [gastos, setGastos] = useState<GastoVariableRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -156,7 +159,7 @@ export default function GastosVariablesScreen() {
           data={gastos}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: espacio.xl, paddingBottom: 100 }}
+          contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior100 }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={paleta.primario} />}
           ListEmptyComponent={<EstadoVacio icono={<Receipt />} titulo="No hay gastos variables este mes" />}
@@ -196,7 +199,7 @@ export default function GastosVariablesScreen() {
       >
         <ScrollView
           style={{ flex: 1, backgroundColor: paleta.fondo }}
-          contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl }}
+          contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferiorXxxl }}
           showsVerticalScrollIndicator={false}
         >
           <View

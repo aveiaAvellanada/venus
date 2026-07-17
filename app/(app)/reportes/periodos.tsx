@@ -15,6 +15,7 @@ import {
   Zap,
 } from 'lucide-react-native'
 import { useRequireModulo } from '../../../lib/auth'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { rangoPeriodo } from '../../../lib/balance'
 import { obtenerReportePeriodo, compararConAyer, type ReportePeriodo } from '../../../lib/reportes'
 import { useTema } from '../../../lib/tema'
@@ -98,6 +99,7 @@ export default function ReportesPeriodos() {
   const requireModulo = useRequireModulo('reportes')
   const router = useRouter()
   const { paleta } = useTema()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
 
   const [tipo, setTipo] = useState<Tipo>('mes')
   const [refDate, setRefDate] = useState<Date>(new Date())
@@ -205,7 +207,7 @@ export default function ReportesPeriodos() {
         </View>
       ) : data ? (
         <ScrollView
-          contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.m }}
+          contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.m }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={paleta.primario} />}
         >

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router'
 import { ArrowLeft, Check } from 'lucide-react-native'
 import { obtenerResumenEnVivo, cerrarCaja } from '../../../lib/caja'
 import { dispararReporteCorreo, obtenerReporteDiario, construirLinkWhatsapp } from '../../../lib/reporteDiario'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tabular, tipografia } from '../../../lib/theme'
@@ -36,6 +37,7 @@ export default function CierreCaja() {
   const router = useRouter()
   const { paleta } = useTema()
   const { mostrar } = useToast()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
   const [resumen, setResumen] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [guardando, setGuardando] = useState(false)
@@ -149,7 +151,7 @@ export default function CierreCaja() {
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
       <Encabezado paleta={paleta} onVolver={() => router.back()} />
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.xl }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.xl }}
         showsVerticalScrollIndicator={false}
       >
         <Tarjeta estilo={{ alignItems: 'center' }}>

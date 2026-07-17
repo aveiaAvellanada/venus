@@ -15,6 +15,7 @@ import {
   User,
 } from 'lucide-react-native'
 import { useAuth, useRequireModulo } from '../../../lib/auth'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { listarCompras, listarProveedores, type Compra } from '../../../lib/proveedores'
 import { supabase } from '../../../lib/supabase'
 import { useTema } from '../../../lib/tema'
@@ -26,6 +27,7 @@ export default function RecibirMercanciaIndex() {
   const { perfil } = useAuth()
   const router = useRouter()
   const { paleta } = useTema()
+  const paddingInferior = usePaddingInferior(100)
 
   const [compras, setCompras] = useState<Compra[]>([])
   const [proveedoresMap, setProveedoresMap] = useState<Record<string, string>>({})
@@ -242,7 +244,7 @@ export default function RecibirMercanciaIndex() {
             data={compras}
             keyExtractor={(item) => item.id}
             renderItem={renderCompra}
-            contentContainerStyle={{ padding: espacio.xl, paddingBottom: 100 }}
+            contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior }}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[paleta.primario]} />

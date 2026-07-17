@@ -5,6 +5,7 @@ import { ArrowLeft, ImageOff, PackageX, Pencil } from 'lucide-react-native'
 import { useAuth, useRequireModulo } from '../../../../lib/auth'
 import { supabase } from '../../../../lib/supabase'
 import type { ProductoCalzado } from '../../../../lib/inventario'
+import { usePaddingInferior } from '../../../../hooks/usePaddingInferior'
 import { useTema } from '../../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../../lib/theme'
 import { Badge, Boton, EstadoVacio, Presionable, Tarjeta } from '../../../../components/ui'
@@ -22,6 +23,7 @@ export default function CalzadoDetailScreen() {
   const { perfil } = useAuth()
   const router = useRouter()
   const { paleta } = useTema()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
 
   const esDueno = perfil?.rol === 'dueno'
   const esEmpleado = perfil?.rol === 'empleado'
@@ -106,7 +108,7 @@ export default function CalzadoDetailScreen() {
       <Encabezado />
 
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ width: '100%', height: 260, borderRadius: radio.lg, overflow: 'hidden', backgroundColor: paleta.superficie2 }}>
@@ -175,7 +177,7 @@ export default function CalzadoDetailScreen() {
       </ScrollView>
 
       {!esEmpleado && (
-        <View style={{ padding: espacio.l, paddingBottom: espacio.xxxl, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
+        <View style={{ padding: espacio.l, paddingBottom: paddingInferior, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
           <Boton
             titulo="Editar producto"
             icono={<Pencil size={20} color={paleta.sobrePrimario} />}

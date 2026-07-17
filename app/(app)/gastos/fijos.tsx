@@ -4,6 +4,7 @@ import { useRouter, useFocusEffect } from 'expo-router'
 import { ArrowLeft, FileText, Plus } from 'lucide-react-native'
 import { supabase } from '../../../lib/supabase'
 import { Database } from '../../../lib/database.types'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
@@ -42,6 +43,7 @@ export default function GastosFijosScreen() {
   const router = useRouter()
   const { paleta } = useTema()
   const { mostrar } = useToast()
+  const paddingInferior = usePaddingInferior(100)
 
   const [gastos, setGastos] = useState<GastoConPagos[]>([])
   const [loading, setLoading] = useState(true)
@@ -171,7 +173,7 @@ export default function GastosFijosScreen() {
           data={gastos}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: espacio.xl, paddingBottom: 100 }}
+          contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <EstadoVacio icono={<FileText />} titulo="No hay contratos/gastos fijos registrados" />

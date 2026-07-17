@@ -22,6 +22,7 @@ import {
   Wallet,
 } from 'lucide-react-native'
 import { useRequireModulo } from '../../../lib/auth'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import {
   listarEmpleados,
   diasTrabajadosMes,
@@ -79,6 +80,7 @@ export default function EmpleadoDetalleScreen() {
   const router = useRouter()
   const { paleta } = useTema()
   const toast = useToast()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
 
   // ─── Estado de carga ───────────────────────────────────────────────────────
   const [empleado, setEmpleado] = useState<Empleado | null>(null)
@@ -333,7 +335,7 @@ export default function EmpleadoDetalleScreen() {
       <Encabezado paleta={paleta} onVolver={() => router.back()} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView
-          contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+          contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
           showsVerticalScrollIndicator={false}
         >
           {/* ── Cabecera del empleado ── */}

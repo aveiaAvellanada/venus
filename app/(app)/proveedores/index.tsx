@@ -16,6 +16,7 @@ import {
 } from 'lucide-react-native'
 import { listarProveedores, type Proveedor } from '../../../lib/proveedores'
 import { useRequireModulo } from '../../../lib/auth'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tipografia } from '../../../lib/theme'
 import { Boton, CirculoIcono, ControlSegmentado, EstadoVacio, Presionable, Tarjeta } from '../../../components/ui'
@@ -24,6 +25,7 @@ export default function ProveedoresIndex() {
   const requireModulo = useRequireModulo('proveedores')
   const router = useRouter()
   const { paleta } = useTema()
+  const paddingInferior = usePaddingInferior(100)
 
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [loading, setLoading] = useState(true)
@@ -200,7 +202,7 @@ export default function ProveedoresIndex() {
           data={proveedores}
           keyExtractor={(item) => item.id}
           renderItem={renderProveedor}
-          contentContainerStyle={{ padding: espacio.xl, paddingBottom: 100 }}
+          contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <EstadoVacio icono={<Users />} titulo="No se encontraron proveedores." />

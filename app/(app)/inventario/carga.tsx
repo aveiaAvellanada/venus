@@ -6,6 +6,7 @@ import { ArrowLeft, CircleAlert, CircleCheckBig, FileSpreadsheet } from 'lucide-
 import { useAuth } from '../../../lib/auth';
 import { leerExcel, validarFilas } from '../../../lib/excel';
 import { guardarCalzado } from '../../../lib/inventario';
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior';
 import { useTema } from '../../../lib/tema';
 import { espacio, radio, tipografia } from '../../../lib/theme';
 import { Boton, Presionable, Tarjeta, useToast } from '../../../components/ui';
@@ -15,6 +16,7 @@ export default function CargaMasivaInventario() {
   const router = useRouter();
   const { paleta } = useTema();
   const { mostrar } = useToast();
+  const paddingInferior = usePaddingInferior(espacio.xxxl);
 
   const [loadingFile, setLoadingFile] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -112,7 +114,7 @@ export default function CargaMasivaInventario() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
         showsVerticalScrollIndicator={false}
       >
         {!uploading && (

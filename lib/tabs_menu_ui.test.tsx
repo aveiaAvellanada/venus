@@ -129,8 +129,8 @@ describe('Menú — dashboard', () => {
       expect({ [t]: existeTexto(arbol, t) }).toEqual({ [t]: true })
     }
     expect(existeTexto(arbol, '$315.000')).toBe(true)
-    // "Otro" en cero no se muestra
-    expect(existeTexto(arbol, 'Otro')).toBe(false)
+    // "Otro" siempre se muestra, incluso en cero (grilla 2x2 de 4 métodos)
+    expect(existeTexto(arbol, 'Otro')).toBe(true)
   })
 
   it('cambiar el chip a Semana recarga con el rango de 7 días', async () => {

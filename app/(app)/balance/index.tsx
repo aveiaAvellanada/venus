@@ -11,6 +11,7 @@ import {
   TrendingUp,
 } from 'lucide-react-native'
 import { useRequireModulo } from '../../../lib/auth'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { obtenerBalance, rangoPeriodo, proyeccionMes, type Balance } from '../../../lib/balance'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
@@ -103,6 +104,7 @@ export default function BalanceIndex() {
   const requireModulo = useRequireModulo('balance')
   const router = useRouter()
   const { paleta } = useTema()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
 
   const [tipo, setTipo] = useState<Tipo>('mes')
   const [refDate, setRefDate] = useState<Date>(new Date())
@@ -227,7 +229,7 @@ export default function BalanceIndex() {
         </View>
       ) : data ? (
         <ScrollView
-          contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.m }}
+          contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.m }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={paleta.primario} />}
         >

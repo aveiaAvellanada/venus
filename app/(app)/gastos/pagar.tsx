@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { ArrowLeft, Camera } from 'lucide-react-native'
 import { registrarPagoFijo } from '../../../lib/gastos'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, radio, tipografia } from '../../../lib/theme'
@@ -35,6 +36,7 @@ export default function PagarGastoFijoScreen() {
   const { id, nombre, monto } = useLocalSearchParams()
   const { paleta } = useTema()
   const { mostrar } = useToast()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
 
   const [montoPagado, setMontoPagado] = useState(monto ? String(monto) : '')
   const [fotoUri, setFotoUri] = useState<string | null>(null)
@@ -91,7 +93,7 @@ export default function PagarGastoFijoScreen() {
       <Encabezado paleta={paleta} onVolver={() => router.back()} />
 
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
         showsVerticalScrollIndicator={false}
       >
         <Tarjeta estilo={{ backgroundColor: paleta.primarioSoft, borderColor: paleta.primario }}>

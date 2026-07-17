@@ -4,6 +4,7 @@ import { Redirect, useRouter } from 'expo-router'
 import { ArrowLeft, Clock } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
 import { supabase } from '../../../lib/supabase'
+import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
@@ -36,6 +37,7 @@ export default function HistorialCaja() {
   const { perfil } = useAuth()
   const router = useRouter()
   const { paleta } = useTema()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
   const puedeVer = perfil?.rol === 'dueno' || perfil?.rol === 'admin'
   const [cierres, setCierres] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -76,7 +78,7 @@ export default function HistorialCaja() {
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
       <Encabezado paleta={paleta} onVolver={() => router.back()} />
       <FlatList
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.m, flexGrow: 1 }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.m, flexGrow: 1 }}
         data={cierres}
         keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => {

@@ -7,6 +7,7 @@ import { useAuth, useRequireModulo } from '../../../../lib/auth'
 import { supabase } from '../../../../lib/supabase'
 import { guardarVarios } from '../../../../lib/inventario'
 import { comprimirYSubirImagen } from '../../../../lib/imagenes'
+import { usePaddingInferior } from '../../../../hooks/usePaddingInferior'
 import { useTema } from '../../../../lib/tema'
 import { espacio, radio, tipografia } from '../../../../lib/theme'
 import { Boton, CampoTexto, Presionable, Tarjeta, useToast } from '../../../../components/ui'
@@ -17,6 +18,7 @@ export default function GranjaEditorScreen() {
   const router = useRouter()
   const { perfil } = useAuth()
   const { paleta } = useTema()
+  const paddingInferior = usePaddingInferior(espacio.xxxl)
   const { mostrar } = useToast()
 
   const [loading, setLoading] = useState(false)
@@ -178,7 +180,7 @@ export default function GranjaEditorScreen() {
       <Encabezado />
 
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xxxl, gap: espacio.l }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ alignItems: 'center' }}>
@@ -247,7 +249,7 @@ export default function GranjaEditorScreen() {
         </Tarjeta>
       </ScrollView>
 
-      <View style={{ padding: espacio.l, paddingBottom: espacio.xxxl, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
+      <View style={{ padding: espacio.l, paddingBottom: paddingInferior, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
         <Boton
           titulo={id ? 'Actualizar producto' : 'Guardar producto'}
           onPress={handleGuardar}

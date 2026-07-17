@@ -25,12 +25,15 @@ export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
   // El .order() no es cosmético: sin él, el .limit(10) deja que Postgres
   // devuelva 10 filas cualquiera, así que un producto que coincide puede
   // faltar y dos búsquedas iguales pueden dar resultados distintos.
+  // `id` desempata: created_at solo no basta, porque una inserción en lote
+  // comparte el now() de su transacción y deja empates que se rompen al azar.
   let calzadoQ = supabase
     .from('productos_calzado')
     .select('id, descripcion, marca, referencia, talla, color, precio_minimo, precio_maximo, stock_actual')
     .eq('activo', true)
     .gt('stock_actual', 0)
     .order('created_at', { ascending: false })
+    .order('id')
     .limit(10)
   if (termino) {
     calzadoQ = calzadoQ.or(orIlike(['descripcion', 'marca', 'referencia', 'talla', 'color'], termino))
@@ -41,6 +44,7 @@ export async function buscarProductos(q: string): Promise<ProductoVendible[]> {
     .select('id, nombre, unidad_medida, precio_sugerido')
     .eq('activo', true)
     .order('created_at', { ascending: false })
+    .order('id')
     .limit(10)
   if (termino) variosQ = variosQ.ilike('nombre', like)
 

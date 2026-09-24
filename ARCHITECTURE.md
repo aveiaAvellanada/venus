@@ -5,7 +5,7 @@
 > hace hoy**. Donde el código no permite afirmar algo con certeza, se marca como
 > **"no determinado"**.
 >
-> Stack: React Native + Expo SDK 54, **expo-router** (navegación basada en archivos),
+> Stack: React Native + Expo SDK 57, **expo-router** (navegación basada en archivos),
 > Supabase (PostgreSQL + Auth + Storage, RLS). Online-first. UI en español, Android, portrait.
 >
 > Convención de rutas: el grupo `(app)` y `(auth)` son *route groups* de expo-router (no

@@ -171,12 +171,12 @@ const matchText = (children: unknown, text: string): boolean => {
 
 const findAllByText = (root: renderer.ReactTestInstance, text: string) =>
   root.findAll(
-    (el: renderer.ReactTestInstance) => el.type === 'Text' && matchText(el.props.children, text)
+    (el: renderer.ReactTestInstance) => String(el.type) === 'Text' && matchText(el.props.children, text)
   )
 
 const findAllContainingText = (root: renderer.ReactTestInstance, substring: string) =>
   root.findAll((el: renderer.ReactTestInstance) => {
-    if (el.type !== 'Text') return false
+    if (String(el.type) !== 'Text') return false
     const flatten = (c: unknown): string => {
       if (typeof c === 'string') return c
       if (typeof c === 'number') return String(c)

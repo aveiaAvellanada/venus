@@ -19,7 +19,7 @@ Los empleados tienen casi todos los permisos. **Solo Andrés ve finanzas, costos
 TODA acción registra quién la hizo, cuándo y qué cambió. Andrés puede ver el historial de acciones de cada empleado. Las tablas llevan `created_by` y registro de auditoría en acciones críticas.
 
 ## Stack tecnológico
-- React Native con Expo SDK 54 (TypeScript estricto)
+- React Native 0.86 con Expo SDK 57 (TypeScript estricto) — la versión que corre Expo Go actual
 - expo-router (navegación basada en archivos)
 - Supabase (PostgreSQL 17, Auth, Storage) con RLS activado en todas las tablas
 - Online-first en esta versión. Offline-first diferido.
@@ -66,9 +66,11 @@ TODA acción registra quién la hizo, cuándo y qué cambió. Andrés puede ver 
 - Lógica pura y testeable separada del acceso a datos y de la UI (ej. `lib/carrito.ts` con tests)
 - Todo en español en la UI
 
-## Estado de implementación (al 2026-06-14)
-- Construido: autenticación + navegación por rol; Módulo 1 Nueva Venta v1 (online-first).
-- **Pendiente de alinear con v4.0:** el modelo de roles en código y RLS aún es de 2 niveles (`dueno`/`empleado`) y el `empleado` está más restringido que en v4.0; "Granja" todavía es `productos_varios` CON stock y precio guardado. Estos ajustes (3 niveles de permiso, Granja sin stock, devoluciones, auditoría `created_by`, precio mín/máx) se deben planear antes de construir nuevos módulos. Plan de módulos en `docs/plan-modulos-pendientes.md` (a actualizar contra v4.0).
+## Estado de implementación (al 2026-09-24)
+- Construidos y en `main`: 14/15 módulos (M1–M13 y M15 fase Excel), roles de 3 niveles (`dueno`/`admin`/`empleado`) en código y RLS, auditoría `created_by`, Granja sin stock, precio mín/máx, y el rediseño de UI. Estado detallado en `openspec/changes/tasks.json`.
+- Falta M14 Análisis IA (requiere 3+ meses de datos reales).
+- Pendiente real: validación de punta a punta en dispositivo (Expo Go SDK 57) y despliegue (APK) a la familia.
+- `docs/plan-modulos-pendientes.md` es un documento histórico (PRD v3.0).
 
 ## No construir en esta versión
 - Facturación electrónica DIAN

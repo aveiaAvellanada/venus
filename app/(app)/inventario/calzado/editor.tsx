@@ -133,7 +133,7 @@ export default function CalzadoEditorScreen() {
           text: 'Cámara',
           onPress: async () => {
             const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              mediaTypes: ['images'],
               quality: 1,
             })
             if (!result.canceled) {
@@ -145,7 +145,7 @@ export default function CalzadoEditorScreen() {
           text: 'Galería',
           onPress: async () => {
             const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              mediaTypes: ['images'],
               quality: 1,
             })
             if (!result.canceled) {

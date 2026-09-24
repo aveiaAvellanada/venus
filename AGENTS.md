@@ -42,8 +42,8 @@ deudas con proveedores y gestión de usuarios). Sandra es el nivel intermedio
 
 ## 2. Stack tecnológico
 
-- **React Native + Expo SDK 54** (TypeScript estricto). NO actualizar el SDK sin
-  pedirlo (Expo Go del dispositivo de prueba corre SDK 54).
+- **React Native + Expo SDK 57** (TypeScript estricto). NO actualizar el SDK sin
+  pedirlo (Expo Go del dispositivo de prueba corre SDK 57).
 - **expo-router** (navegación basada en archivos, en `app/`).
 - **Supabase**: PostgreSQL 17, Auth, Storage. **RLS activado en todas las tablas.**
   - Cliente: `lib/supabase.ts`. Tipos generados: `lib/database.types.ts`.

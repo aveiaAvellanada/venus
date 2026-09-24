@@ -1,10 +1,12 @@
 import { Alert } from 'react-native'
 import { confirmarCompraRapida } from './compraRapida'
 
-jest.mock('react-native', () => ({ Alert: { alert: jest.fn() } }))
 
 describe('confirmarCompraRapida', () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.restoreAllMocks()
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+  })
 
   test('carrito vacío: continúa directo, sin preguntar', () => {
     const continuar = jest.fn()

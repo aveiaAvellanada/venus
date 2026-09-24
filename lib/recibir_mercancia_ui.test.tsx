@@ -244,7 +244,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
       })
 
       const root = tree.root
-      const pendingHeading = root.findAll((el: any) => el.type === 'Text' && matchText(el.props.children, 'Pendientes de Revisión'))
+      const pendingHeading = root.findAll((el: any) => String(el.type) === 'Text' && matchText(el.props.children, 'Pendientes de Revisión'))
       expect(pendingHeading.length).toBe(0)
     })
 
@@ -264,7 +264,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
       })
 
       const root = tree.root
-      const pendingHeading = root.findAll((el: any) => el.type === 'Text' && matchText(el.props.children, 'Pendientes de Revisión'))
+      const pendingHeading = root.findAll((el: any) => String(el.type) === 'Text' && matchText(el.props.children, 'Pendientes de Revisión'))
       expect(pendingHeading.length).toBeGreaterThan(0)
     })
 
@@ -338,7 +338,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
       await act(async () => {
         treeEmp = renderer.create(<RecibirMercanciaNueva />)
       })
-      const btnEmp = treeEmp.root.findAll((el: any) => el.type === 'Text' && matchText(el.props.children, 'Crear Proveedor'))
+      const btnEmp = treeEmp.root.findAll((el: any) => String(el.type) === 'Text' && matchText(el.props.children, 'Crear Proveedor'))
       expect(btnEmp.length).toBe(0)
 
       // Dueño: SÍ debe verlo
@@ -351,7 +351,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
       await act(async () => {
         treeOwner = renderer.create(<RecibirMercanciaNueva />)
       })
-      const btnOwner = treeOwner.root.findAll((el: any) => el.type === 'Text' && matchText(el.props.children, 'Crear Proveedor'))
+      const btnOwner = treeOwner.root.findAll((el: any) => String(el.type) === 'Text' && matchText(el.props.children, 'Crear Proveedor'))
       expect(btnOwner.length).toBeGreaterThan(0)
     })
   })

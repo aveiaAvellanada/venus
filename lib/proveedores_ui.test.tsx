@@ -306,7 +306,7 @@ describe('Proveedores Module Component Tests', () => {
 
       // Verify debt text
       const debtText = root.findAll((el: any) => {
-        if (el.type === 'Text') {
+        if (String(el.type) === 'Text') {
           const children = el.props.children
           if (Array.isArray(children)) {
             return children.join('').includes('450.000')

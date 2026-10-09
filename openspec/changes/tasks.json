@@ -2,9 +2,9 @@
   "proyecto": "Venus",
   "modelo_de_trabajo": "agente-unico-antigravity",
   "regla_global_protocolo_sesion": "OBLIGATORIO (ver AGENTS.md §8). INICIO: leer claude-mem + tasks.json + AGENTS.md antes de tocar nada. DURANTE: guardar observación en claude-mem al completar una tarea, tomar una decisión de diseño, encontrar un bug, o cuando la sesión esté por acabar. FIN: guardar en claude-mem el estado exacto (qué se hizo, en qué tarea iba, qué falta) y commitear + push antes de parar.",
-  "rama_activa": "main",
-  "ultimo_agente": "antigravity",
-  "fecha_estado": "2026-07-17",
+  "rama_activa": "claude/happy-gauss-5wpkec",
+  "ultimo_agente": "claude-code",
+  "fecha_estado": "2026-10-09",
   "handoff": "2026-06-16 — Traspaso a AGENTE ÚNICO (Antigravity). A partir de ahora Antigravity asume el ciclo completo: specs/planes, build, migraciones SQL/RLS/RPC (aplicar al remoto + regenerar lib/database.types.ts + smoke tests), autorevisión, merge a main (--no-ff) y push, y mantener este archivo. Ver AGENTS.md §5 (rol único + checklist obligatorio antes de cada merge). ESTADO: main está sano, sincronizado con origin/main, con SP-1..SP-8 + Rediseño completo integrados y verificados. El Supabase remoto está al día.",
   "estado_global": {
     "main_sincronizado_con_origin": true,
@@ -16,6 +16,7 @@
   },
   "estado_proyecto_2026-07-17": "14/15 módulos (M1–M13) construidos y MERGEADOS a main, pasando verificación automática. El rediseño de UI completo de Nueva Venta, Caja, Perfil, Productos, Carrito y Balance (Paso 8) se completó e integró el 2026-07-17. Falta M14 Análisis IA (bloqueado: requiere 3+ meses de datos reales; el PRD lo marca 'al final'). M13 correo real activo y probado. Deuda técnica menor cerrada. PERO la app no está validada en uso real ni desplegada — ese es el tramo que falta para 'producto terminado'.",
   "lo_que_sigue": [
+    "APLICAR AL REMOTO (bloqueante antes de usar la app): migraciones 20261009120000..20261009120300 (seguridad: ventas y caja solo por RPC, costos/deudas solo dueño, ninguna RPC ejecutable por anon). Luego correr supabase/tests/seguridad_rls_test.sql (espera SEGURIDAD_OK_ROLLBACK), regenerar lib/database.types.ts y desplegar la app de esta rama al mismo tiempo: la versión anterior escribe cierres_caja directo y dejará de poder abrir/cerrar caja.",
     "VALIDACIÓN EN DISPOSITIVO (prioridad 1, acción del usuario): correr la app (Expo Go o build) y hacer un recorrido de aceptación por rol — login dueño/admin/operativo, una venta, una devolución, abrir/cerrar caja (ver llegar el correo), cargar una foto (verifica comprimirBajoLimite), importar Excel (verifica leerExcel con lector blob), ver Balance y Reportes. Anotar lo que falle.",
     "ROTAR la API key de Resend (acción del usuario): se pegó en el chat; generar nueva, actualizar secreto RESEND_API_KEY, revocar la vieja.",
     "DESPLIEGUE: generar el build/APK de Expo e instalarlo en los teléfonos de Andrés/Sandra/Camilo (nunca se hizo).",

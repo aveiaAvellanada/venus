@@ -142,8 +142,10 @@ Antigravity es responsable de todo:
 ### Checklist obligatorio antes de CADA merge a `main`
 1. `npx tsc --noEmit` → **0 errores**.
 2. `npm test` → **verde**.
-3. Si tocó el esquema: migración aplicada al remoto + smoke test SQL `*_OK_ROLLBACK`
-   + `lib/database.types.ts` regenerado.
+3. Si tocó el esquema: `supabase/tests/local/run.sh supabase/tests/seguridad_rls_test.sql`
+   en verde (aplica TODAS las migraciones a un Postgres local con un stub de Supabase)
+   + migración aplicada al remoto + smoke test SQL `*_OK_ROLLBACK` (incluido
+   `seguridad_rls_test.sql`) + `lib/database.types.ts` regenerado.
 4. Sin scratch en el árbol (`supabase/.temp/`, `smoke_test*.sql`, `payload_smoke.json`,
    `coverage/`, `PROJECT.md`, `TEST_*.md` — ya en `.gitignore`).
 5. **RLS es la frontera de seguridad real:** finanzas/costos/márgenes/**deuda de
@@ -202,6 +204,16 @@ para no romper la integridad**:
   timestamp creciente, `drop ... if exists` para idempotencia, y aplicar con MCP
   `apply_migration`. Tras cambios de esquema, regenerar `lib/database.types.ts`.
 - **RLS es la frontera de seguridad real:** nunca confíes solo en el gating de la UI.
+- **Escrituras sensibles solo por RPC:** `ventas`, `venta_items`, `metodos_pago_venta`,
+  `devoluciones` y `cierres_caja` no aceptan INSERT/UPDATE/DELETE de la app; se
+  escriben con RPC `SECURITY DEFINER` (`registrar_venta`, `registrar_devolucion`,
+  `abrir_caja`, `cerrar_caja`, `reabrir_caja`). Una corrección nueva = RPC nueva.
+- **Funciones nuevas = grant explícito.** Desde `20261009120300` las funciones no
+  nacen ejecutables por PUBLIC ni por anon. Cada función lleva
+  `revoke all on function ... from public, anon;` y
+  `grant execute on function ... to authenticated;` (+ `service_role` si la usa una
+  Edge Function). Sin el grant, la app recibe `permission denied for function`
+  (también los helpers de `private` que usan las políticas).
 
 ---
 

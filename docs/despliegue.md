@@ -34,33 +34,26 @@ npx supabase db dump --linked --data-only -f respaldo-datos.sql
 
 Hay que aplicar, en orden, los 10 archivos `supabase/migrations/20261009*.sql`
 (seguridad, dinero, caja con base, permisos por usuario, gestión de empleados).
-
-Hasta ahora el remoto se ha manejado con el conector de Supabase (MCP), y esas
-migraciones quedaron registradas con nombres como `m8_empleados`, no con los
-números de archivo del repo. Por eso, primero mira qué cree la CLI que falta:
+El historial remoto coincide con los archivos del repo (comprobado el
+2026-10-09: las 33 anteriores, mismas versiones), así que la CLI aplica justo
+esas 10:
 
 ```sh
-npx supabase migration list      # columna Remote vacía = la CLI cree que falta
+npx supabase migration list      # deben faltar en Remote solo las 20261009…
+npx supabase db push --dry-run   # muestra qué aplicaría, sin aplicar nada
+npx supabase db push
 ```
 
-- **Si solo faltan las `20261009…`:** aplica con la CLI.
-
-  ```sh
-  npx supabase db push --dry-run   # muestra qué aplicaría, sin aplicar nada
-  npx supabase db push
-  ```
-
-- **Si aparecen como faltantes migraciones viejas** (casi seguro, por lo de
-  arriba): **no hagas `db push`**, intentaría reaplicar todo. Aplica solo las 10
-  nuevas, en orden, con el conector de Supabase en Claude (`apply_migration`,
-  una por archivo), como se ha hecho siempre. Para que la CLI deje de
-  confundirse después, alinea el historial (no toca el esquema, solo el
-  registro): `npx supabase migration repair --status applied <version>` para
-  cada archivo local que ya está en producción, y `--status reverted` para cada
-  versión que solo existe en el remoto. Vuelve a listar hasta que coincidan.
+Si `migration list` mostrara pendiente alguna anterior, **no hagas push**:
+revisa primero por qué no coincide.
 
 Cada migración corre en su propia transacción: si una falla, no deja nada a
-medias. Copia el error y no sigas con la siguiente.
+medias (las anteriores sí quedan). Copia el error y no sigas.
+
+> El conector de Supabase en Claude (`apply_migration`) pide confirmar las
+> operaciones destructivas (`drop policy`, `revoke`…). Si la confirmación no
+> aparece donde corre la sesión, la llamada se cancela a los 60 s sin aplicar
+> nada; en ese caso, usar la CLI.
 
 ## 3. Verificar la base
 

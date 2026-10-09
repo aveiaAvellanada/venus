@@ -101,10 +101,17 @@ deudas con proveedores y gestión de usuarios). Sandra es el nivel intermedio
   como AGOTADO (no se borran).
 - **Granja no maneja stock** y su precio se define en el momento de la venta
   (no hay precio guardado; `precio_sugerido` solo autocompleta).
-- **Regateo libre:** cada zapato tiene precio mínimo y máximo, pero el vendedor puede
-  cobrar **cualquier** precio (el rango es informativo, no restrictivo). El precio
-  final pagado queda guardado por item, junto con un snapshot del rango, para que
-  Andrés audite ventas bajo el mínimo.
+- **Regateo dentro del rango** (PRD §3.1.1): cada zapato tiene precio mínimo y
+  máximo y son **topes reales**: el slider no deja salir del rango y
+  `registrar_venta` rechaza precios fuera de él. El precio final pagado queda
+  guardado por item, junto con un snapshot del rango.
+- **Caja abierta para vender y devolver:** un trigger en `ventas` y `devoluciones`
+  exige la caja del día abierta (no basta con la verificación de la pantalla).
+- **Una devolución cuenta el día en que se hace** (`devoluciones.created_at`), no el
+  de la venta original: así la caja del día cuadra con el dinero que salió.
+- **Ventas sin duplicados:** la app manda una clave por intento
+  (`p_clave_idempotencia`); reintentar con la misma clave devuelve la venta ya
+  guardada en vez de crear otra.
 - Los pagos deben sumar **EXACTAMENTE** el total para confirmar; pagos mixtos
   permitidos (ej. efectivo + Nequi).
 - Devoluciones: no se puede devolver más de lo vendido; Granja no restituye stock;
@@ -142,10 +149,10 @@ Antigravity es responsable de todo:
 ### Checklist obligatorio antes de CADA merge a `main`
 1. `npx tsc --noEmit` → **0 errores**.
 2. `npm test` → **verde**.
-3. Si tocó el esquema: `supabase/tests/local/run.sh supabase/tests/seguridad_rls_test.sql`
-   en verde (aplica TODAS las migraciones a un Postgres local con un stub de Supabase)
-   + migración aplicada al remoto + smoke test SQL `*_OK_ROLLBACK` (incluido
-   `seguridad_rls_test.sql`) + `lib/database.types.ts` regenerado.
+3. Si tocó el esquema: `supabase/tests/local/run.sh supabase/tests/seguridad_rls_test.sql
+   supabase/tests/dinero_test.sql` en verde (aplica TODAS las migraciones a un Postgres
+   local con un stub de Supabase) + migración aplicada al remoto + smoke test SQL
+   `*_OK_ROLLBACK` (incluidos esos dos tests) + `lib/database.types.ts` regenerado.
 4. Sin scratch en el árbol (`supabase/.temp/`, `smoke_test*.sql`, `payload_smoke.json`,
    `coverage/`, `PROJECT.md`, `TEST_*.md` — ya en `.gitignore`).
 5. **RLS es la frontera de seguridad real:** finanzas/costos/márgenes/**deuda de

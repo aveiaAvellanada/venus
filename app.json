@@ -2,6 +2,7 @@
   "expo": {
     "name": "Venus",
     "slug": "Venus",
+    "owner": "aveia11",
     "scheme": "venus",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -28,6 +29,11 @@
       "expo-router",
       "expo-font",
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "9421a0de-4188-4076-b130-4aa506210e32"
+      }
+    }
   }
 }

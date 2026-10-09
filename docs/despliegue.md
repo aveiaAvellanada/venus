@@ -112,19 +112,19 @@ Requisitos: cuenta gratis en https://expo.dev (mejor con el correo de la
 tienda, así la app queda a nombre del negocio) y Node.js LTS.
 
 ```sh
-git clone -b <rama> https://github.com/aveiaAvellanada/venus.git   # o descargar el ZIP de la rama
+git clone https://github.com/aveiaAvellanada/venus.git   # o descargar el ZIP de main
 cd venus
 npm ci
 npm install -g eas-cli
-eas login
-eas init                                  # solo la primera vez: crea el proyecto en Expo
+eas login                                 # con la cuenta de Expo dueña del proyecto (aveia11)
 eas build -p android --profile preview
 ```
 
 - Con el ZIP (sin git), antes de `eas` correr `set EAS_NO_VCS=1` en cmd de
   Windows (`export EAS_NO_VCS=1` en Mac/Linux): EAS sube la carpeta tal cual.
-- `eas init` agrega `extra.eas.projectId` a `app.json`: ese cambio va al repo
-  para que los siguientes builds usen el mismo proyecto.
+- El proyecto de Expo ya existe (`aveia11/Venus`) y su ID está en `app.json`
+  (`extra.eas.projectId`, junto con `owner`): no hace falta `eas init`. Todos los
+  builds salen de ese proyecto y con la misma llave de firma.
 - En el primer build, EAS pregunta si genera la llave de firma de Android
   (*keystore*): sí. La guarda EAS; las actualizaciones futuras deben salir de
   la misma cuenta de Expo o Android no las deja instalar encima.

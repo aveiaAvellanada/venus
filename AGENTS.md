@@ -15,28 +15,34 @@ App **Android** (React Native / Expo) para gestionar la tienda de calzado famili
 sistema digital simple, ágil y con **auditoría de cada acción**. Online-first en
 esta versión (offline-first diferido).
 
-### Usuarios reales (cuentas provisionadas en `public.users` + Supabase Auth)
+### Usuarios y permisos (dinámicos)
 
-| Persona | Email | Rol (`users.rol`) | Resumen de permisos |
-|---|---|---|---|
-| **Andrés Artunduaga** (dueño) | venusdelcaqueta@gmail.com | `dueno` | Ve TODO: costos, márgenes, balance, deudas, pagos a empleados, auditoría completa. Único que crea/desactiva empleados. |
-| **Sandra Cardona** (administrativa) | sandracardona.venus2026@gmail.com | `admin` | Casi todo MENOS finanzas (no ve costos/márgenes/balance/pagos a empleados/deudas; no gestiona empleados). Sí proveedores, gastos fijos y reportes históricos. |
-| **Camilo Artunduaga** | artuneleven1@gmail.com | `empleado` | Operativo. |
-| **Beatriz Bueno** | beatrizbueno1979@gmail.com | `empleado` | Operativo. |
-| **Nikol Artunduaga** | (email pendiente) | `empleado` | Operativo (sin seed aún). |
+No hay personas fijas: el **dueño** (`users.rol = 'dueno'`, hoy Andrés Artunduaga)
+crea cada cuenta desde la app (Perfil → Empleados → Nuevo empleado) con nombre,
+**usuario** y **PIN de 6 dígitos**, y le entrega permisos. Los empleados
+(`rol = 'empleado'`) pueden exactamente lo que diga `users.permisos`. Cuentas y
+nombres cambian con el tiempo (se desactivan, entran nuevas).
+
+| Grupo | Permisos (`lib/permisos.ts` = `private.permisos_validos()`) |
+|---|---|
+| Operación | `ventas`, `devoluciones`, `inventario`, `recibir_mercancia`, `caja`, `gastos` |
+| Administración | `proveedores`, `gastos_fijos`, `reportes`, `carga_inicial` |
+| Finanzas | `costos`, `deudas`, `balance` |
+
+- Plantillas: **Operativo** (operación) y **Administrativo** (operación +
+  administración). Finanzas nunca viene en plantilla.
+- Solo el dueño (no delegable): empleados, permisos, PIN ajenos, sueldos y pagos a
+  empleados, configuración de caja/reportes, dashboard del dueño.
+- Login: `usuario@venus.invalid` en Supabase Auth; RPC `crear_empleado`,
+  `actualizar_empleado`, `restablecer_pin_empleado`, `cambiar_estado_empleado`
+  (desactivar banea y cierra sesiones) y `cambiar_mi_pin`.
+- En SQL: `private.tiene_permiso('...')` / `private.es_dueno()` (exigen cuenta
+  activa). En la app: `tienePermiso(perfil, ...)`, `esDueno(perfil)`,
+  `useRequireModulo`.
 
 > ⚠️ El dueño es **Andrés Artunduaga**. Algunos specs antiguos lo llaman "Don Carlos"
-> por error: usar siempre **Andrés**.
-
-**Empleado operativo** (Camilo/Beatriz/Nikol): ventas, devoluciones, inventario de
-calzado y Granja (ver y editar), recibir mercancía, gastos variables (con
-autorización), caja (abrir/cerrar). **No** ven finanzas ni gestionan
-proveedores/gastos fijos/empleados.
-
-**Regla de oro de permisos:** los empleados tienen casi todos los permisos.
-**Solo Andrés ve finanzas, costos y márgenes** (más balance, pagos a empleados,
-deudas con proveedores y gestión de usuarios). Sandra es el nivel intermedio
-(`admin`, administrativa sin finanzas). Detalle fino en el PRD v4.0 §2.
+> por error: usar siempre **Andrés**. Los specs antiguos también hablan de roles
+> fijos (`admin`/`empleado`) y personas fijas: eso quedó reemplazado por permisos.
 
 ---
 
@@ -159,9 +165,9 @@ Antigravity es responsable de todo:
    `*_OK_ROLLBACK` (incluidos esos tests) + `lib/database.types.ts` regenerado.
 4. Sin scratch en el árbol (`supabase/.temp/`, `smoke_test*.sql`, `payload_smoke.json`,
    `coverage/`, `PROJECT.md`, `TEST_*.md` — ya en `.gitignore`).
-5. **RLS es la frontera de seguridad real:** finanzas/costos/márgenes/**deuda de
-   proveedores**/pagos a empleados se gatean al **dueño** tanto en RLS/RPC como en UI;
-   nunca confíes solo en el gating de la UI.
+5. **RLS es la frontera de seguridad real:** cada acción se gatea con su permiso
+   (`private.tiene_permiso`) tanto en RLS/RPC como en UI; lo no delegable con
+   `private.es_dueno()`. Nunca confíes solo en el gating de la UI.
 
 > ⚠️ Sin un segundo revisor humano, **extrema el rigor**: tests + smoke + lectura del
 > propio diff antes de mergear. En modo teamwork, usa el subagente verificador como

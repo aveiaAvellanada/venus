@@ -24,7 +24,12 @@ export interface RegistrarVentaInput {
   cliente?: { nombre?: string; apellido?: string; telefono?: string }
 }
 
-export async function registrarVenta(input: RegistrarVentaInput): Promise<{ numero: number }> {
+// `clave` identifica el intento (ver lib/intentoVenta.ts): reintentar con la
+// misma clave devuelve la venta ya guardada (repetida = true) sin duplicarla.
+export async function registrarVenta(
+  input: RegistrarVentaInput,
+  clave?: string,
+): Promise<{ numero: number; repetida: boolean }> {
   const { data, error } = await supabase.rpc('registrar_venta', {
     p_items: input.items.map(i => ({
       tipo: i.producto.tipo,
@@ -37,10 +42,11 @@ export async function registrarVenta(input: RegistrarVentaInput): Promise<{ nume
     p_cliente_nombre: input.cliente?.nombre ?? undefined,
     p_cliente_apellido: input.cliente?.apellido ?? undefined,
     p_cliente_telefono: input.cliente?.telefono ?? undefined,
+    p_clave_idempotencia: clave,
   })
   if (error) throw new Error(traducirError(error.message))
-  const res = data as { numero: number }
-  return { numero: res.numero }
+  const res = data as { numero: number; repetida?: boolean }
+  return { numero: res.numero, repetida: res.repetida === true }
 }
 
 function traducirError(msg: string): string {
@@ -51,8 +57,12 @@ function traducirError(msg: string): string {
   if (msg.includes('pagos no suman')) return 'Los pagos no suman el total.'
   if (msg.includes('efectivo recibido')) return 'El efectivo recibido es menor al pago en efectivo.'
   if (msg.includes('Precio inválido')) return 'El precio debe ser mayor a cero.'
+  // Rango de regateo: el servidor ya lo explica ("El precio de X debe estar entre ...").
+  if (msg.includes('debe estar entre')) return msg
+  if (msg.includes('caja de hoy no está abierta')) return 'La caja está cerrada. Ábrela para vender.'
   if (/network|fetch|failed to fetch|timeout|conexión|conexion/i.test(msg)) {
-    return 'Sin conexión. La venta no se guardó. Intenta de nuevo.'
+    // No sabemos si la venta alcanzó a guardarse; reintentar es seguro (misma clave).
+    return 'Sin conexión: no sabemos si la venta se guardó. Confirma de nuevo sin cambiar nada; si ya se guardó, no se duplicará.'
   }
   return 'No se pudo registrar la venta. Intenta de nuevo.'
 }

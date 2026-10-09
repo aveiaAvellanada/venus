@@ -1701,6 +1701,7 @@ export type Database = {
         Row: {
           cambio: number
           cancelacion_motivo: string | null
+          clave_idempotencia: string | null
           cliente_apellido: string | null
           cliente_nombre: string | null
           cliente_telefono: string | null
@@ -1725,6 +1726,7 @@ export type Database = {
         Insert: {
           cambio?: number
           cancelacion_motivo?: string | null
+          clave_idempotencia?: string | null
           cliente_apellido?: string | null
           cliente_nombre?: string | null
           cliente_telefono?: string | null
@@ -1749,6 +1751,7 @@ export type Database = {
         Update: {
           cambio?: number
           cancelacion_motivo?: string | null
+          clave_idempotencia?: string | null
           cliente_apellido?: string | null
           cliente_nombre?: string | null
           cliente_telefono?: string | null
@@ -1964,6 +1967,7 @@ export type Database = {
         Args: {
           p_cliente_apellido?: string
           p_cliente_nombre?: string
+          p_clave_idempotencia?: string
           p_cliente_telefono?: string
           p_efectivo_recibido?: number
           p_items: Json

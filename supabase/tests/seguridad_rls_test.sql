@@ -75,8 +75,14 @@ begin
     returning id into v_zapato;
   v_hoy := private.hoy_bogota();
 
+  -- Vender exige la caja del día abierta (20261009130200).
+  delete from public.cierres_caja_reaperturas where fecha = v_hoy;
+  delete from public.cierres_caja where fecha = v_hoy;
+  update public.caja_config set modo_cierre = 'con_diferencia';
+
   -- ===== 1. Ventas: solo vía RPC =====
   perform pg_temp.como(v_emp);
+  perform public.abrir_caja();
   select (r->>'venta_id')::uuid into v_venta from (
     select public.registrar_venta(
       jsonb_build_array(jsonb_build_object('tipo', 'calzado', 'producto_id', v_zapato, 'cantidad', 2, 'precio', 90000)),
@@ -126,15 +132,10 @@ begin
   end if;
 
   -- ===== 2. Caja: solo vía RPC =====
-  execute 'reset role';
-  delete from public.cierres_caja_reaperturas where fecha = v_hoy;
-  delete from public.cierres_caja where fecha = v_hoy;
-  update public.caja_config set modo_cierre = 'con_diferencia';
-
   perform pg_temp.como(v_emp);
   v_caja := public.abrir_caja();
   if v_caja.estado <> 'abierta' or v_caja.fecha <> v_hoy then
-    raise exception 'FALLO 2: abrir_caja no abrió la caja de hoy';
+    raise exception 'FALLO 2: abrir_caja no devolvió la caja abierta de hoy';
   end if;
   if (public.abrir_caja()).id <> v_caja.id then
     raise exception 'FALLO 2: abrir_caja dos veces creó otra caja';

@@ -6,6 +6,7 @@ import { Estructura } from '../componentes/Estructura'
 import { Cargando } from '../componentes/ui'
 import { Entrar } from '../paginas/Entrar'
 import { Inicio } from '../paginas/Inicio'
+import { Inventario } from '../paginas/inventario/Inventario'
 import { NoEncontrada } from '../paginas/NoEncontrada'
 import { Proximamente } from '../paginas/Proximamente'
 
@@ -32,6 +33,7 @@ export function Rutas() {
       <Route element={<SoloConSesion />}>
         <Route element={<Estructura />}>
           <Route index element={<Inicio />} />
+          <Route path="/inventario" element={<Inventario />} />
           {SECCIONES.filter((s) => !s.lista).map((s) => (
             <Route key={s.id} path={s.ruta} element={<Proximamente seccion={s} />} />
           ))}

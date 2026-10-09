@@ -43,7 +43,7 @@ export const NAVEGACION: GrupoNavegacion[] = [
         palabras: ['recibir', 'mercancía', 'factura', 'entrada'],
       },
       {
-        id: 'inventario', titulo: 'Inventario y precios', ruta: '/inventario', icono: Boxes, fase: 1, lista: false,
+        id: 'inventario', titulo: 'Inventario y precios', ruta: '/inventario', icono: Boxes, fase: 1, lista: true,
         descripcion: 'Tabla editable de calzado y Granja con filtros, margen, precio mínimo y máximo, stock mínimo, cambios en lote y valor del inventario.',
         palabras: ['productos', 'calzado', 'granja', 'stock', 'precio'],
       },

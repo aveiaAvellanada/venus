@@ -25,7 +25,12 @@ jobs:
         run: npx tsc --noEmit
       - name: Tests
         run: npx jest --ci
+      # Contra la lista que trae el paquete expo instalado (fija por el lockfile),
+      # no contra la API: así el CI no se pone rojo cada vez que Expo publica un
+      # parche. Para ponerse al día: npx expo install --check (en línea) y --fix.
       - name: Versiones compatibles con Expo SDK 54
+        env:
+          EXPO_OFFLINE: "1"
         run: npx expo install --check
 
   base-de-datos:

@@ -109,6 +109,11 @@ deudas con proveedores y gestión de usuarios). Sandra es el nivel intermedio
   exige la caja del día abierta (no basta con la verificación de la pantalla).
 - **Una devolución cuenta el día en que se hace** (`devoluciones.created_at`), no el
   de la venta original: así la caja del día cuadra con el dinero que salió.
+- **Arqueo de caja:** efectivo esperado = base inicial + efectivo de ventas − gastos
+  variables con `pagado_de_caja`. La base se propone desde
+  `caja_config.base_predeterminada` (la apertura automática la toma sola). Un gasto
+  del cajón solo se registra/corrige/borra con la caja del día abierta y fecha de hoy.
+  La fórmula vive en `private.arqueo_caja` (pantalla de cierre y `cerrar_caja`).
 - **Ventas sin duplicados:** la app manda una clave por intento
   (`p_clave_idempotencia`); reintentar con la misma clave devuelve la venta ya
   guardada en vez de crear otra.
@@ -149,10 +154,9 @@ Antigravity es responsable de todo:
 ### Checklist obligatorio antes de CADA merge a `main`
 1. `npx tsc --noEmit` → **0 errores**.
 2. `npm test` → **verde**.
-3. Si tocó el esquema: `supabase/tests/local/run.sh supabase/tests/seguridad_rls_test.sql
-   supabase/tests/dinero_test.sql` en verde (aplica TODAS las migraciones a un Postgres
+3. Si tocó el esquema: `supabase/tests/local/run.sh supabase/tests/*_test.sql` en verde (aplica TODAS las migraciones a un Postgres
    local con un stub de Supabase) + migración aplicada al remoto + smoke test SQL
-   `*_OK_ROLLBACK` (incluidos esos dos tests) + `lib/database.types.ts` regenerado.
+   `*_OK_ROLLBACK` (incluidos esos tests) + `lib/database.types.ts` regenerado.
 4. Sin scratch en el árbol (`supabase/.temp/`, `smoke_test*.sql`, `payload_smoke.json`,
    `coverage/`, `PROJECT.md`, `TEST_*.md` — ya en `.gitignore`).
 5. **RLS es la frontera de seguridad real:** finanzas/costos/márgenes/**deuda de

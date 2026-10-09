@@ -37,7 +37,9 @@ Deno.serve(async (req) => {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: 'Venus <onboarding@resend.dev>',
+          // onboarding@resend.dev solo entrega al correo dueño de la cuenta de Resend;
+          // con un dominio verificado, poner RESEND_FROM (ej. 'Venus <reportes@dominio.com>').
+          from: Deno.env.get('RESEND_FROM') || 'Venus <onboarding@resend.dev>',
           to: [cfg.correo_destino],
           subject: `Venus — Resumen del día ${fecha}`,
           text: mensaje,

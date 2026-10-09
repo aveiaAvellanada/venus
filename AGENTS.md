@@ -161,8 +161,11 @@ Antigravity es responsable de todo:
 1. `npx tsc --noEmit` → **0 errores**.
 2. `npm test` → **verde**.
 3. Si tocó el esquema: `supabase/tests/local/run.sh supabase/tests/*_test.sql` en verde (aplica TODAS las migraciones a un Postgres
-   local con un stub de Supabase) + migración aplicada al remoto + smoke test SQL
-   `*_OK_ROLLBACK` (incluidos esos tests) + `lib/database.types.ts` regenerado.
+   local con un stub de Supabase; el CI lo corre en cada PR) + migración aplicada al remoto
+   + `supabase/tests/remoto/verificar_despliegue.sql` contra el remoto (solo lectura; los
+   `*_test.sql` NO se corren en producción: gastan números de venta) + `lib/database.types.ts`
+   regenerado. RPC nueva que llame la app → agregarla a la lista de esa verificación
+   (`lib/rpcDespliegue.test.ts` falla si no). Pasos completos: `docs/despliegue.md`.
 4. Sin scratch en el árbol (`supabase/.temp/`, `smoke_test*.sql`, `payload_smoke.json`,
    `coverage/`, `PROJECT.md`, `TEST_*.md` — ya en `.gitignore`).
 5. **RLS es la frontera de seguridad real:** cada acción se gatea con su permiso

@@ -1,4 +1,5 @@
 import React from 'react'
+import { PLANTILLAS } from './permisos'
 import { Alert, type AlertButton } from 'react-native'
 process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://dummy-url.supabase.co'
 process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'dummy-key'
@@ -79,9 +80,11 @@ jest.mock('./empleados', () => {
     diasTrabajadosMes: jest.fn(),
     historialPagos: jest.fn(),
     guardarConfigEmpleado: jest.fn(),
-    actualizarNombreEmpleado: jest.fn(),
+    actualizarEmpleado: jest.fn(),
+    restablecerPinEmpleado: jest.fn(),
     setActivoEmpleado: jest.fn(),
     registrarPagoEmpleado: jest.fn(),
+    crearEmpleado: jest.fn(),
   }
 })
 jest.mock('../lib/empleados', () => {
@@ -92,9 +95,11 @@ jest.mock('../lib/empleados', () => {
     diasTrabajadosMes: jest.fn(),
     historialPagos: jest.fn(),
     guardarConfigEmpleado: jest.fn(),
-    actualizarNombreEmpleado: jest.fn(),
+    actualizarEmpleado: jest.fn(),
+    restablecerPinEmpleado: jest.fn(),
     setActivoEmpleado: jest.fn(),
     registrarPagoEmpleado: jest.fn(),
+    crearEmpleado: jest.fn(),
   }
 })
 
@@ -102,6 +107,7 @@ jest.mock('../lib/empleados', () => {
 import EmpleadosLayout from '../app/(app)/empleados/_layout'
 import EmpleadosIndexRaw from '../app/(app)/empleados/index'
 import EmpleadoDetalleScreenRaw from '../app/(app)/empleados/[id]'
+import NuevoEmpleadoRaw from '../app/(app)/empleados/nuevo'
 import { TemaProvider } from './tema'
 import { ToastProvider } from '../components/ui'
 
@@ -130,8 +136,9 @@ function EmpleadoDetalleScreen(props: any) {
 const EMPLEADO_ACTIVO = {
   id: 'emp-uuid-1',
   nombre: 'Camilo Artunduaga',
-  email: 'artuneleven1@gmail.com',
+  usuario: 'camilo',
   rol: 'empleado' as const,
+  permisos: [...PLANTILLAS.operativo.permisos],
   activo: true,
   config: {
     sueldo_mensual: 1300000,
@@ -144,8 +151,9 @@ const EMPLEADO_ACTIVO = {
 const EMPLEADO_INACTIVO = {
   id: 'emp-uuid-2',
   nombre: 'Beatriz Bueno',
-  email: 'beatrizbueno1979@gmail.com',
+  usuario: 'beatriz',
   rol: 'empleado' as const,
+  permisos: [...PLANTILLAS.operativo.permisos],
   activo: false,
   config: {
     sueldo_mensual: 1200000,
@@ -202,7 +210,8 @@ describe('Empleados UI — tests de integración', () => {
     ;(apiEmpleados.diasTrabajadosMes as jest.Mock).mockResolvedValue(18)
     ;(apiEmpleados.historialPagos as jest.Mock).mockResolvedValue([])
     ;(apiEmpleados.guardarConfigEmpleado as jest.Mock).mockResolvedValue(undefined)
-    ;(apiEmpleados.actualizarNombreEmpleado as jest.Mock).mockResolvedValue(undefined)
+    ;(apiEmpleados.actualizarEmpleado as jest.Mock).mockResolvedValue(undefined)
+    ;(apiEmpleados.restablecerPinEmpleado as jest.Mock).mockResolvedValue(undefined)
     ;(apiEmpleados.setActivoEmpleado as jest.Mock).mockResolvedValue(undefined)
     ;(apiEmpleados.registrarPagoEmpleado as jest.Mock).mockResolvedValue(undefined)
   })
@@ -257,7 +266,7 @@ describe('Empleados UI — tests de integración', () => {
 
       // El banner de gestión no debe aparecer porque el guard cortó el render
       const root = tree!.root
-      const bannerTexts = findAllContainingText(root, 'Gestiona el equipo')
+      const bannerTexts = findAllContainingText(root, 'decide qué puede hacer cada quien')
       expect(bannerTexts.length).toBe(0)
     })
 
@@ -537,7 +546,7 @@ describe('Empleados UI — tests de integración', () => {
       })
 
       const root = tree!.root
-      const bannerTexts = findAllContainingText(root, 'Gestiona el equipo')
+      const bannerTexts = findAllContainingText(root, 'decide qué puede hacer cada quien')
       expect(bannerTexts.length).toBeGreaterThan(0)
     })
 
@@ -584,6 +593,120 @@ describe('Empleados UI — tests de integración', () => {
       })
 
       expect(mockRouter.push).toHaveBeenCalledWith('/empleados/' + EMPLEADO_ACTIVO.id)
+    })
+  })
+
+  // ── 6. Cuentas: permisos, PIN y alta (solo dueño) ──────────────────────────
+  describe('6. Cuentas del equipo', () => {
+    const boton = (root: renderer.ReactTestInstance, etiqueta: string) =>
+      root.findAll(
+        (el: renderer.ReactTestInstance) =>
+          el.props?.accessibilityRole === 'button' && el.props?.accessibilityLabel === etiqueta && el.props?.onPress
+      )[0]
+
+    const montarNuevo = async () => {
+      await act(async () => {
+        tree = renderer.create(
+          <TemaProvider>
+            <ToastProvider>
+              <NuevoEmpleadoRaw />
+            </ToastProvider>
+          </TemaProvider>
+        )
+      })
+      return tree!.root.findAll(
+        (el: renderer.ReactTestInstance) => el.type === 'TextInput' && el.props?.onChangeText
+      )
+    }
+
+    test('la tarjeta muestra el usuario y la plantilla de permisos', async () => {
+      await act(async () => {
+        tree = renderer.create(<EmpleadosIndex />)
+      })
+      expect(findAllContainingText(tree!.root, '@camilo · Operativo').length).toBeGreaterThan(0)
+    })
+
+    test('"Nuevo empleado" lleva a la pantalla de alta', async () => {
+      await act(async () => {
+        tree = renderer.create(<EmpleadosIndex />)
+      })
+      await act(async () => {
+        boton(tree!.root, 'Nuevo empleado').props.onPress()
+      })
+      expect(mockRouter.push).toHaveBeenCalledWith('/empleados/nuevo')
+    })
+
+    test('quitar un permiso y guardar llama actualizarEmpleado solo con permisos', async () => {
+      await act(async () => {
+        tree = renderer.create(<EmpleadoDetalleScreen />)
+      })
+      const root = tree!.root
+      const interruptorCaja = root.findAll(
+        (el: renderer.ReactTestInstance) => el.props?.accessibilityLabel === 'Caja' && el.props?.onValueChange
+      )[0]
+      await act(async () => {
+        interruptorCaja.props.onValueChange(false)
+      })
+      await act(async () => {
+        boton(root, 'Guardar permisos').props.onPress()
+      })
+      expect(apiEmpleados.actualizarEmpleado).toHaveBeenCalledWith(EMPLEADO_ACTIVO.id, {
+        permisos: PLANTILLAS.operativo.permisos.filter((p) => p !== 'caja'),
+      })
+    })
+
+    test('restablecer el PIN deja solo 6 dígitos y llama restablecerPinEmpleado', async () => {
+      await act(async () => {
+        tree = renderer.create(<EmpleadoDetalleScreen />)
+      })
+      const root = tree!.root
+      const campoPin = root.findAll(
+        (el: renderer.ReactTestInstance) =>
+          el.type === 'TextInput' && el.props?.placeholder === '••••••' && el.props?.onChangeText
+      )[0]
+      await act(async () => {
+        campoPin.props.onChangeText('12a34567')
+      })
+      await act(async () => {
+        boton(root, 'Guardar PIN nuevo').props.onPress()
+      })
+      expect(apiEmpleados.restablecerPinEmpleado).toHaveBeenCalledWith(EMPLEADO_ACTIVO.id, '123456')
+    })
+
+    test('alta: crea la cuenta con el usuario sin espacios, el PIN y la plantilla operativa', async () => {
+      ;(apiEmpleados.crearEmpleado as jest.Mock).mockResolvedValue('nuevo-id')
+      const campos = await montarNuevo()
+      // Nombre, Usuario, PIN, Repite el PIN
+      await act(async () => {
+        campos[0].props.onChangeText('Luisa Gómez')
+        campos[1].props.onChangeText('Luisa G')
+        campos[2].props.onChangeText('123456')
+        campos[3].props.onChangeText('123456')
+      })
+      await act(async () => {
+        boton(tree!.root, 'Crear empleado').props.onPress()
+      })
+      expect(apiEmpleados.crearEmpleado).toHaveBeenCalledWith({
+        nombre: 'Luisa Gómez',
+        usuario: 'luisag',
+        pin: '123456',
+        permisos: PLANTILLAS.operativo.permisos,
+      })
+      expect(mockRouter.replace).toHaveBeenCalledWith('/empleados/nuevo-id')
+    })
+
+    test('alta: si los PIN no coinciden no crea nada', async () => {
+      const campos = await montarNuevo()
+      await act(async () => {
+        campos[0].props.onChangeText('Luisa')
+        campos[1].props.onChangeText('luisa')
+        campos[2].props.onChangeText('123456')
+        campos[3].props.onChangeText('654321')
+      })
+      await act(async () => {
+        boton(tree!.root, 'Crear empleado').props.onPress()
+      })
+      expect(apiEmpleados.crearEmpleado).not.toHaveBeenCalled()
     })
   })
 })

@@ -7,6 +7,7 @@ export default function EmpleadosLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
+      <Stack.Screen name="nuevo" />
       <Stack.Screen name="[id]" />
     </Stack>
   )

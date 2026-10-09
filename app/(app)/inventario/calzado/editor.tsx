@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, Camera, Pencil, Save } from 'lucide-react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { useAuth, useRequireModulo } from '../../../../lib/auth'
+import { tienePermiso } from '../../../../lib/permisos'
 import { supabase } from '../../../../lib/supabase'
 import { guardarCalzado } from '../../../../lib/inventario'
 import { comprimirYSubirImagen } from '../../../../lib/imagenes'
@@ -39,15 +40,15 @@ export default function CalzadoEditorScreen() {
   const [fotoUrl, setFotoUrl] = useState<string | null>(null)
   const [activo, setActivo] = useState(true)
 
-  const esDueno = perfil?.rol === 'dueno'
-  const esAdmin = perfil?.rol === 'admin'
+  const puedeEditar = tienePermiso(perfil, 'inventario')
+  const verCostos = tienePermiso(perfil, 'costos')
 
   useEffect(() => {
-    // Si ya cargó el perfil y no es dueño ni admin, expulsar
-    if (perfil && !esDueno && !esAdmin) {
+    // Si ya cargó el perfil y no tiene permiso de inventario, expulsar
+    if (perfil && !puedeEditar) {
       router.replace('/productos')
     }
-  }, [perfil, esDueno, esAdmin])
+  }, [perfil, puedeEditar])
 
   useEffect(() => {
     async function fetchProducto() {
@@ -74,7 +75,7 @@ export default function CalzadoEditorScreen() {
         setFotoUrl(data.foto_url || null)
         setActivo(data.activo ?? true)
 
-        if (esDueno) {
+        if (verCostos) {
           const { data: historial } = await supabase
             .from('historial_precios_calzado')
             .select('costo_compra')
@@ -97,14 +98,14 @@ export default function CalzadoEditorScreen() {
       }
     }
 
-    if (perfil && (esDueno || esAdmin)) {
+    if (perfil && puedeEditar) {
       fetchProducto()
     }
-  }, [id, perfil, esDueno, esAdmin])
+  }, [id, perfil, puedeEditar])
 
   if (requireModulo) return requireModulo
 
-  if (!perfil || (!esDueno && !esAdmin)) {
+  if (!perfil || (!puedeEditar)) {
     return null
   }
 
@@ -362,7 +363,7 @@ export default function CalzadoEditorScreen() {
 
         <Tarjeta>
           <Text style={[tipografia.h3, { color: paleta.texto }]}>Precios</Text>
-          {esDueno && (
+          {verCostos && (
             <View style={{ marginTop: espacio.m }}>
               <CampoTexto
                 etiqueta="Costo de compra"

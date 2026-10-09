@@ -3,10 +3,16 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { ChevronRight } from 'lucide-react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useAuth } from '../../lib/auth'
-import { USUARIOS, type UsuarioPicker } from '../../lib/usuarios'
+import {
+  leerUsuariosRecientes, normalizarUsuario, usuarioValido, type UsuarioReciente,
+} from '../../lib/usuarios'
 import { useTema } from '../../lib/tema'
 import { espacio, motion, radio, tipografia } from '../../lib/theme'
-import { TecladoPin } from '../../components/ui'
+import { Boton, CampoTexto, TecladoPin } from '../../components/ui'
+
+const LONGITUD_PIN = 6
+// Mientras quede alguna cuenta con el PIN viejo de 4 dígitos (debe cambiarlo al entrar).
+const LONGITUD_PIN_ANTERIOR = 4
 
 function Avatar({ nombre, tamano }: { nombre: string; tamano: number }) {
   const { paleta } = useTema()
@@ -31,28 +37,29 @@ function Avatar({ nombre, tamano }: { nombre: string; tamano: number }) {
 export default function Login() {
   const { iniciarSesion } = useAuth()
   const { paleta } = useTema()
-  const [usuario, setUsuario] = useState<UsuarioPicker | null>(null)
+  const [recientes, setRecientes] = useState<UsuarioReciente[]>([])
+  const [escrito, setEscrito] = useState('')
+  const [usuario, setUsuario] = useState<UsuarioReciente | null>(null)
   const [pin, setPin] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [cargando, setCargando] = useState(false)
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
+    leerUsuariosRecientes().then(setRecientes)
     return () => {
       if (temporizador.current) clearTimeout(temporizador.current)
     }
   }, [])
 
-  // Auto-envío al 4º dígito (spec §7.1): sin botón "Entrar".
-  useEffect(() => {
-    if (pin.length !== 4 || cargando || !usuario) return
+  function entrar(clave: string) {
+    if (!usuario || cargando) return
     let vigente = true
     setCargando(true)
     setError(null)
-    iniciarSesion(usuario.email, pin)
+    iniciarSesion(usuario.usuario, clave)
       .then((res) => {
-        if (!vigente) return
-        if (res.error) fallar(res.error)
+        if (vigente && res.error) fallar(res.error)
         // Si entra bien, onAuthStateChange + (auth)/_layout redirigen a "/".
       })
       .catch(() => {
@@ -64,6 +71,11 @@ export default function Login() {
     return () => {
       vigente = false
     }
+  }
+
+  // Auto-envío al 6º dígito: sin botón "Entrar" para el PIN nuevo.
+  useEffect(() => {
+    if (pin.length === LONGITUD_PIN) return entrar(pin)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pin])
 
@@ -74,6 +86,22 @@ export default function Login() {
       setPin('')
       setError(null)
     }, 600)
+  }
+
+  function elegir(u: UsuarioReciente) {
+    setUsuario(u)
+    setPin('')
+    setError(null)
+  }
+
+  function continuarConEscrito() {
+    const u = normalizarUsuario(escrito)
+    if (!usuarioValido(u)) {
+      setError('Escribe tu usuario (sin espacios ni tildes).')
+      return
+    }
+    setError(null)
+    elegir(recientes.find((r) => r.usuario === u) ?? { usuario: u, nombre: u })
   }
 
   function cambiarUsuario() {
@@ -88,17 +116,18 @@ export default function Login() {
     return (
       <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
         <ScrollView
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: espacio.xxl, gap: espacio.m }}
         >
           <Text style={[tipografia.h1, { color: paleta.texto, textAlign: 'center', marginBottom: espacio.l }]}>
             ¿Quién eres?
           </Text>
-          {USUARIOS.map((u, i) => (
-            <Animated.View key={u.email} entering={FadeInDown.duration(220).delay(i * 40)}>
+          {recientes.map((u, i) => (
+            <Animated.View key={u.usuario} entering={FadeInDown.duration(220).delay(i * 40)}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={u.nombre}
-                onPress={() => setUsuario(u)}
+                onPress={() => elegir(u)}
                 style={({ pressed }) => ({
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -114,15 +143,40 @@ export default function Login() {
                 })}
               >
                 <Avatar nombre={u.nombre} tamano={44} />
-                <Text style={[tipografia.h3, { color: paleta.texto, flex: 1 }]}>{u.nombre}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[tipografia.h3, { color: paleta.texto }]}>{u.nombre}</Text>
+                  <Text style={[tipografia.caption, { color: paleta.texto3 }]}>@{u.usuario}</Text>
+                </View>
                 <ChevronRight size={20} color={paleta.texto3} />
               </Pressable>
             </Animated.View>
           ))}
+
+          <View style={{ gap: espacio.m, marginTop: recientes.length ? espacio.l : 0 }}>
+            <CampoTexto
+              etiqueta={recientes.length ? 'Otro usuario' : 'Tu usuario'}
+              placeholder="ej: luisa"
+              value={escrito}
+              onChangeText={(v) => {
+                setEscrito(v)
+                setError(null)
+              }}
+              autoCapitalize="none"
+              autoCorrect={false}
+              onSubmitEditing={continuarConEscrito}
+              returnKeyType="next"
+            />
+            {error ? (
+              <Text style={[tipografia.caption, { color: paleta.peligroTexto }]}>{error}</Text>
+            ) : null}
+            <Boton titulo="Continuar" onPress={continuarConEscrito} deshabilitado={escrito.trim() === ''} />
+          </View>
         </ScrollView>
       </View>
     )
   }
+
+  const pinAnterior = pin.length === LONGITUD_PIN_ANTERIOR && !cargando
 
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo, padding: espacio.xxl, paddingTop: 56 }}>
@@ -143,21 +197,22 @@ export default function Login() {
             {`Hola, ${usuario.nombre.split(' ')[0]}`}
           </Text>
           <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
-            Escribe tu clave para entrar
+            Escribe tu PIN de 6 dígitos
           </Text>
         </View>
 
         <TecladoPin
           valor={pin}
+          longitud={LONGITUD_PIN}
           error={!!error}
           deshabilitado={cargando}
           onDigito={(d) => {
-            if (pin.length < 4 && !cargando) setPin(pin + d)
+            if (pin.length < LONGITUD_PIN && !cargando) setPin(pin + d)
           }}
           onBorrar={() => setPin(pin.slice(0, -1))}
         />
 
-        <View style={{ minHeight: 24, justifyContent: 'center' }}>
+        <View style={{ minHeight: 48, justifyContent: 'center', alignItems: 'center', gap: espacio.s }}>
           {cargando ? (
             <ActivityIndicator color={paleta.primario} />
           ) : error ? (
@@ -167,10 +222,11 @@ export default function Login() {
             >
               {error}
             </Text>
+          ) : pinAnterior ? (
+            <Boton titulo="Entrar con mi PIN de 4" variante="fantasma" onPress={() => entrar(pin)} />
           ) : null}
         </View>
       </View>
-
     </View>
   )
 }

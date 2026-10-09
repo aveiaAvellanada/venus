@@ -15,6 +15,7 @@ import {
   User,
 } from 'lucide-react-native'
 import { useAuth, useRequireModulo } from '../../../lib/auth'
+import { tienePermiso } from '../../../lib/permisos'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { listarCompras, listarProveedores, type Compra } from '../../../lib/proveedores'
 import { supabase } from '../../../lib/supabase'
@@ -25,6 +26,9 @@ import { Badge, Boton, CirculoIcono, EstadoVacio, Presionable, Tarjeta } from '.
 export default function RecibirMercanciaIndex() {
   const requireModulo = useRequireModulo('recibir-mercancia')
   const { perfil } = useAuth()
+  // costos: completar la llegada (y ver totales); proveedores: ver las de todo el equipo.
+  const verCostos = tienePermiso(perfil, 'costos')
+  const verTodas = verCostos || tienePermiso(perfil, 'proveedores')
   const router = useRouter()
   const { paleta } = useTema()
   const paddingInferior = usePaddingInferior(100)
@@ -50,8 +54,8 @@ export default function RecibirMercanciaIndex() {
       })
       setProveedoresMap(provMap)
 
-      // 2. Fetch users for registrar mapping (only if owner/admin)
-      if (perfil.rol === 'dueno' || perfil.rol === 'admin') {
+      // 2. Nombres de quién registró cada llegada (solo si ve las de todos)
+      if (verTodas) {
         const { data: userList, error: userError } = await supabase
           .from('users')
           .select('id, nombre')
@@ -71,7 +75,7 @@ export default function RecibirMercanciaIndex() {
       const comprasList = await listarCompras({ estado: 'pendiente_revision' })
 
       // RLS already filters at the DB level, but we add client-side check for redundancy and safety
-      if (perfil.rol === 'empleado') {
+      if (!verTodas) {
         setCompras(comprasList.filter((c) => c.registrada_por === perfil.id))
       } else {
         setCompras(comprasList)
@@ -101,9 +105,6 @@ export default function RecibirMercanciaIndex() {
   if (requireModulo) return requireModulo
 
   const renderCompra = ({ item }: { item: Compra }) => {
-    const isOwner = perfil?.rol === 'dueno'
-    const isAdmin = perfil?.rol === 'admin'
-    const isStaff = isOwner || isAdmin
     const providerName = proveedoresMap[item.proveedor_id] || 'Proveedor desconocido'
     const dateFormatted = new Date(item.created_at).toLocaleDateString('es-CO', {
       day: '2-digit',
@@ -136,7 +137,7 @@ export default function RecibirMercanciaIndex() {
               <Text style={[tipografia.caption, { color: paleta.texto3 }]}>{dateFormatted}</Text>
             </View>
           </View>
-          {isStaff && <ChevronRight size={20} color={paleta.texto3} />}
+          {verCostos && <ChevronRight size={20} color={paleta.texto3} />}
         </View>
 
         <View style={{
@@ -150,7 +151,7 @@ export default function RecibirMercanciaIndex() {
             </Text>
           </View>
 
-          {isStaff && (
+          {verTodas && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.xs }}>
               <User size={13} color={paleta.texto3} />
               <Text style={[tipografia.caption, { color: paleta.texto2 }]}>{registeredByText}</Text>
@@ -163,11 +164,8 @@ export default function RecibirMercanciaIndex() {
           borderTopWidth: 1, borderTopColor: paleta.borde, paddingTop: espacio.m, marginTop: espacio.m,
         }}>
           <Badge texto="Pendiente revisión" tipo="advertencia" punto />
-          {/*
-            Only Andrés (owner) gets financial indicators.
-            Sandra (admin) and employees do not see costs or total values on cards.
-          */}
-          {isOwner && item.total !== null && (
+          {/* Solo quien tiene el permiso de costos ve valores en las tarjetas. */}
+          {verCostos && item.total !== null && (
             <Text style={[tipografia.h3, tabular, { color: paleta.exitoTexto }]}>
               Total: ${item.total.toLocaleString()}
             </Text>
@@ -178,7 +176,7 @@ export default function RecibirMercanciaIndex() {
 
     return (
       <View style={{ marginBottom: espacio.m }}>
-        {isStaff ? (
+        {verCostos ? (
           <Presionable
             accessibilityRole="button"
             accessibilityLabel={`Ver recepción de ${providerName}`}
@@ -213,15 +211,17 @@ export default function RecibirMercanciaIndex() {
         backgroundColor: paleta.primarioSoft, marginHorizontal: espacio.xl,
         padding: espacio.m, borderRadius: radio.md,
       }}>
-        {perfil?.rol === 'empleado' ? (
+        {!verTodas ? (
           <Info size={20} color={paleta.primario} />
         ) : (
           <ShieldCheck size={20} color={paleta.primario} />
         )}
         <Text style={[tipografia.caption, { color: paleta.texto2, flex: 1 }]}>
-          {perfil?.rol === 'dueno' && 'Revisa y completa los costos unitarios y plazos de pago para ingresar stock.'}
-          {perfil?.rol === 'admin' && 'Completa los datos de las recepciones físicas pendientes.'}
-          {perfil?.rol === 'empleado' && 'Lista de tus recepciones de calzado enviadas a revisión.'}
+          {verCostos
+            ? 'Revisa y completa los costos unitarios y plazos de pago para ingresar stock.'
+            : verTodas
+              ? 'Llegadas de mercancía pendientes de que se completen sus costos.'
+              : 'Lista de tus recepciones de calzado enviadas a revisión.'}
         </Text>
       </View>
 
@@ -236,7 +236,7 @@ export default function RecibirMercanciaIndex() {
         </View>
       ) : (
         <>
-          {perfil?.rol !== 'empleado' && (
+          {verTodas && (
             <View style={{ paddingHorizontal: espacio.xl, marginTop: espacio.l }}>
               <Text style={[tipografia.h3, { color: paleta.texto }]}>Pendientes de Revisión</Text>
             </View>
@@ -254,7 +254,7 @@ export default function RecibirMercanciaIndex() {
               <EstadoVacio
                 icono={<FileText />}
                 titulo={
-                  perfil?.rol === 'empleado'
+                  !verTodas
                     ? 'No has registrado entradas pendientes.'
                     : 'No hay entradas de mercancía pendientes de revisión.'
                 }

@@ -3,6 +3,7 @@ import { View, Text, Image, ScrollView, ActivityIndicator } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, ImageOff, PackageX, Pencil } from 'lucide-react-native'
 import { useAuth, useRequireModulo } from '../../../../lib/auth'
+import { tienePermiso } from '../../../../lib/permisos'
 import { supabase } from '../../../../lib/supabase'
 import type { ProductoCalzado } from '../../../../lib/inventario'
 import { usePaddingInferior } from '../../../../hooks/usePaddingInferior'
@@ -25,8 +26,8 @@ export default function CalzadoDetailScreen() {
   const { paleta } = useTema()
   const paddingInferior = usePaddingInferior(espacio.xxxl)
 
-  const esDueno = perfil?.rol === 'dueno'
-  const esEmpleado = perfil?.rol === 'empleado'
+  const verCostos = tienePermiso(perfil, 'costos')
+  const puedeEditar = tienePermiso(perfil, 'inventario')
 
   if (requireModulo) return requireModulo
 
@@ -55,7 +56,7 @@ export default function CalzadoDetailScreen() {
         if (error) throw error
         setProducto(data)
 
-        if (esDueno) {
+        if (verCostos) {
           const { data: historial } = await supabase
             .from('historial_precios_calzado')
             .select('costo_compra')
@@ -76,7 +77,7 @@ export default function CalzadoDetailScreen() {
       }
     }
     if (id) fetchProducto()
-  }, [id, esDueno])
+  }, [id, verCostos])
 
   if (loading) {
     return (
@@ -166,7 +167,7 @@ export default function CalzadoDetailScreen() {
           </View>
         </Tarjeta>
 
-        {esDueno && (
+        {verCostos && (
           <Tarjeta estilo={{ backgroundColor: paleta.advertenciaSoft, borderColor: paleta.advertenciaSoft }}>
             <Text style={[tipografia.etiqueta, { color: paleta.advertenciaTexto }]}>Costo de compra (solo dueño)</Text>
             <Text style={[tipografia.h2, tabular, { color: paleta.advertenciaTexto, marginTop: 4 }]}>
@@ -176,7 +177,7 @@ export default function CalzadoDetailScreen() {
         )}
       </ScrollView>
 
-      {!esEmpleado && (
+      {puedeEditar && (
         <View style={{ padding: espacio.l, paddingBottom: paddingInferior, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
           <Boton
             titulo="Editar producto"

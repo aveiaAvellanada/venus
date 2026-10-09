@@ -25,7 +25,7 @@ import {
 } from '../../../lib/reportes'
 import type { ReportePeriodo, ResumenDia } from '../../../lib/reportes'
 import { obtenerGastosFijosPorVencer, type GastoFijoPorVencer } from '../../../lib/gastos'
-import { puedeAcceder } from '../../../lib/permisos'
+import { tienePermiso } from '../../../lib/permisos'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
 import {
@@ -81,7 +81,9 @@ export default function Menu() {
   const router = useRouter()
   const { mostrar } = useToast()
 
-  const esStaff = perfil?.rol === 'dueno' || perfil?.rol === 'admin'
+  // Historial/períodos (reportes) y gastos de todos (gastos_fijos) son permisos aparte.
+  const esStaff = tienePermiso(perfil, 'reportes')
+  const verGastos = tienePermiso(perfil, 'gastos_fijos')
 
   const [estadoCaja, setEstadoCaja] = useState<EstadoCaja>('cargando')
   const [modoCierre, setModoCierre] = useState<'con_diferencia' | 'sin_diferencia'>('con_diferencia')
@@ -122,12 +124,12 @@ export default function Menu() {
         const [rep, vb, g] = await Promise.all([
           obtenerReportePeriodo(rango.desde, rango.hasta),
           obtenerVentasPorSubperiodo(rango.desde, rango.hasta, rango.granularidad),
-          obtenerGastosPeriodo(rango.desde, rango.hasta),
+          verGastos ? obtenerGastosPeriodo(rango.desde, rango.hasta) : Promise.resolve(null),
         ])
         setReporte(rep)
         setBuckets(vb)
         setGastos(g)
-        if (puedeAcceder(perfil.rol, 'gastos-fijos')) {
+        if (verGastos) {
           obtenerGastosFijosPorVencer().then(setPorVencer).catch(() => setPorVencer([]))
         }
       } else {
@@ -139,7 +141,7 @@ export default function Menu() {
     } finally {
       setCargando(false)
     }
-  }, [perfil, esStaff, periodo, rangoCustom])
+  }, [perfil, esStaff, verGastos, periodo, rangoCustom])
 
   useFocusEffect(
     useCallback(() => {
@@ -172,6 +174,10 @@ export default function Menu() {
   }
 
   const onPressCaja = () => {
+    if (!tienePermiso(perfil, 'caja')) {
+      mostrar('No tienes permiso para manejar la caja', 'info')
+      return
+    }
     if (estadoCaja !== 'abierta') {
       router.push('/caja')
       return

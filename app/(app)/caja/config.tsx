@@ -3,6 +3,7 @@ import { View, Text, Switch, ActivityIndicator, ScrollView } from 'react-native'
 import { Redirect, useRouter } from 'expo-router'
 import { ArrowLeft, History } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
+import { esDueno } from '../../../lib/permisos'
 import { supabase } from '../../../lib/supabase'
 import { DIAS_SEMANA, type DiaSemana, type HorarioSemanal } from '../../../lib/cajaScheduler'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
@@ -67,10 +68,10 @@ export default function CajaConfig() {
       }
       setCargando(false)
     }
-    if (perfil?.rol === 'dueno') load()
+    if (esDueno(perfil)) load()
   }, [perfil])
 
-  if (perfil?.rol !== 'dueno') return <Redirect href="/" />
+  if (!esDueno(perfil)) return <Redirect href="/" />
 
   if (cargando) {
     return (

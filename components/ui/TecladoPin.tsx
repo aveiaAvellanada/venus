@@ -15,6 +15,8 @@ import { motion, radio, tipografia } from '../../lib/theme'
 
 interface Props {
   valor: string
+  // Cantidad de puntos (dígitos del PIN). Los PIN nuevos son de 6.
+  longitud?: number
   onDigito: (digito: string) => void
   onBorrar: () => void
   error?: boolean
@@ -98,7 +100,7 @@ const FILAS: string[][] = [
   ['7', '8', '9'],
 ]
 
-export function TecladoPin({ valor, onDigito, onBorrar, error = false, deshabilitado = false }: Props) {
+export function TecladoPin({ valor, longitud = 6, onDigito, onBorrar, error = false, deshabilitado = false }: Props) {
   const { paleta } = useTema()
   const desplazamiento = useSharedValue(0)
   const reducido = useReducedMotion()
@@ -122,7 +124,7 @@ export function TecladoPin({ valor, onDigito, onBorrar, error = false, deshabili
   return (
     <View style={{ alignItems: 'center', gap: 28 }}>
       <Animated.View style={[{ flexDirection: 'row', gap: 14 }, estiloPuntos]}>
-        {[0, 1, 2, 3].map((i) => (
+        {Array.from({ length: longitud }, (_, i) => i).map((i) => (
           <Punto key={i} lleno={i < valor.length} error={error} />
         ))}
       </Animated.View>

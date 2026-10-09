@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import type { Permiso } from './permisos'
 
 // ─── Tipos de acceso a datos ────────────────────────────────────────────────
 
@@ -12,10 +13,18 @@ export type EmpleadoConfig = {
 export type Empleado = {
   id: string
   nombre: string
-  email: string | null
-  rol: 'admin' | 'empleado'
+  usuario: string
+  rol: 'empleado'
+  permisos: Permiso[]
   activo: boolean
   config: EmpleadoConfig | null
+}
+
+export type NuevoEmpleadoInput = {
+  nombre: string
+  usuario: string
+  pin: string
+  permisos: Permiso[]
 }
 
 export type PagoEmpleado = {
@@ -40,12 +49,13 @@ export type RegistrarPagoInput = {
 
 // ─── Acceso a datos ──────────────────────────────────────────────────────────
 
-/** Empleados del negocio = todos menos el dueño (rol admin o empleado) + su config. */
+/** Empleados del negocio = todos menos el dueño, con sus permisos y config. Activos primero. */
 export async function listarEmpleados(): Promise<Empleado[]> {
   const { data: users, error } = await supabase
     .from('users')
-    .select('id, nombre, email, rol, activo')
-    .in('rol', ['admin', 'empleado'])
+    .select('id, nombre, usuario, rol, permisos, activo')
+    .eq('rol', 'empleado')
+    .order('activo', { ascending: false })
     .order('nombre')
   if (error) throw error
 
@@ -62,8 +72,9 @@ export async function listarEmpleados(): Promise<Empleado[]> {
     return {
       id: u.id,
       nombre: u.nombre,
-      email: u.email,
-      rol: u.rol as 'admin' | 'empleado',
+      usuario: u.usuario,
+      rol: 'empleado' as const,
+      permisos: (u.permisos ?? []) as Permiso[],
       activo: u.activo,
       config: c
         ? {
@@ -95,15 +106,41 @@ export async function guardarConfigEmpleado(
   if (error) throw error
 }
 
-export async function setActivoEmpleado(empleadoId: string, activo: boolean): Promise<void> {
-  const { error } = await supabase.from('users').update({ activo }).eq('id', empleadoId)
+// Las cuentas se gestionan por RPC (solo el dueño): crean el acceso en Auth,
+// validan usuario/PIN/permisos y, al desactivar, bloquean el login y cierran sesiones.
+
+/** Crea la cuenta (nombre, usuario, PIN de 6) con sus permisos. Devuelve el id. */
+export async function crearEmpleado(input: NuevoEmpleadoInput): Promise<string> {
+  const { data, error } = await supabase.rpc('crear_empleado', {
+    p_nombre: input.nombre,
+    p_usuario: input.usuario,
+    p_pin: input.pin,
+    p_permisos: input.permisos,
+  })
   if (error) throw error
-  // Espejar en config (ignora error si aún no hay config)
-  await supabase.from('empleado_config').update({ activo }).eq('empleado_id', empleadoId)
+  return data as string
 }
 
-export async function actualizarNombreEmpleado(empleadoId: string, nombre: string): Promise<void> {
-  const { error } = await supabase.from('users').update({ nombre }).eq('id', empleadoId)
+/** Cambia el nombre y/o los permisos (lo que no se pase queda igual). */
+export async function actualizarEmpleado(
+  empleadoId: string,
+  cambios: { nombre?: string; permisos?: Permiso[] }
+): Promise<void> {
+  const { error } = await supabase.rpc('actualizar_empleado', {
+    p_id: empleadoId,
+    p_nombre: cambios.nombre,
+    p_permisos: cambios.permisos,
+  })
+  if (error) throw error
+}
+
+export async function restablecerPinEmpleado(empleadoId: string, pin: string): Promise<void> {
+  const { error } = await supabase.rpc('restablecer_pin_empleado', { p_id: empleadoId, p_pin: pin })
+  if (error) throw error
+}
+
+export async function setActivoEmpleado(empleadoId: string, activo: boolean): Promise<void> {
+  const { error } = await supabase.rpc('cambiar_estado_empleado', { p_id: empleadoId, p_activo: activo })
   if (error) throw error
 }
 

@@ -57,6 +57,16 @@ describe('TecladoPin', () => {
     expect(arbol.root.findAllByProps({ testID: 'pin-punto-vacio' }).length).toBeGreaterThanOrEqual(2)
   })
 
+  it('por defecto muestra 6 puntos (PIN de 6 dígitos)', async () => {
+    const arbol = await montar(<TecladoPin valor="123" onDigito={() => {}} onBorrar={() => {}} />)
+    // Solo nodos nativos: findAllByProps también cuenta los envoltorios animados.
+    const puntos = (id: string) =>
+      arbol.root.findAll((n: { type: unknown; props: { testID?: string } }) =>
+        typeof n.type === 'string' && n.props.testID === id).length
+    expect(puntos('pin-punto-lleno')).toBe(3)
+    expect(puntos('pin-punto-vacio')).toBe(3)
+  })
+
   it('deshabilitado no dispara onDigito', async () => {
     const onDigito = jest.fn()
     const arbol = await montar(

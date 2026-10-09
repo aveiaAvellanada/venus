@@ -1593,32 +1593,41 @@ export type Database = {
         Row: {
           activo: boolean
           created_at: string
+          debe_cambiar_pin: boolean
           email: string | null
           id: string
           nombre: string
+          permisos: string[]
           rol: string
           telefono: string | null
           updated_at: string
+          usuario: string
         }
         Insert: {
           activo?: boolean
           created_at?: string
+          debe_cambiar_pin?: boolean
           email?: string | null
           id: string
           nombre: string
+          permisos?: string[]
           rol: string
           telefono?: string | null
           updated_at?: string
+          usuario?: string
         }
         Update: {
           activo?: boolean
           created_at?: string
+          debe_cambiar_pin?: boolean
           email?: string | null
           id?: string
           nombre?: string
+          permisos?: string[]
           rol?: string
           telefono?: string | null
           updated_at?: string
+          usuario?: string
         }
         Relationships: []
       }
@@ -1860,6 +1869,18 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      actualizar_empleado: {
+        Args: { p_id: string; p_nombre?: string; p_permisos?: string[] }
+        Returns: undefined
+      }
+      cambiar_estado_empleado: {
+        Args: { p_activo: boolean; p_id: string }
+        Returns: undefined
+      }
+      cambiar_mi_pin: {
+        Args: { p_pin_actual: string; p_pin_nuevo: string }
+        Returns: undefined
+      }
       cerrar_caja: {
         Args: { p_efectivo_contado?: number; p_nota?: string }
         Returns: {
@@ -1892,6 +1913,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      crear_empleado: {
+        Args: {
+          p_nombre: string
+          p_permisos?: string[]
+          p_pin: string
+          p_usuario: string
+        }
+        Returns: string
       }
       guardar_producto_calzado: {
         Args: {
@@ -2000,6 +2030,10 @@ export type Database = {
           p_pagos: Json
         }
         Returns: Json
+      }
+      restablecer_pin_empleado: {
+        Args: { p_id: string; p_pin: string }
+        Returns: undefined
       }
     }
     Enums: {

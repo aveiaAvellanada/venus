@@ -8,6 +8,7 @@ import {
   type CategoriaGasto,
 } from '../../../lib/gastos'
 import { useAuth } from '../../../lib/auth'
+import { tienePermiso } from '../../../lib/permisos'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { Database } from '../../../lib/database.types'
 import { useTema } from '../../../lib/tema'
@@ -40,7 +41,8 @@ function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void
 
 export default function GastosVariablesScreen() {
   const router = useRouter()
-  const { session } = useAuth()
+  const { session, perfil } = useAuth()
+  const verFijos = tienePermiso(perfil, 'gastos_fijos')
   const { paleta } = useTema()
   const { mostrar } = useToast()
   const paddingInferior100 = usePaddingInferior(100)
@@ -151,15 +153,17 @@ export default function GastosVariablesScreen() {
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
       <Encabezado paleta={paleta} onVolver={() => router.back()} />
 
-      <View style={{ paddingHorizontal: espacio.xl, marginBottom: espacio.m }}>
-        <ControlSegmentado
-          opciones={['Variables', 'Fijos']}
-          indice={0}
-          onCambio={(i) => {
-            if (i === 1) router.replace('/gastos/fijos')
-          }}
-        />
-      </View>
+      {verFijos ? (
+        <View style={{ paddingHorizontal: espacio.xl, marginBottom: espacio.m }}>
+          <ControlSegmentado
+            opciones={['Variables', 'Fijos']}
+            indice={0}
+            onCambio={(i) => {
+              if (i === 1) router.replace('/gastos/fijos')
+            }}
+          />
+        </View>
+      ) : null}
 
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

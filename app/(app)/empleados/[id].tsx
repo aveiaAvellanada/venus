@@ -16,7 +16,9 @@ import {
   CircleAlert,
   CircleCheckBig,
   Info,
+  KeyRound,
   Receipt,
+  ShieldCheck,
   Save,
   User,
   Wallet,
@@ -28,7 +30,8 @@ import {
   diasTrabajadosMes,
   historialPagos,
   guardarConfigEmpleado,
-  actualizarNombreEmpleado,
+  actualizarEmpleado,
+  restablecerPinEmpleado,
   setActivoEmpleado,
   registrarPagoEmpleado,
   diasEsperadosMes,
@@ -40,6 +43,9 @@ import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
 import { Badge, Boton, CampoTexto, CirculoIcono, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { SelectorPermisos } from '../../../components/SelectorPermisos'
+import { resumenPermisos, type Permiso } from '../../../lib/permisos'
+import { pinValido } from '../../../lib/usuarios'
 
 const pesos = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
@@ -99,6 +105,12 @@ export default function EmpleadoDetalleScreen() {
   // ─── Estado — activar/desactivar ───────────────────────────────────────────
   const [cambiandoActivo, setCambiandoActivo] = useState(false)
 
+  // Permisos y PIN (solo el dueño llega aquí)
+  const [permisos, setPermisos] = useState<Permiso[]>([])
+  const [guardandoPermisos, setGuardandoPermisos] = useState(false)
+  const [pinNuevo, setPinNuevo] = useState('')
+  const [guardandoPin, setGuardandoPin] = useState(false)
+
   // ─── Campos de pago ────────────────────────────────────────────────────────
   const [montoTexto, setMontoTexto] = useState('')
   const [registrandoPago, setRegistrandoPago] = useState(false)
@@ -133,6 +145,7 @@ export default function EmpleadoDetalleScreen() {
 
       // Inicializar campos de edición con los datos actuales
       setNombre(emp.nombre)
+      setPermisos(emp.permisos)
       setSueldoTexto(emp.config?.sueldo_mensual != null ? String(emp.config.sueldo_mensual) : '')
       setDiasSemanaTexto(
         emp.config?.dias_trabajo_semana != null ? String(emp.config.dias_trabajo_semana) : ''
@@ -200,7 +213,7 @@ export default function EmpleadoDetalleScreen() {
 
     try {
       setGuardando(true)
-      await actualizarNombreEmpleado(empleado.id, nombreTrimmed)
+      await actualizarEmpleado(empleado.id, { nombre: nombreTrimmed })
       await guardarConfigEmpleado(empleado.id, {
         sueldo_mensual: sueldo,
         fecha_inicio: fechaInicioParsed,
@@ -216,6 +229,40 @@ export default function EmpleadoDetalleScreen() {
     }
   }
 
+  // ─── Permisos ──────────────────────────────────────────────────────────────
+  const handleGuardarPermisos = async () => {
+    if (!empleado) return
+    try {
+      setGuardandoPermisos(true)
+      await actualizarEmpleado(empleado.id, { permisos })
+      toast.mostrar('Permisos actualizados. Se aplican de inmediato.', 'exito')
+      await cargarDatos()
+    } catch (err: unknown) {
+      toast.mostrar(err instanceof Error ? err.message : 'No se pudieron guardar los permisos', 'error')
+    } finally {
+      setGuardandoPermisos(false)
+    }
+  }
+
+  // ─── PIN ───────────────────────────────────────────────────────────────────
+  const handleRestablecerPin = async () => {
+    if (!empleado) return
+    if (!pinValido(pinNuevo)) {
+      toast.mostrar('El PIN debe tener exactamente 6 números.', 'error')
+      return
+    }
+    try {
+      setGuardandoPin(true)
+      await restablecerPinEmpleado(empleado.id, pinNuevo)
+      setPinNuevo('')
+      toast.mostrar(`PIN nuevo listo. Dáselo a ${empleado.nombre.split(' ')[0]}.`, 'exito')
+    } catch (err: unknown) {
+      toast.mostrar(err instanceof Error ? err.message : 'No se pudo cambiar el PIN', 'error')
+    } finally {
+      setGuardandoPin(false)
+    }
+  }
+
   // ─── Activar / Desactivar ──────────────────────────────────────────────────
   const handleToggleActivo = () => {
     if (!empleado) return
@@ -223,7 +270,7 @@ export default function EmpleadoDetalleScreen() {
     const titulo = nuevoActivo ? 'Activar empleado' : 'Desactivar empleado'
     const mensaje = nuevoActivo
       ? `¿Activar a ${empleado.nombre}? Podrá iniciar sesión nuevamente.`
-      : `¿Desactivar a ${empleado.nombre}? No podrá iniciar sesión la próxima vez (si tiene una sesión abierta, expirará en breve).`
+      : `¿Desactivar a ${empleado.nombre}? No podrá entrar y se cerrará la sesión que tenga abierta.`
 
     Alert.alert(titulo, mensaje, [
       { text: 'Cancelar', style: 'cancel' },
@@ -321,7 +368,8 @@ export default function EmpleadoDetalleScreen() {
     )
   }
 
-  const rolLabel = empleado.rol === 'admin' ? 'Administrativo' : 'Operativo'
+  const permisosCambiados =
+    permisos.length !== empleado.permisos.length || permisos.some((p) => !empleado.permisos.includes(p))
   const ahora = new Date()
   const anioActual = ahora.getFullYear()
   const mesActual = ahora.getMonth() + 1
@@ -346,12 +394,10 @@ export default function EmpleadoDetalleScreen() {
               </CirculoIcono>
               <View style={{ flex: 1 }}>
                 <Text style={[tipografia.h3, { color: paleta.texto }]}>{empleado.nombre}</Text>
-                <Text style={[tipografia.caption, { color: paleta.texto2 }]}>{rolLabel}</Text>
-                {empleado.email ? (
-                  <Text style={[tipografia.caption, { color: paleta.texto3 }]} numberOfLines={1}>
-                    {empleado.email}
-                  </Text>
-                ) : null}
+                <Text style={[tipografia.caption, { color: paleta.texto2 }]}>{resumenPermisos(empleado)}</Text>
+                <Text style={[tipografia.caption, { color: paleta.texto3 }]} numberOfLines={1}>
+                  Usuario: {empleado.usuario}
+                </Text>
               </View>
               <Badge texto={empleado.activo ? 'Activo' : 'Inactivo'} tipo={empleado.activo ? 'exito' : 'peligro'} punto={empleado.activo} />
             </View>
@@ -426,6 +472,52 @@ export default function EmpleadoDetalleScreen() {
               )}
               <Text style={[tipografia.cuerpoLg, { color: paleta.sobrePrimario }]}>Guardar</Text>
             </Presionable>
+          </Tarjeta>
+
+          {/* ── Permisos ── */}
+          <Tarjeta>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s, marginBottom: espacio.l }}>
+              <ShieldCheck size={20} color={paleta.primario} />
+              <Text style={[tipografia.h3, { color: paleta.texto }]}>Permisos</Text>
+            </View>
+            <SelectorPermisos valor={permisos} onCambio={setPermisos} deshabilitado={guardandoPermisos} />
+            <View style={{ marginTop: espacio.l }}>
+              <Boton
+                titulo="Guardar permisos"
+                onPress={handleGuardarPermisos}
+                cargando={guardandoPermisos}
+                deshabilitado={guardandoPermisos || !permisosCambiados}
+              />
+            </View>
+          </Tarjeta>
+
+          {/* ── PIN de acceso ── */}
+          <Tarjeta>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s, marginBottom: espacio.m }}>
+              <KeyRound size={20} color={paleta.primario} />
+              <Text style={[tipografia.h3, { color: paleta.texto }]}>PIN de acceso</Text>
+            </View>
+            <Text style={[tipografia.cuerpo, { color: paleta.texto2, marginBottom: espacio.l }]}>
+              Si olvidó su PIN, ponle uno nuevo de 6 dígitos. Luego puede cambiarlo desde su Perfil.
+            </Text>
+            <CampoTexto
+              etiqueta="PIN nuevo"
+              placeholder="••••••"
+              value={pinNuevo}
+              onChangeText={(t) => setPinNuevo(t.replace(/[^0-9]/g, '').slice(0, 6))}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={6}
+            />
+            <View style={{ marginTop: espacio.m }}>
+              <Boton
+                titulo="Guardar PIN nuevo"
+                variante="secundario"
+                onPress={handleRestablecerPin}
+                cargando={guardandoPin}
+                deshabilitado={guardandoPin || pinNuevo.length !== 6}
+              />
+            </View>
           </Tarjeta>
 
           {/* ── Sección 2: Estado (Activar / Desactivar) ── */}

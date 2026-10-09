@@ -3,6 +3,7 @@ import { View, Text, Switch, ActivityIndicator } from 'react-native'
 import { useFocusEffect, useRouter, Redirect } from 'expo-router'
 import { ArrowLeft, Info } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
+import { esDueno } from '../../../lib/permisos'
 import { obtenerReporteConfig, guardarReporteConfig } from '../../../lib/reporteDiario'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
@@ -60,12 +61,12 @@ export default function ReportesConfig() {
 
   useFocusEffect(
     useCallback(() => {
-      if (perfil?.rol === 'dueno') cargar()
+      if (esDueno(perfil)) cargar()
     }, [cargar, perfil])
   )
 
   // Gate: solo el dueño
-  if (perfil && perfil.rol !== 'dueno') return <Redirect href="/reportes" />
+  if (perfil && !esDueno(perfil)) return <Redirect href="/reportes" />
 
   const guardar = async () => {
     if (correoOn && !correoDestino.includes('@')) {

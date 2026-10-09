@@ -15,11 +15,12 @@ import { AuthProvider, useAuth } from '../lib/auth'
 import { TemaProvider, useTema } from '../lib/tema'
 import { espacio, tipografia } from '../lib/theme'
 import { Boton } from '../components/ui'
+import { FormularioCambiarPin } from '../components/FormularioCambiarPin'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
 function Navegacion() {
-  const { cargando, session, perfil, cerrarSesion } = useAuth()
+  const { cargando, session, perfil, motivoSinPerfil, cerrarSesion, recargarPerfil } = useAuth()
   const { paleta } = useTema()
 
   const salir = useCallback(async () => {
@@ -47,20 +48,27 @@ function Navegacion() {
     )
   }
 
-  // Fail-closed: hay sesión pero no se pudo cargar el perfil. No montamos la app;
-  // ofrecemos cerrar sesión para volver al login (evita el loop de redirección).
+  // Fail-closed: hay sesión pero no hay perfil. No montamos la app; ofrecemos
+  // reintentar (si fue la red) o cerrar sesión (evita el loop de redirección).
   if (session && !perfil) {
+    const desactivado = motivoSinPerfil === 'desactivado'
     return (
       <View style={centro}>
         <Text style={[tipografia.h2, { color: paleta.texto, textAlign: 'center' }]}>
-          No pudimos cargar tu perfil
+          {desactivado ? 'Tu cuenta está desactivada' : 'No pudimos cargar tu perfil'}
         </Text>
         <Text style={[tipografia.cuerpo, { color: paleta.texto2, textAlign: 'center' }]}>
-          Revisa tu conexión e intenta de nuevo.
+          {desactivado ? 'Habla con el administrador de la tienda.' : 'Revisa tu conexión e intenta de nuevo.'}
         </Text>
-        <Boton titulo="Cerrar sesión" onPress={salir} />
+        {desactivado ? null : <Boton titulo="Reintentar" onPress={() => { recargarPerfil() }} />}
+        <Boton titulo="Cerrar sesión" variante={desactivado ? 'primario' : 'fantasma'} onPress={salir} />
       </View>
     )
+  }
+
+  // Cuentas con el PIN viejo de 4 dígitos crean uno de 6 antes de seguir.
+  if (session && perfil?.debeCambiarPin) {
+    return <FormularioCambiarPin obligatorio onListo={() => { recargarPerfil() }} />
   }
 
   return <Stack screenOptions={{ headerShown: false }} />

@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, Camera, Pencil, Save } from 'lucide-react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { useAuth, useRequireModulo } from '../../../../lib/auth'
+import { tienePermiso } from '../../../../lib/permisos'
 import { supabase } from '../../../../lib/supabase'
 import { guardarVarios } from '../../../../lib/inventario'
 import { comprimirYSubirImagen } from '../../../../lib/imagenes'
@@ -29,14 +30,13 @@ export default function GranjaEditorScreen() {
   const [precioSugerido, setPrecioSugerido] = useState('')
   const [fotoUrl, setFotoUrl] = useState<string | null>(null)
 
-  const esDueno = perfil?.rol === 'dueno'
-  const esAdmin = perfil?.rol === 'admin'
+  const puedeEditar = tienePermiso(perfil, 'inventario')
 
   useEffect(() => {
-    if (perfil && !esDueno && !esAdmin) {
+    if (perfil && !puedeEditar) {
       router.replace('/productos')
     }
-  }, [perfil, esDueno, esAdmin])
+  }, [perfil, puedeEditar])
 
   useEffect(() => {
     async function fetchProducto() {
@@ -63,14 +63,14 @@ export default function GranjaEditorScreen() {
       }
     }
 
-    if (perfil && (esDueno || esAdmin)) {
+    if (perfil && puedeEditar) {
       fetchProducto()
     }
-  }, [id, perfil, esDueno, esAdmin])
+  }, [id, perfil, puedeEditar])
 
   if (requireModulo) return requireModulo
 
-  if (!perfil || (!esDueno && !esAdmin)) {
+  if (!perfil || (!puedeEditar)) {
     return null
   }
 

@@ -13,7 +13,7 @@ import {
 } from 'lucide-react-native'
 import type { LucideIcon } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
-import { puedeAcceder } from '../../../lib/permisos'
+import { tienePermiso } from '../../../lib/permisos'
 import { obtenerGastosPeriodo, rangoParaPeriodo } from '../../../lib/dashboard'
 import type { GastosPeriodo, Periodo } from '../../../lib/dashboard'
 import {
@@ -65,7 +65,10 @@ export default function Movimientos() {
   const { paleta } = useTema()
   const router = useRouter()
 
-  const esStaff = perfil?.rol === 'dueno' || perfil?.rol === 'admin'
+  // Otros días = historial (reportes); los gastos de todos = gastos_fijos.
+  const esStaff = tienePermiso(perfil, 'reportes')
+  const verGastos = tienePermiso(perfil, 'gastos_fijos')
+  const registraGastos = verGastos || tienePermiso(perfil, 'gastos')
 
   const [vista, setVista] = useState(0)
   const [periodo, setPeriodo] = useState<Periodo | 'rango'>('hoy')
@@ -85,13 +88,13 @@ export default function Movimientos() {
     try {
       if (vista === 0) setVentas(await listarVentasPeriodo(rango.desde, rango.hasta))
       else if (vista === 1) setDevoluciones(await listarDevoluciones(rango.desde, rango.hasta))
-      else if (esStaff) setGastos(await obtenerGastosPeriodo(rango.desde, rango.hasta))
+      else if (verGastos) setGastos(await obtenerGastosPeriodo(rango.desde, rango.hasta))
     } catch {
       // la vista muestra su estado vacío; pull-to-refresh reintenta
     } finally {
       setCargando(false)
     }
-  }, [perfil, esStaff, periodo, rangoCustom, vista])
+  }, [perfil, esStaff, verGastos, periodo, rangoCustom, vista])
 
   useFocusEffect(
     useCallback(() => {
@@ -252,37 +255,42 @@ export default function Movimientos() {
           )
         ) : (
           <View style={{ gap: espacio.l }}>
-            <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
-              <FilaLista
-                icono={
-                  <CirculoIcono tono="peligro">
-                    <ReceiptText />
-                  </CirculoIcono>
-                }
-                titulo="Registrar gasto variable"
-                subtitulo="Imprevistos por categoría"
-                chevron
-                onPress={() => router.push('/gastos')}
-              />
-              {puedeAcceder(perfil.rol, 'gastos-fijos') ? (
-                <>
-                  <View style={{ height: 1, backgroundColor: paleta.borde, marginLeft: 56 }} />
-                  <FilaLista
-                    icono={
-                      <CirculoIcono tono="primario">
-                        <CalendarClock />
-                      </CirculoIcono>
-                    }
-                    titulo="Gastos fijos"
-                    subtitulo="Recurrentes y vencimientos"
-                    chevron
-                    onPress={() => router.push('/gastos/fijos')}
-                  />
-                </>
-              ) : null}
-            </Tarjeta>
+            {!registraGastos ? (
+              <EstadoVacio icono={<ReceiptText />} titulo="No tienes permiso para gastos" />
+            ) : null}
+            {registraGastos ? (
+              <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
+                <FilaLista
+                  icono={
+                    <CirculoIcono tono="peligro">
+                      <ReceiptText />
+                    </CirculoIcono>
+                  }
+                  titulo="Registrar gasto variable"
+                  subtitulo="Imprevistos por categoría"
+                  chevron
+                  onPress={() => router.push('/gastos')}
+                />
+                {verGastos ? (
+                  <>
+                    <View style={{ height: 1, backgroundColor: paleta.borde, marginLeft: 56 }} />
+                    <FilaLista
+                      icono={
+                        <CirculoIcono tono="primario">
+                          <CalendarClock />
+                        </CirculoIcono>
+                      }
+                      titulo="Gastos fijos"
+                      subtitulo="Recurrentes y vencimientos"
+                      chevron
+                      onPress={() => router.push('/gastos/fijos')}
+                    />
+                  </>
+                ) : null}
+              </Tarjeta>
+            ) : null}
 
-            {esStaff && gastos ? (
+            {verGastos && gastos ? (
               gastos.gastos.length === 0 ? (
                 <EstadoVacio icono={<ReceiptText />} titulo="Sin gastos en este período" />
               ) : (

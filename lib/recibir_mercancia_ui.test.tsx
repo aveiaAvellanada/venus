@@ -1,4 +1,5 @@
 import React from 'react'
+import { PLANTILLAS } from './permisos'
 process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://dummy-url.supabase.co'
 process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'dummy-key'
 // @ts-ignore
@@ -231,7 +232,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
     test('Empleado no visualiza la sección de "Pendientes de Revisión" ni montos financieros', async () => {
       mockUseAuth.mockReturnValue({
         session: { user: { id: 'emp-1' } },
-        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', activo: true },
+        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', permisos: PLANTILLAS.operativo.permisos, activo: true },
         cargando: false,
       });
       (apiProveedores.listarCompras as jest.Mock).mockResolvedValue([
@@ -251,7 +252,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
     test('Dueño sí visualiza la sección de "Pendientes de Revisión" y puede ver montos', async () => {
       mockUseAuth.mockReturnValue({
         session: { user: { id: 'owner-1' } },
-        perfil: { id: 'owner-1', nombre: 'Andrés Dueño', rol: 'dueno', activo: true },
+        perfil: { id: 'owner-1', nombre: 'Andrés Dueño', rol: 'dueno', permisos: [], activo: true },
         cargando: false,
       });
       (apiProveedores.listarCompras as jest.Mock).mockResolvedValue([
@@ -272,7 +273,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
       // Caso 1: Sandra (admin) -> Redirigida
       mockUseAuth.mockReturnValue({
         session: { user: { id: 'admin-1' } },
-        perfil: { id: 'admin-1', nombre: 'Sandra Admin', rol: 'admin', activo: true },
+        perfil: { id: 'admin-1', nombre: 'Sandra Admin', rol: 'empleado', permisos: PLANTILLAS.administrativo.permisos, activo: true },
         cargando: false,
       })
 
@@ -286,7 +287,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
       // Caso 2: Camilo (empleado) -> Redirigido
       mockUseAuth.mockReturnValue({
         session: { user: { id: 'emp-1' } },
-        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', activo: true },
+        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', permisos: PLANTILLAS.operativo.permisos, activo: true },
         cargando: false,
       })
 
@@ -299,7 +300,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
     test('Permite acceso a la pantalla de detalle financiero [id] al dueño (Andrés)', async () => {
       mockUseAuth.mockReturnValue({
         session: { user: { id: 'owner-1' } },
-        perfil: { id: 'owner-1', nombre: 'Andrés Dueño', rol: 'dueno', activo: true },
+        perfil: { id: 'owner-1', nombre: 'Andrés Dueño', rol: 'dueno', permisos: [], activo: true },
         cargando: false,
       });
       (apiProveedores.obtenerCompraPorId as jest.Mock).mockResolvedValue({
@@ -331,7 +332,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
       // Empleado: NO debe ver el botón (proveedores_insert exige is_staff_admin)
       mockUseAuth.mockReturnValue({
         session: { user: { id: 'emp-1' } },
-        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', activo: true },
+        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', permisos: PLANTILLAS.operativo.permisos, activo: true },
         cargando: false,
       })
       let treeEmp: any
@@ -344,7 +345,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
       // Dueño: SÍ debe verlo
       mockUseAuth.mockReturnValue({
         session: { user: { id: 'owner-1' } },
-        perfil: { id: 'owner-1', nombre: 'Andrés Dueño', rol: 'dueno', activo: true },
+        perfil: { id: 'owner-1', nombre: 'Andrés Dueño', rol: 'dueno', permisos: [], activo: true },
         cargando: false,
       })
       let treeOwner: any
@@ -361,7 +362,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
     test('La creación rápida de producto calzado inicializa stock_actual en 0 al llamar a guardarCalzado', async () => {
       mockUseAuth.mockReturnValue({
         session: { user: { id: 'emp-1' } },
-        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', activo: true },
+        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', permisos: PLANTILLAS.operativo.permisos, activo: true },
         cargando: false,
       })
 
@@ -404,7 +405,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
     test('Confirmar Entrada Física por empleado llama a registrarLlegadaFisica', async () => {
       mockUseAuth.mockReturnValue({
         session: { user: { id: 'emp-1' } },
-        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', activo: true },
+        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', permisos: PLANTILLAS.operativo.permisos, activo: true },
         cargando: false,
       })
 
@@ -436,7 +437,7 @@ describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () =
     test('Completar Información Financiera por dueño llama a completarInformacionFinanciera', async () => {
       mockUseAuth.mockReturnValue({
         session: { user: { id: 'owner-1' } },
-        perfil: { id: 'owner-1', nombre: 'Andrés Dueño', rol: 'dueno', activo: true },
+        perfil: { id: 'owner-1', nombre: 'Andrés Dueño', rol: 'dueno', permisos: [], activo: true },
         cargando: false,
       });
 

@@ -46,10 +46,14 @@ begin
     (v_dueno, 'dueno@test.venus', '{"provider":"email"}', '{}', 'authenticated', 'authenticated'),
     (v_admin, 'admin@test.venus', '{"provider":"email"}', '{}', 'authenticated', 'authenticated'),
     (v_emp,   'emp@test.venus',   '{"provider":"email"}', '{}', 'authenticated', 'authenticated');
-  insert into public.users (id, nombre, rol, email) values
-    (v_dueno, 'Dueño Test', 'dueno', 'dueno@test.venus'),
-    (v_admin, 'Admin Test', 'admin', 'admin@test.venus'),
-    (v_emp,   'Empleado Test', 'empleado', 'emp@test.venus');
+  -- "admin" = empleado con la plantilla administrativa; "emp" = plantilla operativa.
+  insert into public.users (id, nombre, rol, email, permisos) values
+    (v_dueno, 'Dueño Test', 'dueno', 'dueno@test.venus', '{}'),
+    (v_admin, 'Admin Test', 'empleado', 'admin@test.venus',
+     array['ventas','devoluciones','inventario','recibir_mercancia','caja','gastos',
+           'proveedores','gastos_fijos','reportes','carga_inicial']),
+    (v_emp,   'Empleado Test', 'empleado', 'emp@test.venus',
+     array['ventas','devoluciones','inventario','recibir_mercancia','caja','gastos']);
   insert into public.proveedores (nombre) values ('Proveedor Test') returning id into v_prov;
   insert into public.productos_calzado
     (descripcion, categoria, talla, color, precio_minimo, precio_maximo, stock_actual, stock_minimo, proveedor_id)

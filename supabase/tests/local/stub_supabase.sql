@@ -26,19 +26,53 @@ alter default privileges in schema public grant all on sequences to anon, authen
 -- extensions
 create schema if not exists extensions;
 grant usage on schema extensions to anon, authenticated, service_role;
+create extension if not exists pgcrypto with schema extensions;
 
 -- auth
 create schema if not exists auth;
 grant usage on schema auth to anon, authenticated, service_role;
 
 create table auth.users (
-  id                 uuid primary key default gen_random_uuid(),
-  email              text,
-  raw_app_meta_data  jsonb,
-  raw_user_meta_data jsonb,
-  aud                text,
-  role               text,
-  created_at         timestamptz not null default now()
+  id                     uuid primary key default gen_random_uuid(),
+  instance_id            uuid,
+  email                  text,
+  encrypted_password     text,
+  email_confirmed_at     timestamptz,
+  banned_until           timestamptz,
+  confirmation_token     text,
+  recovery_token         text,
+  email_change_token_new text,
+  email_change           text,
+  raw_app_meta_data      jsonb,
+  raw_user_meta_data     jsonb,
+  aud                    text,
+  role                   text,
+  created_at             timestamptz not null default now(),
+  updated_at             timestamptz
+);
+
+create table auth.identities (
+  id              uuid primary key default gen_random_uuid(),
+  user_id         uuid not null references auth.users(id) on delete cascade,
+  provider        text not null,
+  provider_id     text not null,
+  identity_data   jsonb not null,
+  email           text generated always as (lower(identity_data ->> 'email')) stored,
+  created_at      timestamptz,
+  updated_at      timestamptz,
+  last_sign_in_at timestamptz
+);
+
+create table auth.sessions (
+  id      uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade
+);
+
+create table auth.refresh_tokens (
+  id         bigserial primary key,
+  token      text,
+  user_id    varchar(255),
+  session_id uuid references auth.sessions(id) on delete cascade
 );
 
 create or replace function auth.uid() returns uuid language sql stable as $$

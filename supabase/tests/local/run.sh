@@ -4,6 +4,9 @@
 # argumentos. Un test pasa si termina con un error "*_OK_ROLLBACK".
 #
 # Uso:  supabase/tests/local/run.sh supabase/tests/seguridad_rls_test.sql
+#       MOSTRAR=1 supabase/tests/local/run.sh consulta.sql   (imprime la salida)
+#       SEMILLA=datos.sql SEMILLA_ANTES_DE=20261009150000 supabase/tests/local/run.sh test.sql
+#         (carga datos justo antes de esa migración, para probar migraciones de datos)
 #
 # Requiere los binarios de Postgres (initdb/pg_ctl/psql, 16+). Si se corre como
 # root, el servidor se levanta con el usuario del sistema "postgres".
@@ -30,7 +33,8 @@ limpiar() {
 trap limpiar EXIT
 
 [ "$(id -u)" = "0" ] && chown postgres "$TMP"
-como_pg "$PGBIN/initdb" -D "$TMP/data" -U postgres --auth=trust >/dev/null
+# UTF8 como en Supabase (con SQL_ASCII, translate()/lower() no manejan tildes ni ñ).
+como_pg "$PGBIN/initdb" -D "$TMP/data" -U postgres --auth=trust -E UTF8 --locale=C >/dev/null
 como_pg "$PGBIN/pg_ctl" -D "$TMP/data" -o "-p $PUERTO -k $TMP -c listen_addresses=''" -l "$TMP/pg.log" -w start >/dev/null
 
 PSQL=(psql -h "$TMP" -p "$PUERTO" -U postgres -d postgres -v ON_ERROR_STOP=1 -q -X)
@@ -39,6 +43,15 @@ PSQL=(psql -h "$TMP" -p "$PUERTO" -U postgres -d postgres -v ON_ERROR_STOP=1 -q 
 
 for f in "$RAIZ"/supabase/migrations/*.sql; do
   nombre="$(basename "$f")"
+  if [ -n "${SEMILLA:-}" ] && [[ "$nombre" == "${SEMILLA_ANTES_DE:-}"* ]]; then
+    if ! salida="$("${PSQL[@]}" -f "$SEMILLA" 2>&1)"; then
+      echo "FALLO     semilla $(basename "$SEMILLA")"
+      echo "$salida"
+      exit 1
+    fi
+    echo "semilla   $(basename "$SEMILLA")"
+    SEMILLA=""
+  fi
   if printf '%s\n' "${OMITIR[@]}" | grep -qx "$nombre"; then
     echo "omitida   $nombre"
     continue
@@ -54,7 +67,9 @@ done
 estado=0
 for t in "$@"; do
   salida="$("${PSQL[@]}" -f "$t" 2>&1 || true)"
-  if grep -q "_OK_ROLLBACK" <<<"$salida"; then
+  if [ -n "${MOSTRAR:-}" ]; then
+    echo "$salida"
+  elif grep -q "_OK_ROLLBACK" <<<"$salida"; then
     echo "OK        $(basename "$t")"
   else
     echo "FALLO     $(basename "$t")"

@@ -8,7 +8,7 @@ import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tipografia } from '../../../lib/theme'
-import { Badge, Boton, Presionable, TarjetaMetrica } from '../../../components/ui'
+import { Badge, Boton, Presionable, TarjetaMetrica, useToast } from '../../../components/ui'
 
 const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
 
@@ -38,6 +38,7 @@ export default function CajaDashboard() {
   const redir = useRequireModulo('caja')
   const router = useRouter()
   const { paleta } = useTema()
+  const { mostrar } = useToast()
   const paddingInferior = usePaddingInferior(espacio.xxxl)
 
   const [estadoCaja, setEstadoCaja] = useState<any>(null)
@@ -99,7 +100,7 @@ export default function CajaDashboard() {
       await abrirCaja()
       await cargarDatos()
     } catch (e) {
-      console.error(e)
+      mostrar(e instanceof Error ? e.message : 'No se pudo actualizar la caja.', 'error')
     } finally {
       setAbriendo(false)
     }
@@ -111,7 +112,7 @@ export default function CajaDashboard() {
       await reabrirCaja()
       await cargarDatos()
     } catch (e) {
-      console.error(e)
+      mostrar(e instanceof Error ? e.message : 'No se pudo actualizar la caja.', 'error')
     } finally {
       setAbriendo(false)
     }

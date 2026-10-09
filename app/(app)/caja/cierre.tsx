@@ -88,9 +88,9 @@ export default function CierreCaja() {
 
     setGuardando(true)
     try {
+      // La diferencia la recalcula el servidor con los totales al momento del cierre.
       await cerrarCaja({
         efectivo_contado: contadoNum,
-        diferencia,
         nota: hasDiferencia ? nota.trim() : null
       })
 

@@ -153,6 +153,88 @@ export type Database = {
           },
         ]
       }
+      cierres_caja_reaperturas: {
+        Row: {
+          cerrado_por: string | null
+          cierre_at: string | null
+          cierre_id: string
+          diferencia: number | null
+          diferencia_nota: string | null
+          efectivo_contado: number | null
+          fecha: string
+          id: string
+          modo: string
+          reabierta_at: string
+          reabierta_por: string | null
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+        }
+        Insert: {
+          cerrado_por?: string | null
+          cierre_at?: string | null
+          cierre_id: string
+          diferencia?: number | null
+          diferencia_nota?: string | null
+          efectivo_contado?: number | null
+          fecha: string
+          id?: string
+          modo: string
+          reabierta_at?: string
+          reabierta_por?: string | null
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+        }
+        Update: {
+          cerrado_por?: string | null
+          cierre_at?: string | null
+          cierre_id?: string
+          diferencia?: number | null
+          diferencia_nota?: string | null
+          efectivo_contado?: number | null
+          fecha?: string
+          id?: string
+          modo?: string
+          reabierta_at?: string
+          reabierta_por?: string | null
+          total_bre_b?: number
+          total_efectivo?: number
+          total_general?: number
+          total_nequi?: number
+          total_otro?: number
+          total_ventas?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cierres_caja_reaperturas_cerrado_por_fkey"
+            columns: ["cerrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cierres_caja_reaperturas_cierre_id_fkey"
+            columns: ["cierre_id"]
+            isOneToOne: false
+            referencedRelation: "cierres_caja"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cierres_caja_reaperturas_reabierta_por_fkey"
+            columns: ["reabierta_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clima_registro: {
         Row: {
           created_at: string
@@ -1724,6 +1806,68 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      abrir_caja: {
+        Args: never
+        Returns: {
+          apertura_at: string | null
+          cerrado_por: string | null
+          cierre_at: string | null
+          created_at: string
+          created_by: string | null
+          diferencia: number | null
+          diferencia_nota: string | null
+          efectivo_contado: number | null
+          estado: string
+          fecha: string
+          id: string
+          modo: string
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cierres_caja"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cerrar_caja: {
+        Args: { p_efectivo_contado?: number; p_nota?: string }
+        Returns: {
+          apertura_at: string | null
+          cerrado_por: string | null
+          cierre_at: string | null
+          created_at: string
+          created_by: string | null
+          diferencia: number | null
+          diferencia_nota: string | null
+          efectivo_contado: number | null
+          estado: string
+          fecha: string
+          id: string
+          modo: string
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cierres_caja"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       guardar_producto_calzado: {
         Args: {
           p_activo: boolean
@@ -1771,6 +1915,37 @@ export type Database = {
       obtener_ventas_por_subperiodo: {
         Args: { p_desde: string; p_granularidad: string; p_hasta: string }
         Returns: Json
+      }
+      reabrir_caja: {
+        Args: never
+        Returns: {
+          apertura_at: string | null
+          cerrado_por: string | null
+          cierre_at: string | null
+          created_at: string
+          created_by: string | null
+          diferencia: number | null
+          diferencia_nota: string | null
+          efectivo_contado: number | null
+          estado: string
+          fecha: string
+          id: string
+          modo: string
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cierres_caja"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       registrar_devolucion: {
         Args: {

@@ -71,6 +71,7 @@ Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app c
 - Construidos M1–M13 y M15 (fase 1); falta M14 Análisis IA (requiere 3+ meses de datos). Nunca se ha probado en un teléfono ni desplegado.
 - Usuarios dinámicos y permisos por persona (arriba), arqueo de caja con base y gastos del cajón, ventas idempotentes, devoluciones contadas en su fecha.
 - Migraciones `20261009*` aplicadas al remoto el 2026-10-09 (verificación de despliegue OK, tipos regenerados). Pendiente: APK con EAS y prueba en teléfono, siguiendo `docs/despliegue.md`. CI en `.github/workflows/ci.yml`.
+- Panel web de administración (solo el dueño; back-office, análisis, replicable para otros negocios): plan en `docs/panel-web.md`, aún sin construir.
 
 ## No construir en esta versión
 - Facturación electrónica DIAN
@@ -79,6 +80,5 @@ Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app c
 - Contabilidad formal
 - Múltiples sucursales
 - App para iOS
-- Panel web
 - Ventas a crédito formal con intereses
 - Offline-first (diferido)

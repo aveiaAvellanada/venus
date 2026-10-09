@@ -752,7 +752,7 @@ de empezar a operar con Venus.
 - Contabilidad formal
 - Múltiples sucursales
 - App para iOS
-- Panel web
+- ~~Panel web~~ — en alcance desde el 2026-10-09: panel de administración solo para el dueño, para el back-office (ver `docs/panel-web.md`)
 - Ventas a crédito formal con intereses
 - Offline-first (diferido)
 

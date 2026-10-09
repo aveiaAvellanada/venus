@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+/* Mismos colores que la app del celular (lib/theme.ts), claro y oscuro. */
+:root {
+  --fondo: #ffffff;
+  --superficie: #f6f8fc;
+  --superficie2: #eef2f9;
+  --borde: #e2e8f0;
+  --borde-fuerte: #cbd5e1;
+  --texto: #0b1220;
+  --texto2: #475569;
+  --texto3: #64748b;
+  --primario: #1e66f5;
+  --primario-press: #1747c8;
+  --primario-soft: #ebf1fe;
+  --acento: #f59e0b;
+  --exito: #16a34a;
+  --exito-soft: #e7f6ec;
+  --exito-texto: #15803d;
+  --peligro: #dc2626;
+  --peligro-soft: #fdecec;
+  --peligro-texto: #b91c1c;
+  --advertencia: #d97706;
+  --advertencia-soft: #fef3c7;
+  --advertencia-texto: #92400e;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #0b1220;
+    --superficie: #121c30;
+    --superficie2: #1a2740;
+    --borde: #26334d;
+    --borde-fuerte: #33425f;
+    --texto: #f2f6fc;
+    --texto2: #a9b4c6;
+    --texto3: #8291a9;
+    --primario: #4c82f7;
+    --primario-press: #6d9af9;
+    --primario-soft: #16264a;
+    --acento: #f5b840;
+    --exito: #3fbf6f;
+    --exito-soft: #0f2e1c;
+    --exito-texto: #7bdca0;
+    --peligro: #f07171;
+    --peligro-soft: #3a1520;
+    --peligro-texto: #f5a3a3;
+    --advertencia: #f2a93b;
+    --advertencia-soft: #3a2a10;
+    --advertencia-texto: #f7c87e;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-superficie2: var(--superficie2);
+  --color-borde: var(--borde);
+  --color-borde-fuerte: var(--borde-fuerte);
+  --color-texto: var(--texto);
+  --color-texto2: var(--texto2);
+  --color-texto3: var(--texto3);
+  --color-primario: var(--primario);
+  --color-primario-press: var(--primario-press);
+  --color-primario-soft: var(--primario-soft);
+  --color-acento: var(--acento);
+  --color-exito: var(--exito);
+  --color-exito-soft: var(--exito-soft);
+  --color-exito-texto: var(--exito-texto);
+  --color-peligro: var(--peligro);
+  --color-peligro-soft: var(--peligro-soft);
+  --color-peligro-texto: var(--peligro-texto);
+  --color-advertencia: var(--advertencia);
+  --color-advertencia-soft: var(--advertencia-soft);
+  --color-advertencia-texto: var(--advertencia-texto);
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Cifras alineadas en tablas y tarjetas de montos. */
+.cifras {
+  font-variant-numeric: tabular-nums;
+}

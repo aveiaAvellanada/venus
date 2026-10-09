@@ -88,6 +88,20 @@ begin
      );
   if v is not null then raise exception 'Cuentas que no podrán iniciar sesión: %', v; end if;
 
+  -- 7. Historial de acciones activo en todas las tablas del negocio (mismas
+  --    excluidas que auditoria_test.sql).
+  if to_regclass('public.auditoria') is null then
+    raise exception 'Falta el historial de acciones (migración 20261009160000_auditoria).';
+  end if;
+  select string_agg(c.relname, ', ' order by c.relname) into v
+  from pg_class c
+  where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p')
+    and c.relname <> all (array['auditoria', 'historial_precios_calzado', 'historial_precios_varios',
+                                'cierres_caja_reaperturas', 'reporte_envios', 'clima_registro'])
+    and not exists (select 1 from pg_trigger t
+                    where t.tgrelid = c.oid and t.tgname = 'trg_' || c.relname || '_auditoria');
+  if v is not null then raise exception 'Tablas sin historial de acciones: %', v; end if;
+
   -- Informativo: con quién entra cada persona y quién debe crear PIN nuevo.
   for v in
     select format('%s → usuario "%s"%s%s', u.nombre, u.usuario,

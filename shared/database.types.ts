@@ -1,0 +1,2202 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
+  public: {
+    Tables: {
+      auditoria: {
+        Row: {
+          accion: string
+          antes: Json | null
+          creado_at: string
+          despues: Json | null
+          id: number
+          registro_id: string | null
+          tabla: string
+          usuario_id: string | null
+        }
+        Insert: {
+          accion: string
+          antes?: Json | null
+          creado_at?: string
+          despues?: Json | null
+          id?: never
+          registro_id?: string | null
+          tabla: string
+          usuario_id?: string | null
+        }
+        Update: {
+          accion?: string
+          antes?: Json | null
+          creado_at?: string
+          despues?: Json | null
+          id?: never
+          registro_id?: string | null
+          tabla?: string
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      caja_config: {
+        Row: {
+          base_predeterminada: number
+          created_at: string
+          created_by: string | null
+          horario_semanal: Json
+          id: string
+          modo_automatico: boolean
+          modo_cierre: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          base_predeterminada?: number
+          created_at?: string
+          created_by?: string | null
+          horario_semanal?: Json
+          id?: string
+          modo_automatico?: boolean
+          modo_cierre?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          base_predeterminada?: number
+          created_at?: string
+          created_by?: string | null
+          horario_semanal?: Json
+          id?: string
+          modo_automatico?: boolean
+          modo_cierre?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caja_config_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caja_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cierres_caja: {
+        Row: {
+          apertura_at: string | null
+          base_inicial: number
+          cerrado_por: string | null
+          cierre_at: string | null
+          created_at: string
+          created_by: string | null
+          diferencia: number | null
+          diferencia_nota: string | null
+          efectivo_contado: number | null
+          estado: string
+          fecha: string
+          gastos_caja: number
+          id: string
+          modo: string
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          apertura_at?: string | null
+          base_inicial: number
+          cerrado_por?: string | null
+          cierre_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          diferencia?: number | null
+          diferencia_nota?: string | null
+          efectivo_contado?: number | null
+          estado?: string
+          fecha: string
+          gastos_caja?: number
+          id?: string
+          modo?: string
+          total_bre_b?: number
+          total_efectivo?: number
+          total_general?: number
+          total_nequi?: number
+          total_otro?: number
+          total_ventas?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          apertura_at?: string | null
+          base_inicial?: number
+          cerrado_por?: string | null
+          cierre_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          diferencia?: number | null
+          diferencia_nota?: string | null
+          efectivo_contado?: number | null
+          estado?: string
+          fecha?: string
+          gastos_caja?: number
+          id?: string
+          modo?: string
+          total_bre_b?: number
+          total_efectivo?: number
+          total_general?: number
+          total_nequi?: number
+          total_otro?: number
+          total_ventas?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cierres_caja_cerrado_por_fkey"
+            columns: ["cerrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cierres_caja_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cierres_caja_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cierres_caja_reaperturas: {
+        Row: {
+          base_inicial: number
+          cerrado_por: string | null
+          cierre_at: string | null
+          cierre_id: string
+          diferencia: number | null
+          diferencia_nota: string | null
+          efectivo_contado: number | null
+          fecha: string
+          gastos_caja: number
+          id: string
+          modo: string
+          reabierta_at: string
+          reabierta_por: string | null
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+        }
+        Insert: {
+          base_inicial?: number
+          cerrado_por?: string | null
+          cierre_at?: string | null
+          cierre_id: string
+          diferencia?: number | null
+          diferencia_nota?: string | null
+          efectivo_contado?: number | null
+          fecha: string
+          gastos_caja?: number
+          id?: string
+          modo: string
+          reabierta_at?: string
+          reabierta_por?: string | null
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+        }
+        Update: {
+          base_inicial?: number
+          cerrado_por?: string | null
+          cierre_at?: string | null
+          cierre_id?: string
+          diferencia?: number | null
+          diferencia_nota?: string | null
+          efectivo_contado?: number | null
+          fecha?: string
+          gastos_caja?: number
+          id?: string
+          modo?: string
+          reabierta_at?: string
+          reabierta_por?: string | null
+          total_bre_b?: number
+          total_efectivo?: number
+          total_general?: number
+          total_nequi?: number
+          total_otro?: number
+          total_ventas?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cierres_caja_reaperturas_cerrado_por_fkey"
+            columns: ["cerrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cierres_caja_reaperturas_cierre_id_fkey"
+            columns: ["cierre_id"]
+            isOneToOne: false
+            referencedRelation: "cierres_caja"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cierres_caja_reaperturas_reabierta_por_fkey"
+            columns: ["reabierta_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clima_registro: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          fecha: string
+          humedad: number | null
+          id: string
+          llovio: boolean | null
+          precipitacion_mm: number | null
+          temperatura_max: number | null
+          temperatura_min: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          fecha: string
+          humedad?: number | null
+          id?: string
+          llovio?: boolean | null
+          precipitacion_mm?: number | null
+          temperatura_max?: number | null
+          temperatura_min?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          fecha?: string
+          humedad?: number | null
+          id?: string
+          llovio?: boolean | null
+          precipitacion_mm?: number | null
+          temperatura_max?: number | null
+          temperatura_min?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      compra_documentos: {
+        Row: {
+          compra_id: string | null
+          created_at: string
+          id: string
+          nombre_archivo: string | null
+          proveedor_id: string | null
+          subido_por: string | null
+          tipo: string
+          url: string
+        }
+        Insert: {
+          compra_id?: string | null
+          created_at?: string
+          id?: string
+          nombre_archivo?: string | null
+          proveedor_id?: string | null
+          subido_por?: string | null
+          tipo: string
+          url: string
+        }
+        Update: {
+          compra_id?: string | null
+          created_at?: string
+          id?: string
+          nombre_archivo?: string | null
+          proveedor_id?: string | null
+          subido_por?: string | null
+          tipo?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compra_documentos_compra_id_fkey"
+            columns: ["compra_id"]
+            isOneToOne: false
+            referencedRelation: "compras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compra_documentos_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compra_documentos_subido_por_fkey"
+            columns: ["subido_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compra_items: {
+        Row: {
+          cantidad: number
+          color: string | null
+          compra_id: string
+          costo_unitario: number | null
+          created_at: string
+          created_by: string | null
+          descripcion: string
+          id: string
+          producto_calzado_id: string | null
+          referencia: string | null
+          subtotal: number | null
+          talla: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cantidad: number
+          color?: string | null
+          compra_id: string
+          costo_unitario?: number | null
+          created_at?: string
+          created_by?: string | null
+          descripcion: string
+          id?: string
+          producto_calzado_id?: string | null
+          referencia?: string | null
+          subtotal?: number | null
+          talla?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cantidad?: number
+          color?: string | null
+          compra_id?: string
+          costo_unitario?: number | null
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string
+          id?: string
+          producto_calzado_id?: string | null
+          referencia?: string | null
+          subtotal?: number | null
+          talla?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compra_items_compra_id_fkey"
+            columns: ["compra_id"]
+            isOneToOne: false
+            referencedRelation: "compras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compra_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compra_items_producto_calzado_id_fkey"
+            columns: ["producto_calzado_id"]
+            isOneToOne: false
+            referencedRelation: "productos_calzado"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compra_items_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compra_pagos: {
+        Row: {
+          compra_id: string
+          created_at: string
+          created_by: string | null
+          fecha: string
+          id: string
+          monto: number
+          notas: string | null
+          registrado_por: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          compra_id: string
+          created_at?: string
+          created_by?: string | null
+          fecha?: string
+          id?: string
+          monto: number
+          notas?: string | null
+          registrado_por?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          compra_id?: string
+          created_at?: string
+          created_by?: string | null
+          fecha?: string
+          id?: string
+          monto?: number
+          notas?: string | null
+          registrado_por?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compra_pagos_compra_id_fkey"
+            columns: ["compra_id"]
+            isOneToOne: false
+            referencedRelation: "compras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compra_pagos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compra_pagos_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compra_pagos_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compras: {
+        Row: {
+          condicion_pago: string | null
+          created_at: string
+          created_by: string | null
+          estado: string
+          fecha_vencimiento: string | null
+          id: string
+          monto_pagado: number
+          notas: string | null
+          proveedor_id: string
+          registrada_por: string | null
+          revisada_por: string | null
+          saldo_pendiente: number
+          total: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          condicion_pago?: string | null
+          created_at?: string
+          created_by?: string | null
+          estado?: string
+          fecha_vencimiento?: string | null
+          id?: string
+          monto_pagado?: number
+          notas?: string | null
+          proveedor_id: string
+          registrada_por?: string | null
+          revisada_por?: string | null
+          saldo_pendiente?: number
+          total?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          condicion_pago?: string | null
+          created_at?: string
+          created_by?: string | null
+          estado?: string
+          fecha_vencimiento?: string | null
+          id?: string
+          monto_pagado?: number
+          notas?: string | null
+          proveedor_id?: string
+          registrada_por?: string | null
+          revisada_por?: string | null
+          saldo_pendiente?: number
+          total?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compras_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compras_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compras_registrada_por_fkey"
+            columns: ["registrada_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compras_revisada_por_fkey"
+            columns: ["revisada_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compras_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devolucion_items: {
+        Row: {
+          cambio_talla_color_id: string | null
+          cantidad: number
+          created_at: string
+          created_by: string | null
+          devolucion_id: string
+          id: string
+          precio_maximo_snapshot: number | null
+          precio_minimo_snapshot: number | null
+          precio_reemplazo: number | null
+          precio_unitario: number
+          producto_calzado_id: string | null
+          producto_varios_id: string | null
+          subtotal: number
+          updated_at: string
+          updated_by: string | null
+          venta_item_id: string
+        }
+        Insert: {
+          cambio_talla_color_id?: string | null
+          cantidad: number
+          created_at?: string
+          created_by?: string | null
+          devolucion_id: string
+          id?: string
+          precio_maximo_snapshot?: number | null
+          precio_minimo_snapshot?: number | null
+          precio_reemplazo?: number | null
+          precio_unitario: number
+          producto_calzado_id?: string | null
+          producto_varios_id?: string | null
+          subtotal: number
+          updated_at?: string
+          updated_by?: string | null
+          venta_item_id: string
+        }
+        Update: {
+          cambio_talla_color_id?: string | null
+          cantidad?: number
+          created_at?: string
+          created_by?: string | null
+          devolucion_id?: string
+          id?: string
+          precio_maximo_snapshot?: number | null
+          precio_minimo_snapshot?: number | null
+          precio_reemplazo?: number | null
+          precio_unitario?: number
+          producto_calzado_id?: string | null
+          producto_varios_id?: string | null
+          subtotal?: number
+          updated_at?: string
+          updated_by?: string | null
+          venta_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devolucion_items_cambio_talla_color_id_fkey"
+            columns: ["cambio_talla_color_id"]
+            isOneToOne: false
+            referencedRelation: "productos_calzado"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devolucion_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devolucion_items_devolucion_id_fkey"
+            columns: ["devolucion_id"]
+            isOneToOne: false
+            referencedRelation: "devoluciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devolucion_items_producto_calzado_id_fkey"
+            columns: ["producto_calzado_id"]
+            isOneToOne: false
+            referencedRelation: "productos_calzado"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devolucion_items_producto_varios_id_fkey"
+            columns: ["producto_varios_id"]
+            isOneToOne: false
+            referencedRelation: "productos_varios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devolucion_items_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devolucion_items_venta_item_id_fkey"
+            columns: ["venta_item_id"]
+            isOneToOne: false
+            referencedRelation: "venta_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devoluciones: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          metodo_cobro: string | null
+          metodo_reembolso: string | null
+          monto_cobrado: number
+          monto_devuelto: number
+          motivo: string
+          tipo_devolucion: string
+          updated_at: string
+          updated_by: string | null
+          venta_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metodo_cobro?: string | null
+          metodo_reembolso?: string | null
+          monto_cobrado?: number
+          monto_devuelto?: number
+          motivo: string
+          tipo_devolucion: string
+          updated_at?: string
+          updated_by?: string | null
+          venta_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metodo_cobro?: string | null
+          metodo_reembolso?: string | null
+          monto_cobrado?: number
+          monto_devuelto?: number
+          motivo?: string
+          tipo_devolucion?: string
+          updated_at?: string
+          updated_by?: string | null
+          venta_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devoluciones_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devoluciones_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devoluciones_venta_id_fkey"
+            columns: ["venta_id"]
+            isOneToOne: false
+            referencedRelation: "ventas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empleado_config: {
+        Row: {
+          activo: boolean
+          created_at: string
+          dias_trabajo_semana: number | null
+          empleado_id: string
+          fecha_inicio: string | null
+          id: string
+          sueldo_mensual: number
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          dias_trabajo_semana?: number | null
+          empleado_id: string
+          fecha_inicio?: string | null
+          id?: string
+          sueldo_mensual: number
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          dias_trabajo_semana?: number | null
+          empleado_id?: string
+          fecha_inicio?: string | null
+          id?: string
+          sueldo_mensual?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleado_config_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empleado_dias_trabajados: {
+        Row: {
+          automatico: boolean
+          created_at: string
+          empleado_id: string
+          fecha: string
+          id: string
+          nota: string | null
+          registrado_por: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          automatico?: boolean
+          created_at?: string
+          empleado_id: string
+          fecha: string
+          id?: string
+          nota?: string | null
+          registrado_por?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          automatico?: boolean
+          created_at?: string
+          empleado_id?: string
+          fecha?: string
+          id?: string
+          nota?: string | null
+          registrado_por?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleado_dias_trabajados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_dias_trabajados_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empleado_pagos: {
+        Row: {
+          created_at: string
+          dias_trabajados: number | null
+          empleado_id: string
+          fecha_pago: string
+          id: string
+          monto: number
+          nota: string | null
+          periodo_fin: string | null
+          periodo_inicio: string | null
+          registrado_por: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dias_trabajados?: number | null
+          empleado_id: string
+          fecha_pago: string
+          id?: string
+          monto: number
+          nota?: string | null
+          periodo_fin?: string | null
+          periodo_inicio?: string | null
+          registrado_por?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dias_trabajados?: number | null
+          empleado_id?: string
+          fecha_pago?: string
+          id?: string
+          monto?: number
+          nota?: string | null
+          periodo_fin?: string | null
+          periodo_inicio?: string | null
+          registrado_por?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleado_pagos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_pagos_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gastos_fijos: {
+        Row: {
+          activo: boolean
+          alerta_dias_antes: number
+          beneficiario: string | null
+          comprobante_url: string | null
+          created_at: string
+          created_by: string | null
+          dia_pago: number | null
+          id: string
+          monto_aproximado: number
+          nombre: string
+          notas: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          activo?: boolean
+          alerta_dias_antes?: number
+          beneficiario?: string | null
+          comprobante_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          dia_pago?: number | null
+          id?: string
+          monto_aproximado: number
+          nombre: string
+          notas?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          activo?: boolean
+          alerta_dias_antes?: number
+          beneficiario?: string | null
+          comprobante_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          dia_pago?: number | null
+          id?: string
+          monto_aproximado?: number
+          nombre?: string
+          notas?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gastos_fijos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gastos_fijos_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gastos_fijos_pagos: {
+        Row: {
+          comprobante_url: string | null
+          created_at: string
+          created_by: string | null
+          fecha_pago: string
+          gasto_fijo_id: string
+          id: string
+          monto_pagado: number
+          periodo: string | null
+          registrado_por: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          comprobante_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          fecha_pago: string
+          gasto_fijo_id: string
+          id?: string
+          monto_pagado: number
+          periodo?: string | null
+          registrado_por?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          comprobante_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          fecha_pago?: string
+          gasto_fijo_id?: string
+          id?: string
+          monto_pagado?: number
+          periodo?: string | null
+          registrado_por?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gastos_fijos_pagos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gastos_fijos_pagos_gasto_fijo_id_fkey"
+            columns: ["gasto_fijo_id"]
+            isOneToOne: false
+            referencedRelation: "gastos_fijos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gastos_fijos_pagos_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gastos_fijos_pagos_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gastos_variables: {
+        Row: {
+          categoria: string
+          comprobante_url: string | null
+          created_at: string
+          created_by: string | null
+          descripcion: string
+          fecha: string
+          id: string
+          monto: number
+          pagado_de_caja: boolean
+          registrado_por: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          categoria?: string
+          comprobante_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          descripcion: string
+          fecha?: string
+          id?: string
+          monto: number
+          pagado_de_caja?: boolean
+          registrado_por?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          categoria?: string
+          comprobante_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string
+          fecha?: string
+          id?: string
+          monto?: number
+          pagado_de_caja?: boolean
+          registrado_por?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gastos_variables_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gastos_variables_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gastos_variables_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historial_precios_calzado: {
+        Row: {
+          costo_compra: number | null
+          created_at: string
+          id: string
+          motivo: string | null
+          precio_maximo: number | null
+          precio_minimo: number | null
+          producto_id: string
+          registrado_por: string | null
+        }
+        Insert: {
+          costo_compra?: number | null
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          precio_maximo?: number | null
+          precio_minimo?: number | null
+          producto_id: string
+          registrado_por?: string | null
+        }
+        Update: {
+          costo_compra?: number | null
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          precio_maximo?: number | null
+          precio_minimo?: number | null
+          producto_id?: string
+          registrado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historial_precios_calzado_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos_calzado"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historial_precios_calzado_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historial_precios_varios: {
+        Row: {
+          costo_compra: number | null
+          created_at: string
+          id: string
+          motivo: string | null
+          precio_venta: number | null
+          producto_id: string
+          registrado_por: string | null
+        }
+        Insert: {
+          costo_compra?: number | null
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          precio_venta?: number | null
+          producto_id: string
+          registrado_por?: string | null
+        }
+        Update: {
+          costo_compra?: number | null
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          precio_venta?: number | null
+          producto_id?: string
+          registrado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historial_precios_varios_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos_varios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historial_precios_varios_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      metodos_pago_venta: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          es_anticipo: boolean
+          id: string
+          metodo: string
+          monto: number
+          updated_by: string | null
+          venta_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          es_anticipo?: boolean
+          id?: string
+          metodo: string
+          monto: number
+          updated_by?: string | null
+          venta_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          es_anticipo?: boolean
+          id?: string
+          metodo?: string
+          monto?: number
+          updated_by?: string | null
+          venta_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metodos_pago_venta_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metodos_pago_venta_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metodos_pago_venta_venta_id_fkey"
+            columns: ["venta_id"]
+            isOneToOne: false
+            referencedRelation: "ventas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      productos_calzado: {
+        Row: {
+          activo: boolean
+          categoria: string
+          color: string | null
+          created_at: string
+          created_by: string | null
+          descripcion: string
+          foto_url: string | null
+          id: string
+          marca: string | null
+          precio_maximo: number
+          precio_minimo: number
+          proveedor_id: string | null
+          referencia: string | null
+          stock_actual: number
+          stock_minimo: number
+          talla: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          activo?: boolean
+          categoria: string
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          descripcion: string
+          foto_url?: string | null
+          id?: string
+          marca?: string | null
+          precio_maximo?: number
+          precio_minimo?: number
+          proveedor_id?: string | null
+          referencia?: string | null
+          stock_actual?: number
+          stock_minimo?: number
+          talla?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          activo?: boolean
+          categoria?: string
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string
+          foto_url?: string | null
+          id?: string
+          marca?: string | null
+          precio_maximo?: number
+          precio_minimo?: number
+          proveedor_id?: string | null
+          referencia?: string | null
+          stock_actual?: number
+          stock_minimo?: number
+          talla?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "productos_calzado_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "productos_calzado_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "productos_calzado_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      productos_varios: {
+        Row: {
+          activo: boolean
+          created_at: string
+          created_by: string | null
+          foto_url: string | null
+          id: string
+          nombre: string
+          precio_sugerido: number | null
+          unidad_medida: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          created_by?: string | null
+          foto_url?: string | null
+          id?: string
+          nombre: string
+          precio_sugerido?: number | null
+          unidad_medida: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          created_by?: string | null
+          foto_url?: string | null
+          id?: string
+          nombre?: string
+          precio_sugerido?: number | null
+          unidad_medida?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "productos_varios_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "productos_varios_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proveedor_cuentas_bancarias: {
+        Row: {
+          banco: string
+          created_at: string
+          created_by: string | null
+          id: string
+          numero_cuenta: string
+          proveedor_id: string
+          tipo_cuenta: string
+          titular: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          banco: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          numero_cuenta: string
+          proveedor_id: string
+          tipo_cuenta: string
+          titular?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          banco?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          numero_cuenta?: string
+          proveedor_id?: string
+          tipo_cuenta?: string
+          titular?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proveedor_cuentas_bancarias_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proveedor_cuentas_bancarias_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proveedor_cuentas_bancarias_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proveedores: {
+        Row: {
+          activo: boolean
+          ciudad: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          nit_cedula: string | null
+          nombre: string
+          notas: string | null
+          telefono: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          activo?: boolean
+          ciudad?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nit_cedula?: string | null
+          nombre: string
+          notas?: string | null
+          telefono?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          activo?: boolean
+          ciudad?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nit_cedula?: string | null
+          nombre?: string
+          notas?: string | null
+          telefono?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proveedores_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proveedores_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reporte_config: {
+        Row: {
+          correo_destino: string | null
+          correo_on: boolean
+          created_at: string
+          created_by: string | null
+          hora_envio: string | null
+          id: string
+          updated_at: string
+          updated_by: string | null
+          whatsapp_on: boolean
+        }
+        Insert: {
+          correo_destino?: string | null
+          correo_on?: boolean
+          created_at?: string
+          created_by?: string | null
+          hora_envio?: string | null
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_on?: boolean
+        }
+        Update: {
+          correo_destino?: string | null
+          correo_on?: boolean
+          created_at?: string
+          created_by?: string | null
+          hora_envio?: string | null
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_on?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reporte_config_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reporte_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reporte_envios: {
+        Row: {
+          canal: string
+          detalle: string | null
+          enviado_at: string
+          fecha: string
+          id: string
+          ok: boolean
+        }
+        Insert: {
+          canal: string
+          detalle?: string | null
+          enviado_at?: string
+          fecha: string
+          id?: string
+          ok: boolean
+        }
+        Update: {
+          canal?: string
+          detalle?: string | null
+          enviado_at?: string
+          fecha?: string
+          id?: string
+          ok?: boolean
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          activo: boolean
+          created_at: string
+          debe_cambiar_pin: boolean
+          email: string | null
+          id: string
+          nombre: string
+          permisos: string[]
+          rol: string
+          telefono: string | null
+          updated_at: string
+          usuario: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          debe_cambiar_pin?: boolean
+          email?: string | null
+          id: string
+          nombre: string
+          permisos?: string[]
+          rol: string
+          telefono?: string | null
+          updated_at?: string
+          usuario?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          debe_cambiar_pin?: boolean
+          email?: string | null
+          id?: string
+          nombre?: string
+          permisos?: string[]
+          rol?: string
+          telefono?: string | null
+          updated_at?: string
+          usuario?: string
+        }
+        Relationships: []
+      }
+      venta_items: {
+        Row: {
+          cantidad: number
+          color: string | null
+          created_at: string
+          created_by: string | null
+          descripcion_snapshot: string
+          id: string
+          precio_maximo_snapshot: number | null
+          precio_minimo_snapshot: number | null
+          precio_unitario: number
+          producto_calzado_id: string | null
+          producto_varios_id: string | null
+          subtotal: number
+          talla: string | null
+          tipo_producto: string
+          updated_by: string | null
+          venta_id: string
+        }
+        Insert: {
+          cantidad: number
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          descripcion_snapshot: string
+          id?: string
+          precio_maximo_snapshot?: number | null
+          precio_minimo_snapshot?: number | null
+          precio_unitario: number
+          producto_calzado_id?: string | null
+          producto_varios_id?: string | null
+          subtotal: number
+          talla?: string | null
+          tipo_producto: string
+          updated_by?: string | null
+          venta_id: string
+        }
+        Update: {
+          cantidad?: number
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          descripcion_snapshot?: string
+          id?: string
+          precio_maximo_snapshot?: number | null
+          precio_minimo_snapshot?: number | null
+          precio_unitario?: number
+          producto_calzado_id?: string | null
+          producto_varios_id?: string | null
+          subtotal?: number
+          talla?: string | null
+          tipo_producto?: string
+          updated_by?: string | null
+          venta_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venta_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venta_items_producto_calzado_id_fkey"
+            columns: ["producto_calzado_id"]
+            isOneToOne: false
+            referencedRelation: "productos_calzado"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venta_items_producto_varios_id_fkey"
+            columns: ["producto_varios_id"]
+            isOneToOne: false
+            referencedRelation: "productos_varios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venta_items_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venta_items_venta_id_fkey"
+            columns: ["venta_id"]
+            isOneToOne: false
+            referencedRelation: "ventas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ventas: {
+        Row: {
+          cambio: number
+          cancelacion_motivo: string | null
+          clave_idempotencia: string | null
+          cliente_apellido: string | null
+          cliente_nombre: string | null
+          cliente_telefono: string | null
+          correccion_at: string | null
+          correccion_motivo: string | null
+          corregida: boolean
+          corregida_por: string | null
+          created_at: string
+          created_by: string | null
+          efectivo_recibido: number | null
+          estado: string
+          id: string
+          monto_pagado: number
+          nota: string | null
+          numero: number
+          saldo_pendiente: number
+          total: number
+          updated_at: string
+          updated_by: string | null
+          vendedor_id: string | null
+        }
+        Insert: {
+          cambio?: number
+          cancelacion_motivo?: string | null
+          clave_idempotencia?: string | null
+          cliente_apellido?: string | null
+          cliente_nombre?: string | null
+          cliente_telefono?: string | null
+          correccion_at?: string | null
+          correccion_motivo?: string | null
+          corregida?: boolean
+          corregida_por?: string | null
+          created_at?: string
+          created_by?: string | null
+          efectivo_recibido?: number | null
+          estado?: string
+          id?: string
+          monto_pagado?: number
+          nota?: string | null
+          numero?: never
+          saldo_pendiente?: number
+          total: number
+          updated_at?: string
+          updated_by?: string | null
+          vendedor_id?: string | null
+        }
+        Update: {
+          cambio?: number
+          cancelacion_motivo?: string | null
+          clave_idempotencia?: string | null
+          cliente_apellido?: string | null
+          cliente_nombre?: string | null
+          cliente_telefono?: string | null
+          correccion_at?: string | null
+          correccion_motivo?: string | null
+          corregida?: boolean
+          corregida_por?: string | null
+          created_at?: string
+          created_by?: string | null
+          efectivo_recibido?: number | null
+          estado?: string
+          id?: string
+          monto_pagado?: number
+          nota?: string | null
+          numero?: never
+          saldo_pendiente?: number
+          total?: number
+          updated_at?: string
+          updated_by?: string | null
+          vendedor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ventas_corregida_por_fkey"
+            columns: ["corregida_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ventas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ventas_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ventas_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      abrir_caja: {
+        Args: { p_base_inicial?: number }
+        Returns: {
+          apertura_at: string | null
+          base_inicial: number
+          cerrado_por: string | null
+          cierre_at: string | null
+          created_at: string
+          created_by: string | null
+          diferencia: number | null
+          diferencia_nota: string | null
+          efectivo_contado: number | null
+          estado: string
+          fecha: string
+          gastos_caja: number
+          id: string
+          modo: string
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cierres_caja"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      actualizar_empleado: {
+        Args: { p_id: string; p_nombre?: string; p_permisos?: string[] }
+        Returns: undefined
+      }
+      cambiar_estado_empleado: {
+        Args: { p_activo: boolean; p_id: string }
+        Returns: undefined
+      }
+      cambiar_mi_pin: {
+        Args: { p_pin_actual: string; p_pin_nuevo: string }
+        Returns: undefined
+      }
+      cerrar_caja: {
+        Args: { p_efectivo_contado?: number; p_nota?: string }
+        Returns: {
+          apertura_at: string | null
+          base_inicial: number
+          cerrado_por: string | null
+          cierre_at: string | null
+          created_at: string
+          created_by: string | null
+          diferencia: number | null
+          diferencia_nota: string | null
+          efectivo_contado: number | null
+          estado: string
+          fecha: string
+          gastos_caja: number
+          id: string
+          modo: string
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cierres_caja"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      crear_empleado: {
+        Args: {
+          p_nombre: string
+          p_permisos?: string[]
+          p_pin: string
+          p_usuario: string
+        }
+        Returns: string
+      }
+      guardar_producto_calzado: {
+        Args: {
+          p_activo: boolean
+          p_categoria: string
+          p_color: string
+          p_costo_compra: number
+          p_descripcion: string
+          p_foto_url: string
+          p_id: string
+          p_marca?: string
+          p_precio_maximo: number
+          p_precio_minimo: number
+          p_proveedor_id: string
+          p_referencia: string
+          p_stock_actual: number
+          p_stock_minimo: number
+          p_talla: string
+        }
+        Returns: string
+      }
+      obtener_arqueo_caja: { Args: never; Returns: Json }
+      obtener_balance: {
+        Args: { p_desde: string; p_hasta: string }
+        Returns: Json
+      }
+      obtener_base_predeterminada: { Args: never; Returns: number }
+      obtener_dashboard_dueno: {
+        Args: { p_dias_alerta: number }
+        Returns: Json
+      }
+      obtener_deuda_proveedor: { Args: { p_id: string }; Returns: number }
+      obtener_dias_trabajados: {
+        Args: { p_anio: number; p_empleado_id: string; p_mes: number }
+        Returns: number
+      }
+      obtener_gastos_periodo: {
+        Args: { p_desde: string; p_hasta: string }
+        Returns: Json
+      }
+      obtener_modo_cierre: { Args: never; Returns: string }
+      obtener_reporte_diario: { Args: { p_fecha: string }; Returns: Json }
+      obtener_reporte_periodo: {
+        Args: { p_desde: string; p_hasta: string }
+        Returns: Json
+      }
+      obtener_resumen_dia: { Args: { p_fecha: string }; Returns: Json }
+      obtener_ventas_por_subperiodo: {
+        Args: { p_desde: string; p_granularidad: string; p_hasta: string }
+        Returns: Json
+      }
+      reabrir_caja: {
+        Args: never
+        Returns: {
+          apertura_at: string | null
+          base_inicial: number
+          cerrado_por: string | null
+          cierre_at: string | null
+          created_at: string
+          created_by: string | null
+          diferencia: number | null
+          diferencia_nota: string | null
+          efectivo_contado: number | null
+          estado: string
+          fecha: string
+          gastos_caja: number
+          id: string
+          modo: string
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cierres_caja"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      registrar_devolucion: {
+        Args: {
+          p_items: Json
+          p_metodo_cobro: string
+          p_metodo_reembolso: string
+          p_monto_cobrado: number
+          p_monto_devuelto: number
+          p_motivo: string
+          p_tipo_devolucion: string
+          p_venta_id: string
+        }
+        Returns: Json
+      }
+      registrar_venta: {
+        Args: {
+          p_clave_idempotencia?: string
+          p_cliente_apellido?: string
+          p_cliente_nombre?: string
+          p_cliente_telefono?: string
+          p_efectivo_recibido?: number
+          p_items: Json
+          p_pagos: Json
+        }
+        Returns: Json
+      }
+      restablecer_pin_empleado: {
+        Args: { p_id: string; p_pin: string }
+        Returns: undefined
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

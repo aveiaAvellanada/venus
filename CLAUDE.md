@@ -22,7 +22,7 @@ TODA acción registra quién la hizo, cuándo y qué cambió. El dueño puede ve
 - expo-router (navegación basada en archivos)
 - Supabase (PostgreSQL 17, Auth, Storage) con RLS activado en todas las tablas
 - Online-first en esta versión. Offline-first diferido.
-- Cliente Supabase en: `lib/supabase.ts`. Tipos generados en `lib/database.types.ts`.
+- Cliente Supabase en: `lib/supabase.ts`. Tipos generados en `shared/database.types.ts` (`lib/database.types.ts` los re-exporta). Código puro común a la app y al panel web en `shared/`.
 
 ## Módulos del sistema (15)
 Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app cada acceso es un permiso que el dueño entrega o quita por persona.
@@ -71,7 +71,7 @@ Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app c
 - Construidos M1–M13 y M15 (fase 1); falta M14 Análisis IA (requiere 3+ meses de datos). Nunca se ha probado en un teléfono ni desplegado.
 - Usuarios dinámicos y permisos por persona (arriba), arqueo de caja con base y gastos del cajón, ventas idempotentes, devoluciones contadas en su fecha.
 - Migraciones `20261009*` aplicadas al remoto el 2026-10-09 (verificación de despliegue OK, tipos regenerados). Pendiente: APK con EAS y prueba en teléfono, siguiendo `docs/despliegue.md`. CI en `.github/workflows/ci.yml`.
-- Panel web de administración (solo el dueño; back-office, análisis, replicable para otros negocios): plan en `docs/panel-web.md`, aún sin construir.
+- Panel web de administración (solo el dueño; back-office, análisis, replicable para otros negocios) en `web/`: fase 0 hecha (login solo dueño, navegación, búsqueda global, Inicio, historial de acciones registrando en la base). Plan y fases en `docs/panel-web.md`.
 
 ## No construir en esta versión
 - Facturación electrónica DIAN

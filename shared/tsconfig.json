@@ -1,0 +1,16 @@
+{
+  // shared/ no depende de Expo ni de React Native: con su propio tsconfig, quien
+  // lo compila desde fuera (Vite en web/) no hereda el de la raíz, que extiende
+  // expo/tsconfig.base y exige tener instaladas las dependencias de la app.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true
+  },
+  "exclude": ["**/*.test.ts"]
+}

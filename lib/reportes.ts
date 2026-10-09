@@ -1,33 +1,8 @@
 import { supabase } from './supabase'
 
-export type ResumenDia = {
-  total_ventas: number
-  total_general: number
-  total_efectivo: number
-  total_nequi: number
-  total_bre_b: number
-  total_otro: number
-}
+import { conStockBajo, type DashboardDueno, type ProductoStockBajo, type ResumenDia } from '../shared/reportes'
 
-export type ProductoStockBajo = {
-  id: string
-  descripcion: string
-  talla: string | null
-  stock_actual: number
-  stock_minimo: number
-}
-
-export type ProveedorPorVencer = {
-  proveedor: string
-  fecha_vencimiento: string
-  saldo: number
-  vencida: boolean
-}
-export type EmpleadoSinActividad = { id: string; nombre: string }
-export type DashboardDueno = {
-  proveedores_por_vencer: ProveedorPorVencer[]
-  empleados_sin_actividad: EmpleadoSinActividad[]
-}
+export * from '../shared/reportes'
 
 export async function obtenerResumenDia(fecha: string): Promise<ResumenDia> {
   const { data, error } = await supabase.rpc('obtener_resumen_dia', { p_fecha: fecha })
@@ -35,15 +10,13 @@ export async function obtenerResumenDia(fecha: string): Promise<ResumenDia> {
   return data as unknown as ResumenDia
 }
 
-// Inventario pequeño: traemos los activos y filtramos stock_actual <= stock_minimo en cliente
-// (PostgREST no compara dos columnas entre sí).
 export async function listarStockBajo(): Promise<ProductoStockBajo[]> {
   const { data, error } = await supabase
     .from('productos_calzado')
     .select('id, descripcion, talla, stock_actual, stock_minimo')
     .eq('activo', true)
   if (error) throw error
-  return (data ?? []).filter((p) => p.stock_actual <= p.stock_minimo)
+  return conStockBajo(data ?? [])
 }
 
 export async function obtenerDashboardDueno(diasAlerta = 7): Promise<DashboardDueno> {

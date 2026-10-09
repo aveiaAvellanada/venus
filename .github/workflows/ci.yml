@@ -1,0 +1,50 @@
+# Lo mismo que el checklist pre-merge de AGENTS.md §5, en cada PR y en main.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: App (tsc, jest, dependencias)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Tests
+        run: npx jest --ci
+      - name: Versiones compatibles con Expo SDK 54
+        run: npx expo install --check
+
+  base-de-datos:
+    name: Base de datos (migraciones y tests SQL)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      # Postgres del runner + stub de Supabase: aplica TODAS las migraciones
+      # desde cero y corre los tests SQL (*_OK_ROLLBACK = éxito).
+      - name: Tests SQL
+        run: supabase/tests/local/run.sh supabase/tests/*_test.sql
+      # Cuentas como las de producción (rol admin, PIN de 4, tokens NULL) antes de
+      # la migración de permisos; después, la misma verificación que se corre en
+      # producción tras desplegar.
+      - name: Conversión de cuentas existentes y verificación de despliegue
+        env:
+          SEMILLA: supabase/tests/migracion_permisos/semilla.sql
+          SEMILLA_ANTES_DE: "20261009150000"
+        run: >-
+          supabase/tests/local/run.sh
+          supabase/tests/migracion_permisos/verificacion.sql
+          supabase/tests/remoto/verificar_despliegue.sql

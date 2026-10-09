@@ -159,13 +159,15 @@ Antigravity es responsable de todo:
 
 ### Checklist obligatorio antes de CADA merge a `main`
 1. `npx tsc --noEmit` → **0 errores**.
-2. `npm test` → **verde**.
+2. `npm test` → **verde**. Si tocó `web/` o `shared/`: `cd web && npm test && npm run build` en verde.
 3. Si tocó el esquema: `supabase/tests/local/run.sh supabase/tests/*_test.sql` en verde (aplica TODAS las migraciones a un Postgres
    local con un stub de Supabase; el CI lo corre en cada PR) + migración aplicada al remoto
    + `supabase/tests/remoto/verificar_despliegue.sql` contra el remoto (solo lectura; los
    `*_test.sql` NO se corren en producción: gastan números de venta) + `shared/database.types.ts`
    regenerado. RPC nueva que llame la app → agregarla a la lista de esa verificación
-   (`lib/rpcDespliegue.test.ts` falla si no). Pasos completos: `docs/despliegue.md`.
+   (`lib/rpcDespliegue.test.ts` falla si no). Tabla nueva del negocio → trigger de
+   historial (`trg_<tabla>_auditoria`) o excluirla a propósito (`auditoria_test.sql` falla si
+   no). Pasos completos: `docs/despliegue.md`.
 4. Sin scratch en el árbol (`supabase/.temp/`, `smoke_test*.sql`, `payload_smoke.json`,
    `coverage/`, `PROJECT.md`, `TEST_*.md` — ya en `.gitignore`).
 5. **RLS es la frontera de seguridad real:** cada acción se gatea con su permiso
@@ -228,6 +230,15 @@ para no romper la integridad**:
   `devoluciones` y `cierres_caja` no aceptan INSERT/UPDATE/DELETE de la app; se
   escriben con RPC `SECURITY DEFINER` (`registrar_venta`, `registrar_devolucion`,
   `abrir_caja`, `cerrar_caja`, `reabrir_caja`). Una corrección nueva = RPC nueva.
+- **Panel web (`web/`, solo el dueño):** React + Vite + TypeScript, Tailwind con los colores
+  de `lib/theme.ts`, TanStack Query, Vitest. Usa las mismas RLS/RPC que la app: nunca escribe
+  directo donde la app usa una RPC, y la venta/caja con conteo no se hacen en la web. Lo que
+  comparten las dos apps y no depende de la pantalla va en `shared/` (importado como
+  `@shared/...` en la web; `lib/` lo re-exporta para la app). Nada propio de Venus en el
+  código de la web: nombre y zona horaria salen de `VITE_NEGOCIO_*`. Plan y fases:
+  `docs/panel-web.md`.
+- **Historial de acciones:** `public.auditoria` la llena un trigger en cada tabla del
+  negocio; solo el dueño la lee y nadie la escribe. Una tabla nueva lleva su trigger.
 - **Funciones nuevas = grant explícito.** Desde `20261009120300` las funciones no
   nacen ejecutables por PUBLIC ni por anon. Cada función lleva
   `revoke all on function ... from public, anon;` y
@@ -245,7 +256,6 @@ para no romper la integridad**:
 - Contabilidad formal
 - Múltiples sucursales
 - App para iOS
-- Panel web
 - Ventas a crédito formal con intereses
 - Offline-first (diferido)
 

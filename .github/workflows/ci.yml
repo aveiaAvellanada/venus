@@ -33,6 +33,25 @@ jobs:
           EXPO_OFFLINE: "1"
         run: npx expo install --check
 
+  web:
+    name: Panel web (tests y compilación)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Tests
+        run: npm test
+      - name: Compilar (incluye TypeScript)
+        run: npm run build
+
   base-de-datos:
     name: Base de datos (migraciones y tests SQL)
     runs-on: ubuntu-24.04

@@ -12,100 +12,63 @@ export async function obtenerCajaHoy() {
   return data
 }
 
-export async function abrirCaja() {
-  const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' })
-  const { data, error } = await supabase
-    .from('cierres_caja')
-    .insert({
-      fecha: hoy,
-      estado: 'abierta',
-      modo: 'manual',
-      apertura_at: new Date().toISOString(),
-      total_ventas: 0,
-      total_general: 0,
-      total_efectivo: 0,
-      total_nequi: 0,
-      total_bre_b: 0,
-      total_otro: 0,
-    })
-    .select()
-    .single()
-
+// Abrir, cerrar y reabrir van por RPC: la app ya no escribe cierres_caja
+// directo (RLS). El servidor calcula totales y diferencia y deja auditoría.
+// Sin base (null/undefined), el servidor usa la base predeterminada de la config.
+export async function abrirCaja(baseInicial?: number | null) {
+  const { data, error } = await supabase.rpc('abrir_caja', {
+    p_base_inicial: baseInicial ?? undefined,
+  })
   if (error) throw error
   return data
 }
 
-export async function reabrirCaja() {
-  const caja = await obtenerCajaHoy()
-  if (!caja) throw new Error('No hay caja de hoy para reabrir.')
-  if (caja.estado === 'abierta') return caja
-
-  const { data, error } = await supabase
-    .from('cierres_caja')
-    .update({
-      estado: 'abierta',
-      cierre_at: null,
-      efectivo_contado: null,
-      diferencia: null,
-      diferencia_nota: null,
-    })
-    .eq('id', caja.id)
-    .select()
-    .single()
-
+// Base que Andrés configuró; se propone al abrir la caja (editable).
+export async function obtenerBasePredeterminada(): Promise<number> {
+  const { data, error } = await supabase.rpc('obtener_base_predeterminada')
   if (error) throw error
-  return data
+  return Number(data ?? 0)
 }
 
-export async function obtenerResumenEnVivo() {
-  const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' })
-  const { data, error } = await supabase.rpc('obtener_resumen_dia', { p_fecha: hoy })
+export interface ArqueoCaja {
+  base_inicial: number
+  efectivo_ventas: number
+  gastos_caja: number
+  efectivo_esperado: number
+}
+
+// Efectivo esperado = base + efectivo de ventas − gastos pagados del cajón.
+// Es la misma fórmula con la que cerrar_caja calcula la diferencia.
+export async function obtenerArqueoCaja(): Promise<ArqueoCaja> {
+  const { data, error } = await supabase.rpc('obtener_arqueo_caja')
   if (error) throw error
-  
-  // Dependiendo de cómo lo emita Postgres (json o record), forzamos la estructura
-  const resumen = data as any
+  const a = (data ?? {}) as Record<string, unknown>
   return {
-    total_ventas: Number(resumen?.total_ventas || 0),
-    total_general: Number(resumen?.total_general || 0),
-    total_efectivo: Number(resumen?.total_efectivo || 0),
-    total_nequi: Number(resumen?.total_nequi || 0),
-    total_bre_b: Number(resumen?.total_bre_b || 0),
-    total_otro: Number(resumen?.total_otro || 0)
+    base_inicial: Number(a.base_inicial ?? 0),
+    efectivo_ventas: Number(a.efectivo_ventas ?? 0),
+    gastos_caja: Number(a.gastos_caja ?? 0),
+    efectivo_esperado: Number(a.efectivo_esperado ?? 0),
   }
 }
 
-export async function cerrarCaja(params: { efectivo_contado: number | null, diferencia: number | null, nota: string | null }) {
-  const caja = await obtenerCajaHoy()
-  if (!caja) throw new Error('No hay caja abierta para cerrar hoy.')
-  if (caja.estado === 'cerrada') throw new Error('La caja de hoy ya se cerró.')
-  
-  const resumen = await obtenerResumenEnVivo()
-  
-  const { data, error } = await supabase
-    .from('cierres_caja')
-    .update({
-      estado: 'cerrada',
-      cierre_at: new Date().toISOString(),
-      total_ventas: resumen.total_ventas,
-      total_general: resumen.total_general,
-      total_efectivo: resumen.total_efectivo,
-      total_nequi: resumen.total_nequi,
-      total_bre_b: resumen.total_bre_b,
-      total_otro: resumen.total_otro,
-      efectivo_contado: params.efectivo_contado,
-      diferencia: params.diferencia,
-      diferencia_nota: params.nota || null,
-    })
-    .eq('id', caja.id)
-    .select()
-    .single()
+export async function reabrirCaja() {
+  const { data, error } = await supabase.rpc('reabrir_caja')
+  if (error) throw error
+  return data
+}
 
+// efectivo_contado = null solo se acepta con el modo de cierre "sin diferencia".
+export async function cerrarCaja(params: { efectivo_contado: number | null; nota: string | null }) {
+  const { data, error } = await supabase.rpc('cerrar_caja', {
+    p_efectivo_contado: params.efectivo_contado ?? undefined,
+    p_nota: params.nota ?? undefined,
+  })
   if (error) throw error
   return data
 }
 
 export async function cerrarCajaSinDiferencia() {
-  return cerrarCaja({ efectivo_contado: null, diferencia: null, nota: null })
+  return cerrarCaja({ efectivo_contado: null, nota: null })
 }
 
 export async function obtenerModoCierre(): Promise<'con_diferencia' | 'sin_diferencia'> {

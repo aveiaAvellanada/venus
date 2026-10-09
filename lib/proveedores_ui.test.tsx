@@ -1,4 +1,5 @@
 import React from 'react'
+import { PLANTILLAS } from './permisos'
 process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://dummy-url.supabase.co'
 process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'dummy-key'
 // @ts-ignore
@@ -165,7 +166,7 @@ describe('Proveedores Module Component Tests', () => {
     // Set default auth to dueno (owner)
     mockUseAuth.mockReturnValue({
       session: { user: { id: 'owner-id' } },
-      perfil: { id: 'owner-id', nombre: 'Andrés Artunduaga', rol: 'dueno', activo: true },
+      perfil: { id: 'owner-id', nombre: 'Andrés Artunduaga', rol: 'dueno', permisos: [], activo: true },
       cargando: false,
     })
 
@@ -258,7 +259,7 @@ describe('Proveedores Module Component Tests', () => {
       // Setup owner profile
       mockUseAuth.mockReturnValue({
         session: { user: { id: 'owner-id' } },
-        perfil: { id: 'owner-id', nombre: 'Andrés Owner', rol: 'dueno', activo: true },
+        perfil: { id: 'owner-id', nombre: 'Andrés Owner', rol: 'dueno', permisos: [], activo: true },
         cargando: false,
       });
 
@@ -322,7 +323,7 @@ describe('Proveedores Module Component Tests', () => {
       // Setup admin profile
       mockUseAuth.mockReturnValue({
         session: { user: { id: 'admin-id' } },
-        perfil: { id: 'admin-id', nombre: 'Sandra Admin', rol: 'admin', activo: true },
+        perfil: { id: 'admin-id', nombre: 'Sandra Admin', rol: 'empleado', permisos: PLANTILLAS.administrativo.permisos, activo: true },
         cargando: false,
       });
 
@@ -520,7 +521,7 @@ describe('Proveedores Module Component Tests', () => {
       // Setup owner profile
       mockUseAuth.mockReturnValue({
         session: { user: { id: 'owner-id' } },
-        perfil: { id: 'owner-id', nombre: 'Andrés Owner', rol: 'dueno', activo: true },
+        perfil: { id: 'owner-id', nombre: 'Andrés Owner', rol: 'dueno', permisos: [], activo: true },
         cargando: false,
       });
 

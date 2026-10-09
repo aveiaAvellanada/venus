@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react'
 import { View, Text, FlatList, ActivityIndicator, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
-import { ArrowLeft, Calendar, ChevronRight, CircleAlert, ShieldCheck, User, Users, Wallet } from 'lucide-react-native'
+import { ArrowLeft, Calendar, ChevronRight, CircleAlert, ShieldCheck, User, UserPlus, Users, Wallet } from 'lucide-react-native'
 import { useRequireModulo } from '../../../lib/auth'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
-import { listarEmpleados, diasTrabajadosMes, type Empleado } from '../../../lib/empleados'
+import { listarEmpleados, diasTrabajadosMes } from '../../../lib/empleados'
+import { resumenPermisos } from '../../../lib/permisos'
+import type { Empleado } from '../../../lib/empleados'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tabular, tipografia } from '../../../lib/theme'
@@ -93,11 +95,6 @@ export default function EmpleadosIndex() {
 
   if (requireModulo) return requireModulo
 
-  const rolLabel = (rol: Empleado['rol']) => {
-    if (rol === 'admin') return 'Administrativo'
-    return 'Operativo'
-  }
-
   const renderEmpleado = ({ item }: { item: EmpleadoConDias }) => {
     const sueldo = item.config?.sueldo_mensual
 
@@ -111,7 +108,9 @@ export default function EmpleadosIndex() {
             <Text style={[tipografia.h3, { color: paleta.texto }]} numberOfLines={1}>
               {item.nombre}
             </Text>
-            <Text style={[tipografia.caption, { color: paleta.texto3 }]}>{rolLabel(item.rol)}</Text>
+            <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+              @{item.usuario} · {resumenPermisos(item)}
+            </Text>
           </View>
           <ChevronRight size={20} color={paleta.texto3} />
         </View>
@@ -173,9 +172,16 @@ export default function EmpleadosIndex() {
                 <ShieldCheck />
               </CirculoIcono>
               <Text style={[tipografia.cuerpo, { color: paleta.texto2, flex: 1 }]}>
-                Gestiona el equipo: sueldo, días trabajados, activar/desactivar y pagos.
+                Crea las cuentas del equipo y decide qué puede hacer cada quien. También sueldos, días y pagos.
               </Text>
             </Tarjeta>
+          }
+          ListFooterComponent={
+            <Boton
+              titulo="Nuevo empleado"
+              icono={<UserPlus />}
+              onPress={() => router.push('/empleados/nuevo')}
+            />
           }
           ListEmptyComponent={
             <EstadoVacio icono={<Users />} titulo="No hay empleados registrados." />

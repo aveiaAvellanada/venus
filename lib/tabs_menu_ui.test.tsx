@@ -70,6 +70,11 @@ import { rangoParaPeriodo } from './dashboard'
 import { TemaProvider } from './tema'
 import { ToastProvider } from '../components/ui'
 import Menu from '../app/(app)/(tabs)/index'
+import { perfilPrueba, type TipoPerfilPrueba } from './perfilPrueba'
+// Roles de antes → perfiles con permisos: 'admin' = plantilla administrativa, 'empleado' = operativa.
+const tipoPrueba = (rol: string): TipoPerfilPrueba =>
+  rol === 'dueno' ? 'dueno' : rol === 'admin' ? 'administrativo' : 'operativo'
+
 
 const REPORTE = {
   total_vendido: 1250000,
@@ -104,7 +109,7 @@ const RESUMEN_HOY = {
 }
 
 function conPerfil(rol: string, nombre = 'Andrés Artunduaga') {
-  mockUseAuth.mockReturnValue({ perfil: { nombre, rol }, cerrarSesion: jest.fn() })
+  mockUseAuth.mockReturnValue({ perfil: perfilPrueba(tipoPrueba(rol), nombre), cerrarSesion: jest.fn() })
 }
 
 async function montar() {

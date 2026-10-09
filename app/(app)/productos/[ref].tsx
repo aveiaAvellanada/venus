@@ -4,6 +4,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, Footprints, ShoppingCart } from 'lucide-react-native'
 import * as Haptics from 'expo-haptics'
 import { useAuth } from '../../../lib/auth'
+import { tienePermiso } from '../../../lib/permisos'
 import { detalleCalzado } from '../../../lib/carrito'
 import { useCarrito } from '../../../lib/carrito-contexto'
 import { confirmarCompraRapida } from '../../../lib/compraRapida'
@@ -48,7 +49,7 @@ export default function ProductoDetalleScreen() {
   )
 
   if (!perfil) return null
-  const esStaff = perfil.rol === 'dueno' || perfil.rol === 'admin'
+  const esStaff = tienePermiso(perfil, 'inventario')
 
   const variantesDelColor = modelo
     ? color

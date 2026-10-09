@@ -3,6 +3,7 @@ import { View, Text, FlatList, ActivityIndicator } from 'react-native'
 import { Redirect, useRouter } from 'expo-router'
 import { ArrowLeft, Clock } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
+import { tienePermiso } from '../../../lib/permisos'
 import { supabase } from '../../../lib/supabase'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
@@ -38,7 +39,7 @@ export default function HistorialCaja() {
   const router = useRouter()
   const { paleta } = useTema()
   const paddingInferior = usePaddingInferior(espacio.xxxl)
-  const puedeVer = perfil?.rol === 'dueno' || perfil?.rol === 'admin'
+  const puedeVer = tienePermiso(perfil, 'reportes')
   const [cierres, setCierres] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -130,6 +131,12 @@ export default function HistorialCaja() {
                   ]}
                 >
                   Nota: {item.diferencia_nota}
+                </Text>
+              )}
+
+              {(Number(item.base_inicial) > 0 || Number(item.gastos_caja) > 0) && (
+                <Text style={[tipografia.caption, tabular, { color: paleta.texto3, marginTop: espacio.s }]}>
+                  Base {pesos(Number(item.base_inicial) || 0)} · Gastos del cajón {pesos(Number(item.gastos_caja) || 0)}
                 </Text>
               )}
 

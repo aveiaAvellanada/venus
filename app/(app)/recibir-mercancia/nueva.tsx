@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react-native'
 import { useAuth, useRequireModulo } from '../../../lib/auth'
+import { tienePermiso } from '../../../lib/permisos'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import {
   listarProveedores,
@@ -61,11 +62,11 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
   const { mostrar } = useToast()
   const paddingInferior = usePaddingInferior(espacio.xxxl)
 
-  const esDueno = perfil?.rol === 'dueno'
-  const esAdmin = perfil?.rol === 'admin'
-  // Crear proveedor inline solo para staff admin (dueño/admin): la RLS
-  // proveedores_insert exige is_staff_admin(); un empleado obtendría error.
-  const puedeCrearProveedor = esDueno || esAdmin
+  // Con el permiso de costos se registra la compra completa (costos, condición
+  // de pago); sin él, solo la llegada física, que queda pendiente de revisión.
+  const registraCostos = tienePermiso(perfil, 'costos')
+  // Crear proveedor inline exige el permiso de proveedores (RLS proveedores_insert).
+  const puedeCrearProveedor = tienePermiso(perfil, 'proveedores')
 
   // Loading states
   const [loading, setLoading] = useState(false)
@@ -350,7 +351,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
 
     setLoading(true)
     try {
-      if (esDueno) {
+      if (registraCostos) {
         // Validation for direct purchase costs
         for (const it of items) {
           if (it.costo_unitario < 0) {
@@ -580,7 +581,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
                       />
                     </View>
 
-                    {esDueno && (
+                    {registraCostos && (
                       <View style={{ width: 120 }}>
                         <CampoTexto
                           etiqueta="Costo c/u"
@@ -600,7 +601,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
         </Tarjeta>
 
         {/* 4. CONDICIONES FINANCIERAS (Dueño / Andrés Only) */}
-        {esDueno && (
+        {registraCostos && (
           <Tarjeta>
             <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.m }]}>
               Información Financiera (Compra Directa)
@@ -673,7 +674,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
 
         {/* SUBMIT BUTTON */}
         <Boton
-          titulo={esDueno ? 'Registrar Compra y Stock' : 'Confirmar Entrada Física'}
+          titulo={registraCostos ? 'Registrar Compra y Stock' : 'Confirmar Entrada Física'}
           onPress={handleGuardar}
           cargando={loading}
           deshabilitado={loading}

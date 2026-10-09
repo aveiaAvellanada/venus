@@ -3,6 +3,7 @@ import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-
 import { useFocusEffect, useRouter } from 'expo-router'
 import { ChevronRight, Egg, Footprints, PackagePlus, Pencil, Search, SlidersHorizontal } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
+import { tienePermiso } from '../../../lib/permisos'
 import { useCarrito } from '../../../lib/carrito-contexto'
 import { confirmarCompraRapida } from '../../../lib/compraRapida'
 import { CATEGORIAS } from '../../../lib/excel'
@@ -283,7 +284,7 @@ export default function Productos() {
                       onPress={() => setProductoGranja(v)}
                     />
                   </View>
-                  {perfil.rol === 'dueno' || perfil.rol === 'admin' ? (
+                  {tienePermiso(perfil, 'inventario') ? (
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Editar ${v.nombre}`}

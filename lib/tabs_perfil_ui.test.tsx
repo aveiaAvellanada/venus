@@ -29,9 +29,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { TemaProvider } from './tema'
 import { ToastProvider } from '../components/ui'
 import Perfil from '../app/(app)/(tabs)/perfil'
+import { perfilPrueba, type TipoPerfilPrueba } from './perfilPrueba'
+// Roles de antes → perfiles con permisos: 'admin' = plantilla administrativa, 'empleado' = operativa.
+const tipoPrueba = (rol: string): TipoPerfilPrueba =>
+  rol === 'dueno' ? 'dueno' : rol === 'admin' ? 'administrativo' : 'operativo'
+
 
 function conPerfil(rol: string, nombre = 'Andrés Artunduaga') {
-  mockUseAuth.mockReturnValue({ perfil: { nombre, rol }, cerrarSesion: jest.fn() })
+  mockUseAuth.mockReturnValue({ perfil: perfilPrueba(tipoPrueba(rol), nombre), cerrarSesion: jest.fn() })
 }
 
 async function montar() {

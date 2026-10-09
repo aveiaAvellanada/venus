@@ -1,19 +1,13 @@
 import React from 'react'
 import { Alert, ScrollView, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
-import { Camera, ChartColumn, LogOut, Scale, Sparkles, SunMoon, Truck, Users, Wallet } from 'lucide-react-native'
+import { Camera, ChartColumn, KeyRound, LogOut, Scale, Sparkles, SunMoon, Truck, Users, Wallet } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
-import { puedeAcceder, type Rol } from '../../../lib/permisos'
+import { esDueno as esDuenoPerfil, puedeAcceder, resumenPermisos } from '../../../lib/permisos'
 import { useTema } from '../../../lib/tema'
 import type { ModoTema } from '../../../lib/theme'
 import { espacio, radio, tipografia } from '../../../lib/theme'
 import { Badge, CirculoIcono, ControlSegmentado, FilaLista, Presionable, Tarjeta, useToast } from '../../../components/ui'
-
-const NOMBRE_ROL: Record<Rol, string> = {
-  dueno: 'Dueño',
-  admin: 'Administrativa',
-  empleado: 'Operativo',
-}
 
 const MODOS: ModoTema[] = ['claro', 'oscuro', 'sistema']
 
@@ -32,8 +26,8 @@ export default function Perfil() {
   const { mostrar } = useToast()
 
   if (!perfil) return null
-  const esDueno = perfil.rol === 'dueno'
-  const accesosNegocio = NEGOCIO.filter((a) => puedeAcceder(perfil.rol as Rol, a.id))
+  const esDueno = esDuenoPerfil(perfil)
+  const accesosNegocio = NEGOCIO.filter((a) => puedeAcceder(perfil, a.id))
 
   const confirmarSalida = () => {
     Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
@@ -69,7 +63,8 @@ export default function Perfil() {
             </Text>
           </View>
           <Text style={[tipografia.h2, { color: paleta.texto }]}>{perfil.nombre}</Text>
-          <Badge texto={NOMBRE_ROL[perfil.rol as Rol] ?? 'OPERATIVO'} tipo="neutro" />
+          <Text style={[tipografia.caption, { color: paleta.texto3 }]}>@{perfil.usuario}</Text>
+          <Badge texto={resumenPermisos(perfil)} tipo="neutro" />
         </View>
 
         <Text style={[tipografia.micro, { color: paleta.texto3 }]}>Apariencia</Text>
@@ -110,7 +105,7 @@ export default function Perfil() {
                   </CirculoIcono>
                 }
                 titulo="Empleados"
-                subtitulo="Sueldos, días y pagos"
+                subtitulo="Cuentas, permisos, PIN, sueldos y pagos"
                 chevron
                 onPress={() => router.push('/empleados')}
               />
@@ -141,6 +136,21 @@ export default function Perfil() {
             </Tarjeta>
           </>
         ) : null}
+
+        <Text style={[tipografia.micro, { color: paleta.texto3 }]}>Mi cuenta</Text>
+        <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
+          <FilaLista
+            icono={
+              <CirculoIcono tono="primario">
+                <KeyRound />
+              </CirculoIcono>
+            }
+            titulo="Cambiar mi PIN"
+            subtitulo="6 dígitos"
+            chevron
+            onPress={() => router.push('/cambiar-pin')}
+          />
+        </Tarjeta>
 
         <Tarjeta estilo={{ paddingVertical: espacio.xs, borderColor: paleta.peligroSoft }}>
           <Presionable

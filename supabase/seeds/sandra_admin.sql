@@ -1,31 +1,11 @@
--- Seed Sandra Cardona como admin. Idempotente. Mismo patrón usado para los otros usuarios.
--- auth.identities.email es columna generada: NO insertarla.
--- NOTA: el PIN temporal '4321' solo se siembra al CREAR la cuenta. Re-ejecutar este
--- seed NO resetea el PIN si la cuenta ya existe (el bloque de auth.users se omite por
--- el guard de email); solo re-afirma rol='admin'/activo/nombre en public.users.
+-- OBSOLETO desde 20261009150000_permisos_por_usuario.sql.
+--
+-- Este seed creaba la cuenta de Sandra con rol 'admin' buscándola por su correo
+-- real. Ahora el dueño crea las cuentas desde la app (Empleados > Nuevo
+-- empleado) con usuario, PIN de 6 dígitos y permisos, el correo de Auth es
+-- usuario@venus.invalid y el rol 'admin' ya no existe. Re-ejecutar la versión
+-- anterior DUPLICARÍA la cuenta (ya no la encontraría por el correo viejo).
 do $$
-declare v_uid uuid;
 begin
-  select id into v_uid from auth.users where email = 'sandracardona.venus2026@gmail.com';
-  if v_uid is null then
-    v_uid := gen_random_uuid();
-    insert into auth.users (
-      id, instance_id, aud, role, email, encrypted_password,
-      email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data
-    ) values (
-      v_uid, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-      'sandracardona.venus2026@gmail.com', extensions.crypt('4321', extensions.gen_salt('bf')),
-      now(), now(), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb
-    );
-    insert into auth.identities (
-      id, user_id, provider, provider_id, identity_data, created_at, updated_at, last_sign_in_at
-    ) values (
-      gen_random_uuid(), v_uid, 'email', v_uid::text,
-      jsonb_build_object('sub', v_uid::text, 'email', 'sandracardona.venus2026@gmail.com', 'email_verified', true),
-      now(), now(), now()
-    );
-  end if;
-  insert into public.users (id, nombre, rol, email, activo)
-    values (v_uid, 'Sandra Cardona', 'admin', 'sandracardona.venus2026@gmail.com', true)
-    on conflict (id) do update set rol = 'admin', activo = true, nombre = 'Sandra Cardona';
+  raise exception 'sandra_admin.sql está obsoleto: crea las cuentas desde la app (Empleados > Nuevo empleado).';
 end $$;

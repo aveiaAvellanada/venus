@@ -147,6 +147,26 @@ describe('Nueva Venta restilizada', () => {
     expect(todoElTexto(arbol)).toContain('Venta #42 registrada')
   })
 
+  test('reintentar tras un fallo de red reusa la clave de la venta (no duplica)', async () => {
+    mockRegistrar
+      .mockRejectedValueOnce(new Error('Sin conexión: no sabemos si la venta se guardó.'))
+      .mockResolvedValueOnce({ numero: 43, repetida: true })
+    const arbol = await montar({ conItem: true })
+    presionarPorLabel(arbol, 'Cobrar $220.000')
+    presionarPorLabel(arbol, 'Efectivo')
+    const inputs = arbol.root.findAll(
+      (n: renderer.ReactTestInstance) => n.props?.placeholder === '¿Con cuánto paga?'
+    )
+    act(() => { inputs[0].props.onChangeText('250000') })
+    await act(async () => { presionarPorLabel(arbol, 'Confirmar venta') })
+    await act(async () => { presionarPorLabel(arbol, 'Confirmar venta') })
+    expect(mockRegistrar).toHaveBeenCalledTimes(2)
+    const [clave1, clave2] = mockRegistrar.mock.calls.map((c) => c[1])
+    expect(clave1).toEqual(expect.any(String))
+    expect(clave2).toBe(clave1)
+    expect(todoElTexto(arbol)).toContain('Venta #43 registrada')
+  })
+
   test('carrito vacío muestra el estado vacío en vez del buscador', async () => {
     const arbol = await montar()
     expect(todoElTexto(arbol)).toContain('Tu carrito está vacío')

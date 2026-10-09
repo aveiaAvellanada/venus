@@ -4,6 +4,7 @@ import { useRouter, Redirect } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { ArrowLeft, CircleAlert, CircleCheckBig, FileSpreadsheet } from 'lucide-react-native';
 import { useAuth } from '../../../lib/auth';
+import { tienePermiso } from '../../../lib/permisos';
 import { leerExcel, validarFilas } from '../../../lib/excel';
 import { guardarCalzado } from '../../../lib/inventario';
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior';
@@ -26,8 +27,8 @@ export default function CargaMasivaInventario() {
   const [errores, setErrores] = useState<any[]>([]);
   const [seleccionado, setSeleccionado] = useState(false);
 
-  // Proteger la ruta (solo dueño) usando perfil, emulando la intención de usePermisos
-  if (!perfil || perfil.rol !== 'dueno') {
+  // Carga inicial: permiso propio (PRD: Andrés y Sandra).
+  if (!tienePermiso(perfil, 'carga_inicial')) {
     return <Redirect href="/" />;
   }
 

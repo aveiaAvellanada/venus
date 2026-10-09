@@ -58,6 +58,11 @@ import { CarritoProvider } from './carrito-contexto'
 import { ToastProvider } from '../components/ui'
 import Movimientos from '../app/(app)/(tabs)/movimientos'
 import Productos from '../app/(app)/(tabs)/productos'
+import { perfilPrueba, type TipoPerfilPrueba } from './perfilPrueba'
+// Roles de antes → perfiles con permisos: 'admin' = plantilla administrativa, 'empleado' = operativa.
+const tipoPrueba = (rol: string): TipoPerfilPrueba =>
+  rol === 'dueno' ? 'dueno' : rol === 'admin' ? 'administrativo' : 'operativo'
+
 
 const VENTAS = [
   { id: 'v1', numero: 102, total: 195000, estado: 'completada', hora: '2:14 p. m.', metodos: ['efectivo'] },
@@ -83,7 +88,7 @@ const GASTOS = {
 }
 
 function conRol(rol: string) {
-  mockUseAuth.mockReturnValue({ perfil: { nombre: 'Prueba Uno', rol }, cerrarSesion: jest.fn() })
+  mockUseAuth.mockReturnValue({ perfil: perfilPrueba(tipoPrueba(rol)), cerrarSesion: jest.fn() })
 }
 
 async function montar(ui: React.ReactElement) {

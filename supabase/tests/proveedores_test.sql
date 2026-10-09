@@ -1,6 +1,6 @@
 -- Smoke Test: Providers Payments, Stock, Debt and RLS
--- Path: supabase/tests/smoke_test_proveedores.sql
--- Runs inside a transaction and rolls back.
+-- Path: supabase/tests/proveedores_test.sql
+-- Runs inside a transaction and rolls back (ends with PROVEEDORES_OK_ROLLBACK, like the other tests).
 
 BEGIN;
 
@@ -156,7 +156,7 @@ BEGIN
   -- Reset role to superuser
   EXECUTE 'RESET ROLE';
 
-  RAISE NOTICE 'SMOKE TEST COMPLETED SUCCESSFULLY. ALL ASSERTEES PASSED!';
+  RAISE EXCEPTION 'PROVEEDORES_OK_ROLLBACK';
 END $$;
 
 ROLLBACK;

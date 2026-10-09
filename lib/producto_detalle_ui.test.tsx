@@ -49,6 +49,11 @@ import { TemaProvider } from './tema'
 import { CarritoProvider } from './carrito-contexto'
 import { ToastProvider } from '../components/ui'
 import ProductoDetalleScreen from '../app/(app)/productos/[ref]'
+import { perfilPrueba, type TipoPerfilPrueba } from './perfilPrueba'
+// Roles de antes → perfiles con permisos: 'admin' = plantilla administrativa, 'empleado' = operativa.
+const tipoPrueba = (rol: string): TipoPerfilPrueba =>
+  rol === 'dueno' ? 'dueno' : rol === 'admin' ? 'administrativo' : 'operativo'
+
 
 const CALZADO = [
   {
@@ -69,7 +74,7 @@ const CALZADO = [
 ]
 
 function conRol(rol: string) {
-  mockUseAuth.mockReturnValue({ perfil: { nombre: 'Prueba', rol }, cerrarSesion: jest.fn() })
+  mockUseAuth.mockReturnValue({ perfil: perfilPrueba(tipoPrueba(rol), 'Prueba'), cerrarSesion: jest.fn() })
 }
 
 async function montar() {
@@ -133,10 +138,20 @@ describe('Detalle de producto', () => {
     expect(mockPush).toHaveBeenCalledWith('/inventario/calzado/c1')
   })
 
-  it('empleado no ve Ver ficha', async () => {
-    conRol('empleado')
+  it('sin permiso de inventario no ve Ver ficha (solo vende)', async () => {
+    mockUseAuth.mockReturnValue({ perfil: perfilPrueba('operativo', 'Prueba', ['ventas']), cerrarSesion: jest.fn() })
     const arbol = await montar()
     expect(arbol.root.findAllByProps({ accessibilityLabel: 'Ver ficha' })).toHaveLength(0)
+  })
+
+  it('con permiso de inventario (plantilla operativa) sí ve Ver ficha', async () => {
+    conRol('empleado')
+    const arbol = await montar()
+    const negro = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Negro')!
+    await act(async () => negro.props.onPress!())
+    const talla40 = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Talla 40: 5 disponibles')!
+    await act(async () => talla40.props.onPress!())
+    expect(arbol.root.findAllByProps({ accessibilityLabel: 'Ver ficha' }).length).toBeGreaterThan(0)
   })
 
   it('elegir talla habilita Agregar al carrito y NO navega (se queda en Productos)', async () => {

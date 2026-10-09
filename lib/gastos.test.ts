@@ -3,7 +3,9 @@ jest.mock('./supabase', () => ({
   supabase: { from: jest.fn(() => ({ select: mockSelect })) },
 }))
 
-import { obtenerGastosFijosPorVencer } from './gastos'
+import {
+  CATEGORIAS_GASTO, etiquetaCategoriaGasto, fechaCortaGasto, hoyBogota, obtenerGastosFijosPorVencer,
+} from './gastos'
 
 function encadenar(data: unknown) {
   const builder: any = {
@@ -52,5 +54,22 @@ describe('obtenerGastosFijosPorVencer', () => {
     return obtenerGastosFijosPorVencer().then((r) => {
       expect(r).toHaveLength(0)
     })
+  })
+})
+
+describe('gastos: fecha y categorías', () => {
+  it('a las 8 p. m. en Florencia sigue siendo hoy (no la fecha UTC de mañana)', () => {
+    // 2026-10-09 01:00 UTC = 2026-10-08 20:00 en Bogotá
+    expect(hoyBogota(new Date('2026-10-09T01:00:00Z'))).toBe('2026-10-08')
+  })
+
+  it('muestra la fecha del gasto sin correrla un día', () => {
+    expect(fechaCortaGasto('2026-10-09')).toBe('09/10/2026')
+  })
+
+  it('las categorías que viajan a la base son las del CHECK, en minúscula', () => {
+    expect(CATEGORIAS_GASTO.map((c) => c.valor)).toEqual(['transporte', 'reparaciones', 'insumos', 'otros'])
+    expect(etiquetaCategoriaGasto('transporte')).toBe('Transporte')
+    expect(etiquetaCategoriaGasto('desconocida')).toBe('desconocida')
   })
 })

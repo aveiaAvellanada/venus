@@ -3,6 +3,7 @@ import { View, Text, Switch, ActivityIndicator, ScrollView } from 'react-native'
 import { Redirect, useRouter } from 'expo-router'
 import { ArrowLeft, History } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
+import { esDueno } from '../../../lib/permisos'
 import { supabase } from '../../../lib/supabase'
 import { DIAS_SEMANA, type DiaSemana, type HorarioSemanal } from '../../../lib/cajaScheduler'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
@@ -54,6 +55,7 @@ export default function CajaConfig() {
   const [auto, setAuto] = useState(false)
   const [horario, setHorario] = useState<HorarioSemanal>({})
   const [modoCierre, setModoCierre] = useState<ModoCierre>('con_diferencia')
+  const [basePredeterminada, setBasePredeterminada] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -62,13 +64,14 @@ export default function CajaConfig() {
         setAuto(data.modo_automatico)
         setHorario((data.horario_semanal ?? {}) as HorarioSemanal)
         setModoCierre((data.modo_cierre ?? 'con_diferencia') as ModoCierre)
+        setBasePredeterminada(data.base_predeterminada ? String(data.base_predeterminada) : '')
       }
       setCargando(false)
     }
-    if (perfil?.rol === 'dueno') load()
+    if (esDueno(perfil)) load()
   }, [perfil])
 
-  if (perfil?.rol !== 'dueno') return <Redirect href="/" />
+  if (!esDueno(perfil)) return <Redirect href="/" />
 
   if (cargando) {
     return (
@@ -105,6 +108,7 @@ export default function CajaConfig() {
       modo_automatico: auto,
       horario_semanal: horario as unknown as Record<string, never>,
       modo_cierre: modoCierre,
+      base_predeterminada: basePredeterminada.trim() === '' ? 0 : Number(basePredeterminada),
     }).not('id', 'is', null)
     setGuardando(false)
     if (error) { mostrar(error.message, 'error'); return }
@@ -168,6 +172,19 @@ export default function CajaConfig() {
             ))}
           </>
         )}
+
+        <Text style={[tipografia.h3, { color: paleta.texto, marginTop: espacio.m }]}>Base de caja</Text>
+        <CampoTexto
+          etiqueta="Base predeterminada (sencillo con que abre el cajón)"
+          keyboardType="number-pad"
+          placeholder="0"
+          value={basePredeterminada}
+          onChangeText={(v) => setBasePredeterminada(v.replace(/[^0-9]/g, ''))}
+        />
+        <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+          Se propone al abrir la caja (se puede cambiar ese día) y la usa la apertura automática. Se suma al efectivo
+          esperado del cierre.
+        </Text>
 
         <Text style={[tipografia.h3, { color: paleta.texto, marginTop: espacio.m }]}>Modo de cierre</Text>
         <ControlSegmentado

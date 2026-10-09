@@ -16,6 +16,7 @@ import {
   Zap,
 } from 'lucide-react-native'
 import { useRequireModulo, useAuth } from '../../../lib/auth'
+import { esDueno as esDuenoPerfil } from '../../../lib/permisos'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import {
   obtenerResumenDia,
@@ -67,7 +68,8 @@ export default function ReportesIndex() {
   const router = useRouter()
   const { paleta } = useTema()
   const paddingInferior = usePaddingInferior(espacio.xxxl)
-  const esDueno = perfil?.rol === 'dueno'
+  // Panel del dueño (deudas por vencer, actividad del equipo): no delegable.
+  const esDueno = esDuenoPerfil(perfil)
 
   const [hoy, setHoy] = useState<ResumenDia | null>(null)
   const [ayer, setAyer] = useState<ResumenDia | null>(null)

@@ -10,6 +10,7 @@ import {
 import { useLocalSearchParams, useRouter, Redirect } from 'expo-router'
 import { ArrowLeft, CircleCheckBig, Wallet } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
+import { tienePermiso } from '../../../lib/permisos'
 import { obtenerCompraPorId, completarInformacionFinanciera } from '../../../lib/proveedores'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
@@ -32,8 +33,8 @@ export default function RecepcionDetalleFinancieroScreen() {
   const [notas, setNotas] = useState('')
   const [guardando, setGuardando] = useState(false)
 
-  // Gating access control: Only owner (dueno) can access this detail page
-  if (!cargando && (!perfil || perfil.rol !== 'dueno')) {
+  // Completar costos y condición de pago requiere el permiso de costos.
+  if (!cargando && !tienePermiso(perfil, 'costos')) {
     return <Redirect href="/" />
   }
 

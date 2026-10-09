@@ -1,11 +1,21 @@
-import { Stack, Redirect } from 'expo-router';
+import { Stack, Redirect, useSegments } from 'expo-router';
 import { useAuth } from '../../../lib/auth';
+import { tienePermiso } from '../../../lib/permisos';
+
+// Pantallas de gastos fijos (arriendo, servicios...): requieren ese permiso.
+const PANTALLAS_FIJOS = ['fijos', 'fijos-editor', 'pagar'];
 
 export default function GastosLayout() {
   const { perfil } = useAuth();
+  const segmentos = useSegments() as string[];
+  const verFijos = tienePermiso(perfil, 'gastos_fijos');
 
-  if (!perfil || perfil.rol !== 'dueno') {
+  // Registrar gastos (variables) o gestionar los fijos: con cualquiera de los dos se entra.
+  if (!verFijos && !tienePermiso(perfil, 'gastos')) {
     return <Redirect href="/" />;
+  }
+  if (!verFijos && PANTALLAS_FIJOS.includes(segmentos[segmentos.length - 1])) {
+    return <Redirect href="/gastos" />;
   }
 
   return (

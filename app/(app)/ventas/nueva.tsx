@@ -8,7 +8,8 @@ import {
   calcularCambio, montoEfectivo, pagosCuadran, totalCarrito,
   type AccionCarrito, type ItemCarrito, type MetodoPago, type PagoInput,
 } from '../../../lib/carrito'
-import { registrarVenta } from '../../../lib/ventas'
+import { registrarVenta, type RegistrarVentaInput } from '../../../lib/ventas'
+import { intentoVenta } from '../../../lib/intentoVenta'
 import { obtenerCajaHoy } from '../../../lib/caja'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
@@ -144,7 +145,9 @@ export default function NuevaVenta() {
   const paddingInferior = usePaddingInferior(espacio.xxl)
 
   // Carrito compartido: el detalle de producto (tab Productos) también agrega aquí.
-  const { items, dispatch } = useCarrito()
+  // `intento` conserva la clave entre reintentos fallidos para que el servidor no
+  // duplique una venta que sí se guardó (ver lib/intentoVenta.ts).
+  const { items, dispatch, intento: intentoRef } = useCarrito()
   const [etapa, setEtapa] = useState<Etapa>(modo === 'rapida' && items.length === 1 ? 'ajustarPrecio' : 'carrito')
 
   const [metodos, setMetodos] = useState<MetodoPago[]>([])
@@ -214,17 +217,21 @@ export default function NuevaVenta() {
 
   async function confirmar() {
     setGuardando(true)
+    const venta: RegistrarVentaInput = {
+      items,
+      pagos,
+      efectivoRecibido: efectivoMonto > 0 ? recibidoNum : null,
+      cliente: {
+        nombre: cliente.nombre || undefined,
+        apellido: cliente.apellido || undefined,
+        telefono: cliente.telefono || undefined,
+      },
+    }
+    const intento = intentoVenta(intentoRef.current, venta)
+    intentoRef.current = intento
     try {
-      const { numero } = await registrarVenta({
-        items,
-        pagos,
-        efectivoRecibido: efectivoMonto > 0 ? recibidoNum : null,
-        cliente: {
-          nombre: cliente.nombre || undefined,
-          apellido: cliente.apellido || undefined,
-          telefono: cliente.telefono || undefined,
-        },
-      })
+      const { numero } = await registrarVenta(venta, intento.clave)
+      intentoRef.current = null
       setNumeroVenta(numero)
       setOverlayVisible(true)
       setEtapa('confirmacion')

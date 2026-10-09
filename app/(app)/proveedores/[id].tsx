@@ -24,6 +24,7 @@ import {
   X,
 } from 'lucide-react-native'
 import { useAuth, useRequireModulo } from '../../../lib/auth'
+import { tienePermiso } from '../../../lib/permisos'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import {
   obtenerProveedorPorId,
@@ -113,9 +114,9 @@ export default function ProveedorDetailScreen() {
     }
   }, [id])
 
-  // Load Financial Information (Dueno only)
+  // Información financiera (deuda, compras a crédito, pagos): permiso de deudas
   const cargarInformacionFinanciera = useCallback(async () => {
-    if (!id || !perfil || perfil.rol !== 'dueno') return
+    if (!id || !tienePermiso(perfil, 'deudas')) return
     try {
       setLoadingFinanzas(true)
       const [totalDeuda, listaCompras, listaPagos] = await Promise.all([
@@ -464,8 +465,8 @@ export default function ProveedorDetailScreen() {
           )}
         </Tarjeta>
 
-        {/* 3. Panel financiero (solo dueño) */}
-        {perfil?.rol === 'dueno' && (
+        {/* 3. Panel financiero (permiso de deudas) */}
+        {tienePermiso(perfil, 'deudas') && (
           <View testID="financial-panel" style={{ gap: espacio.l }}>
             {loadingFinanzas ? (
               <Tarjeta>

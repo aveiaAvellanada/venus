@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { View, Text, ActivityIndicator, ScrollView, Linking } from 'react-native'
 import { useRouter } from 'expo-router'
 import { ArrowLeft, Check } from 'lucide-react-native'
-import { obtenerResumenEnVivo, cerrarCaja } from '../../../lib/caja'
+import { obtenerArqueoCaja, cerrarCaja, type ArqueoCaja } from '../../../lib/caja'
 import { dispararReporteCorreo, obtenerReporteDiario, construirLinkWhatsapp } from '../../../lib/reporteDiario'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
@@ -33,12 +33,21 @@ function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void
   )
 }
 
+function FilaArqueo({ paleta, etiqueta, valor }: { paleta: Paleta; etiqueta: string; valor: string }) {
+  return (
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+      <Text style={[tipografia.caption, { color: paleta.texto2 }]}>{etiqueta}</Text>
+      <Text style={[tipografia.caption, tabular, { color: paleta.texto2 }]}>{valor}</Text>
+    </View>
+  )
+}
+
 export default function CierreCaja() {
   const router = useRouter()
   const { paleta } = useTema()
   const { mostrar } = useToast()
   const paddingInferior = usePaddingInferior(espacio.xxxl)
-  const [resumen, setResumen] = useState<any>(null)
+  const [arqueo, setArqueo] = useState<ArqueoCaja | null>(null)
   const [loading, setLoading] = useState(true)
   const [guardando, setGuardando] = useState(false)
 
@@ -52,8 +61,7 @@ export default function CierreCaja() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await obtenerResumenEnVivo()
-        setResumen(res)
+        setArqueo(await obtenerArqueoCaja())
       } catch (e: any) {
         mostrar(e.message, 'error')
       } finally {
@@ -74,7 +82,8 @@ export default function CierreCaja() {
     )
   }
 
-  const esperado = resumen?.total_efectivo || 0
+  // Base + efectivo de ventas − gastos pagados del cajón (misma fórmula que cerrar_caja).
+  const esperado = arqueo?.efectivo_esperado ?? 0
   const contadoNum = parseFloat(efectivoContado) || 0
   const diferencia = contadoNum - esperado
   const hasDiferencia = Math.abs(diferencia) > 0.01
@@ -88,9 +97,9 @@ export default function CierreCaja() {
 
     setGuardando(true)
     try {
+      // La diferencia la recalcula el servidor con los totales al momento del cierre.
       await cerrarCaja({
         efectivo_contado: contadoNum,
-        diferencia,
         nota: hasDiferencia ? nota.trim() : null
       })
 
@@ -159,6 +168,13 @@ export default function CierreCaja() {
           <Text style={[tipografia.display, tabular, { color: paleta.texto, marginTop: espacio.s }]}>
             {pesos(esperado)}
           </Text>
+          {arqueo && (
+            <View style={{ alignSelf: 'stretch', marginTop: espacio.m, gap: espacio.xs }}>
+              <FilaArqueo paleta={paleta} etiqueta="Base inicial" valor={pesos(arqueo.base_inicial)} />
+              <FilaArqueo paleta={paleta} etiqueta="Ventas en efectivo" valor={`+ ${pesos(arqueo.efectivo_ventas)}`} />
+              <FilaArqueo paleta={paleta} etiqueta="Gastos pagados del cajón" valor={`− ${pesos(arqueo.gastos_caja)}`} />
+            </View>
+          )}
         </Tarjeta>
 
         <CampoTexto

@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       caja_config: {
         Row: {
+          base_predeterminada: number
           created_at: string
           created_by: string | null
           horario_semanal: Json
@@ -26,6 +27,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          base_predeterminada?: number
           created_at?: string
           created_by?: string | null
           horario_semanal?: Json
@@ -36,6 +38,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          base_predeterminada?: number
           created_at?: string
           created_by?: string | null
           horario_semanal?: Json
@@ -65,6 +68,7 @@ export type Database = {
       cierres_caja: {
         Row: {
           apertura_at: string | null
+          base_inicial: number
           cerrado_por: string | null
           cierre_at: string | null
           created_at: string
@@ -74,6 +78,7 @@ export type Database = {
           efectivo_contado: number | null
           estado: string
           fecha: string
+          gastos_caja: number
           id: string
           modo: string
           total_bre_b: number
@@ -87,6 +92,7 @@ export type Database = {
         }
         Insert: {
           apertura_at?: string | null
+          base_inicial: number
           cerrado_por?: string | null
           cierre_at?: string | null
           created_at?: string
@@ -96,6 +102,7 @@ export type Database = {
           efectivo_contado?: number | null
           estado?: string
           fecha: string
+          gastos_caja?: number
           id?: string
           modo?: string
           total_bre_b?: number
@@ -109,6 +116,7 @@ export type Database = {
         }
         Update: {
           apertura_at?: string | null
+          base_inicial?: number
           cerrado_por?: string | null
           cierre_at?: string | null
           created_at?: string
@@ -118,6 +126,7 @@ export type Database = {
           efectivo_contado?: number | null
           estado?: string
           fecha?: string
+          gastos_caja?: number
           id?: string
           modo?: string
           total_bre_b?: number
@@ -147,6 +156,94 @@ export type Database = {
           {
             foreignKeyName: "cierres_caja_updated_by_fkey"
             columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cierres_caja_reaperturas: {
+        Row: {
+          base_inicial: number
+          cerrado_por: string | null
+          cierre_at: string | null
+          cierre_id: string
+          diferencia: number | null
+          diferencia_nota: string | null
+          efectivo_contado: number | null
+          fecha: string
+          gastos_caja: number
+          id: string
+          modo: string
+          reabierta_at: string
+          reabierta_por: string | null
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+        }
+        Insert: {
+          base_inicial?: number
+          cerrado_por?: string | null
+          cierre_at?: string | null
+          cierre_id: string
+          diferencia?: number | null
+          diferencia_nota?: string | null
+          efectivo_contado?: number | null
+          fecha: string
+          gastos_caja?: number
+          id?: string
+          modo: string
+          reabierta_at?: string
+          reabierta_por?: string | null
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+        }
+        Update: {
+          base_inicial?: number
+          cerrado_por?: string | null
+          cierre_at?: string | null
+          cierre_id?: string
+          diferencia?: number | null
+          diferencia_nota?: string | null
+          efectivo_contado?: number | null
+          fecha?: string
+          gastos_caja?: number
+          id?: string
+          modo?: string
+          reabierta_at?: string
+          reabierta_por?: string | null
+          total_bre_b?: number
+          total_efectivo?: number
+          total_general?: number
+          total_nequi?: number
+          total_otro?: number
+          total_ventas?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cierres_caja_reaperturas_cerrado_por_fkey"
+            columns: ["cerrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cierres_caja_reaperturas_cierre_id_fkey"
+            columns: ["cierre_id"]
+            isOneToOne: false
+            referencedRelation: "cierres_caja"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cierres_caja_reaperturas_reabierta_por_fkey"
+            columns: ["reabierta_por"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -952,6 +1049,7 @@ export type Database = {
           fecha: string
           id: string
           monto: number
+          pagado_de_caja: boolean
           registrado_por: string | null
           updated_at: string
           updated_by: string | null
@@ -965,6 +1063,7 @@ export type Database = {
           fecha?: string
           id?: string
           monto: number
+          pagado_de_caja?: boolean
           registrado_por?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -978,6 +1077,7 @@ export type Database = {
           fecha?: string
           id?: string
           monto?: number
+          pagado_de_caja?: boolean
           registrado_por?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -1493,32 +1593,41 @@ export type Database = {
         Row: {
           activo: boolean
           created_at: string
+          debe_cambiar_pin: boolean
           email: string | null
           id: string
           nombre: string
+          permisos: string[]
           rol: string
           telefono: string | null
           updated_at: string
+          usuario: string
         }
         Insert: {
           activo?: boolean
           created_at?: string
+          debe_cambiar_pin?: boolean
           email?: string | null
           id: string
           nombre: string
+          permisos?: string[]
           rol: string
           telefono?: string | null
           updated_at?: string
+          usuario?: string
         }
         Update: {
           activo?: boolean
           created_at?: string
+          debe_cambiar_pin?: boolean
           email?: string | null
           id?: string
           nombre?: string
+          permisos?: string[]
           rol?: string
           telefono?: string | null
           updated_at?: string
+          usuario?: string
         }
         Relationships: []
       }
@@ -1619,6 +1728,7 @@ export type Database = {
         Row: {
           cambio: number
           cancelacion_motivo: string | null
+          clave_idempotencia: string | null
           cliente_apellido: string | null
           cliente_nombre: string | null
           cliente_telefono: string | null
@@ -1643,6 +1753,7 @@ export type Database = {
         Insert: {
           cambio?: number
           cancelacion_motivo?: string | null
+          clave_idempotencia?: string | null
           cliente_apellido?: string | null
           cliente_nombre?: string | null
           cliente_telefono?: string | null
@@ -1667,6 +1778,7 @@ export type Database = {
         Update: {
           cambio?: number
           cancelacion_motivo?: string | null
+          clave_idempotencia?: string | null
           cliente_apellido?: string | null
           cliente_nombre?: string | null
           cliente_telefono?: string | null
@@ -1724,6 +1836,93 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      abrir_caja: {
+        Args: { p_base_inicial?: number }
+        Returns: {
+          apertura_at: string | null
+          base_inicial: number
+          cerrado_por: string | null
+          cierre_at: string | null
+          created_at: string
+          created_by: string | null
+          diferencia: number | null
+          diferencia_nota: string | null
+          efectivo_contado: number | null
+          estado: string
+          fecha: string
+          gastos_caja: number
+          id: string
+          modo: string
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cierres_caja"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      actualizar_empleado: {
+        Args: { p_id: string; p_nombre?: string; p_permisos?: string[] }
+        Returns: undefined
+      }
+      cambiar_estado_empleado: {
+        Args: { p_activo: boolean; p_id: string }
+        Returns: undefined
+      }
+      cambiar_mi_pin: {
+        Args: { p_pin_actual: string; p_pin_nuevo: string }
+        Returns: undefined
+      }
+      cerrar_caja: {
+        Args: { p_efectivo_contado?: number; p_nota?: string }
+        Returns: {
+          apertura_at: string | null
+          base_inicial: number
+          cerrado_por: string | null
+          cierre_at: string | null
+          created_at: string
+          created_by: string | null
+          diferencia: number | null
+          diferencia_nota: string | null
+          efectivo_contado: number | null
+          estado: string
+          fecha: string
+          gastos_caja: number
+          id: string
+          modo: string
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cierres_caja"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      crear_empleado: {
+        Args: {
+          p_nombre: string
+          p_permisos?: string[]
+          p_pin: string
+          p_usuario: string
+        }
+        Returns: string
+      }
       guardar_producto_calzado: {
         Args: {
           p_activo: boolean
@@ -1744,10 +1943,12 @@ export type Database = {
         }
         Returns: string
       }
+      obtener_arqueo_caja: { Args: never; Returns: Json }
       obtener_balance: {
         Args: { p_desde: string; p_hasta: string }
         Returns: Json
       }
+      obtener_base_predeterminada: { Args: never; Returns: number }
       obtener_dashboard_dueno: {
         Args: { p_dias_alerta: number }
         Returns: Json
@@ -1772,6 +1973,39 @@ export type Database = {
         Args: { p_desde: string; p_granularidad: string; p_hasta: string }
         Returns: Json
       }
+      reabrir_caja: {
+        Args: never
+        Returns: {
+          apertura_at: string | null
+          base_inicial: number
+          cerrado_por: string | null
+          cierre_at: string | null
+          created_at: string
+          created_by: string | null
+          diferencia: number | null
+          diferencia_nota: string | null
+          efectivo_contado: number | null
+          estado: string
+          fecha: string
+          gastos_caja: number
+          id: string
+          modo: string
+          total_bre_b: number
+          total_efectivo: number
+          total_general: number
+          total_nequi: number
+          total_otro: number
+          total_ventas: number
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cierres_caja"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       registrar_devolucion: {
         Args: {
           p_items: Json
@@ -1787,6 +2021,7 @@ export type Database = {
       }
       registrar_venta: {
         Args: {
+          p_clave_idempotencia?: string
           p_cliente_apellido?: string
           p_cliente_nombre?: string
           p_cliente_telefono?: string
@@ -1795,6 +2030,10 @@ export type Database = {
           p_pagos: Json
         }
         Returns: Json
+      }
+      restablecer_pin_empleado: {
+        Args: { p_id: string; p_pin: string }
+        Returns: undefined
       }
     }
     Enums: {
@@ -1814,12 +2053,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1843,11 +2082,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1868,11 +2107,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1893,11 +2132,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1910,11 +2149,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

@@ -53,7 +53,10 @@ medias (las anteriores sí quedan). Copia el error y no sigas.
 > El conector de Supabase en Claude (`apply_migration`) pide confirmar las
 > operaciones destructivas (`drop policy`, `revoke`…). Si la confirmación no
 > aparece donde corre la sesión, la llamada se cancela a los 60 s sin aplicar
-> nada; en ese caso, usar la CLI.
+> nada. Sin CLI, la alternativa que se usó el 2026-10-09: un solo script con
+> los archivos en orden dentro de `begin; … commit;`, cada uno seguido de
+> `insert into supabase_migrations.schema_migrations (version, name) values (…)`,
+> pegado en Dashboard → SQL Editor. Es todo o nada y queda en el historial.
 
 ## 3. Verificar la base
 

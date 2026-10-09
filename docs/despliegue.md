@@ -103,29 +103,31 @@ npx supabase functions deploy enviar-reporte-diario
 
 ## 6. APK
 
-Una sola vez:
+Se compila en los servidores de Expo (EAS); el computador solo sube el código.
+La URL de Supabase y la publishable key ya están en `eas.json` (`env`): son
+públicas por diseño (van dentro del APK) y la protección son las políticas RLS.
+Nunca pongas ahí la `service_role` / secret key.
+
+Requisitos: cuenta gratis en https://expo.dev (mejor con el correo de la
+tienda, así la app queda a nombre del negocio) y Node.js LTS.
 
 ```sh
+git clone -b <rama> https://github.com/aveiaAvellanada/venus.git   # o descargar el ZIP de la rama
+cd venus
+npm ci
 npm install -g eas-cli
 eas login
-eas init        # crea el proyecto en Expo y agrega extra.eas.projectId a app.json: haz commit
-```
-
-Variables de la app (la publishable key está en Dashboard → Project Settings →
-API Keys, empieza por `sb_publishable_`). Es pública por diseño: la protección
-son las políticas RLS, no la clave. Nunca uses aquí la `service_role` / secret key.
-
-```sh
-eas env:create --name EXPO_PUBLIC_SUPABASE_URL --value https://xqspsaghukeynlizbjvc.supabase.co --environment preview --visibility plaintext
-eas env:create --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value sb_publishable_xxx --environment preview --visibility plaintext
-# Repetir ambos con --environment production cuando se vaya a la Play Store.
-```
-
-Compilar e instalar:
-
-```sh
+eas init                                  # solo la primera vez: crea el proyecto en Expo
 eas build -p android --profile preview
 ```
+
+- Con el ZIP (sin git), antes de `eas` correr `set EAS_NO_VCS=1` en cmd de
+  Windows (`export EAS_NO_VCS=1` en Mac/Linux): EAS sube la carpeta tal cual.
+- `eas init` agrega `extra.eas.projectId` a `app.json`: ese cambio va al repo
+  para que los siguientes builds usen el mismo proyecto.
+- En el primer build, EAS pregunta si genera la llave de firma de Android
+  (*keystore*): sí. La guarda EAS; las actualizaciones futuras deben salir de
+  la misma cuenta de Expo o Android no las deja instalar encima.
 
 Al terminar, EAS da un enlace y un QR al APK. En cada teléfono: abrir el
 enlace, descargar e instalar (Android pide permitir "instalar apps de esta

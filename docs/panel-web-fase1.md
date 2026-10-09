@@ -1,6 +1,6 @@
 # Panel web — Fase 1: Mercancía (plan)
 
-Estado: plan, sin construir (2026-10-09). Marco general: `docs/panel-web.md`.
+Estado: entrega 1 (Inventario y precios) construida el 2026-10-09; el resto, por construir. Marco general: `docs/panel-web.md`.
 Fase 0 publicada en Cloudflare Pages (login del dueño, navegación, búsqueda, Inicio,
 historial de acciones).
 
@@ -123,7 +123,7 @@ y totales de compra, lectura/validación de la plantilla Excel. Con tests en
 
 ## Entregas (un PR cada una)
 
-1. Inventario y precios (+ `actualizar_precios_lote`, vista de costos).
+1. ✅ Inventario y precios (+ `actualizar_precios_lote`, `obtener_costos_productos`). Tabla propia en vez de TanStack Table (no hizo falta); exporta CSV para Excel; el precio se cambia solo por la regla en lote (también para una sola referencia), así todo cambio queda en el historial de precios.
 2. Proveedores.
 3. Compras y recepción (+ `registrar_compra`).
 4. Carga masiva.

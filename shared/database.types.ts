@@ -1906,6 +1906,10 @@ export type Database = {
         Args: { p_id: string; p_nombre?: string; p_permisos?: string[] }
         Returns: undefined
       }
+      actualizar_precios_lote: {
+        Args: { p_aplicar?: boolean; p_ids: string[]; p_regla: Json }
+        Returns: Json
+      }
       cambiar_estado_empleado: {
         Args: { p_activo: boolean; p_id: string }
         Returns: undefined
@@ -1982,6 +1986,15 @@ export type Database = {
         Returns: Json
       }
       obtener_base_predeterminada: { Args: never; Returns: number }
+      obtener_costos_productos: {
+        Args: never
+        Returns: {
+          costo_promedio: number
+          producto_id: string
+          ultimo_costo: number
+          unidades_compradas: number
+        }[]
+      }
       obtener_dashboard_dueno: {
         Args: { p_dias_alerta: number }
         Returns: Json

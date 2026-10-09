@@ -80,11 +80,11 @@ corren en el CI de cada PR (sección 8).
 ## 4. Tipos de TypeScript
 
 ```sh
-npx supabase gen types typescript --project-id xqspsaghukeynlizbjvc > lib/database.types.ts
+npx supabase gen types typescript --project-id xqspsaghukeynlizbjvc > shared/database.types.ts
 npx tsc --noEmit
 ```
 
-Si `git diff lib/database.types.ts` muestra cambios, súbelos en un commit aparte.
+Si `git diff shared/database.types.ts` muestra cambios, súbelos en un commit aparte.
 
 ## 5. Reporte diario por correo
 

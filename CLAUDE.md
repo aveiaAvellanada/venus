@@ -22,7 +22,7 @@ TODA acción registra quién la hizo, cuándo y qué cambió. El dueño puede ve
 - expo-router (navegación basada en archivos)
 - Supabase (PostgreSQL 17, Auth, Storage) con RLS activado en todas las tablas
 - Online-first en esta versión. Offline-first diferido.
-- Cliente Supabase en: `lib/supabase.ts`. Tipos generados en `lib/database.types.ts`.
+- Cliente Supabase en: `lib/supabase.ts`. Tipos generados en `shared/database.types.ts` (`lib/database.types.ts` los re-exporta). Código puro común a la app y al panel web en `shared/`.
 
 ## Módulos del sistema (15)
 Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app cada acceso es un permiso que el dueño entrega o quita por persona.

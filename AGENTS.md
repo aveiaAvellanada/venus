@@ -52,7 +52,7 @@ nombres cambian con el tiempo (se desactivan, entran nuevas).
   pedirlo (Expo Go del dispositivo de prueba corre SDK 54).
 - **expo-router** (navegación basada en archivos, en `app/`).
 - **Supabase**: PostgreSQL 17, Auth, Storage. **RLS activado en todas las tablas.**
-  - Cliente: `lib/supabase.ts`. Tipos generados: `lib/database.types.ts`.
+  - Cliente: `lib/supabase.ts`. Tipos generados: `shared/database.types.ts` (re-exportados por `lib/database.types.ts`).
   - Project ref: `xqspsaghukeynlizbjvc`.
   - Lógica de autorización centralizada en el esquema `private` (funciones
     `SECURITY DEFINER`: `is_owner`, `is_admin`, `is_staff_admin`, `is_employee`,
@@ -151,7 +151,7 @@ Antigravity es responsable de todo:
 - **Base de datos:** es el dueño de las **migraciones SQL / RLS / RPC**. Las crea en
   `supabase/migrations/` (timestamp creciente, `drop ... if exists`), las **aplica al
   Supabase remoto** (`xqspsaghukeynlizbjvc`) vía el MCP de Supabase (o el CLI),
-  **regenera `lib/database.types.ts`** y corre **smoke tests SQL** (centinela
+  **regenera `shared/database.types.ts`** y corre **smoke tests SQL** (centinela
   `*_OK_ROLLBACK`, en transacción con `rollback`).
 - **Integración:** trabaja en rama de feature, se **autorevisa**, **mergea a `main`**
   con `--no-ff` y hace `push`.
@@ -163,7 +163,7 @@ Antigravity es responsable de todo:
 3. Si tocó el esquema: `supabase/tests/local/run.sh supabase/tests/*_test.sql` en verde (aplica TODAS las migraciones a un Postgres
    local con un stub de Supabase; el CI lo corre en cada PR) + migración aplicada al remoto
    + `supabase/tests/remoto/verificar_despliegue.sql` contra el remoto (solo lectura; los
-   `*_test.sql` NO se corren en producción: gastan números de venta) + `lib/database.types.ts`
+   `*_test.sql` NO se corren en producción: gastan números de venta) + `shared/database.types.ts`
    regenerado. RPC nueva que llame la app → agregarla a la lista de esa verificación
    (`lib/rpcDespliegue.test.ts` falla si no). Pasos completos: `docs/despliegue.md`.
 4. Sin scratch en el árbol (`supabase/.temp/`, `smoke_test*.sql`, `payload_smoke.json`,
@@ -222,7 +222,7 @@ para no romper la integridad**:
   al repo.
 - **Migraciones:** archivo en `supabase/migrations/<YYYYMMDDHHMMSS>_<nombre>.sql` con
   timestamp creciente, `drop ... if exists` para idempotencia, y aplicar con MCP
-  `apply_migration`. Tras cambios de esquema, regenerar `lib/database.types.ts`.
+  `apply_migration`. Tras cambios de esquema, regenerar `shared/database.types.ts`.
 - **RLS es la frontera de seguridad real:** nunca confíes solo en el gating de la UI.
 - **Escrituras sensibles solo por RPC:** `ventas`, `venta_items`, `metodos_pago_venta`,
   `devoluciones` y `cierres_caja` no aceptan INSERT/UPDATE/DELETE de la app; se

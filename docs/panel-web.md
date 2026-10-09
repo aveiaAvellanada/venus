@@ -124,7 +124,7 @@ explícito, RPC en la lista de `verificar_despliegue.sql` si la usa una app.
 | Fase | Contenido |
 |---|---|
 | **0. Cimientos** ✅ | Fusionar el PR #1. Crear `web/` y `shared/`, login solo para el dueño, estructura y navegación, búsqueda global, publicación y CI. La auditoría empieza a registrar. Hecho el 2026-10-09; además, Inicio (B1) ya funciona. Publicación: `web/README.md`. |
-| **1. Mercancía** | A1 Compras y recepción con matriz de tallas, A2 Inventario y precios, A8 Proveedores, A9 Carga masiva. |
+| **1. Mercancía** (plan: `docs/panel-web-fase1.md`) | A1 Compras y recepción con matriz de tallas, A2 Inventario y precios, A8 Proveedores, A9 Carga masiva. |
 | **2. Control de inventario** | A4 Conteo físico, A5 Kardex, A6 Etiquetas, A3 Reglas de precio, A7 Reposición y órdenes de compra. |
 | **3. Dinero** | B2 Ventas, B3 Reportes, B4 Balance, B5 Caja, B6 Gastos, B7 Clientes. |
 | **4. Gente y control** | C1 Empleados y permisos, C2 Historial de acciones, C4 Respaldo. |

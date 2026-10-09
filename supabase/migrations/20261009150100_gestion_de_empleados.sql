@@ -9,11 +9,18 @@
 -- seeds del proyecto: el PIN se guarda con bcrypt (extensions.crypt), que es
 -- lo que Supabase Auth verifica al iniciar sesión.
 
+-- 6 números y no trivial: un dígito repetido (000000), en orden (123456,
+-- 987654) o un patrón que se repite (121212, 123123) es lo primero que se prueba.
+-- Debe coincidir con pinDebil() en lib/usuarios.ts.
 create or replace function private.validar_pin(p_pin text)
 returns void language plpgsql immutable set search_path = '' as $$
 begin
   if p_pin is null or p_pin !~ '^[0-9]{6}$' then
     raise exception 'El PIN debe tener exactamente 6 números.';
+  end if;
+  if p_pin ~ '^([0-9]{2})\1\1$' or p_pin ~ '^([0-9]{3})\1$'
+     or position(p_pin in '0123456789') > 0 or position(p_pin in '9876543210') > 0 then
+    raise exception 'Ese PIN es muy fácil de adivinar (repetido o en orden). Elige otro.';
   end if;
 end;
 $$;

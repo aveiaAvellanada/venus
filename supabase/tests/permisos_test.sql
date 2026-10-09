@@ -64,8 +64,8 @@ begin
 
   -- ===== El dueño crea empleados =====
   perform pg_temp.como(v_dueno);
-  v_luisa := public.crear_empleado('  Luisa Gómez ', ' Luisa ', '123456', array['ventas','caja']);
-  v_pedro := public.crear_empleado('Pedro Test', 'pedro.t', '654321', v_admin);
+  v_luisa := public.crear_empleado('  Luisa Gómez ', ' Luisa ', '482915', array['ventas','caja']);
+  v_pedro := public.crear_empleado('Pedro Test', 'pedro.t', '730264', v_admin);
 
   execute 'reset role';
   select count(*) into v_n from public.users
@@ -76,7 +76,7 @@ begin
   end if;
   select count(*) into v_n from auth.users
     where id = v_luisa and email = 'luisa@venus.invalid' and email_confirmed_at is not null
-      and encrypted_password = extensions.crypt('123456', encrypted_password)
+      and encrypted_password = extensions.crypt('482915', encrypted_password)
       and confirmation_token = '' and recovery_token = '' and email_change_token_new = '' and email_change = '';
   if v_n <> 1 then
     raise exception 'FALLO: la cuenta de Auth no quedó lista para entrar con usuario + PIN';
@@ -88,21 +88,27 @@ begin
   end if;
 
   perform pg_temp.como(v_dueno);
-  if pg_temp.error_de($q$select public.crear_empleado('X', 'Luisa Gómez', '123456', '{}')$q$) not like '%usuario debe%' then
+  if pg_temp.error_de($q$select public.crear_empleado('X', 'Luisa Gómez', '482915', '{}')$q$) not like '%usuario debe%' then
     raise exception 'FALLO: se aceptó un usuario con espacios/tildes';
   end if;
-  if pg_temp.error_de($q$select public.crear_empleado('X', 'luisa', '123456', '{}')$q$) not like '%Ya existe%' then
+  if pg_temp.error_de($q$select public.crear_empleado('X', 'luisa', '482915', '{}')$q$) not like '%Ya existe%' then
     raise exception 'FALLO: se aceptó un usuario repetido';
   end if;
   if pg_temp.error_de($q$select public.crear_empleado('X', 'otro', '1234', '{}')$q$) not like '%6 números%' then
     raise exception 'FALLO: se aceptó un PIN de 4 dígitos';
   end if;
-  if pg_temp.error_de($q$select public.crear_empleado('X', 'otro', '123456', array['volar'])$q$) not like '%desconocido%' then
+  if pg_temp.error_de($q$select public.crear_empleado('X', 'otro', '482915', array['volar'])$q$) not like '%desconocido%' then
     raise exception 'FALLO: se aceptó un permiso que no existe';
   end if;
-  if pg_temp.error_de($q$select public.crear_empleado(' ', 'otro', '123456', '{}')$q$) not like '%nombre%' then
+  if pg_temp.error_de($q$select public.crear_empleado(' ', 'otro', '482915', '{}')$q$) not like '%nombre%' then
     raise exception 'FALLO: se aceptó un empleado sin nombre';
   end if;
+  -- PIN triviales: repetidos, en orden o con patrón
+  foreach v_err in array array['000000','777777','123456','456789','987654','543210','121212','909090','123123','482482'] loop
+    if pg_temp.error_de(format($q$select public.crear_empleado('X', 'otro', %L, '{}')$q$, v_err)) not like '%fácil de adivinar%' then
+      raise exception 'FALLO: se aceptó el PIN trivial %', v_err;
+    end if;
+  end loop;
 
   -- ===== Luisa solo puede vender y manejar caja =====
   perform pg_temp.como(v_luisa);
@@ -195,6 +201,9 @@ begin
   end if;
   if pg_temp.error_de($q$select public.cambiar_mi_pin('111222', '12345')$q$) not like '%6 números%' then
     raise exception 'FALLO: aceptó un PIN nuevo de 5 dígitos';
+  end if;
+  if pg_temp.error_de($q$select public.cambiar_mi_pin('111222', '654321')$q$) not like '%fácil de adivinar%' then
+    raise exception 'FALLO: aceptó un PIN propio trivial';
   end if;
   perform public.cambiar_mi_pin('111222', '333444');
   execute 'reset role';

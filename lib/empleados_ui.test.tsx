@@ -665,12 +665,12 @@ describe('Empleados UI — tests de integración', () => {
           el.type === 'TextInput' && el.props?.placeholder === '••••••' && el.props?.onChangeText
       )[0]
       await act(async () => {
-        campoPin.props.onChangeText('12a34567')
+        campoPin.props.onChangeText('48a29157')
       })
       await act(async () => {
         boton(root, 'Guardar PIN nuevo').props.onPress()
       })
-      expect(apiEmpleados.restablecerPinEmpleado).toHaveBeenCalledWith(EMPLEADO_ACTIVO.id, '123456')
+      expect(apiEmpleados.restablecerPinEmpleado).toHaveBeenCalledWith(EMPLEADO_ACTIVO.id, '482915')
     })
 
     test('alta: crea la cuenta con el usuario sin espacios, el PIN y la plantilla operativa', async () => {
@@ -680,8 +680,8 @@ describe('Empleados UI — tests de integración', () => {
       await act(async () => {
         campos[0].props.onChangeText('Luisa Gómez')
         campos[1].props.onChangeText('Luisa G')
-        campos[2].props.onChangeText('123456')
-        campos[3].props.onChangeText('123456')
+        campos[2].props.onChangeText('482915')
+        campos[3].props.onChangeText('482915')
       })
       await act(async () => {
         boton(tree!.root, 'Crear empleado').props.onPress()
@@ -689,10 +689,25 @@ describe('Empleados UI — tests de integración', () => {
       expect(apiEmpleados.crearEmpleado).toHaveBeenCalledWith({
         nombre: 'Luisa Gómez',
         usuario: 'luisag',
-        pin: '123456',
+        pin: '482915',
         permisos: PLANTILLAS.operativo.permisos,
       })
       expect(mockRouter.replace).toHaveBeenCalledWith('/empleados/nuevo-id')
+    })
+
+    test('alta: un PIN trivial (123456) no crea la cuenta', async () => {
+      const campos = await montarNuevo()
+      await act(async () => {
+        campos[0].props.onChangeText('Luisa')
+        campos[1].props.onChangeText('luisa')
+        campos[2].props.onChangeText('123456')
+        campos[3].props.onChangeText('123456')
+      })
+      await act(async () => {
+        boton(tree!.root, 'Crear empleado').props.onPress()
+      })
+      expect(apiEmpleados.crearEmpleado).not.toHaveBeenCalled()
+      expect(findAllContainingText(tree!.root, 'muy fácil de adivinar').length).toBeGreaterThan(0)
     })
 
     test('alta: si los PIN no coinciden no crea nada', async () => {

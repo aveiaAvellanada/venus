@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { crearEmpleado } from '../../../lib/empleados'
 import { PLANTILLAS, type Permiso } from '../../../lib/permisos'
-import { normalizarUsuario, pinValido, usuarioValido } from '../../../lib/usuarios'
+import { MENSAJE_PIN_DEBIL, normalizarUsuario, pinDebil, pinValido, usuarioValido } from '../../../lib/usuarios'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
@@ -54,6 +54,7 @@ export default function NuevoEmpleado() {
       return mostrar('El usuario debe tener de 3 a 20 letras o números, sin espacios ni tildes.', 'error')
     }
     if (!pinValido(pin)) return mostrar('El PIN debe tener exactamente 6 números.', 'error')
+    if (pinDebil(pin)) return mostrar(MENSAJE_PIN_DEBIL, 'error')
     if (pin !== pinConfirmado) return mostrar('Los dos PIN no coinciden.', 'error')
 
     setGuardando(true)

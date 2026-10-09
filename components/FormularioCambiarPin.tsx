@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, Text, View } from 'react-native'
-import { cambiarMiPin, pinValido } from '../lib/usuarios'
+import { MENSAJE_PIN_DEBIL, cambiarMiPin, pinDebil, pinValido } from '../lib/usuarios'
 import { useTema } from '../lib/tema'
 import { espacio, tipografia } from '../lib/theme'
 import { Boton, TecladoPin } from './ui'
@@ -37,6 +37,8 @@ export function FormularioCambiarPin({ obligatorio = false, onListo, onCancelar 
     } else if (paso === 'nuevo') {
       if (!pinValido(pin)) {
         setError('El PIN debe tener 6 números.')
+      } else if (pinDebil(pin)) {
+        setError(MENSAJE_PIN_DEBIL)
       } else if (pin === actual) {
         setError('El PIN nuevo debe ser distinto al actual.')
       } else {

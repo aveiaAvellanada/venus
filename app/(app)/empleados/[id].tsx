@@ -45,7 +45,7 @@ import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
 import { Badge, Boton, CampoTexto, CirculoIcono, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
 import { SelectorPermisos } from '../../../components/SelectorPermisos'
 import { resumenPermisos, type Permiso } from '../../../lib/permisos'
-import { pinValido } from '../../../lib/usuarios'
+import { MENSAJE_PIN_DEBIL, pinDebil, pinValido } from '../../../lib/usuarios'
 
 const pesos = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
@@ -249,6 +249,10 @@ export default function EmpleadoDetalleScreen() {
     if (!empleado) return
     if (!pinValido(pinNuevo)) {
       toast.mostrar('El PIN debe tener exactamente 6 números.', 'error')
+      return
+    }
+    if (pinDebil(pinNuevo)) {
+      toast.mostrar(MENSAJE_PIN_DEBIL, 'error')
       return
     }
     try {

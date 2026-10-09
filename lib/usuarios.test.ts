@@ -6,7 +6,7 @@ jest.mock('./supabase', () => ({ supabase: { rpc: (...a: unknown[]) => mockRpc(.
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import {
-  cambiarMiPin, correoDeUsuario, leerUsuariosRecientes, olvidarUsuario, pinValido, recordarUsuario,
+  cambiarMiPin, correoDeUsuario, leerUsuariosRecientes, olvidarUsuario, pinDebil, pinValido, recordarUsuario,
   usuarioValido,
 } from './usuarios'
 
@@ -25,6 +25,17 @@ describe('usuarios: formato', () => {
     ['lu', false], ['luisa gómez', false], ['luisa!', false], ['.luisa', false], ['a'.repeat(21), false],
   ])('usuarioValido(%p) = %p', (u, esperado) => {
     expect(usuarioValido(u)).toBe(esperado)
+  })
+
+  it.each(['000000', '777777', '123456', '456789', '987654', '543210', '121212', '909090', '123123', '482482'])(
+    'PIN trivial %s se rechaza (mismos casos que private.validar_pin)',
+    (pin) => {
+      expect(pinDebil(pin)).toBe(true)
+    },
+  )
+
+  it.each(['482915', '111222', '730264', '135790'])('PIN %s es aceptable', (pin) => {
+    expect(pinDebil(pin)).toBe(false)
   })
 
   it('el PIN es de exactamente 6 números', () => {

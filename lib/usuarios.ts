@@ -17,6 +17,14 @@ export const correoDeUsuario = (usuario: string): string =>
 
 export const pinValido = (pin: string): boolean => /^[0-9]{6}$/.test(pin)
 
+// Repetido (000000), en orden (123456, 987654) o con patrón (121212, 123123):
+// lo primero que alguien prueba. Debe coincidir con private.validar_pin.
+export const pinDebil = (pin: string): boolean =>
+  /^(\d{2})\1\1$/.test(pin) || /^(\d{3})\1$/.test(pin) ||
+  '0123456789'.includes(pin) || '9876543210'.includes(pin)
+
+export const MENSAJE_PIN_DEBIL = 'Ese PIN es muy fácil de adivinar (repetido o en orden). Elige otro.'
+
 // ─── Usuarios recordados en este teléfono ────────────────────────────────────
 // El login los muestra como botones; nadie fuera de la app ve la lista del equipo.
 

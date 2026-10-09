@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       caja_config: {
         Row: {
+          base_predeterminada: number
           created_at: string
           created_by: string | null
           horario_semanal: Json
@@ -26,6 +27,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          base_predeterminada?: number
           created_at?: string
           created_by?: string | null
           horario_semanal?: Json
@@ -36,6 +38,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          base_predeterminada?: number
           created_at?: string
           created_by?: string | null
           horario_semanal?: Json
@@ -65,6 +68,7 @@ export type Database = {
       cierres_caja: {
         Row: {
           apertura_at: string | null
+          base_inicial: number
           cerrado_por: string | null
           cierre_at: string | null
           created_at: string
@@ -74,6 +78,7 @@ export type Database = {
           efectivo_contado: number | null
           estado: string
           fecha: string
+          gastos_caja: number
           id: string
           modo: string
           total_bre_b: number
@@ -87,6 +92,7 @@ export type Database = {
         }
         Insert: {
           apertura_at?: string | null
+          base_inicial?: number
           cerrado_por?: string | null
           cierre_at?: string | null
           created_at?: string
@@ -96,6 +102,7 @@ export type Database = {
           efectivo_contado?: number | null
           estado?: string
           fecha: string
+          gastos_caja?: number
           id?: string
           modo?: string
           total_bre_b?: number
@@ -109,6 +116,7 @@ export type Database = {
         }
         Update: {
           apertura_at?: string | null
+          base_inicial?: number
           cerrado_por?: string | null
           cierre_at?: string | null
           created_at?: string
@@ -118,6 +126,7 @@ export type Database = {
           efectivo_contado?: number | null
           estado?: string
           fecha?: string
+          gastos_caja?: number
           id?: string
           modo?: string
           total_bre_b?: number
@@ -155,6 +164,7 @@ export type Database = {
       }
       cierres_caja_reaperturas: {
         Row: {
+          base_inicial: number
           cerrado_por: string | null
           cierre_at: string | null
           cierre_id: string
@@ -162,6 +172,7 @@ export type Database = {
           diferencia_nota: string | null
           efectivo_contado: number | null
           fecha: string
+          gastos_caja: number
           id: string
           modo: string
           reabierta_at: string
@@ -174,6 +185,7 @@ export type Database = {
           total_ventas: number
         }
         Insert: {
+          base_inicial?: number
           cerrado_por?: string | null
           cierre_at?: string | null
           cierre_id: string
@@ -181,6 +193,7 @@ export type Database = {
           diferencia_nota?: string | null
           efectivo_contado?: number | null
           fecha: string
+          gastos_caja?: number
           id?: string
           modo: string
           reabierta_at?: string
@@ -193,6 +206,7 @@ export type Database = {
           total_ventas: number
         }
         Update: {
+          base_inicial?: number
           cerrado_por?: string | null
           cierre_at?: string | null
           cierre_id?: string
@@ -200,6 +214,7 @@ export type Database = {
           diferencia_nota?: string | null
           efectivo_contado?: number | null
           fecha?: string
+          gastos_caja?: number
           id?: string
           modo?: string
           reabierta_at?: string
@@ -1034,6 +1049,7 @@ export type Database = {
           fecha: string
           id: string
           monto: number
+          pagado_de_caja: boolean
           registrado_por: string | null
           updated_at: string
           updated_by: string | null
@@ -1047,6 +1063,7 @@ export type Database = {
           fecha?: string
           id?: string
           monto: number
+          pagado_de_caja?: boolean
           registrado_por?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -1060,6 +1077,7 @@ export type Database = {
           fecha?: string
           id?: string
           monto?: number
+          pagado_de_caja?: boolean
           registrado_por?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -1810,9 +1828,10 @@ export type Database = {
     }
     Functions: {
       abrir_caja: {
-        Args: never
+        Args: { p_base_inicial?: number }
         Returns: {
           apertura_at: string | null
+          base_inicial: number
           cerrado_por: string | null
           cierre_at: string | null
           created_at: string
@@ -1822,6 +1841,7 @@ export type Database = {
           efectivo_contado: number | null
           estado: string
           fecha: string
+          gastos_caja: number
           id: string
           modo: string
           total_bre_b: number
@@ -1844,6 +1864,7 @@ export type Database = {
         Args: { p_efectivo_contado?: number; p_nota?: string }
         Returns: {
           apertura_at: string | null
+          base_inicial: number
           cerrado_por: string | null
           cierre_at: string | null
           created_at: string
@@ -1853,6 +1874,7 @@ export type Database = {
           efectivo_contado: number | null
           estado: string
           fecha: string
+          gastos_caja: number
           id: string
           modo: string
           total_bre_b: number
@@ -1891,10 +1913,12 @@ export type Database = {
         }
         Returns: string
       }
+      obtener_arqueo_caja: { Args: never; Returns: Json }
       obtener_balance: {
         Args: { p_desde: string; p_hasta: string }
         Returns: Json
       }
+      obtener_base_predeterminada: { Args: never; Returns: number }
       obtener_dashboard_dueno: {
         Args: { p_dias_alerta: number }
         Returns: Json
@@ -1923,6 +1947,7 @@ export type Database = {
         Args: never
         Returns: {
           apertura_at: string | null
+          base_inicial: number
           cerrado_por: string | null
           cierre_at: string | null
           created_at: string
@@ -1932,6 +1957,7 @@ export type Database = {
           efectivo_contado: number | null
           estado: string
           fecha: string
+          gastos_caja: number
           id: string
           modo: string
           total_bre_b: number

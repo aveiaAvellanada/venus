@@ -3,12 +3,12 @@ import { View, Text, ActivityIndicator, ScrollView, RefreshControl } from 'react
 import { Redirect, useRouter } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { useRequireModulo } from '../../../lib/auth'
-import { obtenerCajaHoy, abrirCaja, reabrirCaja } from '../../../lib/caja'
+import { obtenerCajaHoy, abrirCaja, obtenerBasePredeterminada, reabrirCaja } from '../../../lib/caja'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tipografia } from '../../../lib/theme'
-import { Badge, Boton, Presionable, TarjetaMetrica, useToast } from '../../../components/ui'
+import { Badge, Boton, CampoTexto, Presionable, TarjetaMetrica, useToast } from '../../../components/ui'
 
 const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
 
@@ -46,11 +46,17 @@ export default function CajaDashboard() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [abriendo, setAbriendo] = useState(false)
+  // Base de sencillo con la que abre el cajón: se propone la predeterminada.
+  const [base, setBase] = useState('')
 
   const cargarDatos = useCallback(async () => {
     try {
       const caja = await obtenerCajaHoy()
       setEstadoCaja(caja)
+      if (!caja) {
+        const predeterminada = await obtenerBasePredeterminada()
+        setBase(predeterminada > 0 ? String(predeterminada) : '')
+      }
       if (caja && caja.estado === 'cerrada') {
         setResumen({
           total_general: caja.total_general,
@@ -59,6 +65,8 @@ export default function CajaDashboard() {
           total_nequi: caja.total_nequi,
           total_bre_b: caja.total_bre_b,
           total_otro: caja.total_otro,
+          base_inicial: caja.base_inicial,
+          gastos_caja: caja.gastos_caja,
         })
       }
     } catch (e) {
@@ -97,7 +105,7 @@ export default function CajaDashboard() {
   async function handleAbrir() {
     setAbriendo(true)
     try {
-      await abrirCaja()
+      await abrirCaja(base.trim() === '' ? 0 : Number(base))
       await cargarDatos()
     } catch (e) {
       mostrar(e instanceof Error ? e.message : 'No se pudo actualizar la caja.', 'error')
@@ -127,7 +135,14 @@ export default function CajaDashboard() {
           <Text style={[tipografia.cuerpo, { color: paleta.texto2, textAlign: 'center' }]}>
             Aún no se ha abierto la caja para hoy.
           </Text>
-          <View style={{ alignSelf: 'stretch' }}>
+          <View style={{ alignSelf: 'stretch', gap: espacio.l }}>
+            <CampoTexto
+              etiqueta="Base en el cajón (sencillo)"
+              keyboardType="number-pad"
+              placeholder="0"
+              value={base}
+              onChangeText={(v) => setBase(v.replace(/[^0-9]/g, ''))}
+            />
             <Boton titulo="Abrir Caja del Día" onPress={handleAbrir} cargando={abriendo} deshabilitado={abriendo} />
           </View>
         </View>
@@ -165,6 +180,10 @@ export default function CajaDashboard() {
               <TarjetaMetrica mini etiqueta="Nequi" valor={pesos(resumen.total_nequi)} />
               <TarjetaMetrica mini etiqueta="Bre-B" valor={pesos(resumen.total_bre_b)} />
               <TarjetaMetrica mini etiqueta="Otro" valor={pesos(resumen.total_otro)} />
+            </View>
+            <View style={{ flexDirection: 'row', gap: espacio.m, flexWrap: 'wrap' }}>
+              <TarjetaMetrica mini etiqueta="Base inicial" valor={pesos(resumen.base_inicial ?? 0)} />
+              <TarjetaMetrica mini etiqueta="Gastos del cajón" valor={pesos(resumen.gastos_caja ?? 0)} />
             </View>
           </View>
         )}

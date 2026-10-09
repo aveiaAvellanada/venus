@@ -9,6 +9,34 @@ type GastoFijoInsert = Database['public']['Tables']['gastos_fijos']['Insert'];
 type GastoFijoPagoRow = Database['public']['Tables']['gastos_fijos_pagos']['Row'];
 type GastoFijoPagoInsert = Database['public']['Tables']['gastos_fijos_pagos']['Insert'];
 
+// `valor` es lo que acepta el CHECK de gastos_variables.categoria y lo único que
+// viaja a la base; `etiqueta` es lo que lee el usuario. (El formulario era texto
+// libre: "Fletes" o "Insumos" con mayúscula rompían el CHECK al guardar.)
+export const CATEGORIAS_GASTO = [
+  { valor: 'transporte', etiqueta: 'Transporte' },
+  { valor: 'reparaciones', etiqueta: 'Reparaciones' },
+  { valor: 'insumos', etiqueta: 'Insumos' },
+  { valor: 'otros', etiqueta: 'Otros' },
+] as const;
+
+export type CategoriaGasto = (typeof CATEGORIAS_GASTO)[number]['valor'];
+
+export const etiquetaCategoriaGasto = (valor: string): string =>
+  CATEGORIAS_GASTO.find((c) => c.valor === valor)?.etiqueta ?? valor;
+
+// Fecha de hoy en Florencia (YYYY-MM-DD). gastos_variables.fecha es `date`:
+// mandar toISOString() (UTC) guardaba los gastos de después de las 7 p. m. con
+// la fecha de mañana, y un gasto del cajón no se restaba de la caja de hoy.
+export const hoyBogota = (ahora: Date = new Date()): string =>
+  ahora.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+
+// 'YYYY-MM-DD' → 'DD/MM/YYYY' sin pasar por Date: new Date('2026-10-09') es
+// medianoche UTC y en Colombia se mostraba como el día anterior.
+export function fechaCortaGasto(fecha: string): string {
+  const [anio, mes, dia] = fecha.slice(0, 10).split('-');
+  return `${dia}/${mes}/${anio}`;
+}
+
 export async function comprimirYSubirComprobante(uri: string): Promise<string> {
   // Comprime bajo el límite del PRD (≤500KB) reutilizando el helper compartido.
   const bytes = await comprimirBajoLimite(uri);

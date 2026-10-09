@@ -133,6 +133,12 @@ export default function HistorialCaja() {
                 </Text>
               )}
 
+              {(Number(item.base_inicial) > 0 || Number(item.gastos_caja) > 0) && (
+                <Text style={[tipografia.caption, tabular, { color: paleta.texto3, marginTop: espacio.s }]}>
+                  Base {pesos(Number(item.base_inicial) || 0)} · Gastos del cajón {pesos(Number(item.gastos_caja) || 0)}
+                </Text>
+              )}
+
               {item.estado === 'cerrada' && (
                 <Text style={[tipografia.caption, { color: paleta.texto3, marginTop: espacio.s }]}>
                   Cerró: {item.cerrado_por_user?.nombre ?? 'Automático'}

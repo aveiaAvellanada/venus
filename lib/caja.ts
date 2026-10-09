@@ -14,33 +14,47 @@ export async function obtenerCajaHoy() {
 
 // Abrir, cerrar y reabrir van por RPC: la app ya no escribe cierres_caja
 // directo (RLS). El servidor calcula totales y diferencia y deja auditoría.
-export async function abrirCaja() {
-  const { data, error } = await supabase.rpc('abrir_caja')
+// Sin base (null/undefined), el servidor usa la base predeterminada de la config.
+export async function abrirCaja(baseInicial?: number | null) {
+  const { data, error } = await supabase.rpc('abrir_caja', {
+    p_base_inicial: baseInicial ?? undefined,
+  })
   if (error) throw error
   return data
+}
+
+// Base que Andrés configuró; se propone al abrir la caja (editable).
+export async function obtenerBasePredeterminada(): Promise<number> {
+  const { data, error } = await supabase.rpc('obtener_base_predeterminada')
+  if (error) throw error
+  return Number(data ?? 0)
+}
+
+export interface ArqueoCaja {
+  base_inicial: number
+  efectivo_ventas: number
+  gastos_caja: number
+  efectivo_esperado: number
+}
+
+// Efectivo esperado = base + efectivo de ventas − gastos pagados del cajón.
+// Es la misma fórmula con la que cerrar_caja calcula la diferencia.
+export async function obtenerArqueoCaja(): Promise<ArqueoCaja> {
+  const { data, error } = await supabase.rpc('obtener_arqueo_caja')
+  if (error) throw error
+  const a = (data ?? {}) as Record<string, unknown>
+  return {
+    base_inicial: Number(a.base_inicial ?? 0),
+    efectivo_ventas: Number(a.efectivo_ventas ?? 0),
+    gastos_caja: Number(a.gastos_caja ?? 0),
+    efectivo_esperado: Number(a.efectivo_esperado ?? 0),
+  }
 }
 
 export async function reabrirCaja() {
   const { data, error } = await supabase.rpc('reabrir_caja')
   if (error) throw error
   return data
-}
-
-export async function obtenerResumenEnVivo() {
-  const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' })
-  const { data, error } = await supabase.rpc('obtener_resumen_dia', { p_fecha: hoy })
-  if (error) throw error
-  
-  // Dependiendo de cómo lo emita Postgres (json o record), forzamos la estructura
-  const resumen = data as any
-  return {
-    total_ventas: Number(resumen?.total_ventas || 0),
-    total_general: Number(resumen?.total_general || 0),
-    total_efectivo: Number(resumen?.total_efectivo || 0),
-    total_nequi: Number(resumen?.total_nequi || 0),
-    total_bre_b: Number(resumen?.total_bre_b || 0),
-    total_otro: Number(resumen?.total_otro || 0)
-  }
 }
 
 // efectivo_contado = null solo se acepta con el modo de cierre "sin diferencia".

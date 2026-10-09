@@ -7,7 +7,9 @@ jest.mock('./supabase', () => ({
   },
 }))
 
-import { abrirCaja, cerrarCaja, cerrarCajaSinDiferencia, reabrirCaja } from './caja'
+import {
+  abrirCaja, cerrarCaja, cerrarCajaSinDiferencia, obtenerArqueoCaja, obtenerBasePredeterminada, reabrirCaja,
+} from './caja'
 
 const CAJA = { id: 'c1', fecha: '2026-10-09', estado: 'abierta' }
 
@@ -18,10 +20,15 @@ beforeEach(() => {
 })
 
 describe('caja: escrituras solo por RPC', () => {
-  it('abrirCaja llama abrir_caja y devuelve la caja', async () => {
+  it('abrirCaja sin base deja que el servidor use la predeterminada', async () => {
     await expect(abrirCaja()).resolves.toEqual(CAJA)
-    expect(mockRpc).toHaveBeenCalledWith('abrir_caja')
+    expect(mockRpc).toHaveBeenCalledWith('abrir_caja', { p_base_inicial: undefined })
     expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  it('abrirCaja manda la base contada al abrir', async () => {
+    await abrirCaja(80000)
+    expect(mockRpc).toHaveBeenCalledWith('abrir_caja', { p_base_inicial: 80000 })
   })
 
   it('reabrirCaja llama reabrir_caja', async () => {
@@ -53,5 +60,23 @@ describe('caja: escrituras solo por RPC', () => {
       error: new Error('Como hay diferencia, debes ingresar una justificación.'),
     })
     await expect(cerrarCaja({ efectivo_contado: 1, nota: null })).rejects.toThrow('justificación')
+  })
+})
+
+describe('caja: arqueo', () => {
+  it('obtenerArqueoCaja convierte el desglose a números', async () => {
+    mockRpc.mockResolvedValue({
+      data: { base_inicial: '50000', efectivo_ventas: '90000', gastos_caja: '20000', efectivo_esperado: '120000' },
+      error: null,
+    })
+    await expect(obtenerArqueoCaja()).resolves.toEqual({
+      base_inicial: 50000, efectivo_ventas: 90000, gastos_caja: 20000, efectivo_esperado: 120000,
+    })
+    expect(mockRpc).toHaveBeenCalledWith('obtener_arqueo_caja')
+  })
+
+  it('obtenerBasePredeterminada devuelve 0 si no hay valor', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null })
+    await expect(obtenerBasePredeterminada()).resolves.toBe(0)
   })
 })

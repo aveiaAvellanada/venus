@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, FlatList, Modal, ActivityIndicator, Image, ScrollView, RefreshControl } from 'react-native'
+import { View, Text, FlatList, Modal, ActivityIndicator, Image, ScrollView, RefreshControl, Switch } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { ArrowLeft, Camera, Plus, Receipt, X } from 'lucide-react-native'
-import { obtenerGastosVariables, guardarGastoVariable } from '../../../lib/gastos'
+import {
+  CATEGORIAS_GASTO, etiquetaCategoriaGasto, fechaCortaGasto, guardarGastoVariable, hoyBogota, obtenerGastosVariables,
+  type CategoriaGasto,
+} from '../../../lib/gastos'
 import { useAuth } from '../../../lib/auth'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { Database } from '../../../lib/database.types'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
-import { Badge, Boton, CampoTexto, ControlSegmentado, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Badge, Boton, CampoTexto, Chip, ControlSegmentado, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
 
 type GastoVariableRow = Database['public']['Tables']['gastos_variables']['Row']
 
@@ -51,7 +54,9 @@ export default function GastosVariablesScreen() {
   const [saving, setSaving] = useState(false)
 
   // Form
-  const [categoria, setCategoria] = useState('')
+  const [categoria, setCategoria] = useState<CategoriaGasto | ''>('')
+  // Pagado con efectivo del cajón: se resta del efectivo esperado del cierre.
+  const [pagadoDeCaja, setPagadoDeCaja] = useState(false)
   const [descripcion, setDescripcion] = useState('')
   const [monto, setMonto] = useState('')
   const [fotoUri, setFotoUri] = useState<string | null>(null)
@@ -103,7 +108,8 @@ export default function GastosVariablesScreen() {
           categoria,
           descripcion,
           monto: parseFloat(monto),
-          fecha: new Date().toISOString(),
+          fecha: hoyBogota(),
+          pagado_de_caja: pagadoDeCaja,
         },
         fotoUri || undefined
       )
@@ -121,6 +127,7 @@ export default function GastosVariablesScreen() {
 
   const resetForm = () => {
     setCategoria('')
+    setPagadoDeCaja(false)
     setDescripcion('')
     setMonto('')
     setFotoUri(null)
@@ -129,11 +136,14 @@ export default function GastosVariablesScreen() {
   const renderItem = ({ item }: { item: GastoVariableRow }) => (
     <Tarjeta estilo={{ marginBottom: espacio.m }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: espacio.s }}>
-        <Badge texto={item.categoria} />
-        <Text style={[tipografia.h3, tabular, { color: paleta.texto }]}>${item.monto.toLocaleString()}</Text>
+        <View style={{ flexDirection: 'row', gap: espacio.s }}>
+          <Badge texto={etiquetaCategoriaGasto(item.categoria)} />
+          {item.pagado_de_caja && <Badge texto="Del cajón" tipo="advertencia" />}
+        </View>
+        <Text style={[tipografia.h3, tabular, { color: paleta.texto }]}>${item.monto.toLocaleString('es-CO')}</Text>
       </View>
       <Text style={[tipografia.cuerpo, { color: paleta.texto2, marginBottom: espacio.s }]}>{item.descripcion}</Text>
-      <Text style={[tipografia.caption, { color: paleta.texto3 }]}>{new Date(item.fecha).toLocaleDateString()}</Text>
+      <Text style={[tipografia.caption, { color: paleta.texto3 }]}>{fechaCortaGasto(item.fecha)}</Text>
     </Tarjeta>
   )
 
@@ -219,12 +229,19 @@ export default function GastosVariablesScreen() {
           </View>
 
           <View style={{ gap: espacio.l }}>
-            <CampoTexto
-              etiqueta="Categoría (ej: Fletes, Insumos)"
-              value={categoria}
-              onChangeText={setCategoria}
-              placeholder="Escribe la categoría"
-            />
+            <View>
+              <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>Categoría</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s }}>
+                {CATEGORIAS_GASTO.map((c) => (
+                  <Chip
+                    key={c.valor}
+                    etiqueta={c.etiqueta}
+                    activo={categoria === c.valor}
+                    onPress={() => setCategoria(c.valor)}
+                  />
+                ))}
+              </View>
+            </View>
 
             <CampoTexto
               etiqueta="Descripción"
@@ -241,6 +258,24 @@ export default function GastosVariablesScreen() {
               placeholder="0.00"
               keyboardType="number-pad"
             />
+
+            <Tarjeta>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: espacio.m }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>Se pagó con plata del cajón</Text>
+                  <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+                    Se resta del efectivo esperado al cerrar la caja de hoy.
+                  </Text>
+                </View>
+                <Switch
+                  accessibilityLabel="Se pagó con plata del cajón"
+                  value={pagadoDeCaja}
+                  onValueChange={setPagadoDeCaja}
+                  trackColor={{ false: paleta.borde, true: paleta.primarioSoft }}
+                  thumbColor={pagadoDeCaja ? paleta.primario : paleta.superficie}
+                />
+              </View>
+            </Tarjeta>
 
             <View>
               <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>

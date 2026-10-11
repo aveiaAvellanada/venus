@@ -149,6 +149,6 @@ Implementado en la rama `rediseno-carrito` (que incluye `rediseno-productos`), u
   en la caja. Cobrar se deshabilita si alguna línea está fuera de rango (`puedeCobrar`). La escala
   compacta está en `tipografiaCompacta` (`lib/theme.ts`).
 
-**Migraciones sin aplicar al remoto.** Orden: primero las migraciones, después la app nueva. La app vieja
+**Migraciones aplicadas al remoto el 2026-10-11** (SQL Editor, una transacción, registradas en `supabase_migrations.schema_migrations`; comprobación posterior OK). Antes de aplicarlas regía esto: Orden: primero las migraciones, después la app nueva. La app vieja
 sigue funcionando con la base nueva porque `p_cliente_documento` es opcional. La app nueva contra la base
 vieja fallaría al vender: `registrar_venta` no conoce ese parámetro.

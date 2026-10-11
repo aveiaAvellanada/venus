@@ -67,6 +67,13 @@ function Sembrador({ children }: { children: React.ReactNode }) {
   return listo ? <>{children}</> : null
 }
 
+// Lee el carrito compartido desde fuera de la pantalla (como lo vería Productos).
+let itemsEnCarrito = -1
+function Sonda() {
+  itemsEnCarrito = useCarrito().items.length
+  return null
+}
+
 async function montar({ conItem = false } = {}) {
   mockObtenerCajaHoy.mockResolvedValue({ estado: 'abierta' })
   let arbol: renderer.ReactTestRenderer
@@ -76,6 +83,7 @@ async function montar({ conItem = false } = {}) {
         <CarritoProvider>
           <ToastProvider>
             {conItem ? <Sembrador><NuevaVenta /></Sembrador> : <NuevaVenta />}
+            <Sonda />
           </ToastProvider>
         </CarritoProvider>
       </TemaProvider>
@@ -178,5 +186,40 @@ describe('Nueva Venta restilizada', () => {
     expect(todoElTexto(arbol)).toContain('Continuar a pago')
     presionarPorLabel(arbol, 'Continuar a pago')
     expect(todoElTexto(arbol)).toContain('Faltan')
+  })
+
+  // Bug A1: el carrito es global (CarritoProvider); si no se vacía al registrar,
+  // lo vendido sigue ahí y se puede vender otra vez al volver.
+  test('tras registrar con éxito el carrito queda vacío, aunque se salga con "Listo"', async () => {
+    mockRegistrar.mockResolvedValue({ numero: 50 })
+    const arbol = await montar({ conItem: true })
+    expect(itemsEnCarrito).toBe(1)
+    presionarPorLabel(arbol, 'Cobrar $220.000')
+    presionarPorLabel(arbol, 'Efectivo')
+    const inputs = arbol.root.findAll(
+      (n: renderer.ReactTestInstance) => n.props?.placeholder === '¿Con cuánto paga?'
+    )
+    act(() => { inputs[0].props.onChangeText('250000') })
+    await act(async () => { presionarPorLabel(arbol, 'Confirmar venta') })
+    expect(itemsEnCarrito).toBe(0)
+    // la confirmación lee el snapshot, no el carrito ya vacío
+    expect(todoElTexto(arbol)).toContain('Venta #50 registrada')
+    presionarPorLabel(arbol, 'Listo')
+    expect(mockBack).toHaveBeenCalled()
+    expect(itemsEnCarrito).toBe(0)
+  })
+
+  test('si el registro falla, el carrito NO se vacía (se reintenta con la misma clave)', async () => {
+    mockRegistrar.mockRejectedValueOnce(new Error('Sin conexión'))
+    const arbol = await montar({ conItem: true })
+    presionarPorLabel(arbol, 'Cobrar $220.000')
+    presionarPorLabel(arbol, 'Efectivo')
+    const inputs = arbol.root.findAll(
+      (n: renderer.ReactTestInstance) => n.props?.placeholder === '¿Con cuánto paga?'
+    )
+    act(() => { inputs[0].props.onChangeText('250000') })
+    await act(async () => { presionarPorLabel(arbol, 'Confirmar venta') })
+    expect(mockRegistrar).toHaveBeenCalledTimes(1)
+    expect(itemsEnCarrito).toBe(1)
   })
 })

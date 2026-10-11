@@ -155,7 +155,8 @@ export default function NuevaVenta() {
   const [recibido, setRecibido] = useState('')
   const [cliente, setCliente] = useState({ nombre: '', apellido: '', telefono: '' })
   const [guardando, setGuardando] = useState(false)
-  const [numeroVenta, setNumeroVenta] = useState<number | null>(null)
+  // Lo que muestra la confirmación: el carrito ya se vació al registrar la venta.
+  const [ultimaVenta, setUltimaVenta] = useState<{ numero: number; total: number; metodos: MetodoPago[] } | null>(null)
   const [overlayVisible, setOverlayVisible] = useState(false)
   const [cajaEstado, setCajaEstado] = useState<'loading' | 'ok' | 'bloqueado'>('loading')
 
@@ -215,6 +216,13 @@ export default function NuevaVenta() {
     })
   }
 
+  function limpiarPago() {
+    setMetodos([])
+    setMontos({ efectivo: '', nequi: '', bre_b: '', otro: '' })
+    setRecibido('')
+    setCliente({ nombre: '', apellido: '', telefono: '' })
+  }
+
   async function confirmar() {
     setGuardando(true)
     const venta: RegistrarVentaInput = {
@@ -232,7 +240,12 @@ export default function NuevaVenta() {
     try {
       const { numero } = await registrarVenta(venta, intento.clave)
       intentoRef.current = null
-      setNumeroVenta(numero)
+      // La venta ya existe: vaciar el carrito y el pago YA (no al tocar "Nueva venta"),
+      // así salir con "Listo" o con atrás no deja lo vendido listo para venderse otra vez.
+      // Si el registro falla, no se limpia: el reintento usa la misma clave.
+      setUltimaVenta({ numero, total, metodos })
+      dispatch({ tipo: 'limpiar' })
+      limpiarPago()
       setOverlayVisible(true)
       setEtapa('confirmacion')
     } catch (e) {
@@ -255,11 +268,8 @@ export default function NuevaVenta() {
 
   function nuevaVenta() {
     dispatch({ tipo: 'limpiar' })
-    setMetodos([])
-    setMontos({ efectivo: '', nequi: '', bre_b: '', otro: '' })
-    setRecibido('')
-    setCliente({ nombre: '', apellido: '', telefono: '' })
-    setNumeroVenta(null)
+    limpiarPago()
+    setUltimaVenta(null)
     setEtapa('carrito')
   }
 
@@ -293,7 +303,7 @@ export default function NuevaVenta() {
       <View style={{ flex: 1, backgroundColor: paleta.fondo, alignItems: 'center', justifyContent: 'center', padding: espacio.xl, gap: espacio.l }}>
         <Check size={64} color={paleta.exito} strokeWidth={2.5} />
         <Text style={[tipografia.h1, { color: paleta.texto, textAlign: 'center' }]}>
-          Venta #{numeroVenta} registrada
+          Venta #{ultimaVenta?.numero} registrada
         </Text>
         <View style={{ alignSelf: 'stretch', gap: espacio.s }}>
           <Boton titulo="Nueva venta" onPress={nuevaVenta} />

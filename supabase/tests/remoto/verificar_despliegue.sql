@@ -24,7 +24,7 @@ declare
     'abrir_caja', 'actualizar_empleado', 'cambiar_estado_empleado', 'cambiar_mi_pin', 'cerrar_caja',
     'crear_empleado', 'guardar_producto_calzado', 'obtener_arqueo_caja', 'obtener_balance',
     'obtener_base_predeterminada', 'obtener_dashboard_dueno', 'obtener_deuda_proveedor',
-    'obtener_dias_trabajados', 'obtener_gastos_periodo', 'obtener_modo_cierre', 'obtener_reporte_diario',
+    'obtener_dias_trabajados', 'obtener_gastos_periodo', 'obtener_reporte_diario',
     'obtener_reporte_periodo', 'obtener_resumen_dia', 'obtener_ventas_por_subperiodo', 'reabrir_caja',
     'registrar_devolucion', 'registrar_venta', 'restablecer_pin_empleado'
   ];

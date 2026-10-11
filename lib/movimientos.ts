@@ -22,7 +22,7 @@ export interface VentaDetalle {
   fecha: string
   hora: string
   vendedor: string | null
-  cliente: { nombre: string; apellido: string | null; telefono: string | null } | null
+  cliente: { nombre: string | null; apellido: string | null; telefono: string | null; documento: string | null } | null
   nota: string | null
   efectivo_recibido: number
   cambio: number
@@ -139,9 +139,16 @@ export async function obtenerVentaDetalle(id: string): Promise<VentaDetalle | nu
     fecha: fechaCorta(v.created_at),
     hora: horaCorta(v.created_at),
     vendedor: v.vendedor?.nombre ?? null,
-    cliente: v.cliente_nombre
-      ? { nombre: v.cliente_nombre, apellido: v.cliente_apellido, telefono: v.cliente_telefono }
-      : null,
+    // Una venta con solo el documento (sin nombre) también muestra al cliente.
+    cliente:
+      v.cliente_nombre || v.cliente_documento
+        ? {
+            nombre: v.cliente_nombre ?? null,
+            apellido: v.cliente_apellido ?? null,
+            telefono: v.cliente_telefono ?? null,
+            documento: v.cliente_documento ?? null,
+          }
+        : null,
     nota: v.nota,
     efectivo_recibido: Number(v.efectivo_recibido ?? 0),
     cambio: Number(v.cambio ?? 0),

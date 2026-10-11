@@ -25,6 +25,17 @@ describe('registrarVenta', () => {
     }))
   })
 
+  it('manda la cédula o razón social del cliente (B4); sin ella va undefined', async () => {
+    mockRpc.mockResolvedValue({ data: { venta_id: 'v1', numero: 8, repetida: false }, error: null })
+    await registrarVenta({ ...VENTA, cliente: { nombre: 'Luz', documento: '1117123456' } }, 'clave-2')
+    expect(mockRpc).toHaveBeenLastCalledWith('registrar_venta', expect.objectContaining({
+      p_cliente_nombre: 'Luz',
+      p_cliente_documento: '1117123456',
+    }))
+    await registrarVenta(VENTA, 'clave-3')
+    expect(mockRpc.mock.calls[1][1].p_cliente_documento).toBeUndefined()
+  })
+
   it('un reintento que ya se había guardado vuelve como repetida', async () => {
     mockRpc.mockResolvedValue({ data: { venta_id: 'v1', numero: 7, repetida: true }, error: null })
     await expect(registrarVenta(VENTA, 'clave-1')).resolves.toEqual({ numero: 7, repetida: true })

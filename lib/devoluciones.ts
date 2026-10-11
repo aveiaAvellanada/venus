@@ -55,6 +55,7 @@ export type VentaParaDevolucion = {
   numero: number
   fecha: string
   cliente_nombre: string | null
+  cliente_documento: string | null
   estado: string
   items: VentaItemParaDevolucion[]
 }
@@ -84,7 +85,7 @@ export type RegistrarDevolucionInput = {
 export async function buscarVentaParaDevolucion(numero: number): Promise<VentaParaDevolucion | null> {
   const { data: venta, error } = await supabase
     .from('ventas')
-    .select('id, numero, created_at, cliente_nombre, estado')
+    .select('id, numero, created_at, cliente_nombre, cliente_documento, estado')
     .eq('numero', numero)
     .maybeSingle()
   if (error) throw error
@@ -121,6 +122,7 @@ export async function buscarVentaParaDevolucion(numero: number): Promise<VentaPa
     numero: venta.numero,
     fecha: venta.created_at,
     cliente_nombre: venta.cliente_nombre,
+    cliente_documento: venta.cliente_documento,
     estado: venta.estado,
     items: (items ?? []).map((i) => ({
       venta_item_id: i.id,

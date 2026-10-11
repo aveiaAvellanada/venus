@@ -21,7 +21,8 @@ export interface RegistrarVentaInput {
   items: ItemCarrito[]
   pagos: PagoInput[]
   efectivoRecibido: number | null
-  cliente?: { nombre?: string; apellido?: string; telefono?: string }
+  // documento: cédula, NIT o razón social (texto libre, opcional).
+  cliente?: { nombre?: string; apellido?: string; telefono?: string; documento?: string }
 }
 
 // `clave` identifica el intento (ver lib/intentoVenta.ts): reintentar con la
@@ -42,6 +43,7 @@ export async function registrarVenta(
     p_cliente_nombre: input.cliente?.nombre ?? undefined,
     p_cliente_apellido: input.cliente?.apellido ?? undefined,
     p_cliente_telefono: input.cliente?.telefono ?? undefined,
+    p_cliente_documento: input.cliente?.documento ?? undefined,
     p_clave_idempotencia: clave,
   })
   if (error) throw new Error(traducirError(error.message))

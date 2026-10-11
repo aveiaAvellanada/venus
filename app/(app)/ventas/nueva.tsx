@@ -153,7 +153,7 @@ export default function NuevaVenta() {
   const [metodos, setMetodos] = useState<MetodoPago[]>([])
   const [montos, setMontos] = useState<Record<MetodoPago, string>>({ efectivo: '', nequi: '', bre_b: '', otro: '' })
   const [recibido, setRecibido] = useState('')
-  const [cliente, setCliente] = useState({ nombre: '', apellido: '', telefono: '' })
+  const [cliente, setCliente] = useState({ nombre: '', apellido: '', telefono: '', documento: '' })
   const [guardando, setGuardando] = useState(false)
   // Lo que muestra la confirmación: el carrito ya se vació al registrar la venta.
   const [ultimaVenta, setUltimaVenta] = useState<{ numero: number; total: number; metodos: MetodoPago[] } | null>(null)
@@ -220,7 +220,7 @@ export default function NuevaVenta() {
     setMetodos([])
     setMontos({ efectivo: '', nequi: '', bre_b: '', otro: '' })
     setRecibido('')
-    setCliente({ nombre: '', apellido: '', telefono: '' })
+    setCliente({ nombre: '', apellido: '', telefono: '', documento: '' })
   }
 
   async function confirmar() {
@@ -233,6 +233,7 @@ export default function NuevaVenta() {
         nombre: cliente.nombre || undefined,
         apellido: cliente.apellido || undefined,
         telefono: cliente.telefono || undefined,
+        documento: cliente.documento.trim() || undefined,
       },
     }
     const intento = intentoVenta(intentoRef.current, venta)
@@ -399,6 +400,8 @@ export default function NuevaVenta() {
           onChangeText={t => setCliente(c => ({ ...c, apellido: t }))} />
         <CampoTexto placeholder="Teléfono" keyboardType="phone-pad" value={cliente.telefono}
           onChangeText={t => setCliente(c => ({ ...c, telefono: t }))} />
+        <CampoTexto placeholder="Cédula o razón social" value={cliente.documento}
+          onChangeText={t => setCliente(c => ({ ...c, documento: t }))} />
 
         <Boton
           titulo="Confirmar venta"

@@ -1763,6 +1763,7 @@ export type Database = {
           cancelacion_motivo: string | null
           clave_idempotencia: string | null
           cliente_apellido: string | null
+          cliente_documento: string | null
           cliente_nombre: string | null
           cliente_telefono: string | null
           correccion_at: string | null
@@ -1788,6 +1789,7 @@ export type Database = {
           cancelacion_motivo?: string | null
           clave_idempotencia?: string | null
           cliente_apellido?: string | null
+          cliente_documento?: string | null
           cliente_nombre?: string | null
           cliente_telefono?: string | null
           correccion_at?: string | null
@@ -1813,6 +1815,7 @@ export type Database = {
           cancelacion_motivo?: string | null
           clave_idempotencia?: string | null
           cliente_apellido?: string | null
+          cliente_documento?: string | null
           cliente_nombre?: string | null
           cliente_telefono?: string | null
           correccion_at?: string | null
@@ -2069,6 +2072,7 @@ export type Database = {
         Args: {
           p_clave_idempotencia?: string
           p_cliente_apellido?: string
+          p_cliente_documento?: string
           p_cliente_nombre?: string
           p_cliente_telefono?: string
           p_efectivo_recibido?: number

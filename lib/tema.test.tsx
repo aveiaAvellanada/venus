@@ -40,7 +40,7 @@ describe('TemaProvider', () => {
 
   it('por defecto modo sistema → claro (useColorScheme null en tests)', async () => {
     const arbol = await montar()
-    expect(leerSonda(arbol)).toBe('sistema|false|#1E66F5')
+    expect(leerSonda(arbol)).toBe('sistema|false|#111111')
   })
 
   it('setModo cambia a oscuro y persiste en venus.tema', async () => {
@@ -48,14 +48,14 @@ describe('TemaProvider', () => {
     await act(async () => {
       arbol.root.findByProps({ testID: 'sonda' }).props.onPress()
     })
-    expect(leerSonda(arbol)).toBe('oscuro|true|#4C82F7')
+    expect(leerSonda(arbol)).toBe('oscuro|true|#F4F4F5')
     expect(await AsyncStorage.getItem('venus.tema')).toBe('oscuro')
   })
 
   it('carga el modo persistido al montar', async () => {
     await AsyncStorage.setItem('venus.tema', 'oscuro')
     const arbol = await montar()
-    expect(leerSonda(arbol)).toBe('oscuro|true|#4C82F7')
+    expect(leerSonda(arbol)).toBe('oscuro|true|#F4F4F5')
   })
 
   it('useTema fuera del provider lanza error claro', () => {

@@ -95,10 +95,10 @@ describe('Perfil', () => {
     expect(existeTexto(arbol, 'Cerrar sesión')).toBe(true)
   })
 
-  it('dueño ve toda la sección Negocio (Proveedores, Reportes, Balance, Análisis IA, Carga inicial)', async () => {
+  it('dueño ve toda la sección Negocio (Recibir mercancía, Proveedores, Reportes, Balance, Análisis IA, Carga inicial)', async () => {
     conPerfil('dueno')
     const arbol = await montar()
-    for (const t of ['Negocio', 'Proveedores', 'Reportes', 'Balance', 'Análisis IA', 'Carga inicial']) {
+    for (const t of ['Negocio', 'Recibir mercancía', 'Proveedores', 'Reportes', 'Balance', 'Análisis IA', 'Carga inicial']) {
       expect({ [t]: existeTexto(arbol, t) }).toEqual({ [t]: true })
     }
   })
@@ -113,11 +113,26 @@ describe('Perfil', () => {
     expect(existeTexto(arbol, 'Análisis IA')).toBe(false)
   })
 
-  it('operativo no ve la sección Negocio', async () => {
+  // Recibir mercancía se movió de Productos a Perfil → Negocio (rediseño Productos §6):
+  // la plantilla operativa trae recibir_mercancia, así que ve Negocio solo con esa fila.
+  it('operativo ve en Negocio solo Recibir mercancía y navega a la entrada', async () => {
     conPerfil('empleado', 'Camilo Artunduaga')
     const arbol = await montar()
-    expect(existeTexto(arbol, 'Negocio')).toBe(false)
+    expect(existeTexto(arbol, 'Negocio')).toBe(true)
+    expect(existeTexto(arbol, 'Recibir mercancía')).toBe(true)
     expect(existeTexto(arbol, 'Proveedores')).toBe(false)
     expect(existeTexto(arbol, 'Carga inicial')).toBe(false)
+    const fila = arbol.root
+      .findAllByProps({ accessibilityLabel: 'Recibir mercancía' })
+      .find((n: { props: { onPress?: () => void } }) => n.props.onPress)!
+    await act(async () => fila.props.onPress!())
+    expect(mockPush).toHaveBeenCalledWith('/recibir-mercancia')
+  })
+
+  it('sin permiso recibir_mercancia no ve la fila (ni la sección si no tiene otro acceso)', async () => {
+    mockUseAuth.mockReturnValue({ perfil: perfilPrueba('operativo', 'Prueba', ['ventas']), cerrarSesion: jest.fn() })
+    const arbol = await montar()
+    expect(existeTexto(arbol, 'Recibir mercancía')).toBe(false)
+    expect(existeTexto(arbol, 'Negocio')).toBe(false)
   })
 })

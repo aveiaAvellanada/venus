@@ -136,7 +136,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
               justifyContent: 'center',
             }}
           >
-            <ShoppingCart size={26} color={paleta.sobrePrimario} strokeWidth={2.2} />
+            <ShoppingCart size={26} color={paleta.sobreOscura} strokeWidth={2.2} />
           </LinearGradient>
           {cantidadCarrito > 0 ? (
             <View
@@ -155,7 +155,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
                 borderColor: paleta.fondo,
               }}
             >
-              <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>
+              <Text style={{ color: paleta.sobrePrimario, fontSize: 11, fontWeight: '700' }}>
                 {cantidadCarrito > 9 ? '9+' : cantidadCarrito}
               </Text>
             </View>

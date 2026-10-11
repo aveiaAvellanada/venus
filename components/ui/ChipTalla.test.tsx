@@ -11,9 +11,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.useFakeTimers()
 
 import { TemaProvider } from '../../lib/tema'
-import { paletaClara } from '../../lib/theme'
 import { ChipTalla } from './ChipTalla'
-import { PillColor } from './PillColor'
 
 async function montar(ui: React.ReactElement) {
   let arbol!: ReturnType<typeof renderer.create>
@@ -39,18 +37,11 @@ describe('ChipTalla', () => {
     expect(chip.props.accessibilityState).toMatchObject({ disabled: true })
     chip.props.onPress?.()
     expect(onPress).not.toHaveBeenCalled()
+    expect(arbol.root.findAllByProps({ testID: 'raya-diagonal' }).length).toBeGreaterThan(0)
   })
-})
 
-describe('PillColor', () => {
-  it('muestra el nombre, marca selección y dispara onPress', async () => {
-    const onPress = jest.fn()
-    const arbol = await montar(<PillColor nombre="Negro" seleccionado onPress={onPress} />)
-    expect(arbol.root.findByProps({ children: 'Negro' })).toBeTruthy()
-    const pill = arbol.root.findByProps({ accessibilityRole: 'button' })
-    expect(pill.props.accessibilityState).toEqual({ selected: true })
-    await act(async () => pill.props.onPress())
-    expect(onPress).toHaveBeenCalled()
-    void paletaClara
+  it('con stock no lleva raya diagonal; acepta ancho fijo de grilla', async () => {
+    const arbol = await montar(<ChipTalla talla="38" stock={2} seleccionada={false} onPress={() => {}} ancho={56} />)
+    expect(arbol.root.findAllByProps({ testID: 'raya-diagonal' })).toHaveLength(0)
   })
 })

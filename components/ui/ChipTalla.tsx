@@ -8,18 +8,22 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated'
 import { useTema } from '../../lib/tema'
-import { motion, radio, tipografia } from '../../lib/theme'
+import { motion, tabular, tipografia } from '../../lib/theme'
+import { RayaDiagonal } from './RayaDiagonal'
 
 interface Props {
   talla: string
   stock: number
   seleccionada: boolean
   onPress: () => void
+  // Ancho fijo de la celda cuando va en grilla (detalle de producto).
+  ancho?: number
 }
 
 // Spec §6.13: talla arriba / divisor / stock abajo (formato fracción, sin "u").
-// Sin stock: visible pero deshabilitada (nunca se oculta, regla de negocio).
-export function ChipTalla({ talla, stock, seleccionada, onPress }: Props) {
+// Sin stock: visible pero deshabilitada, opaca y con raya diagonal "/"
+// (nunca se oculta, regla de negocio).
+export function ChipTalla({ talla, stock, seleccionada, onPress, ancho }: Props) {
   const { paleta } = useTema()
   const sinStock = stock <= 0
   const escala = useSharedValue(1)
@@ -38,7 +42,7 @@ export function ChipTalla({ talla, stock, seleccionada, onPress }: Props) {
   const color = sinStock ? paleta.textoDeshabilitado : seleccionada ? paleta.primario : paleta.texto
 
   return (
-    <Animated.View style={[{ flexGrow: 1, flexBasis: 56, maxWidth: 80 }, animado]}>
+    <Animated.View style={[ancho != null ? { width: ancho } : { flexGrow: 1, flexBasis: 56, maxWidth: 80 }, animado]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Talla ${talla}: ${stock} disponibles`}
@@ -46,20 +50,22 @@ export function ChipTalla({ talla, stock, seleccionada, onPress }: Props) {
         disabled={sinStock}
         onPress={sinStock ? undefined : onPress}
         style={{
-          borderRadius: radio.sm,
+          borderRadius: 10,
           borderWidth: seleccionada ? 2 : 1,
           borderColor: seleccionada ? paleta.primario : paleta.borde,
           backgroundColor: seleccionada ? paleta.primarioSoft : paleta.superficie,
           alignItems: 'center',
-          paddingVertical: seleccionada ? 7 : 8,
-          opacity: sinStock ? 0.38 : 1,
+          paddingVertical: seleccionada ? 4 : 5,
+          opacity: sinStock ? 0.5 : 1,
+          overflow: 'hidden',
         }}
       >
-        <Text style={[tipografia.h3, { color }]}>{talla}</Text>
-        <View style={{ height: 1, alignSelf: 'stretch', marginHorizontal: 10, marginVertical: 4, backgroundColor: seleccionada ? paleta.primario : paleta.borde, opacity: 0.5 }} />
-        <Text style={[tipografia.caption, { color: sinStock ? paleta.textoDeshabilitado : seleccionada ? paleta.primario : paleta.texto3 }]}>
+        <Text style={[tipografia.cuerpoLg, { color, fontSize: 15, lineHeight: 20 }]}>{talla}</Text>
+        <View style={{ height: 1, alignSelf: 'stretch', marginHorizontal: 8, marginVertical: 3, backgroundColor: seleccionada ? paleta.primario : paleta.borde, opacity: 0.5 }} />
+        <Text style={[tipografia.micro, tabular, { color: sinStock ? paleta.textoDeshabilitado : seleccionada ? paleta.primario : paleta.texto3, textTransform: 'none', letterSpacing: 0 }]}>
           {stock}
         </Text>
+        {sinStock ? <RayaDiagonal /> : null}
       </Pressable>
     </Animated.View>
   )

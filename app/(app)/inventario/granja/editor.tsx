@@ -26,7 +26,8 @@ export default function GranjaEditorScreen() {
   const [fetching, setFetching] = useState(!!id)
 
   const [nombre, setNombre] = useState('')
-  const [unidadMedida, setUnidadMedida] = useState('')
+  // En Colombia se vende por libra, no por kilo: es la unidad sugerida al crear.
+  const [unidadMedida, setUnidadMedida] = useState(id ? '' : 'libra')
   const [precioSugerido, setPrecioSugerido] = useState('')
   const [fotoUrl, setFotoUrl] = useState<string | null>(null)
 
@@ -234,7 +235,7 @@ export default function GranjaEditorScreen() {
               etiqueta="Unidad de medida *"
               value={unidadMedida}
               onChangeText={setUnidadMedida}
-              placeholder="Ej. Cubeta, Unidad, Kg"
+              placeholder="Ej. libra, cubeta, unidad"
             />
           </View>
           <View style={{ marginTop: espacio.m }}>

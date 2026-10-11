@@ -1,4 +1,18 @@
-import { agruparPorReferencia, filtrarModelos, colorAHex } from './productos'
+import {
+  agruparPorReferencia,
+  cantidadConUnidad,
+  colorAHex,
+  colorInicial,
+  columnasGrid,
+  columnasTallas,
+  contarModelos,
+  FILTROS_VACIOS,
+  filtrarModelos,
+  filtroActivo,
+  resumenColor,
+  tarjetasFiltradas,
+  tarjetasPorColor,
+} from './productos'
 import type { ProductoCalzado } from './inventario'
 
 function fila(sobrescribir: Partial<ProductoCalzado>): ProductoCalzado {
@@ -106,5 +120,84 @@ describe('colorAHex', () => {
     expect(colorAHex('blanco')).toBe('#FFFFFF')
     expect(colorAHex('CAFÉ')).toBe('#92400E')
     expect(colorAHex('fucsia neon')).toBe('#9CA3AF')
+  })
+})
+
+describe('tarjetas por color', () => {
+  const modelos = agruparPorReferencia(
+    [
+      fila({ talla: '40', color: 'Negro', precio_minimo: 150000, precio_maximo: 220000, stock_actual: 0 }),
+      fila({ talla: '41', color: 'Negro', precio_minimo: 160000, precio_maximo: 230000, stock_actual: 0 }),
+      fila({ talla: '39', color: 'Blanco', precio_minimo: 140000, precio_maximo: 200000, foto_url: 'http://b.jpg' }),
+      fila({ referencia: '3310', descripcion: 'Croydon Urbano', marca: 'Croydon', categoria: 'Clasico', color: null, precio_minimo: 95000, precio_maximo: 95000 }),
+      fila({ referencia: '7777', descripcion: 'Viejo', marca: 'Bosi', activo: false }),
+    ],
+    { incluirInactivos: true }
+  )
+
+  it('una tarjeta por modelo + color, con precio y agotado del color', () => {
+    const tarjetas = tarjetasPorColor(modelos)
+    const nike = tarjetas.filter((t) => t.modelo.referencia === '4521')
+    expect(nike.map((t) => t.color)).toEqual(['Negro', 'Blanco'])
+    expect(nike[0]).toMatchObject({ precioMin: 150000, precioMax: 230000, agotado: true, foto: null, numColores: 2 })
+    expect(nike[1]).toMatchObject({ precioMin: 140000, precioMax: 200000, agotado: false, foto: 'http://b.jpg' })
+    const croydon = tarjetas.find((t) => t.modelo.referencia === '3310')!
+    expect(croydon).toMatchObject({ color: '', numColores: 1 })
+  })
+
+  it('resumenColor y colorInicial: abre en el primer color con stock', () => {
+    const nike = modelos.find((m) => m.referencia === '4521')!
+    expect(resumenColor(nike, 'Blanco').agotado).toBe(false)
+    expect(colorInicial(nike)).toBe('Blanco')
+  })
+
+  it('filtros: descontinuados, categorías múltiples, marca y precio por tarjeta', () => {
+    expect(tarjetasFiltradas(modelos, '', FILTROS_VACIOS)).toHaveLength(3)
+    expect(tarjetasFiltradas(modelos, '', { ...FILTROS_VACIOS, verDescontinuados: true })).toHaveLength(4)
+    expect(
+      tarjetasFiltradas(modelos, '', { ...FILTROS_VACIOS, categorias: ['Deportivo', 'Clasico'] })
+    ).toHaveLength(3)
+    expect(tarjetasFiltradas(modelos, '', { ...FILTROS_VACIOS, marcas: ['Croydon'] })).toHaveLength(1)
+    // $145.000: pasa Blanco (mín 140.000) y Croydon; Negro (mín 150.000) no
+    expect(
+      tarjetasFiltradas(modelos, '', { ...FILTROS_VACIOS, precioMax: 145000 }).map((t) => t.color)
+    ).toEqual(['Blanco', ''])
+    // la búsqueda sigue encontrando por referencia
+    expect(tarjetasFiltradas(modelos, '3310', FILTROS_VACIOS)).toHaveLength(1)
+  })
+
+  it('filtroActivo y conteos', () => {
+    expect(filtroActivo(FILTROS_VACIOS)).toBe(false)
+    expect(filtroActivo({ ...FILTROS_VACIOS, precioMax: 1 })).toBe(true)
+    expect(filtroActivo({ ...FILTROS_VACIOS, verDescontinuados: true })).toBe(true)
+    expect(contarModelos(modelos, false, (m) => m.marca === 'Bosi')).toBe(0)
+    expect(contarModelos(modelos, true, (m) => m.marca === 'Bosi')).toBe(1)
+  })
+})
+
+describe('grid responsivo', () => {
+  it('columnas por ancho del contenedor', () => {
+    expect(columnasGrid(390)).toBe(2)
+    expect(columnasGrid(559)).toBe(2)
+    expect(columnasGrid(560)).toBe(3)
+    expect(columnasGrid(820)).toBe(4)
+    expect(columnasGrid(1100)).toBe(5)
+    expect(columnasGrid(1400)).toBe(6)
+  })
+
+  it('tallas: mínimo 5 por fila en celular', () => {
+    expect(columnasTallas(350)).toBeGreaterThanOrEqual(5)
+    expect(columnasTallas(300)).toBe(5)
+    expect(columnasTallas(0)).toBe(1)
+  })
+})
+
+describe('cantidadConUnidad', () => {
+  it('pluraliza la unidad de Granja', () => {
+    expect(cantidadConUnidad(1, 'libra')).toBe('1 libra')
+    expect(cantidadConUnidad(2, 'cubeta')).toBe('2 cubetas')
+    expect(cantidadConUnidad(0.5, 'libra')).toBe('0,5 libras')
+    expect(cantidadConUnidad(3, 'unidad')).toBe('3 unidades')
+    expect(cantidadConUnidad(2, 'kg')).toBe('2 kg')
   })
 })

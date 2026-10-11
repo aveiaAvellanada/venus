@@ -148,3 +148,28 @@ Al agregar, aparece una hoja inferior (misma para Calzado y Granja):
 - Verificar en `npm run web` (o Expo Go): lista 2 columnas en celular, filtros, detalle con
   miniaturas, hoja de carrito y Granja, en tema claro y oscuro.
 - Sin cambios en reglas de negocio ni en la base de datos.
+
+## Estado de implementación (2026-10-11)
+
+Implementado en la rama `rediseno-productos`. Decisiones tomadas con el dueño del repo:
+
+- **Compra rápida (⚠ §4/§5):** se quitó de Productos (detalle de Calzado y hoja de Granja).
+  El modo `/ventas/nueva?modo=rapida` y `lib/compraRapida.ts` siguen intactos pero **hoy no
+  tienen punto de entrada**; queda pendiente decidir dónde reubicarla.
+- **kg → libra (§5):** el editor de Granja sugiere `libra` al crear y en el placeholder.
+  **No** se migraron datos existentes (sin cambios en la base); si hay productos con `kg`,
+  se corrigen editándolos o con una migración aparte.
+- **Verde/rojo (§1):** monocromo total también en caja, balance y devoluciones. Pendiente
+  confirmar con el dueño si ahí vuelve un acento mínimo.
+- `advertencia*` no estaba en la tabla y se conservó ámbar.
+- La barra "Agregar al carrito", "Ir al carrito" y "Mostrar artículos" usan el token
+  `superficieOscura` (en vez del `#1F1F22` suelto del mockup).
+- Precio Max/Min de tarjeta y detalle = `precio_maximo` más alto y `precio_minimo` más bajo
+  del color (rango de regateo, igual que antes). El mockup calculaba ambos solo con
+  `precio_maximo`.
+- "Ver ficha" sigue visible solo con permiso `inventario` (como antes); ya no depende de
+  elegir talla.
+- Componentes nuevos en `components/ui`: `PanelFiltrosProductos`, `HojaProductoAnadido`,
+  `BarraAccionInferior`, `TarjetaGrid`, `RayaDiagonal`. Se eliminaron `HojaFiltrosProductos`
+  y `PillColor`. `Boton` suma variantes `oscuro`/`contorno` y `pildora`; `ChipTalla` suma
+  `ancho` y la raya diagonal. Lógica pura nueva en `lib/productos.ts` (con tests).

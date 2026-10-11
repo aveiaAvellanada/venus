@@ -28,6 +28,10 @@ jest.mock('expo-router', () => {
 jest.mock('./supabase', () => ({ supabase: {} }))
 jest.mock('../lib/supabase', () => ({ supabase: {} }))
 
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
+
 const mockUseAuth = jest.fn()
 jest.mock('../lib/auth', () => ({ useAuth: () => mockUseAuth() }))
 
@@ -105,7 +109,7 @@ async function montar(ui: React.ReactElement) {
   return arbol
 }
 
-type Nodo = { props: { onPress?: () => void; accessibilityLabel?: string } }
+type Nodo = { props: { onPress?: () => void; accessibilityLabel?: string; accessibilityState?: { disabled?: boolean; selected?: boolean } } }
 
 const existeTexto = (arbol: ReturnType<typeof renderer.create>, texto: string) =>
   arbol.root.findAllByProps({ children: texto }).length > 0
@@ -182,7 +186,7 @@ const CALZADO = [
 ]
 
 const VARIOS = [
-  { id: 'g1', nombre: 'Huevos', unidad_medida: 'unidad', precio_sugerido: null, foto_url: null, activo: true },
+  { id: 'g1', nombre: 'Huevos', unidad_medida: 'libra', precio_sugerido: null, foto_url: null, activo: true },
 ]
 
 describe('Productos', () => {
@@ -192,44 +196,117 @@ describe('Productos', () => {
     mockListarVarios.mockResolvedValue(VARIOS)
   })
 
-  it('agrupa por referencia: un card por modelo, con agotado, y navega al detalle', async () => {
+  const tarjetas = (arbol: ReturnType<typeof renderer.create>, etiqueta: string) =>
+    botones(arbol).filter((n: Nodo) => n.props.accessibilityLabel === etiqueta)
+
+  it('una tarjeta por modelo + color; color agotado con insignia; abre el detalle con el color', async () => {
     conRol('empleado')
     const arbol = await montar(<Productos />)
-    const cards = botones(arbol).filter((n: Nodo) => n.props.accessibilityLabel === 'Nike Air Max')
-    expect(cards).toHaveLength(1)
+    expect(tarjetas(arbol, 'Nike Air Max · Negro')).toHaveLength(1)
+    expect(tarjetas(arbol, 'Nike Air Max · Blanco')).toHaveLength(1)
     expect(existeTexto(arbol, 'AGOTADO')).toBe(true)
-    await act(async () => cards[0].props.onPress!())
-    expect(mockPush).toHaveBeenCalledWith('/productos/4521')
+    await act(async () => tarjetas(arbol, 'Nike Air Max · Blanco')[0].props.onPress!())
+    expect(mockPush).toHaveBeenCalledWith('/productos/4521?color=Blanco')
   })
 
-  it('la búsqueda filtra los modelos', async () => {
+  it('precio en dos renglones Max/Min; sin referencia ni chips de categoría', async () => {
+    conRol('empleado')
+    const arbol = await montar(<Productos />)
+    expect(existeTexto(arbol, '$220.000')).toBe(true)
+    expect(existeTexto(arbol, '$150.000')).toBe(true)
+    expect(existeTexto(arbol, 'Max')).toBe(true)
+    expect(existeTexto(arbol, 'Min')).toBe(true)
+    // un solo precio: una línea sin etiqueta
+    expect(existeTexto(arbol, '$95.000')).toBe(true)
+    expect(existeTexto(arbol, 'Ref 4521')).toBe(false)
+    expect(existeTexto(arbol, 'Ver descontinuados')).toBe(false)
+    expect(existeTexto(arbol, '2 colores')).toBe(true)
+  })
+
+  it('la búsqueda filtra (también por referencia)', async () => {
     conRol('empleado')
     const arbol = await montar(<Productos />)
     const input = arbol.root.findByType(require('react-native').TextInput)
-    await act(async () => input.props.onChangeText('croydon'))
-    expect(botones(arbol).filter((n: Nodo) => n.props.accessibilityLabel === 'Nike Air Max')).toHaveLength(0)
-    expect(
-      botones(arbol).filter((n: Nodo) => n.props.accessibilityLabel === 'Croydon Urbano').length
-    ).toBeGreaterThan(0)
+    await act(async () => input.props.onChangeText('3310'))
+    expect(tarjetas(arbol, 'Nike Air Max · Negro')).toHaveLength(0)
+    expect(tarjetas(arbol, 'Croydon Urbano · Café')).toHaveLength(1)
   })
 
-  it('toggle Granja lista los productos varios', async () => {
+  it('filtros: panel con contador en vivo; aplica solo con Mostrar artículos y resalta el ícono', async () => {
+    conRol('empleado')
+    const arbol = await montar(<Productos />)
+    const icono = () => arbol.root.findAllByProps({ accessibilityLabel: 'Filtros' }).find((n: Nodo) => n.props.onPress)!
+    await act(async () => icono().props.onPress!())
+    expect(existeTexto(arbol, '3 artículos encontrados')).toBe(true)
+    // Marca → Croydon: el contador cambia en vivo, la lista todavía no
+    await act(async () => arbol.root.findByProps({ accessibilityLabel: 'Marca', accessibilityRole: 'button' }).props.onPress())
+    await act(async () => arbol.root.findByProps({ accessibilityLabel: 'Croydon', accessibilityRole: 'checkbox' }).props.onPress())
+    expect(existeTexto(arbol, '1 artículo encontrado')).toBe(true)
+    expect(tarjetas(arbol, 'Nike Air Max · Negro')).toHaveLength(1)
+    const mostrar = arbol.root.findAllByProps({ accessibilityLabel: 'Mostrar artículos' }).find((n: Nodo) => n.props.onPress)!
+    await act(async () => mostrar.props.onPress!())
+    expect(tarjetas(arbol, 'Nike Air Max · Negro')).toHaveLength(0)
+    expect(tarjetas(arbol, 'Croydon Urbano · Café')).toHaveLength(1)
+    expect(icono().props.accessibilityState).toMatchObject({ selected: true })
+  })
+
+  it('filtros: la X cierra sin aplicar y Tipo de zapato es selección múltiple', async () => {
+    conRol('empleado')
+    const arbol = await montar(<Productos />)
+    const icono = arbol.root.findAllByProps({ accessibilityLabel: 'Filtros' }).find((n: Nodo) => n.props.onPress)!
+    await act(async () => icono.props.onPress!())
+    await act(async () => arbol.root.findByProps({ accessibilityLabel: 'Tipo de zapato', accessibilityRole: 'button' }).props.onPress())
+    await act(async () => arbol.root.findByProps({ accessibilityLabel: 'Deportivo', accessibilityRole: 'checkbox' }).props.onPress())
+    await act(async () => arbol.root.findByProps({ accessibilityLabel: 'Clásico', accessibilityRole: 'checkbox' }).props.onPress())
+    expect(existeTexto(arbol, 'Deportivo, Clásico')).toBe(true)
+    expect(existeTexto(arbol, '3 artículos encontrados')).toBe(true)
+    await act(async () => arbol.root.findByProps({ accessibilityLabel: 'Cerrar filtros' }).props.onPress())
+    expect(icono.props.accessibilityState).toMatchObject({ selected: false })
+  })
+
+  it('Granja: tarjetas con precio al vender; la hoja agrega y muestra "Producto añadido al carrito"', async () => {
     conRol('empleado')
     const arbol = await montar(<Productos />)
     await act(async () => tabs(arbol)[1].props.onPress!())
     expect(mockListarVarios).toHaveBeenCalled()
     expect(existeTexto(arbol, 'Huevos')).toBe(true)
+    expect(existeTexto(arbol, 'Precio al vender')).toBe(true)
+    expect(existeTexto(arbol, 'Por libra')).toBe(true)
+    await act(async () => tarjetas(arbol, 'Huevos')[0].props.onPress!())
+    expect(existeTexto(arbol, 'Compra rápida')).toBe(false)
+    const barra = () => arbol.root.findAllByProps({ accessibilityLabel: 'Agregar al carrito' }).find((n: Nodo) => n.props.accessibilityState)!
+    expect(barra().props.accessibilityState).toMatchObject({ disabled: true })
+    const inputs = arbol.root.findAllByType(require('react-native').TextInput)
+    await act(async () => inputs[inputs.length - 2].props.onChangeText('2'))
+    await act(async () => inputs[inputs.length - 1].props.onChangeText('5000'))
+    expect(barra().props.accessibilityState).toMatchObject({ disabled: false })
+    await act(async () => barra().props.onPress!())
+    expect(existeTexto(arbol, 'Producto añadido al carrito')).toBe(true)
+    expect(existeTexto(arbol, '2 libras')).toBe(true)
+    expect(existeTexto(arbol, '$10.000')).toBe(true)
+    const ir = arbol.root.findAllByProps({ accessibilityLabel: 'Ir al carrito' }).find((n: Nodo) => n.props.onPress)!
+    await act(async () => ir.props.onPress!())
+    expect(mockPush).toHaveBeenCalledWith('/ventas/nueva')
   })
 
-  // Carga inicial ya no vive aquí para ningún rol: se movió a Perfil.
-  it('todos ven Recibir mercancía; nadie ve Carga inicial', async () => {
+  it('Granja: el lápiz solo con permiso de inventario y abre el editor', async () => {
+    mockUseAuth.mockReturnValue({ perfil: perfilPrueba('operativo', 'Prueba', ['ventas']), cerrarSesion: jest.fn() })
+    const sinPermiso = await montar(<Productos />)
+    await act(async () => tabs(sinPermiso)[1].props.onPress!())
+    expect(sinPermiso.root.findAllByProps({ accessibilityLabel: 'Editar Huevos' })).toHaveLength(0)
     conRol('empleado')
+    const arbol = await montar(<Productos />)
+    await act(async () => tabs(arbol)[1].props.onPress!())
+    const lapiz = arbol.root.findAllByProps({ accessibilityLabel: 'Editar Huevos' }).find((n: Nodo) => n.props.onPress)!
+    await act(async () => lapiz.props.onPress!())
+    expect(mockPush).toHaveBeenCalledWith('/inventario/granja/editor?id=g1')
+  })
+
+  // Recibir mercancía se movió a Perfil → Negocio; Carga inicial también vive en Perfil.
+  it('Productos ya no muestra Recibir mercancía ni Carga inicial', async () => {
+    conRol('dueno')
     const a = await montar(<Productos />)
-    expect(existeTexto(a, 'Recibir mercancía')).toBe(true)
+    expect(existeTexto(a, 'Recibir mercancía')).toBe(false)
     expect(existeTexto(a, 'Carga inicial')).toBe(false)
-    conRol('admin')
-    const b = await montar(<Productos />)
-    expect(existeTexto(b, 'Recibir mercancía')).toBe(true)
-    expect(existeTexto(b, 'Carga inicial')).toBe(false)
   })
 })

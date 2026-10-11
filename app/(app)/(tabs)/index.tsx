@@ -269,19 +269,19 @@ export default function Menu() {
               end={{ x: 1, y: 1 }}
               style={{ borderRadius: radio.lg, padding: espacio.l, gap: 4 }}
             >
-              <Text style={[tipografia.micro, { color: 'rgba(255,255,255,0.7)' }]}>
+              <Text style={[tipografia.micro, { color: paleta.sobreOscuraSuave }]}>
                 {esStaff ? 'Total vendido' : 'Vendido hoy'}
               </Text>
               <ContadorDinero
                 valor={total}
-                color="#FFFFFF"
+                color={paleta.sobreOscura}
                 estilo={[tipografia.displayXL, { fontSize: 36, lineHeight: 44 }]}
               />
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s }}>
                 {delta && !delta.sinBase && delta.direccion !== 'igual' ? (
                   <View
                     style={{
-                      backgroundColor: 'rgba(255,255,255,0.18)',
+                      backgroundColor: paleta.veloOscura,
                       borderRadius: radio.full,
                       paddingVertical: 3,
                       paddingHorizontal: 10,
@@ -291,14 +291,14 @@ export default function Menu() {
                       style={[
                         tipografia.caption,
                         tabular,
-                        { color: delta.direccion === 'sube' ? '#B9F6CE' : '#FFC9C9' },
+                        { color: paleta.sobreOscura },
                       ]}
                     >
                       {`${delta.direccion === 'sube' ? '▲' : '▼'} ${delta.pct}%`}
                     </Text>
                   </View>
                 ) : null}
-                <Text style={[tipografia.caption, { color: 'rgba(255,255,255,0.7)' }]}>
+                <Text style={[tipografia.caption, { color: paleta.sobreOscuraSuave }]}>
                   {`${numVentas} ${numVentas === 1 ? 'venta' : 'ventas'}`}
                 </Text>
               </View>

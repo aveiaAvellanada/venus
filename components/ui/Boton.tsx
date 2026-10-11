@@ -4,7 +4,7 @@ import { useTema } from '../../lib/tema'
 import { espacio, radio, tipografia } from '../../lib/theme'
 import { Presionable } from './Presionable'
 
-export type VarianteBoton = 'primario' | 'secundario' | 'peligro' | 'fantasma'
+export type VarianteBoton = 'primario' | 'secundario' | 'peligro' | 'fantasma' | 'oscuro' | 'contorno'
 
 interface Props {
   titulo: string
@@ -14,6 +14,8 @@ interface Props {
   cargando?: boolean
   deshabilitado?: boolean
   icono?: React.ReactNode
+  // Píldora (radio completo): "Ir al carrito", "Seguir", "Mostrar artículos".
+  pildora?: boolean
 }
 
 export function Boton({
@@ -24,6 +26,7 @@ export function Boton({
   cargando = false,
   deshabilitado = false,
   icono,
+  pildora = false,
 }: Props) {
   const { paleta } = useTema()
   const inactivo = deshabilitado || cargando
@@ -33,6 +36,8 @@ export function Boton({
     secundario: { fondo: paleta.primarioSoft, texto: paleta.primario },
     peligro: { fondo: paleta.peligro, texto: paleta.sobrePrimario },
     fantasma: { fondo: 'transparent', texto: paleta.primario },
+    oscuro: { fondo: paleta.superficieOscura, texto: paleta.sobreOscura },
+    contorno: { fondo: paleta.fondo, texto: paleta.texto },
   }[variante]
 
   return (
@@ -45,6 +50,8 @@ export function Boton({
       style={[
         estilos.base,
         { backgroundColor: colores.fondo, height: tamano === 'lg' ? 56 : 48 },
+        pildora ? { borderRadius: radio.full, paddingHorizontal: espacio.s } : null,
+        variante === 'contorno' ? { borderWidth: 1.5, borderColor: paleta.texto } : null,
         inactivo && !cargando ? estilos.deshabilitado : null,
       ]}
     >

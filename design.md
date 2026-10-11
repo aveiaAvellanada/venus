@@ -1,5 +1,8 @@
 # Venus — Sistema de Diseño y UI/UX
 
+> **Nota (2026-10):** auditoría histórica. Los colores vigentes son la paleta
+> monocroma de `docs/rediseno-productos/README.md` §1 (fuente: `lib/theme.ts`).
+
 > Documento visual del producto. Describe la identidad, los tokens (color,
 > tipografía, espaciado), los componentes, los patrones de pantalla y las
 > oportunidades de consistencia. Basado en la UI real (`app/`), 33 pantallas.

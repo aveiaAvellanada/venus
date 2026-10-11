@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { orIlike } from './busqueda'
+import { enlaceWhatsApp } from '../shared/proveedores'
 import type { Database } from './database.types'
 
 type CompraItemInsert = Database['public']['Tables']['compra_items']['Insert']
@@ -78,13 +79,9 @@ export async function obtenerProveedorPorId(id: string): Promise<Proveedor | nul
   return data
 }
 
+// La lógica vive en shared/ (también la usa el panel web).
 export function obtenerWhatsAppLink(telefono: string | null, mensaje?: string): string {
-  if (!telefono) return ''
-  const cleanPhone = telefono.replace(/\D/g, '')
-  if (!cleanPhone) return ''
-  const formattedPhone = cleanPhone.length === 10 ? `57${cleanPhone}` : cleanPhone
-  const encodedText = mensaje ? encodeURIComponent(mensaje) : ''
-  return `https://wa.me/${formattedPhone}${encodedText ? `?text=${encodedText}` : ''}`
+  return enlaceWhatsApp(telefono, mensaje)
 }
 
 // ----------------------------------------------------

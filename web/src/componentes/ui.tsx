@@ -1,5 +1,5 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import { LoaderCircle } from 'lucide-react'
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
+import { LoaderCircle, X } from 'lucide-react'
 
 export function Tarjeta({ titulo, accion, children, className = '' }: {
   titulo?: ReactNode
@@ -71,6 +71,54 @@ export function MensajeError({ error }: { error: unknown }) {
   return (
     <p role="alert" className="rounded-xl bg-peligro-soft px-3 py-2 text-sm text-peligro-texto">
       No se pudo cargar: {texto}
+    </p>
+  )
+}
+
+// Ventana modal: cierra con Escape, con la X o tocando fuera.
+export function Dialogo({ titulo, alCerrar, children, pie, ancho = 'max-w-lg' }: {
+  titulo: string
+  alCerrar: () => void
+  children: ReactNode
+  pie?: ReactNode
+  ancho?: string
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-[8vh]" onMouseDown={alCerrar}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={titulo}
+        onMouseDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.key === 'Escape' && alCerrar()}
+        className={`w-full ${ancho} rounded-2xl border border-borde bg-fondo shadow-2xl`}
+      >
+        <header className="flex items-center justify-between border-b border-borde px-5 py-4">
+          <h2 className="text-lg font-semibold">{titulo}</h2>
+          <button type="button" aria-label="Cerrar" onClick={alCerrar} className="rounded-lg p-1.5 text-texto3 hover:bg-superficie2">
+            <X className="size-5" />
+          </button>
+        </header>
+        <div className="px-5 py-4">{children}</div>
+        {pie ? <footer className="flex justify-end gap-2 border-t border-borde px-5 py-4">{pie}</footer> : null}
+      </div>
+    </div>
+  )
+}
+
+export function CampoTexto({ etiqueta, className = '', ...props }: InputHTMLAttributes<HTMLInputElement> & { etiqueta: string }) {
+  return (
+    <label className={`block text-sm ${className}`}>
+      <span className="mb-1.5 block font-medium">{etiqueta}</span>
+      <input {...props} className="w-full rounded-xl border border-borde bg-fondo px-3 py-2 outline-none focus:border-primario" />
+    </label>
+  )
+}
+
+export function AvisoError({ error }: { error: unknown }) {
+  return (
+    <p role="alert" className="rounded-xl bg-peligro-soft px-3 py-2 text-sm text-peligro-texto">
+      {error instanceof Error ? error.message : 'Algo salió mal.'}
     </p>
   )
 }

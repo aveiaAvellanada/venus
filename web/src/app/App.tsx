@@ -9,6 +9,8 @@ import { Inicio } from '../paginas/Inicio'
 import { Inventario } from '../paginas/inventario/Inventario'
 import { NoEncontrada } from '../paginas/NoEncontrada'
 import { Proximamente } from '../paginas/Proximamente'
+import { FichaProveedor } from '../paginas/proveedores/FichaProveedor'
+import { Proveedores } from '../paginas/proveedores/Proveedores'
 
 const cliente = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
@@ -34,6 +36,8 @@ export function Rutas() {
         <Route element={<Estructura />}>
           <Route index element={<Inicio />} />
           <Route path="/inventario" element={<Inventario />} />
+          <Route path="/proveedores" element={<Proveedores />} />
+          <Route path="/proveedores/:id" element={<FichaProveedor />} />
           {SECCIONES.filter((s) => !s.lista).map((s) => (
             <Route key={s.id} path={s.ruta} element={<Proximamente seccion={s} />} />
           ))}

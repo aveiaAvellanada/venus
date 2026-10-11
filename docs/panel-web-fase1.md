@@ -1,6 +1,6 @@
 # Panel web — Fase 1: Mercancía (plan)
 
-Estado: entrega 1 (Inventario y precios) construida el 2026-10-09; el resto, por construir. Marco general: `docs/panel-web.md`.
+Estado: entrega 1 (Inventario y precios) construida el 2026-10-09; entrega 2 (Proveedores) el 2026-10-12; el resto, por construir. Marco general: `docs/panel-web.md`.
 Fase 0 publicada en Cloudflare Pages (login del dueño, navegación, búsqueda, Inicio,
 historial de acciones).
 
@@ -124,7 +124,15 @@ y totales de compra, lectura/validación de la plantilla Excel. Con tests en
 ## Entregas (un PR cada una)
 
 1. ✅ Inventario y precios (+ `actualizar_precios_lote`, `obtener_costos_productos`). Tabla propia en vez de TanStack Table (no hizo falta); exporta CSV para Excel; el precio se cambia solo por la regla en lote (también para una sola referencia), así todo cambio queda en el historial de precios.
-2. Proveedores.
+2. ✅ Proveedores (+ `registrar_pago_proveedor` y bucket privado `proveedores`; migración `20261012120000_panel_proveedores.sql`, test `pagos_proveedores_test.sql`).
+   - **Lista** (`/proveedores`): deuda total, lo vencido, búsqueda sin tildes y filtros Activos / Con deuda / Vencidos / Inactivos, ordenada por deuda.
+   - **Ficha** (`/proveedores/:id`): datos editables, WhatsApp, deuda y próximo pago, y pestañas:
+     - Compras y pagos, con "Registrar pago". La base valida contra el saldo; antes solo lo hacía la app.
+     - Costos por referencia: último costo, el anterior y el cambio.
+     - Cuentas bancarias: agregar, editar, copiar y borrar.
+     - Documentos: PDF de hasta 5 MB o fotos comprimidas a 500 KB, guardados en un bucket privado y abiertos con enlace temporal.
+   - **Búsqueda global:** también encuentra proveedores.
+   - **Permisos:** sin `deudas` o `costos` (otra cuenta), esas partes se ocultan en vez de fallar.
 3. Compras y recepción (+ `registrar_compra`).
 4. Carga masiva.
 

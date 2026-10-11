@@ -68,3 +68,27 @@ export async function buscarProductos(texto: string): Promise<ProductoEncontrado
     })),
   ]
 }
+
+export interface ProveedorEncontrado {
+  id: string
+  nombre: string
+  detalle: string
+}
+
+export async function buscarProveedores(texto: string): Promise<ProveedorEncontrado[]> {
+  const termino = limpiarTermino(texto)
+  if (termino.length < 2) return []
+  const patron = `%${termino}%`
+  const { data, error } = await supabase
+    .from('proveedores')
+    .select('id, nombre, nit_cedula, ciudad')
+    .or(['nombre', 'nit_cedula', 'ciudad'].map((c) => `${c}.ilike.${patron}`).join(','))
+    .order('nombre')
+    .limit(5)
+  if (error) throw error
+  return (data ?? []).map((p) => ({
+    id: p.id,
+    nombre: p.nombre,
+    detalle: ['Proveedor', p.nit_cedula && `NIT/CC ${p.nit_cedula}`, p.ciudad].filter(Boolean).join(' · '),
+  }))
+}

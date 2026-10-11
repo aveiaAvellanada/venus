@@ -72,7 +72,7 @@ export function Estructura() {
             className="flex min-w-0 max-w-md flex-1 items-center gap-2 rounded-xl border border-borde bg-superficie px-3 py-2 text-left text-sm text-texto3 hover:border-borde-fuerte"
           >
             <Search aria-hidden className="size-4 shrink-0" />
-            <span className="flex-1 truncate">Buscar productos o secciones…</span>
+            <span className="flex-1 truncate">Buscar productos, proveedores o secciones…</span>
             <kbd className="hidden rounded-md border border-borde px-1.5 text-xs sm:inline">Ctrl K</kbd>
           </button>
           <div className="ml-auto flex items-center gap-2">

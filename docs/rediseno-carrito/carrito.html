@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Venus · Mockup Carrito</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   TOKENS — paleta monocroma (misma que productos.html / lib/theme.ts rediseñado)
+   ===================================================================== */
+:root{
+  --primario:#111111; --primario-press:#000000; --primario-soft:#F0F0F1; --sobre-primario:#FFFFFF;
+  --acento:#6B6B72; --acento-soft:#EDEDEF;
+  --fondo:#FFFFFF; --superficie:#F6F6F7; --superficie2:#EDEDEF;
+  --borde:#E4E4E7; --borde-fuerte:#CFCFD4;
+  --texto:#0E0E10; --texto2:#4B4B52; --texto3:#6B6B72; --texto-off:#A1A1A8;
+  --exito:#3F3F46; --exito-soft:#EDEDEF; --exito-texto:#27272A;
+  --peligro:#18181B; --peligro-soft:#E4E4E7; --peligro-texto:#18181B;
+  --overlay:rgba(14,14,16,.5);
+  --barra:#1F1F22;
+
+  --r-sm:12px; --r-md:16px; --r-lg:20px; --r-xl:28px; --r-full:999px;
+  --e-xs:4px; --e-s:8px; --e-m:12px; --e-l:16px; --e-xl:20px; --e-xxl:24px;
+  --fuente:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+:root[data-tema="oscuro"]{
+  --primario:#F4F4F5; --primario-press:#FFFFFF; --primario-soft:#2A2A2E; --sobre-primario:#0E0E10;
+  --acento:#A1A1A8; --acento-soft:#232326;
+  --fondo:#0E0E10; --superficie:#151517; --superficie2:#202023;
+  --borde:#2D2D31; --borde-fuerte:#3A3A40;
+  --texto:#F4F4F5; --texto2:#B4B4BA; --texto3:#8A8A91; --texto-off:#5C5C63;
+  --exito:#C4C4CA; --exito-soft:#1F1F22; --exito-texto:#D4D4D8;
+  --peligro:#F4F4F5; --peligro-soft:#2A2A2E; --peligro-texto:#F4F4F5;
+  --overlay:rgba(0,0,0,.6);
+  --barra:#27272B;
+}
+
+/* ---------- Escenario ---------- */
+*{box-sizing:border-box;margin:0}
+body{font-family:var(--fuente);background:#DEDEE0;color:var(--texto);min-height:100vh;padding:24px 16px 48px;-webkit-font-smoothing:antialiased}
+:root[data-tema="oscuro"] body{background:#050505}
+.barra-sup{max-width:1280px;margin:0 auto 24px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.barra-sup h1{font-size:15px;font-weight:700;color:#0E0E10}
+:root[data-tema="oscuro"] .barra-sup h1{color:#F4F4F5}
+.barra-sup small{display:block;font-weight:500;font-size:12px;color:#6B6B72}
+.barra-sup button{font:600 13px var(--fuente);padding:8px 14px;border-radius:999px;border:1px solid #CFCFD4;background:#fff;color:#0E0E10;cursor:pointer}
+.barra-sup button.on{background:#111;border-color:#111;color:#fff}
+.escenario{display:flex;flex-wrap:wrap;gap:32px;justify-content:center;align-items:flex-start}
+.etiqueta-tel{text-align:center;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#6B6B72;margin-bottom:10px}
+
+/* ---------- Marco de teléfono ---------- */
+.tel{width:390px;max-width:100%;height:780px;border-radius:44px;background:var(--fondo);border:10px solid #0E0E10;box-shadow:0 24px 60px rgba(14,14,16,.28);position:relative;overflow:hidden;display:flex;flex-direction:column}
+.cab{flex:none;display:flex;align-items:center;gap:var(--e-m);padding:52px var(--e-xl) var(--e-m)}
+.cab h1{flex:1;font-size:20px;line-height:26px;font-weight:700}
+.cab .cuenta{font-size:13px;font-weight:600;color:var(--texto3)}
+.ib{width:40px;height:40px;border-radius:var(--r-full);border:0;background:var(--superficie2);color:var(--texto);display:grid;place-items:center;cursor:pointer;flex:none}
+.cuerpo{flex:1;overflow-y:auto;padding:0 var(--e-xl) var(--e-xl);display:flex;flex-direction:column;gap:10px;scrollbar-width:none}
+.cuerpo::-webkit-scrollbar{display:none}
+.nav-sistema{flex:none;height:44px;background:#D9D9DC;display:flex;justify-content:center;align-items:center;gap:56px;color:#6B6B72}
+:root[data-tema="oscuro"] .nav-sistema{background:#1A1A1D;color:#8A8A91}
+.nav-sistema i{display:block}
+.nav-sistema .cuad{width:14px;height:14px;border-radius:3px;background:currentColor}
+.nav-sistema .circ{width:18px;height:18px;border-radius:50%;border:3px solid currentColor}
+.nav-sistema .tri{width:0;height:0;border-top:8px solid transparent;border-bottom:8px solid transparent;border-right:13px solid currentColor}
+
+/* ---------- Tipografía ---------- */
+.h1{font-size:25px;line-height:31px;font-weight:800;letter-spacing:-.4px}
+.h2{font-size:19px;line-height:25px;font-weight:700}
+.h3{font-size:16px;line-height:22px;font-weight:700}
+.cuerpo-lg{font-size:15px;line-height:22px;font-weight:600}
+.etiqueta{font-size:13px;line-height:18px;font-weight:600}
+.caption{font-size:12px;line-height:16px;font-weight:600}
+.micro{font-size:11px;line-height:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.tab{font-variant-numeric:tabular-nums}
+.t2{color:var(--texto2)} .t3{color:var(--texto3)}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- Línea del carrito ---------- */
+.linea{background:var(--superficie);border:1px solid var(--borde);border-radius:var(--r-md);padding:var(--e-m);display:flex;flex-direction:column;gap:var(--e-m)}
+.linea .top{display:flex;gap:var(--e-m)}
+.linea .ajuste{padding:0 6px}
+/* slider con zonas: gris claro = margen (±MARGEN), oscuro = rango normal entre mínimo y máximo */
+.slider{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:var(--r-full);outline:none;margin:6px 0 0;
+  background:linear-gradient(to right,var(--borde-fuerte) 0 var(--z1),var(--texto) var(--z1) var(--z2),var(--borde-fuerte) var(--z2) 100%)}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--fondo);border:3px solid var(--texto);box-shadow:0 1px 4px rgba(14,14,16,.3);cursor:pointer}
+.slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--fondo);border:3px solid var(--texto);cursor:pointer}
+.escala{position:relative;height:18px;margin-top:6px;font-size:11px;font-weight:600;color:var(--texto3)}
+.escala span{position:absolute;top:0;white-space:nowrap}
+.escala .e-min{transform:translateX(-100%);padding-right:4px}
+.escala .e-max{padding-left:4px}
+.escala-fila{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;font-size:11px;font-weight:600;color:var(--texto3)}
+.precio-manual{display:flex;align-items:center;gap:2px;border:1.5px solid var(--borde-fuerte);background:var(--fondo);border-radius:var(--r-sm);padding:0 8px;height:34px;font-size:13px;font-weight:700;color:var(--texto);min-width:0}
+.precio-manual input{width:80px;border:0;outline:0;background:none;font:700 13px var(--fuente);color:var(--texto);text-align:right}
+.precio-manual:focus-within{border-color:var(--texto)}
+.margen-txt{font-size:11px;font-weight:500;color:var(--texto3);text-align:center;margin-top:4px}
+.nota-margen{font-size:12px;line-height:16px;font-weight:500;color:var(--texto3);padding:0 4px}
+.aviso[hidden]{display:none}
+.linea .foto{width:76px;height:76px;border-radius:var(--r-sm);background:var(--superficie2);display:grid;place-items:center;flex:none;overflow:hidden;color:var(--acento)}
+.linea .foto svg.zap{width:92%;height:auto}
+.linea .foto svg.i{width:36px;height:36px}
+.linea .dat{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.linea .tit{font-size:14px;line-height:18px;font-weight:700;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.linea .sub{font-size:11px;line-height:15px;font-weight:500;color:var(--texto3)}
+.linea .pie{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.linea .subtotal{font-size:14px;font-weight:800;letter-spacing:-.2px}
+.paso{display:flex;align-items:center;gap:6px}
+.paso button{width:30px;height:30px;border-radius:var(--r-full);border:0;background:var(--superficie2);color:var(--texto);display:grid;place-items:center;cursor:pointer}
+.paso button:disabled{opacity:.35;cursor:not-allowed}
+.paso .n{min-width:24px;text-align:center;font-size:14px;font-weight:700}
+.quitar{background:none;border:0;color:var(--texto3);font:600 12px var(--fuente);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:2px 0}
+.granja-campos{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
+.granja-campos input{width:72px;height:34px;border-radius:var(--r-sm);border:1.5px solid var(--borde-fuerte);background:var(--fondo);padding:0 8px;font:600 14px var(--fuente);color:var(--texto);min-width:0}
+.granja-campos span{font-size:12px;font-weight:600;color:var(--texto2)}
+.aviso{font-size:11px;font-weight:600;color:var(--peligro-texto);background:var(--peligro-soft);border-radius:var(--r-full);padding:3px 10px;align-self:flex-start;margin-top:4px}
+
+.resumen{background:var(--superficie);border:1px solid var(--borde);border-radius:var(--r-md);padding:var(--e-l);display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.resumen .f{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--texto2)}
+.resumen .f.t{font-size:16px;font-weight:800;color:var(--texto);border-top:1px solid var(--borde);padding-top:10px;margin-top:2px}
+
+.vacio{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--e-m);text-align:center;padding:var(--e-xxl)}
+.vacio .circulo{width:72px;height:72px;border-radius:50%;background:var(--superficie2);color:var(--texto-off);display:grid;place-items:center}
+.vacio .circulo svg{width:32px;height:32px}
+
+/* ---------- Barras y botones ---------- */
+.barra-fija{flex:none;background:var(--barra);border-radius:var(--r-lg) var(--r-lg) 0 0;padding:12px var(--e-xl) 16px}
+.barra-fija button{width:100%;height:46px;border:0;background:none;color:#fff;font:700 15px var(--fuente);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.barra-fija button:disabled{opacity:.45;cursor:not-allowed}
+.boton{display:flex;align-items:center;justify-content:center;gap:var(--e-s);height:50px;border-radius:var(--r-full);padding:0 var(--e-xxl);border:0;width:100%;font:700 15px var(--fuente);cursor:pointer;background:var(--barra);color:#fff}
+.boton.claro{background:var(--fondo);color:var(--texto);border:1.5px solid var(--barra)}
+:root[data-tema="oscuro"] .boton.claro{border-color:var(--texto)}
+.boton.fan{background:none;color:var(--texto);text-decoration:underline;text-underline-offset:3px;height:44px}
+.boton:disabled{opacity:.45;cursor:not-allowed}
+
+/* ---------- Cobrar ---------- */
+.total-grande{text-align:center;font-size:32px;line-height:40px;font-weight:800;letter-spacing:-.8px;padding:4px 0 8px}
+.chips{display:flex;gap:var(--e-s);flex-wrap:wrap}
+.chip{height:36px;padding:0 16px;border-radius:var(--r-full);border:1px solid var(--borde);background:var(--superficie);color:var(--texto2);font:600 13px var(--fuente);cursor:pointer}
+.chip.on{background:var(--primario);border-color:var(--primario);color:var(--sobre-primario)}
+.campo{display:flex;flex-direction:column;gap:6px}
+.campo label{font-size:12px;font-weight:600;color:var(--texto2)}
+.campo input{height:44px;border-radius:var(--r-md);border:1px solid var(--borde);background:var(--superficie);padding:0 var(--e-l);font:600 14px var(--fuente);color:var(--texto);outline:none;width:100%}
+.campo input:focus{border-color:var(--texto)}
+.campo input::placeholder{color:var(--texto-off);font-weight:500}
+.estado-pago{text-align:center;font-size:15px;font-weight:700;padding:4px 0}
+.estado-pago.ok{color:var(--exito-texto)}
+.estado-pago.mal{color:var(--peligro-texto)}
+.cambio{font-size:15px;font-weight:700;color:var(--exito-texto)}
+.sec-tit{font-size:12px;font-weight:700;color:var(--texto2);margin-top:6px}
+
+/* ---------- Confirmación ---------- */
+.ok-circulo{width:96px;height:96px;border-radius:50%;background:var(--barra);color:#fff;display:grid;place-items:center}
+.ok-circulo svg{width:48px;height:48px;stroke-width:3}
+
+/* ---------- Diálogo / toast ---------- */
+.overlay{position:absolute;inset:0;background:var(--overlay);display:none;align-items:center;justify-content:center;padding:var(--e-xxl);z-index:20}
+.overlay.on{display:flex}
+.dialogo{background:var(--fondo);border-radius:var(--r-lg);padding:var(--e-xxl);display:flex;flex-direction:column;gap:var(--e-m);width:100%}
+.dialogo .acc{display:flex;gap:var(--e-m);margin-top:8px}
+.dialogo .boton{height:48px;font-size:15px}
+.toast{position:absolute;left:var(--e-xl);right:var(--e-xl);bottom:84px;background:var(--texto);color:var(--fondo);border-radius:var(--r-md);padding:14px var(--e-l);font:600 14px var(--fuente);opacity:0;transform:translateY(12px);transition:.25s;pointer-events:none;z-index:30}
+.toast.on{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<div class="barra-sup">
+  <h1>Venus · Carrito y cobro
+    <small>Mockup editable — no toca el código original. Tokens en <code>:root</code>. Las 3 pantallas comparten el mismo estado.</small>
+  </h1>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button id="bCerrada">Simular caja cerrada</button>
+    <button id="bVaciar">Vaciar carrito</button>
+    <button id="bReset">Restablecer ejemplo</button>
+    <button id="tema">Tema: claro</button>
+  </div>
+</div>
+
+<div class="escenario">
+  <div>
+    <div class="etiqueta-tel">1 · Carrito · ventas/nueva.tsx (etapa carrito)</div>
+    <div class="tel" id="tel1">
+      <div id="p1" style="display:flex;flex-direction:column;flex:1;min-height:0"></div>
+      <div class="nav-sistema"><i class="cuad"></i><i class="circ"></i><i class="tri"></i></div>
+      <div class="overlay" id="ovDescartar">
+        <div class="dialogo">
+          <div class="h3">¿Descartar la venta?</div>
+          <div class="t2" style="font-size:15px">Perderás el carrito actual.</div>
+          <div class="acc">
+            <button class="boton claro" id="dSeguir">Seguir</button>
+            <button class="boton" id="dDescartar">Descartar</button>
+          </div>
+        </div>
+      </div>
+      <div class="toast" id="toast1"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="etiqueta-tel">2 · Cobrar · etapa cobrar</div>
+    <div class="tel" id="tel2">
+      <div id="p2" style="display:flex;flex-direction:column;flex:1;min-height:0"></div>
+      <div class="nav-sistema"><i class="cuad"></i><i class="circ"></i><i class="tri"></i></div>
+      <div class="toast" id="toast2"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="etiqueta-tel">3 · Confirmación · etapa confirmacion</div>
+    <div class="tel" id="tel3">
+      <div id="p3" style="display:flex;flex-direction:column;flex:1;min-height:0"></div>
+      <div class="nav-sistema"><i class="cuad"></i><i class="circ"></i><i class="tri"></i></div>
+      <div class="toast" id="toast3"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== Utilidades ===================== */
+const $ = id => document.getElementById(id);
+const pesos = n => '$' + Math.round(n * 100 / 100).toLocaleString('es-CO');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const redondear = n => Math.round(n * 100) / 100;
+const soloEntero = t => t.replace(/[^0-9]/g, '');
+const soloDecimal = t => { const l = t.replace(/[^0-9.]/g, ''), p = l.split('.'); return p.length <= 1 ? l : p[0] + '.' + p.slice(1).join(''); };
+const ICO = {
+  x:'<svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  minus:'<svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>',
+  plus:'<svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  atras:'<svg class="i" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>',
+  check:'<svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>',
+  lock:'<svg class="i" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+  bolsa:'<svg class="i" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"/></svg>',
+  huevo:'<svg class="i" viewBox="0 0 24 24"><path d="M12 22c4 0 7-3 7-7 0-5-4-13-7-13S5 10 5 15c0 4 3 7 7 7z"/></svg>',
+  paquete:'<svg class="i" viewBox="0 0 24 24"><path d="M21 8v8l-9 5-9-5V8l9-5z"/><path d="M3.3 7 12 12l8.7-5M12 22V12"/></svg>',
+};
+function zapatoSVG(hex){
+  const n=parseInt(hex.slice(1),16), L=((n>>16)*299+((n>>8)&255)*587+(n&255)*114)/1000;
+  const raya = L>150 ? '#1F2937' : '#FFFFFF';
+  return `<svg class="zap" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="62" cy="55" rx="52" ry="3" fill="rgba(14,14,16,.12)"/>
+    <path d="M8 44C8 37 10 29 15 25L30 21C36 20 40 26 47 26L66 24C75 24 80 30 90 34C102 36 113 38 114 44Z" fill="${hex}" stroke="rgba(14,14,16,.25)" stroke-width="1"/>
+    <path d="M52 29l9 14M60 28l9 15M68 28l9 14" stroke="${raya}" stroke-width="3" stroke-linecap="round"/>
+    <rect x="6" y="43" width="109" height="10" rx="5" fill="#D9B38C"/></svg>`;
+}
+const COLOR_HEX = {Negro:'#111827',Blanco:'#F8FAFC',Azul:'#2563EB',Rojo:'#DC2626',Gris:'#9CA3AF',Café:'#7C4A24',Verde:'#16A34A'};
+
+/* ===================== Estado (equivale a carritoReducer de lib/carrito.ts) ===================== */
+const EJEMPLO = () => ([
+  {tipo:'calzado', id:'c1', titulo:'Tenis Runner Pro', marca:'Nike', talla:'39', color:'Blanco', stock:5, precioMin:120000, precioMax:150000, precio:120000, cantidad:1},
+  {tipo:'calzado', id:'c2', titulo:'Chancla Playa Confort', marca:'Crocs', talla:'37', color:'Negro', stock:6, precioMin:28000, precioMax:35000, precio:28000, cantidad:2},
+  {tipo:'varios',  id:'g1', titulo:'Huevos AA', unidad:'cubeta', precio:18000, cantidad:2},
+  {tipo:'varios',  id:'g3', titulo:'Pollo vivo', unidad:'libra', precio:9500, cantidad:2.5},
+]);
+const S = {
+  items: EJEMPLO(), caja:'ok',
+  metodos:[], montos:{efectivo:'',nequi:'',bre_b:'',otro:''}, recibido:'',
+  cliente:{nombre:'',apellido:'',telefono:'',documento:''},
+  venta:null, numero:1042,
+};
+const METODOS = [['efectivo','Efectivo'],['nequi','Nequi'],['bre_b','Bre-B'],['otro','Otro']];
+const subtotal = i => redondear(i.precio * i.cantidad);
+const total = () => redondear(S.items.reduce((s,i)=>s+subtotal(i),0));
+const nArt = () => S.items.reduce((s,i)=> s + (i.tipo==='calzado' ? i.cantidad : 1), 0);
+/* El deslizador va del mínimo al máximo de $1.000 en $1.000. Además se puede ESCRIBIR el precio
+   exacto; si queda fuera de [mínimo, máximo] se marca como ajuste (aviso) pero se permite. */
+const PASO = 1000;
+const aMiles = n => Math.round(n / PASO) * PASO;
+const limInf = i => aMiles(i.precioMin);
+const limSup = i => aMiles(i.precioMax);
+const num = t => Number(String(t).replace(/[^0-9]/g, '')) || 0;
+const miles = n => Math.round(n).toLocaleString('es-CO');
+const bajoMinimo = i => i.tipo==='calzado' && i.precio < i.precioMin;
+const sobreMaximo = i => i.tipo==='calzado' && i.precio > i.precioMax;
+const fueraRango = i => i.tipo==='calzado' && (i.precio < i.precioMin || i.precio > i.precioMax);
+const puedeCobrar = () => total() > 0 && !S.items.some(fueraRango);
+function avisoTxt(i){
+  return fueraRango(i) ? 'Fuera del rango: ' + pesos(i.precioMin) + ' – ' + pesos(i.precioMax) : '';
+}
+
+function fijarCantidad(i, c){
+  c = Math.min(c, i.tipo==='calzado' ? i.stock : Infinity);
+  if (i.tipo==='calzado') c = Math.floor(c);
+  i.cantidad = Math.max(0, c);
+}
+function limpiarPago(){ S.metodos=[]; S.montos={efectivo:'',nequi:'',bre_b:'',otro:''}; S.recibido=''; }
+function toast(id,msg){ const t=$(id); t.textContent=msg; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),1800); }
+function ir(id){ $(id).scrollIntoView({behavior:'smooth', block:'center'}); }
+
+/* ===================== Pantalla 1: Carrito ===================== */
+function linea(i){
+  const cal = i.tipo==='calzado';
+  const foto = cal ? zapatoSVG(COLOR_HEX[i.color]||'#9CA3AF')
+                   : (/huevo/i.test(i.titulo) ? ICO.huevo : ICO.paquete);
+  const detalle = cal ? [i.marca, 'Talla '+i.talla, i.color].join(' · ') : 'Granja · por '+i.unidad;
+  let ajuste;
+  if (cal){
+    const lo = limInf(i), hi = limSup(i);
+    const val = Math.min(hi, Math.max(lo, i.precio));
+    ajuste = `<div class="ajuste">
+        <input type="range" class="slider" data-precio="${i.id}" min="${lo}" max="${hi}" step="${PASO}" value="${val}"
+          style="--z1:0%;--z2:100%">
+        <div class="escala-fila tab">
+          <span>Mín ${pesos(i.precioMin)}</span>
+          <label class="precio-manual">$<input inputmode="numeric" aria-label="Precio" data-pm="${i.id}" value="${miles(i.precio)}"></label>
+          <span>Máx ${pesos(i.precioMax)}</span>
+        </div>
+      </div>`;
+  } else {
+    ajuste = `<div class="granja-campos">
+        <input inputmode="decimal" aria-label="Cantidad" data-cant="${i.id}" value="${i.cantidad}">
+        <span>${esc(i.unidad)} ×</span>
+        <input inputmode="numeric" aria-label="Precio unitario" data-pu="${i.id}" value="${i.precio}">
+      </div>`;
+  }
+  const paso = cal ? `
+      <div class="paso">
+        <button data-menos="${i.id}" aria-label="Quitar uno">${ICO.minus}</button>
+        <span class="n tab">${i.cantidad}</span>
+        <button data-mas="${i.id}" aria-label="Agregar uno" ${i.cantidad>=i.stock?'disabled':''}>${ICO.plus}</button>
+      </div>` : `<button class="quitar" data-quitar="${i.id}">Quitar</button>`;
+  return `<div class="linea">
+    <div class="top">
+      <div class="foto">${foto}</div>
+      <div class="dat">
+        <div class="tit">${esc(i.titulo)}</div>
+        <div class="sub">${esc(detalle)}</div>
+        <span class="aviso" data-aviso="${i.id}" ${avisoTxt(i)?'':'hidden'}>${avisoTxt(i)}</span>
+      </div>
+    </div>
+    ${ajuste}
+    <div class="pie"><span class="subtotal tab" data-sub="${i.id}">${pesos(subtotal(i))}</span>${paso}</div>
+  </div>`;
+}
+
+function render1(){
+  let h = `<div class="cab"><button class="ib" id="bSalir" aria-label="Salir de la venta">${ICO.x}</button>
+    <h1>Carrito</h1><span class="cuenta">${S.items.length} ${S.items.length===1?'producto':'productos'}</span></div>`;
+
+  if (S.caja === 'cerrada'){
+    h += `<div class="vacio"><span class="circulo">${ICO.lock}</span><div class="h2">Caja cerrada</div>
+      <div class="t2" style="font-size:15px">La caja de hoy no está abierta.</div>
+      <button class="boton" style="margin-top:8px" id="bIrCaja">Ir a Caja</button>
+      <button class="boton fan" id="bVolver">Volver</button></div>`;
+  } else if (!S.items.length){
+    h += `<div class="vacio"><span class="circulo">${ICO.bolsa}</span><div class="h2">Tu carrito está vacío</div>
+      <div class="t2" style="font-size:15px">Agrega productos desde la pestaña Productos</div>
+      <button class="boton" style="margin-top:8px" id="bProductos">Ver productos</button></div>`;
+  } else {
+    h += `<div class="cuerpo" id="cuerpo1">${S.items.map(linea).join('')}
+      ${S.items.some(x=>x.tipo==='calzado') ? `<div class="nota-margen">Mueve el deslizador de $1.000 en $1.000 o escribe el precio exacto. Debe estar entre el mínimo y el máximo para poder cobrar.</div>` : ''}
+      <div class="resumen">
+        <div class="f"><span>Artículos</span><span class="tab" data-narts>${nArt()}</span></div>
+        <div class="f t"><span>Total</span><span class="tab" data-total>${pesos(total())}</span></div>
+      </div></div>
+      <div class="barra-fija"><button id="bCobrar" ${puedeCobrar()?'':'disabled'}>Cobrar <span class="tab" data-cobrar>${pesos(total())}</span></button></div>`;
+  }
+  $('p1').innerHTML = h;
+  $('bSalir').onclick = salir;
+  const q = id => $(id) && ($(id).onclick = null);
+  if ($('bCobrar')) $('bCobrar').onclick = () => { render2(); ir('tel2'); };
+  if ($('bIrCaja')) $('bIrCaja').onclick = () => toast('toast1','→ Caja');
+  if ($('bVolver')) $('bVolver').onclick = () => toast('toast1','← Volver');
+  if ($('bProductos')) $('bProductos').onclick = () => toast('toast1','→ Productos');
+}
+
+function avisos(){
+  S.items.forEach(i => { const e = document.querySelector(`[data-aviso="${i.id}"]`); if (!e) return;
+    const t = avisoTxt(i); e.textContent = t; e.hidden = !t; });
+}
+function actualizarTotales(){
+  S.items.forEach(i => { const e = document.querySelector(`[data-sub="${i.id}"]`); if (e) e.textContent = pesos(subtotal(i)); });
+  document.querySelectorAll('[data-total]').forEach(e => e.textContent = pesos(total()));
+  document.querySelectorAll('[data-cobrar]').forEach(e => e.textContent = pesos(total()));
+  document.querySelectorAll('[data-narts]').forEach(e => e.textContent = nArt());
+  const b = $('bCobrar'); if (b) b.disabled = !puedeCobrar();
+}
+
+function salir(){
+  if (S.items.length) $('ovDescartar').classList.add('on');
+  else toast('toast1','← Volver');
+}
+
+$('p1').addEventListener('click', e => {
+  const t = e.target; let b;
+  if ((b = t.closest('[data-mas]'))){ const i=S.items.find(x=>x.id===b.dataset.mas); fijarCantidad(i, i.cantidad+1); render1(); render2(); return; }
+  if ((b = t.closest('[data-menos]'))){
+    const i=S.items.find(x=>x.id===b.dataset.menos); fijarCantidad(i, i.cantidad-1);
+    if (i.cantidad<=0) S.items = S.items.filter(x=>x!==i);
+    render1(); render2(); return;
+  }
+  if ((b = t.closest('[data-quitar]'))){ S.items = S.items.filter(x=>x.id!==b.dataset.quitar); render1(); render2(); return; }
+});
+$('p1').addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.precio){ const i=S.items.find(x=>x.id===t.dataset.precio); i.precio=aMiles(+t.value); avisos();
+    const pm = t.closest('.ajuste').querySelector('[data-pm]'); if (pm) pm.value = miles(i.precio); }
+  else if (t.dataset.pm){                       // precio escrito a mano (cualquier entero)
+    t.value = t.value.replace(/[^0-9]/g, '');
+    const i=S.items.find(x=>x.id===t.dataset.pm); i.precio = Number(t.value) || 0; avisos();
+    const sl = t.closest('.ajuste').querySelector('.slider'); if (sl) sl.value = i.precio; }
+  else if (t.dataset.cant){ t.value = soloDecimal(t.value); const i=S.items.find(x=>x.id===t.dataset.cant); i.cantidad=Number(t.value)||0; }
+  else if (t.dataset.pu){ t.value = soloEntero(t.value); const i=S.items.find(x=>x.id===t.dataset.pu); i.precio=Number(t.value)||0; }
+  else return;
+  actualizarTotales(); actualizarCobro();
+});
+$('p1').addEventListener('change', e => {            // al terminar de editar: una cantidad en 0 quita la línea
+  if (e.target.dataset.cant){ S.items = S.items.filter(i => i.cantidad > 0); render1(); render2(); }
+});
+
+$('p1').addEventListener('focusin', e => { if (e.target.dataset.pm) e.target.value = e.target.value.replace(/[^0-9]/g,''); });
+$('p1').addEventListener('focusout', e => { if (e.target.dataset.pm){ const i=S.items.find(x=>x.id===e.target.dataset.pm); e.target.value = miles(i.precio); } });
+
+$('dSeguir').onclick = () => $('ovDescartar').classList.remove('on');
+$('dDescartar').onclick = () => { $('ovDescartar').classList.remove('on'); S.items=[]; limpiarPago(); render1(); render2(); toast('toast1','Venta descartada'); };
+
+/* ===================== Pantalla 2: Cobrar ===================== */
+function calculos(){
+  const t = total();
+  const sumaPagos = redondear(S.metodos.reduce((s,m)=>s+(Number(S.montos[m])||0),0));
+  const dif = redondear(t - sumaPagos);
+  const efectivo = Number(S.montos.efectivo)||0;
+  const efectivoMonto = S.metodos.includes('efectivo') ? efectivo : 0;
+  const rec = Number(S.recibido)||0;
+  const cambio = Math.max(0, redondear(rec - efectivoMonto));
+  const todosPositivos = S.metodos.length>0 && S.metodos.every(m => (Number(S.montos[m])||0) > 0);
+  const cuadra = todosPositivos && sumaPagos === t && puedeCobrar();
+  const puede = cuadra && (efectivoMonto === 0 || rec >= efectivoMonto);
+  return {t, dif, efectivoMonto, cambio, puede};
+}
+function textoEstado(c){
+  if (!S.metodos.length) return {txt:'Faltan '+pesos(c.t), cls:'mal'};
+  if (c.dif === 0) return {txt:'✓ Cuadra', cls:'ok'};
+  return {txt: c.dif>0 ? 'Faltan '+pesos(c.dif) : 'Sobran '+pesos(-c.dif), cls:'mal'};
+}
+
+function render2(){
+  const c = calculos(), est = textoEstado(c);
+  let h = `<div class="cab"><button class="ib" id="bAtras" aria-label="Volver al carrito">${ICO.atras}</button><h1>Cobrar</h1></div>`;
+  if (!S.items.length){
+    h += `<div class="vacio"><span class="circulo">${ICO.bolsa}</span><div class="h2">Sin productos</div>
+      <div class="t2" style="font-size:15px">Agrega productos al carrito para cobrar.</div></div>`;
+  } else {
+    h += `<div class="cuerpo" id="cuerpo2">
+      <div class="total-grande tab" data-total>${pesos(c.t)}</div>
+      <div class="sec-tit">Método de pago</div>
+      <div class="chips">${METODOS.map(([k,l])=>`<button class="chip ${S.metodos.includes(k)?'on':''}" data-metodo="${k}">${l}</button>`).join('')}</div>
+      ${S.metodos.map(k=>`<div class="campo"><label>${METODOS.find(m=>m[0]===k)[1]}</label>
+        <input inputmode="numeric" data-monto="${k}" placeholder="0" value="${esc(S.montos[k])}"></div>`).join('')}
+      <div class="estado-pago ${est.cls} tab" id="estadoPago" aria-live="polite">${est.txt}</div>
+      ${S.metodos.includes('efectivo') ? `<div class="campo"><label>Efectivo recibido</label>
+        <input inputmode="numeric" id="recibido" placeholder="¿Con cuánto paga?" value="${esc(S.recibido)}">
+        <div class="cambio tab" id="cambio">Cambio: ${pesos(c.cambio)}</div></div>` : ''}
+      <div class="sec-tit">Datos del cliente (opcional)</div>
+      <div class="campo"><input data-cli="nombre" placeholder="Nombre" value="${esc(S.cliente.nombre)}"></div>
+      <div class="campo"><input data-cli="apellido" placeholder="Apellido" value="${esc(S.cliente.apellido)}"></div>
+      <div class="campo"><input data-cli="telefono" inputmode="tel" placeholder="Teléfono" value="${esc(S.cliente.telefono)}"></div>
+      <div class="campo"><input data-cli="documento" placeholder="Cédula o razón social" value="${esc(S.cliente.documento)}"></div>
+    </div>
+    <div class="barra-fija"><button id="bConfirmar" ${c.puede?'':'disabled'}>Confirmar venta</button></div>`;
+  }
+  $('p2').innerHTML = h;
+  $('bAtras').onclick = () => ir('tel1');
+  if ($('bConfirmar')) $('bConfirmar').onclick = confirmar;
+}
+
+function actualizarCobro(){
+  if (!$('estadoPago')) return;
+  const c = calculos(), est = textoEstado(c);
+  const e = $('estadoPago'); e.textContent = est.txt; e.className = 'estado-pago '+est.cls+' tab';
+  const cb = $('cambio'); if (cb) cb.textContent = 'Cambio: ' + pesos(c.cambio);
+  const b = $('bConfirmar'); if (b) b.disabled = !c.puede;
+}
+
+$('p2').addEventListener('click', e => {
+  const b = e.target.closest('[data-metodo]'); if (!b) return;
+  const m = b.dataset.metodo;
+  S.metodos = S.metodos.includes(m) ? S.metodos.filter(x=>x!==m) : [...S.metodos, m];
+  if (S.metodos.length === 1) S.montos[S.metodos[0]] = String(total());   // un solo método: monto = total
+  render2();
+});
+$('p2').addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.monto){ t.value = soloEntero(t.value); S.montos[t.dataset.monto] = t.value; actualizarCobro(); }
+  else if (t.id === 'recibido'){ t.value = soloEntero(t.value); S.recibido = t.value; actualizarCobro(); }
+  else if (t.dataset.cli){ S.cliente[t.dataset.cli] = t.value; }
+});
+
+function confirmar(){
+  // Snapshot para la pantalla de confirmación; el carrito y el pago se vacían YA (no al tocar "Nueva venta").
+  S.ultima = { numero: S.numero++, total: total(), metodos: [...S.metodos] };
+  S.venta = S.ultima.numero;
+  S.items = []; limpiarPago(); S.cliente = {nombre:'',apellido:'',telefono:'',documento:''};
+  render1(); render2(); render3(); ir('tel3');
+}
+
+/* ===================== Pantalla 3: Confirmación ===================== */
+function render3(){
+  if (S.venta == null){
+    $('p3').innerHTML = `<div class="vacio"><span class="circulo">${ICO.check}</span>
+      <div class="cuerpo-lg t2">Aquí aparece la confirmación</div>
+      <div class="t3" style="font-size:14px">Confirma una venta en la pantalla 2.</div></div>`;
+    return;
+  }
+  $('p3').innerHTML = `<div class="vacio">
+      <span class="ok-circulo">${ICO.check}</span>
+      <div class="h1" style="margin-top:8px">Venta #${S.venta} registrada</div>
+      <div class="t2 tab" style="font-size:14px">${pesos(S.ultima.total)} · ${S.ultima.metodos.map(m=>METODOS.find(x=>x[0]===m)[1]).join(' + ')}</div>
+      <div style="align-self:stretch;display:flex;flex-direction:column;gap:8px;margin-top:20px">
+        <button class="boton" id="bNueva">Nueva venta</button>
+        <button class="boton fan" id="bListo">Listo</button>
+      </div></div>`;
+  $('bNueva').onclick = nuevaVenta;
+  $('bListo').onclick = () => toast('toast3','→ Movimientos');
+}
+function nuevaVenta(){
+  S.items = []; limpiarPago(); S.cliente = {nombre:'',apellido:'',telefono:'',documento:''}; S.venta = null; S.ultima = null;
+  render1(); render2(); render3(); ir('tel1');
+}
+
+/* ===================== Barra superior ===================== */
+$('bCerrada').onclick = () => { S.caja = S.caja==='ok' ? 'cerrada' : 'ok';
+  $('bCerrada').classList.toggle('on', S.caja==='cerrada'); $('bCerrada').textContent = S.caja==='cerrada' ? 'Caja cerrada ✓' : 'Simular caja cerrada';
+  render1(); };
+$('bVaciar').onclick = () => { S.items=[]; limpiarPago(); render1(); render2(); };
+$('bReset').onclick = () => { S.items = EJEMPLO(); limpiarPago(); S.venta=null; S.caja='ok'; $('bCerrada').classList.remove('on'); $('bCerrada').textContent='Simular caja cerrada'; render1(); render2(); render3(); };
+$('tema').onclick = () => {
+  const r = document.documentElement, oscuro = r.dataset.tema==='oscuro';
+  if (oscuro) delete r.dataset.tema; else r.dataset.tema='oscuro';
+  $('tema').textContent = 'Tema: ' + (oscuro ? 'claro' : 'oscuro');
+};
+
+render1(); render2(); render3();
+</script>
+</body>
+</html>

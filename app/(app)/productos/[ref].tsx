@@ -114,6 +114,7 @@ export default function ProductoDetalleScreen() {
         stock: Number(variante.stock_actual),
         precioMin: Number(variante.precio_minimo),
         precioMax: Number(variante.precio_maximo),
+        foto: variante.foto_url ?? fotoHero,
       },
     })
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})

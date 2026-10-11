@@ -1,6 +1,6 @@
 import {
   carritoReducer, bajoMinimo, totalCarrito, pagosCuadran, montoEfectivo, calcularCambio,
-  detalleCalzado,
+  detalleCalzado, precioInicial, fueraDeRango, puedeCobrar, numArticulos, rangoDeslizador,
   type ItemCarrito, type ProductoVendible,
 } from './carrito'
 
@@ -102,10 +102,12 @@ const granja = (over: Partial<ProductoVendible> = {}): ProductoVendible => ({
 })
 
 describe('carrito SP-2 — precio por línea', () => {
-  test('calzado: el precio de la línea inicia en el máximo', () => {
+  test('calzado: el precio de la línea inicia en el MÍNIMO', () => {
     const items = carritoReducer([], { tipo: 'agregar', producto: calzado() })
-    expect(items[0].precio).toBe(10000)
-    expect(items[0].subtotal).toBe(10000)
+    expect(items[0].precio).toBe(5000)
+    expect(items[0].subtotal).toBe(5000)
+    expect(precioInicial(calzado({ precioMin: undefined }))).toBe(10000)
+    expect(precioInicial(granja())).toBe(4000)
   })
 
   test('cambiarPrecio permite bajar del mínimo (rango informativo, sin recorte)', () => {
@@ -196,5 +198,43 @@ describe('detalleCalzado — subtítulo con marca', () => {
   test('campos vacíos o nulos producen cadena vacía', () => {
     expect(detalleCalzado({})).toBe('')
     expect(detalleCalzado({ marca: null, talla: null, color: null })).toBe('')
+  })
+})
+
+describe('rediseño del carrito — rango de precio', () => {
+  test('fueraDeRango: bajo el mínimo o sobre el máximo; Granja nunca', () => {
+    let items = carritoReducer([], { tipo: 'agregar', producto: calzado() })
+    expect(fueraDeRango(items[0])).toBe(false)
+    items = carritoReducer(items, { tipo: 'cambiarPrecio', id: 'c1', precio: 4999 })
+    expect(fueraDeRango(items[0])).toBe(true)
+    items = carritoReducer(items, { tipo: 'cambiarPrecio', id: 'c1', precio: 10001 })
+    expect(fueraDeRango(items[0])).toBe(true)
+    items = carritoReducer(items, { tipo: 'cambiarPrecio', id: 'c1', precio: 10000 })
+    expect(fueraDeRango(items[0])).toBe(false)
+    const g = carritoReducer([], { tipo: 'agregar', producto: granja() })
+    expect(fueraDeRango(carritoReducer(g, { tipo: 'cambiarPrecio', id: 'g1', precio: 1 })[0])).toBe(false)
+  })
+
+  test('puedeCobrar: total > 0 y ninguna línea fuera de rango', () => {
+    expect(puedeCobrar([])).toBe(false)
+    let items = carritoReducer([], { tipo: 'agregar', producto: calzado() })
+    expect(puedeCobrar(items)).toBe(true)
+    items = carritoReducer(items, { tipo: 'cambiarPrecio', id: 'c1', precio: 3000 })
+    expect(puedeCobrar(items)).toBe(false)
+  })
+
+  test('numArticulos: pares de calzado + 1 por línea de Granja', () => {
+    let items = carritoReducer([], { tipo: 'agregar', producto: calzado() })
+    items = carritoReducer(items, { tipo: 'agregar', producto: calzado() })
+    items = carritoReducer(items, { tipo: 'agregarConCantidad', producto: granja(), cantidad: 2.5 })
+    expect(numArticulos(items)).toBe(3)
+  })
+
+  test('rangoDeslizador: múltiplos de $1.000 dentro del rango', () => {
+    expect(rangoDeslizador(120000, 150000)).toEqual({ minimo: 120000, maximo: 150000, paso: 1000 })
+    expect(rangoDeslizador(28500, 35400)).toEqual({ minimo: 29000, maximo: 35000, paso: 1000 })
+    // sin múltiplos dentro: cubre el rango exacto
+    expect(rangoDeslizador(28100, 28900)).toEqual({ minimo: 28100, maximo: 28900, paso: 800 })
+    expect(rangoDeslizador(30000, 30000)).toEqual({ minimo: 30000, maximo: 30000, paso: 1000 })
   })
 })

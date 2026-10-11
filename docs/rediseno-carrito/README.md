@@ -130,3 +130,25 @@ total grande 32 px). Ajustar con los tokens de `lib/theme.ts` si se prefiere esc
 - Con la caja abierta, el badge/botón de cerrar caja siempre abre `/caja/cierre`.
 - Una venta con cédula/razón social la guarda y la devuelve en el detalle de la venta; sin ella, igual que antes.
 - Tema claro y oscuro revisados en Expo Go / `npm run web`.
+
+## Estado de implementación (2026-10-11)
+
+Implementado en la rama `rediseno-carrito` (que incluye `rediseno-productos`), un commit por punto:
+
+- **A1** `ventas/nueva.tsx`: al registrar con éxito se guarda el snapshot (número, total, métodos) y se
+  vacían carrito, pago y cliente; si falla no se limpia. Tests en `lib/venta_nueva_ui.test.tsx`.
+- **A2** `index.tsx` va siempre a `/caja/cierre`; `caja/config.tsx` sin selector (guarda `con_diferencia`);
+  fuera `obtenerModoCierre` / `cerrarCajaSinDiferencia`. Migración
+  `20261011120000_caja_cierre_siempre_con_diferencia.sql`. Test en `lib/tabs_menu_ui.test.tsx`.
+- **B4** Migración `20261011120100_ventas_cliente_documento.sql`: columna, `registrar_venta` con
+  `p_cliente_documento` (sin la sobrecarga anterior) y la auditoría guarda `"(oculto)"` en vez del valor.
+  Test SQL `supabase/tests/ventas_cliente_documento_test.sql`. Se muestra en el detalle de la venta y en
+  la devolución. El panel web aún no lista clientes (fase 3), así que ahí no hay nada que mostrar.
+- **B1–B3, B5** Rediseño de carrito, cobro y confirmación. Precio inicial = mínimo (`precioInicial`).
+  Deslizador por `rangoDeslizador`: múltiplos de $1.000 dentro de [mín, máx]; el precio exacto se escribe
+  en la caja. Cobrar se deshabilita si alguna línea está fuera de rango (`puedeCobrar`). La escala
+  compacta está en `tipografiaCompacta` (`lib/theme.ts`).
+
+**Migraciones sin aplicar al remoto.** Orden: primero las migraciones, después la app nueva. La app vieja
+sigue funcionando con la base nueva porque `p_cliente_documento` es opcional. La app nueva contra la base
+vieja fallaría al vender: `registrar_venta` no conoce ese parámetro.

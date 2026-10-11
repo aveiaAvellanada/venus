@@ -42,7 +42,8 @@ describe('CarritoProvider', () => {
     const sonda = arbol.root.findByProps({ testID: 'sonda' })
     expect(sonda.props.children).toBe('0|0')
     await act(async () => sonda.props.onPress())
-    expect(arbol.root.findByProps({ testID: 'sonda' }).props.children).toBe('1|220000')
+    // El calzado entra en su precio mínimo (rediseño del carrito, B2).
+    expect(arbol.root.findByProps({ testID: 'sonda' }).props.children).toBe('1|150000')
   })
 
   it('useCarrito fuera del provider lanza error claro', () => {

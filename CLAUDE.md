@@ -71,6 +71,7 @@ Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app c
 - Construidos M1–M13 y M15 (fase 1); falta M14 Análisis IA (requiere 3+ meses de datos). Nunca se ha probado en un teléfono ni desplegado.
 - Usuarios dinámicos y permisos por persona (arriba), arqueo de caja con base y gastos del cajón, ventas idempotentes, devoluciones contadas en su fecha.
 - Migraciones `20261009*` aplicadas al remoto el 2026-10-09 (verificación de despliegue OK, tipos regenerados). Pendiente: APK con EAS y prueba en teléfono, siguiendo `docs/despliegue.md`. CI en `.github/workflows/ci.yml`.
+- Rediseño de Productos y del carrito (ramas `rediseno-productos` / `rediseno-carrito`): paleta monocroma, carrito que se vacía al vender, cierre de caja siempre con conteo, cédula o razón social del cliente. **Migraciones `20261011*` sin aplicar al remoto** (`caja_cierre_siempre_con_diferencia`, `ventas_cliente_documento`): aplicarlas antes de publicar esa versión de la app (la app nueva envía `p_cliente_documento`).
 - Panel web de administración (solo el dueño; back-office, análisis, replicable para otros negocios) en `web/`: fase 0 hecha (login solo dueño, navegación, búsqueda global, Inicio, historial de acciones registrando en la base). Plan y fases en `docs/panel-web.md`.
 
 ## No construir en esta versión

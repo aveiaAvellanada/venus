@@ -346,6 +346,7 @@ export default function Productos() {
               precio,
               stock: Number.POSITIVE_INFINITY,
               unidad: granja.unidad_medida,
+              foto: granja.foto_url,
             },
           })
           setProductoGranja(null)

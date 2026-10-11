@@ -141,6 +141,22 @@ export const tipografia = {
   },
 } as const
 
+// Escala compacta para pantallas densas (carrito, cobro y confirmación;
+// docs/rediseno-carrito/README.md B5): títulos 20, cuerpo 14–15, inputs 14,
+// botones 15, total grande 32.
+export const tipografiaCompacta = {
+  titulo: { fontSize: 20, lineHeight: 26, fontFamily: fuentes.negrita },
+  tituloGrande: { fontSize: 25, lineHeight: 31, fontFamily: fuentes.extra, letterSpacing: -0.4 },
+  totalGrande: { fontSize: 32, lineHeight: 40, fontFamily: fuentes.extra, letterSpacing: -0.8 },
+  lineaTitulo: { fontSize: 14, lineHeight: 18, fontFamily: fuentes.negrita },
+  cuerpo: { fontSize: 14, lineHeight: 20, fontFamily: fuentes.media },
+  cuerpoFuerte: { fontSize: 15, lineHeight: 22, fontFamily: fuentes.negrita },
+  input: { fontSize: 14, lineHeight: 20, fontFamily: fuentes.semi },
+  boton: { fontSize: 15, lineHeight: 20, fontFamily: fuentes.negrita },
+  etiqueta: { fontSize: 12, lineHeight: 16, fontFamily: fuentes.semi },
+  detalle: { fontSize: 11, lineHeight: 15, fontFamily: fuentes.media },
+} as const
+
 // Dinero SIEMPRE tabular: <Text style={[tipografia.h3, tabular]}>
 export const tabular = { fontVariant: ['tabular-nums'] as ['tabular-nums'] }
 

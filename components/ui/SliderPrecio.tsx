@@ -12,15 +12,21 @@ interface Props {
   maximo: number
   onCambio: (valor: number) => void
   paso?: number
+  // Sin la fila de mínimo / valor / máximo (el carrito la pinta con caja de precio).
+  mostrarValores?: boolean
+  accessibilityLabel?: string
 }
 
 // Slider de precio para regateo: entre precio_minimo y precio_maximo, en múltiplos de $1.000.
-export function SliderPrecio({ valor, minimo, maximo, onCambio, paso = 1000 }: Props) {
+export function SliderPrecio({
+  valor, minimo, maximo, onCambio, paso = 1000, mostrarValores = true, accessibilityLabel = 'Precio de venta',
+}: Props) {
   const { paleta } = useTema()
   const bajoMinimo = valor < minimo
 
   return (
     <View style={{ gap: espacio.xs }}>
+      {mostrarValores ? (
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <Text style={[tipografia.caption, { color: paleta.texto3 }]}>{pesos(minimo)}</Text>
         <Text
@@ -34,6 +40,7 @@ export function SliderPrecio({ valor, minimo, maximo, onCambio, paso = 1000 }: P
         </Text>
         <Text style={[tipografia.caption, { color: paleta.texto3 }]}>{pesos(maximo)}</Text>
       </View>
+      ) : null}
       <Slider
         minimumValue={minimo}
         maximumValue={Math.max(maximo, minimo + paso)}
@@ -43,7 +50,7 @@ export function SliderPrecio({ valor, minimo, maximo, onCambio, paso = 1000 }: P
         minimumTrackTintColor={paleta.primario}
         maximumTrackTintColor={paleta.borde}
         thumbTintColor={paleta.primario}
-        accessibilityLabel="Precio de venta"
+        accessibilityLabel={accessibilityLabel}
       />
     </View>
   )

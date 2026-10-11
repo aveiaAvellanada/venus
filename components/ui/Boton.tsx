@@ -1,7 +1,7 @@
 import React from 'react'
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import { useTema } from '../../lib/tema'
-import { espacio, radio, tipografia } from '../../lib/theme'
+import { espacio, radio, tipografia, tipografiaCompacta } from '../../lib/theme'
 import { Presionable } from './Presionable'
 
 export type VarianteBoton = 'primario' | 'secundario' | 'peligro' | 'fantasma' | 'oscuro' | 'contorno'
@@ -16,6 +16,8 @@ interface Props {
   icono?: React.ReactNode
   // Píldora (radio completo): "Ir al carrito", "Seguir", "Mostrar artículos".
   pildora?: boolean
+  // 50 de alto y letra de 15 (carrito y cobro).
+  compacto?: boolean
 }
 
 export function Boton({
@@ -27,6 +29,7 @@ export function Boton({
   deshabilitado = false,
   icono,
   pildora = false,
+  compacto = false,
 }: Props) {
   const { paleta } = useTema()
   const inactivo = deshabilitado || cargando
@@ -49,7 +52,7 @@ export function Boton({
       onPress={inactivo ? undefined : onPress}
       style={[
         estilos.base,
-        { backgroundColor: colores.fondo, height: tamano === 'lg' ? 56 : 48 },
+        { backgroundColor: colores.fondo, height: compacto ? 50 : tamano === 'lg' ? 56 : 48 },
         pildora ? { borderRadius: radio.full, paddingHorizontal: espacio.s } : null,
         variante === 'contorno' ? { borderWidth: 1.5, borderColor: paleta.texto } : null,
         inactivo && !cargando ? estilos.deshabilitado : null,
@@ -60,7 +63,7 @@ export function Boton({
       ) : icono ? (
         <View>{icono}</View>
       ) : null}
-      <Text style={[tipografia.cuerpoLg, { color: colores.texto }]}>{titulo}</Text>
+      <Text style={[compacto ? tipografiaCompacta.boton : tipografia.cuerpoLg, { color: colores.texto }]}>{titulo}</Text>
     </Presionable>
   )
 }

@@ -9,6 +9,7 @@ import { Inicio } from '../paginas/Inicio'
 import { Inventario } from '../paginas/inventario/Inventario'
 import { NoEncontrada } from '../paginas/NoEncontrada'
 import { Proximamente } from '../paginas/Proximamente'
+import { Carga } from '../paginas/carga/Carga'
 import { Compras } from '../paginas/compras/Compras'
 import { DetalleCompra } from '../paginas/compras/DetalleCompra'
 import { NuevaCompra } from '../paginas/compras/NuevaCompra'
@@ -42,6 +43,7 @@ export function Rutas() {
           <Route path="/compras" element={<Compras />} />
           <Route path="/compras/nueva" element={<NuevaCompra />} />
           <Route path="/compras/:id" element={<DetalleCompra />} />
+          <Route path="/carga" element={<Carga />} />
           <Route path="/proveedores" element={<Proveedores />} />
           <Route path="/proveedores/:id" element={<FichaProveedor />} />
           {SECCIONES.filter((s) => !s.lista).map((s) => (

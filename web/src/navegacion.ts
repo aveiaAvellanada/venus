@@ -53,7 +53,7 @@ export const NAVEGACION: GrupoNavegacion[] = [
         palabras: ['deudas', 'pagos', 'vencimientos', 'cuentas bancarias'],
       },
       {
-        id: 'carga', titulo: 'Carga masiva', ruta: '/carga', icono: FileSpreadsheet, fase: 1, lista: false,
+        id: 'carga', titulo: 'Carga masiva', ruta: '/carga', icono: FileSpreadsheet, fase: 1, lista: true,
         descripcion: 'Importar y exportar el inventario en Excel, revisando los errores antes de guardar.',
         palabras: ['excel', 'importar', 'exportar'],
       },

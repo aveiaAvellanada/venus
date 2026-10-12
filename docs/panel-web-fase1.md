@@ -1,6 +1,6 @@
 # Panel web — Fase 1: Mercancía (plan)
 
-Estado: entrega 1 (Inventario y precios) construida el 2026-10-09; entregas 2 (Proveedores) y 3 (Compras) el 2026-10-12; falta la 4 (Carga masiva). Marco general: `docs/panel-web.md`.
+Estado: entrega 1 (Inventario y precios) construida el 2026-10-09; entregas 2 (Proveedores), 3 (Compras) y 4 (Carga masiva) el 2026-10-12. La migración de la entrega 4 falta aplicarla al remoto. Marco general: `docs/panel-web.md`.
 Fase 0 publicada en Cloudflare Pages (login del dueño, navegación, búsqueda, Inicio,
 historial de acciones).
 
@@ -99,8 +99,8 @@ celular (la lista es de la app); las del panel van a una lista propia en
 - Subir la plantilla Excel actual (`plantilla_carga_inventario.xlsx`); reutilizar
   la lectura de `lib/excel.ts` moviendo la parte pura a `shared/`.
 - Vista previa con errores por fila (categoría inválida, precio mín > máx,
-  duplicados) antes de guardar; guardar por lotes reutilizando `registrar_compra`
-  (como "compra inicial") o `guardar_producto_calzado`.
+  duplicados) antes de guardar; guardar todo junto con `cargar_inventario`
+  (una transacción; ver la entrega 4).
 - Exportar el inventario con el mismo formato (ida y vuelta).
 
 ## Código compartido
@@ -144,7 +144,16 @@ y totales de compra, lectura/validación de la plantilla Excel. Con tests en
    - **Reintento:** con una clave por factura; si se corta la red, reintentar no duplica la compra ni el stock.
    - **Base:** `registrar_compra` pide `recibir_mercancia` y `costos` (más `inventario` para cambiar un precio existente). Sin `costos` se sigue usando la llegada física de la app.
    - **Pendiente:** el precio sugerido de una referencia nueva sale vacío; las reglas de margen llegan en la fase 2.
-4. Carga masiva.
+4. ✅ Carga masiva (+ `cargar_inventario`; migración `20261012140000_panel_carga_masiva.sql`, test `carga_masiva_test.sql`). **Migración pendiente de aplicar al remoto.**
+   - **Importar** (`/carga`): la plantilla de Excel de la app (`plantilla_carga_inventario.md`), arrastrando o eligiendo el archivo. Antes de guardar muestra:
+     - cuántas tallas son nuevas (y cuántos pares entran), cuáles cambian (con el cambio: precio, descripción, marca o categoría) y cuáles quedan igual;
+     - los errores con su número de fila del Excel, incluida una talla repetida en el archivo. Con un solo error no se puede guardar.
+   - **Stock:** una talla que ya existe (misma referencia —o descripción si no tiene—, color y talla) **no cambia su stock** con la carga; el panel avisa si el archivo trae otro. El stock de lo existente se mueve con compras, ventas y devoluciones (y el conteo físico de la fase 2). Las tallas nuevas sí entran con el stock del archivo.
+   - **Guardar:** todo o nada en la base, con el proveedor opcional para las tallas nuevas. El costo es opcional en el panel; el de las nuevas queda en el historial de precios (con permiso `costos`), el de las existentes se ignora (su costo sale de las compras).
+   - **Exportar:** el inventario activo con el formato de la plantilla y el último costo, más una hoja de instrucciones; también la plantilla vacía. Exportar, corregir precios en Excel y volver a subir no toca el stock.
+   - **Base:** `cargar_inventario` pide `carga_inicial` (más `inventario` para cambiar precios de lo existente). Las tallas nuevas quedan con stock mínimo 0, como en la carga de la app.
+   - **Librería:** `xlsx` 0.18.5 de npm (la misma de la app), cargada solo al usar la página. Esa versión tiene avisos de seguridad al leer archivos manipulados; aquí solo la usa el dueño con sus propios archivos. Las versiones corregidas solo se publican en el CDN de SheetJS.
+   - **Compartido:** la validación de la plantilla pasó de `lib/excel.ts` a `shared/excel.ts` (la app la sigue usando igual); ahora guarda el número real de fila del Excel y deja el costo opcional para el panel.
 
 Cada PR: migración aplicada con un script de un solo paso para el SQL Editor
 (como en la fase 0), `verificar_despliegue.sql` contra producción y tipos

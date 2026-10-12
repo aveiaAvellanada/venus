@@ -1927,6 +1927,10 @@ export type Database = {
         Args: { p_pin_actual: string; p_pin_nuevo: string }
         Returns: undefined
       }
+      cargar_inventario: {
+        Args: { p_filas: Json; p_proveedor_id?: string }
+        Returns: Json
+      }
       cerrar_caja: {
         Args: { p_efectivo_contado?: number; p_nota?: string }
         Returns: {

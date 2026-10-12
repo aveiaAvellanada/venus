@@ -82,3 +82,25 @@ describe('validarFilas — categoría', () => {
     expect(errores).toHaveLength(1)
   })
 })
+
+describe('validarFilas — costo opcional y número de fila', () => {
+  it('por defecto el costo es obligatorio', () => {
+    const { costo: _, ...sinCosto } = filaBase
+    const { errores } = validarFilas([sinCosto])
+    expect(errores[0].errores).toContain('Costo inválido')
+  })
+
+  it('con costoObligatorio: false acepta el costo vacío (queda null) pero no uno negativo', () => {
+    const { costo: _, ...sinCosto } = filaBase
+    const { validas, errores } = validarFilas([sinCosto, { ...filaBase, costo: '' }, { ...filaBase, costo: -1 }], { costoObligatorio: false })
+    expect(validas.map((v) => v.costo)).toEqual([null, null])
+    expect(errores).toHaveLength(1)
+    expect(errores[0].errores).toContain('Costo inválido')
+  })
+
+  it('usa el número de fila real del Excel cuando sheet_to_json lo deja (__rowNum__)', () => {
+    const fila: Record<string, unknown> = { ...filaBase, categoria: 'Sandalias' }
+    Object.defineProperty(fila, '__rowNum__', { value: 9, enumerable: false })
+    expect(validarFilas([fila]).errores[0].fila).toBe(10)
+  })
+})

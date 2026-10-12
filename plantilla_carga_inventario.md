@@ -5,8 +5,14 @@ tomado del validador real de la app (`lib/excel.ts` → `validarFilas`) y del su
 (`app/(app)/inventario/carga.tsx`). Solo aplica a **calzado** (no a productos de Granja).
 
 ## Quién y dónde
-- **Solo Andrés (dueño)** puede usar esta carga.
+- Quien tenga el permiso **`carga_inicial`** (por defecto el dueño).
 - En la app: **Inventario → Carga inicial → Subir Archivo Excel → (revisar resumen) → Confirmar y Subir**.
+- En el panel web: **Carga masiva** (`/carga`). Ahí además:
+  - se ve antes de guardar qué tallas son nuevas, cuáles cambian y cuáles quedan igual;
+  - una talla que ya existe (misma referencia —o descripción si no tiene—, color y talla) actualiza descripción, marca, categoría y precios, pero **no su stock**;
+  - una talla repetida en el archivo es un error;
+  - el **costo es opcional**;
+  - se puede **descargar el inventario** en este mismo formato, corregir precios en Excel y volver a subirlo.
 
 ## Reglas generales del archivo
 - Formato **`.xlsx`** o **`.xls`**.

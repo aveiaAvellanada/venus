@@ -124,7 +124,7 @@ y totales de compra, lectura/validación de la plantilla Excel. Con tests en
 ## Entregas (un PR cada una)
 
 1. ✅ Inventario y precios (+ `actualizar_precios_lote`, `obtener_costos_productos`). Tabla propia en vez de TanStack Table (no hizo falta); exporta CSV para Excel; el precio se cambia solo por la regla en lote (también para una sola referencia), así todo cambio queda en el historial de precios.
-2. ✅ Proveedores (+ `registrar_pago_proveedor` y bucket privado `proveedores`; migración `20261012120000_panel_proveedores.sql`, test `pagos_proveedores_test.sql`).
+2. ✅ Proveedores (+ `registrar_pago_proveedor` y bucket privado `proveedores`; migración `20261012120000_panel_proveedores.sql`, test `pagos_proveedores_test.sql`). Migración aplicada al remoto el 2026-10-12 por SQL Editor, en una transacción y registrada en el historial. Comprobado: migración registrada, bucket privado, 3 políticas de Storage y la función de pagos.
    - **Lista** (`/proveedores`): deuda total, lo vencido, búsqueda sin tildes y filtros Activos / Con deuda / Vencidos / Inactivos, ordenada por deuda.
    - **Ficha** (`/proveedores/:id`): datos editables, WhatsApp, deuda y próximo pago, y pestañas:
      - Compras y pagos, con "Registrar pago". La base valida contra el saldo; antes solo lo hacía la app.

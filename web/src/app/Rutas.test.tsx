@@ -15,6 +15,7 @@ vi.mock('../lib/datos/inicio', () => ({
 vi.mock('../lib/busqueda', async (original) => ({
   ...(await original<typeof import('../lib/busqueda')>()),
   buscarProductos: vi.fn().mockResolvedValue([]),
+  buscarProveedores: vi.fn().mockResolvedValue([]),
 }))
 
 const dentro: EstadoSesion = {
@@ -47,7 +48,7 @@ describe('rutas del panel', () => {
   it('Ctrl+K abre la búsqueda y Enter lleva a la sección', async () => {
     pintar('/', dentro)
     await userEvent.keyboard('{Control>}k{/Control}')
-    const buscador = await screen.findByRole('combobox', { name: 'Buscar productos o secciones' })
+    const buscador = await screen.findByRole('combobox', { name: 'Buscar productos, proveedores o secciones' })
     await userEvent.type(buscador, 'auditoría')
     expect(await screen.findByRole('option', { name: /Historial de acciones/ })).toBeInTheDocument()
     await userEvent.keyboard('{Enter}')

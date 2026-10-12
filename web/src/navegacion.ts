@@ -48,9 +48,9 @@ export const NAVEGACION: GrupoNavegacion[] = [
         palabras: ['productos', 'calzado', 'granja', 'stock', 'precio'],
       },
       {
-        id: 'proveedores', titulo: 'Proveedores', ruta: '/proveedores', icono: Truck, fase: 1, lista: false,
-        descripcion: 'Ficha, cuentas, documentos, deudas, pagos, calendario de vencimientos e historial de compras y costos.',
-        palabras: ['deudas', 'pagos'],
+        id: 'proveedores', titulo: 'Proveedores', ruta: '/proveedores', icono: Truck, fase: 1, lista: true,
+        descripcion: 'Ficha, cuentas, documentos, deudas, pagos, vencimientos e historial de compras y costos.',
+        palabras: ['deudas', 'pagos', 'vencimientos', 'cuentas bancarias'],
       },
       {
         id: 'carga', titulo: 'Carga masiva', ruta: '/carga', icono: FileSpreadsheet, fase: 1, lista: false,

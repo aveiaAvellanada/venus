@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
-import { CornerDownLeft, Search, Tags } from 'lucide-react'
-import { buscarProductos, limpiarTermino, type ProductoEncontrado } from '../lib/busqueda'
+import { CornerDownLeft, Search, Tags, Truck } from 'lucide-react'
+import { buscarProductos, buscarProveedores, limpiarTermino, type ProductoEncontrado, type ProveedorEncontrado } from '../lib/busqueda'
 import { seccionesQueCoinciden, type Seccion } from '../navegacion'
 
 type Resultado =
   | { clave: string; tipo: 'seccion'; seccion: Seccion }
   | { clave: string; tipo: 'producto'; producto: ProductoEncontrado }
+  | { clave: string; tipo: 'proveedor'; proveedor: ProveedorEncontrado }
 
 export function BusquedaGlobal({ abierta, alCerrar }: { abierta: boolean; alCerrar: () => void }) {
   // Montada solo mientras está abierta: cada vez arranca vacía.
@@ -34,15 +35,24 @@ function Dialogo({ alCerrar }: { alCerrar: () => void }) {
     staleTime: 30_000,
   })
 
+  const proveedores = useQuery({
+    queryKey: ['busqueda', 'proveedores', termino],
+    queryFn: () => buscarProveedores(termino),
+    enabled: termino.length >= 2,
+    staleTime: 30_000,
+  })
+
   const resultados = useMemo<Resultado[]>(() => [
     ...seccionesQueCoinciden(texto).map((s) => ({ clave: `s-${s.id}`, tipo: 'seccion' as const, seccion: s })),
+    ...(proveedores.data ?? []).map((p) => ({ clave: `v-${p.id}`, tipo: 'proveedor' as const, proveedor: p })),
     ...(productos.data ?? []).map((p) => ({ clave: `p-${p.tipo}-${p.id}`, tipo: 'producto' as const, producto: p })),
-  ], [texto, productos.data])
+  ], [texto, productos.data, proveedores.data])
 
   useEffect(() => setActivo(0), [resultados.length])
 
   function elegir(r: Resultado) {
     if (r.tipo === 'seccion') navegar(r.seccion.ruta)
+    else if (r.tipo === 'proveedor') navegar(`/proveedores/${r.proveedor.id}`)
     else navegar(`/inventario?buscar=${encodeURIComponent(r.producto.titulo)}`)
     alCerrar()
   }
@@ -79,8 +89,8 @@ function Dialogo({ alCerrar }: { alCerrar: () => void }) {
             ref={entrada}
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            placeholder="Buscar productos o secciones…"
-            aria-label="Buscar productos o secciones"
+            placeholder="Buscar productos, proveedores o secciones…"
+            aria-label="Buscar productos, proveedores o secciones"
             role="combobox"
             aria-expanded={resultados.length > 0}
             aria-controls="resultados-busqueda"
@@ -107,6 +117,14 @@ function Dialogo({ alCerrar }: { alCerrar: () => void }) {
                     Ir a <strong>{r.seccion.titulo}</strong>
                   </span>
                 </>
+              ) : r.tipo === 'proveedor' ? (
+                <>
+                  <Truck aria-hidden className="size-4 text-texto3" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{r.proveedor.nombre}</span>
+                    <span className="block truncate text-xs text-texto3">{r.proveedor.detalle}</span>
+                  </span>
+                </>
               ) : (
                 <>
                   <Tags aria-hidden className="size-4 text-texto3" />
@@ -129,12 +147,12 @@ function Dialogo({ alCerrar }: { alCerrar: () => void }) {
           ))}
           {texto && resultados.length === 0 ? (
             <li className="px-3 py-6 text-center text-sm text-texto3">
-              {productos.isFetching || limpiarTermino(texto) !== termino ? 'Buscando…' : 'Sin resultados.'}
+              {productos.isFetching || proveedores.isFetching || limpiarTermino(texto) !== termino ? 'Buscando…' : 'Sin resultados.'}
             </li>
           ) : null}
           {!texto ? (
             <li className="px-3 py-6 text-center text-sm text-texto3">
-              Escribe una referencia, marca, color o el nombre de una sección.
+              Escribe una referencia, marca, color, un proveedor o el nombre de una sección.
             </li>
           ) : null}
         </ul>

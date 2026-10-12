@@ -2065,6 +2065,15 @@ export type Database = {
         }
         Returns: Json
       }
+      registrar_pago_proveedor: {
+        Args: {
+          p_compra_id: string
+          p_fecha?: string
+          p_monto: number
+          p_notas?: string
+        }
+        Returns: Json
+      }
       registrar_venta: {
         Args: {
           p_clave_idempotencia?: string

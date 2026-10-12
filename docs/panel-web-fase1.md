@@ -132,7 +132,7 @@ y totales de compra, lectura/validación de la plantilla Excel. Con tests en
      - Documentos: PDF de hasta 5 MB o fotos comprimidas a 500 KB, guardados en un bucket privado y abiertos con enlace temporal.
    - **Búsqueda global:** también encuentra proveedores.
    - **Permisos:** sin `deudas` o `costos` (otra cuenta), esas partes se ocultan en vez de fallar.
-3. ✅ Compras y recepción (+ `registrar_compra`; migración `20261012130000_panel_compras.sql`, test `compras_test.sql`).
+3. ✅ Compras y recepción (+ `registrar_compra`; migración `20261012130000_panel_compras.sql`, test `compras_test.sql`). Migración aplicada al remoto el 2026-10-12 por SQL Editor, en una transacción y registrada en el historial. Comprobado: migración registrada, 3 columnas nuevas en `compras` y la función `registrar_compra`.
    - **Lista** (`/compras`): filtros por proveedor, contado, crédito y con saldo, con total y saldo.
    - **Detalle** (`/compras/:id`): ítems agrupados por referencia con sus tallas, registrar pago y la foto o PDF de la factura.
    - **Factura nueva** (`/compras/nueva`), con el proveedor, el número (opcional, con aviso), la fecha, contado o crédito con vencimiento y el adjunto. Cada fila es una referencia y su color:

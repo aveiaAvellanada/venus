@@ -1,4 +1,5 @@
 import type { CompraResumen, ItemComprado, Pago, Proveedor } from '../proveedores'
+import { nuevoId } from '../id'
 import { supabase } from '../supabase'
 
 // Proveedores del panel web (fase 1, A8). La base decide quién ve qué: compras
@@ -153,26 +154,30 @@ export interface Documento {
   created_at: string
 }
 
-export async function documentosDelProveedor(proveedorId: string): Promise<Documento[]> {
-  const { data, error } = await supabase
+export async function documentosDelProveedor(proveedorId: string, compraId?: string): Promise<Documento[]> {
+  let consulta = supabase
     .from('compra_documentos')
     .select('id, tipo, url, nombre_archivo, created_at')
     .eq('proveedor_id', proveedorId)
-    .order('created_at', { ascending: false })
+  if (compraId) consulta = consulta.eq('compra_id', compraId)
+  const { data, error } = await consulta.order('created_at', { ascending: false })
   if (error) throw new Error(error.message)
   return data as Documento[]
 }
 
-export async function subirDocumento(proveedorId: string, archivo: Blob, nombre: string, tipo: 'pdf' | 'imagen'): Promise<void> {
+// Con `compraId` el documento queda en la compra (la factura) y también en la ficha del proveedor.
+export async function subirDocumento(
+  proveedorId: string, archivo: Blob, nombre: string, tipo: 'pdf' | 'imagen', compraId?: string,
+): Promise<void> {
   const extension = tipo === 'pdf' ? 'pdf' : 'jpg'
-  const ruta = `${proveedorId}/${crypto.randomUUID()}.${extension}`
+  const ruta = `${proveedorId}/${nuevoId()}.${extension}`
   const subida = await supabase.storage.from(BUCKET_DOCUMENTOS).upload(ruta, archivo, {
     contentType: tipo === 'pdf' ? 'application/pdf' : 'image/jpeg',
   })
   if (subida.error) throw new Error(subida.error.message)
   const { error } = await supabase
     .from('compra_documentos')
-    .insert({ proveedor_id: proveedorId, tipo, url: ruta, nombre_archivo: nombre })
+    .insert({ proveedor_id: proveedorId, compra_id: compraId ?? null, tipo, url: ruta, nombre_archivo: nombre })
   if (error) {
     await supabase.storage.from(BUCKET_DOCUMENTOS).remove([ruta])
     throw new Error(error.message)

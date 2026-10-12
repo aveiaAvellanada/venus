@@ -38,7 +38,7 @@ export const NAVEGACION: GrupoNavegacion[] = [
     titulo: 'Mercancía y precios',
     secciones: [
       {
-        id: 'compras', titulo: 'Compras y recepción', ruta: '/compras', icono: PackagePlus, fase: 1, lista: false,
+        id: 'compras', titulo: 'Compras y recepción', ruta: '/compras', icono: PackagePlus, fase: 1, lista: true,
         descripcion: 'La factura del proveedor en una grilla: referencia con matriz de tallas, costo y precio sugerido; productos nuevos en la misma fila, foto de la factura y el stock sube solo.',
         palabras: ['recibir', 'mercancía', 'factura', 'entrada'],
       },

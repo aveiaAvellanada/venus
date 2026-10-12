@@ -22,7 +22,10 @@ export function RegistrarPago({ compra, hoy, alCerrar }: { compra: CompraResumen
   const pagar = useMutation({
     mutationFn: () => registrarPago({ compraId: compra.id, monto: valor, fecha, notas }),
     onSuccess: async () => {
-      await cliente.invalidateQueries({ queryKey: ['proveedores'] })
+      await Promise.all([
+        cliente.invalidateQueries({ queryKey: ['proveedores'] }),
+        cliente.invalidateQueries({ queryKey: ['compras'] }),
+      ])
       alCerrar()
     },
   })

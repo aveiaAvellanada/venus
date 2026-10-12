@@ -530,11 +530,14 @@ export type Database = {
           condicion_pago: string | null
           created_at: string
           created_by: string | null
+          clave_idempotencia: string | null
           estado: string
+          fecha_factura: string | null
           fecha_vencimiento: string | null
           id: string
           monto_pagado: number
           notas: string | null
+          numero_factura: string | null
           proveedor_id: string
           registrada_por: string | null
           revisada_por: string | null
@@ -547,11 +550,14 @@ export type Database = {
           condicion_pago?: string | null
           created_at?: string
           created_by?: string | null
+          clave_idempotencia?: string | null
           estado?: string
+          fecha_factura?: string | null
           fecha_vencimiento?: string | null
           id?: string
           monto_pagado?: number
           notas?: string | null
+          numero_factura?: string | null
           proveedor_id: string
           registrada_por?: string | null
           revisada_por?: string | null
@@ -564,11 +570,14 @@ export type Database = {
           condicion_pago?: string | null
           created_at?: string
           created_by?: string | null
+          clave_idempotencia?: string | null
           estado?: string
+          fecha_factura?: string | null
           fecha_vencimiento?: string | null
           id?: string
           monto_pagado?: number
           notas?: string | null
+          numero_factura?: string | null
           proveedor_id?: string
           registrada_por?: string | null
           revisada_por?: string | null
@@ -2051,6 +2060,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      registrar_compra: {
+        Args: { p_clave_idempotencia?: string; p_compra: Json }
+        Returns: Json
       }
       registrar_devolucion: {
         Args: {

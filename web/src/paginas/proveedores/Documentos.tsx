@@ -9,21 +9,21 @@ import { AvisoError, Boton, Cargando, MensajeError } from '../../componentes/ui'
 
 // Documentos del proveedor (RUT, cámara de comercio, facturas): PDF de hasta
 // 5 MB o fotos, que se comprimen a 500 KB antes de subir. Bucket privado.
-export function Documentos({ proveedorId }: { proveedorId: string }) {
+export function Documentos({ proveedorId, compraId }: { proveedorId: string; compraId?: string }) {
   const cliente = useQueryClient()
   const entrada = useRef<HTMLInputElement>(null)
-  const clave = ['proveedores', proveedorId, 'documentos']
-  const docs = useQuery({ queryKey: clave, queryFn: () => documentosDelProveedor(proveedorId) })
+  const clave = ['proveedores', proveedorId, 'documentos', compraId ?? 'todos']
+  const docs = useQuery({ queryKey: clave, queryFn: () => documentosDelProveedor(proveedorId, compraId) })
   const [abriendo, setAbriendo] = useState<string | null>(null)
 
   const subir = useMutation({
     mutationFn: async (archivo: File) => {
       if (archivo.type === 'application/pdf') {
         if (archivo.size > MAX_PDF) throw new Error('El PDF pesa más de 5 MB.')
-        return subirDocumento(proveedorId, archivo, archivo.name, 'pdf')
+        return subirDocumento(proveedorId, archivo, archivo.name, 'pdf', compraId)
       }
       if (!archivo.type.startsWith('image/')) throw new Error('Solo se aceptan PDF o fotos.')
-      return subirDocumento(proveedorId, await comprimirFoto(archivo), archivo.name, 'imagen')
+      return subirDocumento(proveedorId, await comprimirFoto(archivo), archivo.name, 'imagen', compraId)
     },
     onSettled: () => cliente.invalidateQueries({ queryKey: clave }),
   })
@@ -83,7 +83,7 @@ export function Documentos({ proveedorId }: { proveedorId: string }) {
         </ul>
       ) : (
         <p className="rounded-xl border border-borde bg-fondo px-4 py-6 text-center text-sm text-texto3">
-          Sin documentos. Sube el RUT, la cámara de comercio o facturas en PDF o foto.
+          {compraId ? 'Sin factura adjunta. Súbela en PDF o foto.' : 'Sin documentos. Sube el RUT, la cámara de comercio o facturas en PDF o foto.'}
         </p>
       )}
       {subir.isError ? <AvisoError error={subir.error} /> : null}

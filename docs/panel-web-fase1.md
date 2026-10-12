@@ -1,6 +1,6 @@
 # Panel web — Fase 1: Mercancía (plan)
 
-Estado: entrega 1 (Inventario y precios) construida el 2026-10-09; entrega 2 (Proveedores) el 2026-10-12; el resto, por construir. Marco general: `docs/panel-web.md`.
+Estado: entrega 1 (Inventario y precios) construida el 2026-10-09; entregas 2 (Proveedores) y 3 (Compras) el 2026-10-12; falta la 4 (Carga masiva). Marco general: `docs/panel-web.md`.
 Fase 0 publicada en Cloudflare Pages (login del dueño, navegación, búsqueda, Inicio,
 historial de acciones).
 
@@ -86,9 +86,8 @@ celular (la lista es de la app); las del panel van a una lista propia en
     foto/PDF de la factura (Storage, comprimida a 500 KB como en la app);
   - fila = referencia; al escribirla se autocompleta lo existente (descripción,
     marca, color, categoría, último costo, precios);
-  - **matriz de tallas**: una celda por talla (rango según categoría, p. ej.
-    Escolar 27–38, adultos 34–44) con la cantidad; Tab/Enter navegan como en
-    Excel;
+  - **matriz de tallas**: una celda por talla, de la 20 a la 45 (decisión del
+    dueño), con la cantidad; flechas y Enter navegan como en Excel;
   - costo unitario, subtotal y precio mín/máx sugerido (por ahora: último
     precio; las reglas de margen llegan en la fase 2);
   - referencia nueva → se marca "Nuevo" y se crea al guardar.
@@ -133,15 +132,28 @@ y totales de compra, lectura/validación de la plantilla Excel. Con tests en
      - Documentos: PDF de hasta 5 MB o fotos comprimidas a 500 KB, guardados en un bucket privado y abiertos con enlace temporal.
    - **Búsqueda global:** también encuentra proveedores.
    - **Permisos:** sin `deudas` o `costos` (otra cuenta), esas partes se ocultan en vez de fallar.
-3. Compras y recepción (+ `registrar_compra`).
+3. ✅ Compras y recepción (+ `registrar_compra`; migración `20261012130000_panel_compras.sql`, test `compras_test.sql`).
+   - **Lista** (`/compras`): filtros por proveedor, contado, crédito y con saldo, con total y saldo.
+   - **Detalle** (`/compras/:id`): ítems agrupados por referencia con sus tallas, registrar pago y la foto o PDF de la factura.
+   - **Factura nueva** (`/compras/nueva`), con el proveedor, el número (opcional, con aviso), la fecha, contado o crédito con vencimiento y el adjunto. Cada fila es una referencia y su color:
+     - al escribir referencia y color de algo que ya existe, trae la descripción, la marca, la categoría, las tallas y los precios (en rangos) y el último costo;
+     - cantidades por talla de la 20 a la 45; las flechas se mueven entre tallas y Enter baja a la misma talla de la fila siguiente;
+     - costo y precios por rango de tallas, con "Precio distinto desde la talla…".
+   - **Al guardar:** resumen (tallas nuevas, precios que cambian, total). Si falta algo, la lista de lo que falta.
+   - **Borrador:** queda guardado en el navegador.
+   - **Reintento:** con una clave por factura; si se corta la red, reintentar no duplica la compra ni el stock.
+   - **Base:** `registrar_compra` pide `recibir_mercancia` y `costos` (más `inventario` para cambiar un precio existente). Sin `costos` se sigue usando la llegada física de la app.
+   - **Pendiente:** el precio sugerido de una referencia nueva sale vacío; las reglas de margen llegan en la fase 2.
 4. Carga masiva.
 
 Cada PR: migración aplicada con un script de un solo paso para el SQL Editor
 (como en la fase 0), `verificar_despliegue.sql` contra producción y tipos
 regenerados en `shared/database.types.ts`.
 
-## Decisiones pendientes (para Andrés)
+## Decisiones del dueño (2026-10-12)
 
-1. Rangos de tallas por categoría (¿cuáles maneja la tienda?).
-2. ¿El número de factura del proveedor es obligatorio?
-3. Redondeo de precios: ¿a $500, $1.000 o $5.000?
+1. **Tallas:** no hay rangos por categoría; la tienda maneja de la 20 a la 45 en todos los zapatos.
+2. **Número de factura:** opcional, pero el panel avisa si falta (sirve para la facturación futura).
+3. **Redondeo de precios:** a $1.000.
+4. **Precios por rango de tallas:** una misma referencia puede tener precio mínimo y máximo (y costo)
+   distintos según el rango de tallas; la factura lo maneja con rangos (p. ej. 20–33 y 34–45).

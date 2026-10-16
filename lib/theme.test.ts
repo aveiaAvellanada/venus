@@ -7,22 +7,40 @@ describe('tokens de tema', () => {
     expect(Object.keys(paletaOscura).sort()).toEqual(Object.keys(paletaClara).sort())
   })
 
-  it('los colores son hex válidos (excepto overlay y gradiente)', () => {
+  const conTransparencia = ['overlay', 'sobreOscuraSuave', 'veloOscura', 'gradienteHero', 'sombraFab']
+
+  it('los colores son hex válidos (excepto los que llevan transparencia y el gradiente)', () => {
     for (const p of [paletaClara, paletaOscura]) {
       for (const [k, v] of Object.entries(p)) {
-        if (k === 'overlay' || k === 'gradienteHero' || k === 'sombraFab') continue
+        if (conTransparencia.includes(k)) continue
         expect({ [k]: esHex(v as string) }).toEqual({ [k]: true })
       }
     }
   })
 
-  it('valores canónicos de la spec §1', () => {
-    expect(paletaClara.primario).toBe('#1E66F5')
-    expect(paletaClara.superficie).toBe('#F6F8FC')
-    expect(paletaClara.texto).toBe('#0B1220')
-    expect(paletaOscura.primario).toBe('#4C82F7')
-    expect(paletaOscura.fondo).toBe('#0B1220')
-    expect(paletaOscura.superficie).toBe('#121C30')
+  it('valores canónicos de la paleta monocroma (rediseno-productos §1)', () => {
+    expect(paletaClara.primario).toBe('#111111')
+    expect(paletaClara.superficie).toBe('#F6F6F7')
+    expect(paletaClara.texto).toBe('#0E0E10')
+    expect(paletaClara.peligro).toBe('#18181B')
+    expect(paletaOscura.primario).toBe('#F4F4F5')
+    expect(paletaOscura.sobrePrimario).toBe('#0E0E10')
+    expect(paletaOscura.fondo).toBe('#0E0E10')
+    expect(paletaOscura.superficie).toBe('#151517')
+  })
+
+  it('sin azules: gradiente y sombra en escala neutra (R = G = B)', () => {
+    const neutro = (hex: string) => {
+      const n = parseInt(hex.slice(1), 16)
+      const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255]
+      return Math.max(r, g, b) - Math.min(r, g, b) <= 8
+    }
+    for (const p of [paletaClara, paletaOscura]) {
+      for (const k of ['primario', 'primarioSoft', 'fondo', 'superficie', 'texto', 'exito', 'peligro'] as const) {
+        expect({ [k]: neutro(p[k]) }).toEqual({ [k]: true })
+      }
+      for (const c of p.gradienteHero) expect(neutro(c)).toBe(true)
+    }
   })
 
   it('tipografía: escala y familias por peso (sin fontWeight)', () => {

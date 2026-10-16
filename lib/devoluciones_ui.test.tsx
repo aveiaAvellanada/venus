@@ -125,6 +125,7 @@ const VENTA_CON_CALZADO_Y_GRANJA = {
   numero: 42,
   fecha: '2026-06-15T10:00:00Z',
   cliente_nombre: 'Carlos Pérez',
+  cliente_documento: '1117123456',
   estado: 'completada',
   items: [
     {
@@ -155,6 +156,7 @@ const VENTA_SOLO_CALZADO = {
   numero: 43,
   fecha: '2026-06-15T11:00:00Z',
   cliente_nombre: null,
+  cliente_documento: null,
   estado: 'completada',
   items: [
     {
@@ -362,6 +364,18 @@ describe('Devoluciones UI — tests de integración', () => {
           )
       )
       expect(warningParcial.length).toBe(0)
+    })
+  })
+
+  describe('Cliente de la venta', () => {
+    test('muestra nombre y cédula o razón social del cliente (B4)', async () => {
+      ;(apiDevoluciones.buscarVentaParaDevolucion as jest.Mock).mockResolvedValue(
+        VENTA_CON_CALZADO_Y_GRANJA
+      )
+      await act(async () => {
+        tree = renderer.create(<NuevaDevolucionScreen />)
+      })
+      expect(findAllByText(tree!.root, 'Cliente: Carlos Pérez · 1117123456').length).toBeGreaterThan(0)
     })
   })
 

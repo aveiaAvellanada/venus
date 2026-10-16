@@ -45,7 +45,7 @@ const DETALLE = {
   fecha: '15 jul 2026',
   hora: '2:14 p. m.',
   vendedor: 'Camilo Artunduaga',
-  cliente: { nombre: 'Ana', apellido: 'Torres', telefono: '3001234567' },
+  cliente: { nombre: 'Ana', apellido: 'Torres', telefono: '3001234567', documento: '1117123456' },
   nota: 'cliente pidió factura',
   efectivo_recibido: 200000,
   cambio: 5000,
@@ -86,6 +86,7 @@ describe('Detalle de venta', () => {
       'Venta #102',
       'COMPLETADA',
       'Ana Torres',
+      'CC / NIT: 1117123456',
       '3001234567',
       'Nike Air Max',
       'Medias x3',
@@ -95,6 +96,15 @@ describe('Detalle de venta', () => {
     }
     expect(existeTexto(arbol, '$195.000')).toBe(true) // total
     expect(existeTexto(arbol, '$5.000')).toBe(true) // cambio
+  })
+
+  it('cliente solo con razón social: la muestra como título', async () => {
+    mockDetalle.mockResolvedValue({
+      ...DETALLE,
+      cliente: { nombre: null, apellido: null, telefono: null, documento: 'Ferretería El Sol SAS' },
+    })
+    const arbol = await montar()
+    expect(existeTexto(arbol, 'Ferretería El Sol SAS')).toBe(true)
   })
 
   it('el CTA de devolución navega con el número de la venta', async () => {

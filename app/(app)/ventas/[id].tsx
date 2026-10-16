@@ -99,8 +99,14 @@ export default function VentaDetalleScreen() {
                   </CirculoIcono>
                   <View style={{ flex: 1 }}>
                     <Text style={[tipografia.h3, { color: paleta.texto }]}>
-                      {`${venta.cliente.nombre}${venta.cliente.apellido ? ` ${venta.cliente.apellido}` : ''}`}
+                      {[venta.cliente.nombre, venta.cliente.apellido].filter(Boolean).join(' ') ||
+                        venta.cliente.documento}
                     </Text>
+                    {venta.cliente.documento && venta.cliente.nombre ? (
+                      <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+                        {`CC / NIT: ${venta.cliente.documento}`}
+                      </Text>
+                    ) : null}
                     {venta.cliente.telefono ? (
                       <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
                         {venta.cliente.telefono}

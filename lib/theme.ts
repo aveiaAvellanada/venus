@@ -1,5 +1,6 @@
 // Tokens del rediseño Venus — fuente única de verdad visual.
-// Valores exactos de redisign-visual.md §1–§5. No usar hex sueltos fuera de aquí.
+// Valores de redisign-visual.md §1–§5 (colores: docs/rediseno-productos/README.md §1).
+// No usar hex sueltos fuera de aquí.
 
 export type ModoTema = 'claro' | 'oscuro' | 'sistema'
 
@@ -29,68 +30,87 @@ export interface Paleta {
   advertenciaSoft: string
   advertenciaTexto: string
   overlay: string
+  // Superficie oscura fija en ambos temas (hero, barra "Agregar al carrito",
+  // píldoras "Ir al carrito" / "Mostrar artículos") y lo que va encima.
+  superficieOscura: string
+  sobreOscura: string
+  sobreOscuraSuave: string
+  veloOscura: string
+  sombra: string
   gradienteHero: [string, string]
   sombraFab: string
 }
 
+// Paleta monocroma (docs/rediseno-productos/README.md §1): negros, grises y
+// blancos. Los colores de producto (colorAHex) son datos, no tema.
 export const paletaClara: Paleta = {
-  primario: '#1E66F5',
-  primarioPress: '#1747C8',
-  primarioSoft: '#EBF1FE',
+  primario: '#111111',
+  primarioPress: '#000000',
+  primarioSoft: '#F0F0F1',
   sobrePrimario: '#FFFFFF',
-  acento: '#F59E0B',
-  acentoSoft: '#FEF3C7',
+  acento: '#6B6B72',
+  acentoSoft: '#EDEDEF',
   fondo: '#FFFFFF',
-  superficie: '#F6F8FC',
-  superficie2: '#EEF2F9',
-  borde: '#E2E8F0',
-  bordeFuerte: '#CBD5E1',
-  texto: '#0B1220',
-  texto2: '#475569',
-  texto3: '#64748B',
-  textoDeshabilitado: '#94A3B8',
-  exito: '#16A34A',
-  exitoSoft: '#E7F6EC',
-  exitoTexto: '#15803D',
-  peligro: '#DC2626',
-  peligroSoft: '#FDECEC',
-  peligroTexto: '#B91C1C',
+  superficie: '#F6F6F7',
+  superficie2: '#EDEDEF',
+  borde: '#E4E4E7',
+  bordeFuerte: '#CFCFD4',
+  texto: '#0E0E10',
+  texto2: '#4B4B52',
+  texto3: '#6B6B72',
+  textoDeshabilitado: '#A1A1A8',
+  exito: '#3F3F46',
+  exitoSoft: '#EDEDEF',
+  exitoTexto: '#27272A',
+  peligro: '#18181B',
+  peligroSoft: '#E4E4E7',
+  peligroTexto: '#18181B',
   advertencia: '#D97706',
   advertenciaSoft: '#FEF3C7',
   advertenciaTexto: '#92400E',
-  overlay: 'rgba(11,18,32,0.5)',
-  gradienteHero: ['#1E66F5', '#1747C8'],
-  sombraFab: 'rgba(30,102,245,0.38)',
+  overlay: 'rgba(14,14,16,0.5)',
+  superficieOscura: '#1F1F22',
+  sobreOscura: '#FFFFFF',
+  sobreOscuraSuave: 'rgba(255,255,255,0.7)',
+  veloOscura: 'rgba(255,255,255,0.18)',
+  sombra: '#0E0E10',
+  gradienteHero: ['#1F1F22', '#111111'],
+  sombraFab: 'rgba(14,14,16,0.32)',
 }
 
 export const paletaOscura: Paleta = {
-  primario: '#4C82F7',
-  primarioPress: '#6D9AF9',
-  primarioSoft: '#16264A',
-  sobrePrimario: '#FFFFFF',
-  acento: '#F5B840',
-  acentoSoft: '#3A2A10',
-  fondo: '#0B1220',
-  superficie: '#121C30',
-  superficie2: '#1A2740',
-  borde: '#26334D',
-  bordeFuerte: '#33425F',
-  texto: '#F2F6FC',
-  texto2: '#A9B4C6',
-  texto3: '#8291A9',
-  textoDeshabilitado: '#5B6A83',
-  exito: '#3FBF6F',
-  exitoSoft: '#0F2E1C',
-  exitoTexto: '#7BDCA0',
-  peligro: '#F07171',
-  peligroSoft: '#3A1520',
-  peligroTexto: '#F5A3A3',
+  primario: '#F4F4F5',
+  primarioPress: '#FFFFFF',
+  primarioSoft: '#2A2A2E',
+  sobrePrimario: '#0E0E10',
+  acento: '#A1A1A8',
+  acentoSoft: '#232326',
+  fondo: '#0E0E10',
+  superficie: '#151517',
+  superficie2: '#202023',
+  borde: '#2D2D31',
+  bordeFuerte: '#3A3A40',
+  texto: '#F4F4F5',
+  texto2: '#B4B4BA',
+  texto3: '#8A8A91',
+  textoDeshabilitado: '#5C5C63',
+  exito: '#C4C4CA',
+  exitoSoft: '#1F1F22',
+  exitoTexto: '#D4D4D8',
+  peligro: '#F4F4F5',
+  peligroSoft: '#2A2A2E',
+  peligroTexto: '#F4F4F5',
   advertencia: '#F2A93B',
   advertenciaSoft: '#3A2A10',
   advertenciaTexto: '#F7C87E',
   overlay: 'rgba(0,0,0,0.6)',
-  gradienteHero: ['#1D3A75', '#142850'],
-  sombraFab: 'rgba(76,130,247,0.5)',
+  superficieOscura: '#2A2A2E',
+  sobreOscura: '#FFFFFF',
+  sobreOscuraSuave: 'rgba(255,255,255,0.7)',
+  veloOscura: 'rgba(255,255,255,0.14)',
+  sombra: '#000000',
+  gradienteHero: ['#2A2A2E', '#1F1F22'],
+  sombraFab: 'rgba(0,0,0,0.5)',
 }
 
 // Con fuentes custom, cada peso es una familia (Android ignora fontWeight).
@@ -119,6 +139,22 @@ export const tipografia = {
     letterSpacing: 0.5,
     textTransform: 'uppercase' as const,
   },
+} as const
+
+// Escala compacta para pantallas densas (carrito, cobro y confirmación;
+// docs/rediseno-carrito/README.md B5): títulos 20, cuerpo 14–15, inputs 14,
+// botones 15, total grande 32.
+export const tipografiaCompacta = {
+  titulo: { fontSize: 20, lineHeight: 26, fontFamily: fuentes.negrita },
+  tituloGrande: { fontSize: 25, lineHeight: 31, fontFamily: fuentes.extra, letterSpacing: -0.4 },
+  totalGrande: { fontSize: 32, lineHeight: 40, fontFamily: fuentes.extra, letterSpacing: -0.8 },
+  lineaTitulo: { fontSize: 14, lineHeight: 18, fontFamily: fuentes.negrita },
+  cuerpo: { fontSize: 14, lineHeight: 20, fontFamily: fuentes.media },
+  cuerpoFuerte: { fontSize: 15, lineHeight: 22, fontFamily: fuentes.negrita },
+  input: { fontSize: 14, lineHeight: 20, fontFamily: fuentes.semi },
+  boton: { fontSize: 15, lineHeight: 20, fontFamily: fuentes.negrita },
+  etiqueta: { fontSize: 12, lineHeight: 16, fontFamily: fuentes.semi },
+  detalle: { fontSize: 11, lineHeight: 15, fontFamily: fuentes.media },
 } as const
 
 // Dinero SIEMPRE tabular: <Text style={[tipografia.h3, tabular]}>

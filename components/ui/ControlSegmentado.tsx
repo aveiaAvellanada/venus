@@ -48,7 +48,7 @@ export function ControlSegmentado({ opciones, indice, onCambio }: Props) {
               borderRadius: radio.full,
               backgroundColor: esOscuro ? paleta.superficie : paleta.fondo,
               elevation: 2,
-              shadowColor: '#0B1220',
+              shadowColor: paleta.sombra,
               shadowOpacity: 0.08,
               shadowRadius: 8,
               shadowOffset: { width: 0, height: 2 },

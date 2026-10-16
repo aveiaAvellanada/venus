@@ -10,7 +10,7 @@ import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tipografia } from '../../../lib/theme'
-import { Boton, CampoTexto, CirculoIcono, ControlSegmentado, FilaLista, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Boton, CampoTexto, CirculoIcono, FilaLista, Presionable, Tarjeta, useToast } from '../../../components/ui'
 
 const ETIQUETA_DIA: Record<DiaSemana, string> = {
   domingo: 'Domingo', lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles',
@@ -19,7 +19,6 @@ const ETIQUETA_DIA: Record<DiaSemana, string> = {
 
 const ORDEN_DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
 
-type ModoCierre = 'con_diferencia' | 'sin_diferencia'
 
 // Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
 function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
@@ -54,7 +53,6 @@ export default function CajaConfig() {
   const [guardando, setGuardando] = useState(false)
   const [auto, setAuto] = useState(false)
   const [horario, setHorario] = useState<HorarioSemanal>({})
-  const [modoCierre, setModoCierre] = useState<ModoCierre>('con_diferencia')
   const [basePredeterminada, setBasePredeterminada] = useState('')
 
   useEffect(() => {
@@ -63,7 +61,6 @@ export default function CajaConfig() {
       if (data) {
         setAuto(data.modo_automatico)
         setHorario((data.horario_semanal ?? {}) as HorarioSemanal)
-        setModoCierre((data.modo_cierre ?? 'con_diferencia') as ModoCierre)
         setBasePredeterminada(data.base_predeterminada ? String(data.base_predeterminada) : '')
       }
       setCargando(false)
@@ -107,7 +104,8 @@ export default function CajaConfig() {
     const { error } = await supabase.from('caja_config').update({
       modo_automatico: auto,
       horario_semanal: horario as unknown as Record<string, never>,
-      modo_cierre: modoCierre,
+      // Fijo: el cierre siempre cuenta el efectivo (ver migración 20261011120000).
+      modo_cierre: 'con_diferencia',
       base_predeterminada: basePredeterminada.trim() === '' ? 0 : Number(basePredeterminada),
     }).not('id', 'is', null)
     setGuardando(false)
@@ -186,16 +184,8 @@ export default function CajaConfig() {
           esperado del cierre.
         </Text>
 
-        <Text style={[tipografia.h3, { color: paleta.texto, marginTop: espacio.m }]}>Modo de cierre</Text>
-        <ControlSegmentado
-          opciones={['Con diferencia', 'Sin diferencia']}
-          indice={modoCierre === 'sin_diferencia' ? 1 : 0}
-          onCambio={(i) => setModoCierre(i === 1 ? 'sin_diferencia' : 'con_diferencia')}
-        />
         <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
-          {modoCierre === 'sin_diferencia'
-            ? 'Al cerrar caja desde el menú solo se confirma; el sistema calcula el efectivo esperado, sin contar caja.'
-            : 'Al cerrar caja desde el menú se pide el efectivo contado y, si hay diferencia, una justificación.'}
+          Al cerrar la caja se pide el efectivo contado y, si hay diferencia, una justificación.
         </Text>
 
         <Tarjeta estilo={{ paddingVertical: espacio.xs, marginTop: espacio.m }}>

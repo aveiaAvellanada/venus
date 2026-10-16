@@ -491,8 +491,10 @@ export default function NuevaDevolucionScreen() {
           <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>
             Fecha: {new Date(venta.fecha).toLocaleDateString('es-CO')}
           </Text>
-          {venta.cliente_nombre ? (
-            <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Cliente: {venta.cliente_nombre}</Text>
+          {venta.cliente_nombre || venta.cliente_documento ? (
+            <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>
+              Cliente: {[venta.cliente_nombre, venta.cliente_documento].filter(Boolean).join(' · ')}
+            </Text>
           ) : null}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s, marginTop: espacio.xs }}>
             <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Estado:</Text>

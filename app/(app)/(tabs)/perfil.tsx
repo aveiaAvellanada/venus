@@ -1,7 +1,7 @@
 import React from 'react'
 import { Alert, ScrollView, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
-import { Camera, ChartColumn, KeyRound, LogOut, Scale, Sparkles, SunMoon, Truck, Users, Wallet } from 'lucide-react-native'
+import { Camera, ChartColumn, KeyRound, LogOut, PackagePlus, Scale, Sparkles, SunMoon, Truck, Users, Wallet } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
 import { esDueno as esDuenoPerfil, puedeAcceder, resumenPermisos } from '../../../lib/permisos'
 import { useTema } from '../../../lib/tema'
@@ -12,6 +12,7 @@ import { Badge, CirculoIcono, ControlSegmentado, FilaLista, Presionable, Tarjeta
 const MODOS: ModoTema[] = ['claro', 'oscuro', 'sistema']
 
 const NEGOCIO = [
+  { id: 'recibir-mercancia', titulo: 'Recibir mercancía', sub: 'Entrada de mercancía nueva', ruta: '/recibir-mercancia', Icono: PackagePlus },
   { id: 'proveedores', titulo: 'Proveedores', sub: 'Datos, cuentas y deudas', ruta: '/proveedores', Icono: Truck },
   { id: 'reportes', titulo: 'Reportes', sub: 'El negocio a fondo', ruta: '/reportes', Icono: ChartColumn },
   { id: 'balance', titulo: 'Balance', sub: 'Ingresos − egresos', ruta: '/balance', Icono: Scale },

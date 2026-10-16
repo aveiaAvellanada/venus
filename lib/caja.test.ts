@@ -8,7 +8,7 @@ jest.mock('./supabase', () => ({
 }))
 
 import {
-  abrirCaja, cerrarCaja, cerrarCajaSinDiferencia, obtenerArqueoCaja, obtenerBasePredeterminada, reabrirCaja,
+  abrirCaja, cerrarCaja, obtenerArqueoCaja, obtenerBasePredeterminada, reabrirCaja,
 } from './caja'
 
 const CAJA = { id: 'c1', fecha: '2026-10-09', estado: 'abierta' }
@@ -44,14 +44,6 @@ describe('caja: escrituras solo por RPC', () => {
       p_nota: 'Faltó sencillo',
     })
     expect(mockFrom).not.toHaveBeenCalled()
-  })
-
-  it('cerrarCajaSinDiferencia omite conteo y nota', async () => {
-    await cerrarCajaSinDiferencia()
-    expect(mockRpc).toHaveBeenCalledWith('cerrar_caja', {
-      p_efectivo_contado: undefined,
-      p_nota: undefined,
-    })
   })
 
   it('propaga el mensaje del servidor', async () => {

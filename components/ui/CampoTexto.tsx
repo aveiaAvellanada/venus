@@ -1,15 +1,17 @@
 import React, { useState } from 'react'
 import { Text, TextInput, TextInputProps, View } from 'react-native'
 import { useTema } from '../../lib/tema'
-import { espacio, radio, tabular, tipografia } from '../../lib/theme'
+import { espacio, radio, tabular, tipografia, tipografiaCompacta } from '../../lib/theme'
 
 interface Props extends TextInputProps {
   etiqueta?: string
   error?: string
   gigante?: boolean
+  // Más bajo y con letra de 14 (carrito y cobro, rediseño del carrito B5).
+  compacto?: boolean
 }
 
-export function CampoTexto({ etiqueta, error, gigante = false, onFocus, onBlur, ...resto }: Props) {
+export function CampoTexto({ etiqueta, error, gigante = false, compacto = false, onFocus, onBlur, ...resto }: Props) {
   const { paleta } = useTema()
   const [enfocado, setEnfocado] = useState(false)
 
@@ -17,7 +19,9 @@ export function CampoTexto({ etiqueta, error, gigante = false, onFocus, onBlur, 
 
   return (
     <View style={{ gap: 6 }}>
-      {etiqueta ? <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>{etiqueta}</Text> : null}
+      {etiqueta ? (
+        <Text style={[compacto ? tipografiaCompacta.etiqueta : tipografia.etiqueta, { color: paleta.texto2 }]}>{etiqueta}</Text>
+      ) : null}
       <TextInput
         placeholderTextColor={paleta.textoDeshabilitado}
         onFocus={(e) => {
@@ -29,10 +33,14 @@ export function CampoTexto({ etiqueta, error, gigante = false, onFocus, onBlur, 
           onBlur?.(e)
         }}
         style={[
-          gigante ? [tipografia.display, tabular, { textAlign: 'center' as const }] : tipografia.cuerpo,
+          gigante
+            ? [tipografia.display, tabular, { textAlign: 'center' as const }]
+            : compacto
+              ? tipografiaCompacta.input
+              : tipografia.cuerpo,
           {
-            height: gigante ? 64 : 52,
-            borderWidth: 2,
+            height: gigante ? 64 : compacto ? 44 : 52,
+            borderWidth: compacto ? 1.5 : 2,
             borderColor: colorBorde,
             borderRadius: radio.sm,
             backgroundColor: paleta.superficie,

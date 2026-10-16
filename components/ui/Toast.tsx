@@ -72,7 +72,7 @@ function VistaToast({ mensaje, tipo }: { mensaje: string; tipo: TipoToast }) {
         borderRadius: radio.md,
         paddingVertical: espacio.m,
         paddingHorizontal: espacio.l,
-        shadowColor: '#000',
+        shadowColor: paleta.sombra,
         shadowOpacity: 0.15,
         shadowRadius: 12,
         shadowOffset: { width: 0, height: 4 },

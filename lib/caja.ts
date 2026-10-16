@@ -57,7 +57,7 @@ export async function reabrirCaja() {
   return data
 }
 
-// efectivo_contado = null solo se acepta con el modo de cierre "sin diferencia".
+// El cierre siempre cuenta el efectivo (caja_config.modo_cierre = 'con_diferencia').
 export async function cerrarCaja(params: { efectivo_contado: number | null; nota: string | null }) {
   const { data, error } = await supabase.rpc('cerrar_caja', {
     p_efectivo_contado: params.efectivo_contado ?? undefined,
@@ -65,16 +65,4 @@ export async function cerrarCaja(params: { efectivo_contado: number | null; nota
   })
   if (error) throw error
   return data
-}
-
-export async function cerrarCajaSinDiferencia() {
-  return cerrarCaja({ efectivo_contado: null, nota: null })
-}
-
-export async function obtenerModoCierre(): Promise<'con_diferencia' | 'sin_diferencia'> {
-  // Vía RPC SECURITY DEFINER: caja_config es de lectura solo-dueño por RLS, pero
-  // todos los roles cierran caja y necesitan el modo configurado.
-  const { data, error } = await supabase.rpc('obtener_modo_cierre')
-  if (error) throw error
-  return (data ?? 'con_diferencia') as 'con_diferencia' | 'sin_diferencia'
 }

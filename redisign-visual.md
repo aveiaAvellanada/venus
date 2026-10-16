@@ -35,6 +35,16 @@
 Todos los componentes consumen **tokens semánticos** (nunca hex sueltos).
 Fuente única: `lib/theme.ts`.
 
+> **Actualización 2026-10 — paleta monocroma.** Las tablas 1.1 y 1.2 quedan como
+> histórico: el azul se reemplazó por negros, grises y blancos en toda la app.
+> Valores vigentes en `docs/rediseno-productos/README.md` §1 y en `lib/theme.ts`.
+> `advertencia*` no cambia. Tokens nuevos: `superficieOscura` / `sobreOscura` /
+> `sobreOscuraSuave` / `veloOscura` (superficie oscura fija en ambos temas: hero,
+> FAB del carrito, barra "Agregar al carrito", píldoras "Ir al carrito" y
+> "Mostrar artículos") y `sombra` (color de sombras). `gradienteHero` y
+> `sombraFab` en escala neutra. Con éxito/peligro en gris, los estados se
+> comunican con texto, signo (▲▼, +/−), raya diagonal u opacidad, nunca solo con color.
+
 ### 1.1 Tema claro
 
 | Token | Hex | Uso |

@@ -108,13 +108,26 @@ describe('obtenerVentaDetalle', () => {
 
     const detalle = await obtenerVentaDetalle('v1')
     expect(detalle).not.toBeNull()
-    expect(detalle!.cliente).toEqual({ nombre: 'Ana', apellido: 'Torres', telefono: '3001234567' })
+    expect(detalle!.cliente).toEqual({ nombre: 'Ana', apellido: 'Torres', telefono: '3001234567', documento: null })
     expect(detalle!.vendedor).toBe('Camilo Artunduaga')
     expect(detalle!.items[0]).toMatchObject({ descripcion: 'Nike Air Max', talla: '40', color: 'Negro' })
     expect(detalle!.pagos).toEqual([{ metodo: 'efectivo', monto: 195000 }])
 
     from.mockReturnValue(crearBuilder({ data: null, error: null }))
     expect(await obtenerVentaDetalle('nope')).toBeNull()
+  })
+
+  it('cédula o razón social: se mapea, y basta sola para mostrar al cliente', async () => {
+    const base = {
+      id: 'v2', numero: 103, total: 50000, estado: 'completada', created_at: '2026-07-15T19:14:00.000Z',
+      cliente_apellido: null, cliente_telefono: null, venta_items: [], metodos_pago_venta: [], vendedor: null,
+    }
+    from.mockReturnValue(crearBuilder({ data: { ...base, cliente_nombre: 'Ana', cliente_documento: '900123456-7' }, error: null }))
+    expect((await obtenerVentaDetalle('v2'))!.cliente).toMatchObject({ nombre: 'Ana', documento: '900123456-7' })
+    from.mockReturnValue(crearBuilder({ data: { ...base, cliente_nombre: null, cliente_documento: 'Ferretería El Sol SAS' }, error: null }))
+    expect((await obtenerVentaDetalle('v2'))!.cliente).toMatchObject({ nombre: null, documento: 'Ferretería El Sol SAS' })
+    from.mockReturnValue(crearBuilder({ data: { ...base, cliente_nombre: null, cliente_documento: null }, error: null }))
+    expect((await obtenerVentaDetalle('v2'))!.cliente).toBeNull()
   })
 })
 

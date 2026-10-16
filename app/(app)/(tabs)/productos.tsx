@@ -1,103 +1,118 @@
 import React, { useCallback, useState } from 'react'
-import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { Image, Pressable, RefreshControl, ScrollView, Text, useWindowDimensions, View } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { ChevronRight, Egg, Footprints, PackagePlus, Pencil, Search, SlidersHorizontal } from 'lucide-react-native'
+import { Egg, Footprints, Package, Pencil, Search, SlidersHorizontal } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
 import { tienePermiso } from '../../../lib/permisos'
 import { useCarrito } from '../../../lib/carrito-contexto'
-import { confirmarCompraRapida } from '../../../lib/compraRapida'
-import { CATEGORIAS } from '../../../lib/excel'
 import { listarCalzado, listarVarios } from '../../../lib/inventario'
 import type { ProductoVarios } from '../../../lib/inventario'
-import { agruparPorReferencia, filtrarModelos } from '../../../lib/productos'
-import type { ModeloCalzado } from '../../../lib/productos'
+import {
+  agruparPorReferencia,
+  cantidadConUnidad,
+  colorAHex,
+  columnasGrid,
+  FILTROS_VACIOS,
+  filtroActivo,
+  tarjetasFiltradas,
+} from '../../../lib/productos'
+import type { FiltrosProductos, ModeloCalzado, TarjetaProducto } from '../../../lib/productos'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
 import {
   Badge,
   CampoTexto,
-  Chip,
-  CirculoIcono,
   ControlSegmentado,
   Esqueleto,
   EstadoVacio,
-  FilaLista,
-  HojaFiltrosProductos,
+  HojaProductoAnadido,
   HojaVenderGranja,
-  Tarjeta,
-  useToast,
+  PanelFiltrosProductos,
+  TarjetaGrid,
 } from '../../../components/ui'
+import type { ProductoAnadido } from '../../../components/ui'
 
 const formatear = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
-// 'Todas' no es una categoría real: es el chip que desactiva el filtro.
-const CHIPS_CATEGORIA = [{ valor: 'Todas', etiqueta: 'Todas' }, ...CATEGORIAS]
+// Grid (rediseño §2): el espacio entre columnas es el mismo margen lateral.
+const GAP_GRID = espacio.s
+const RELLENO_PANTALLA = espacio.xl
 
-function CardModelo({ modelo, onPress }: { modelo: ModeloCalzado; onPress: () => void }) {
+const iconoGranja = (nombre: string) => (/huevo/i.test(nombre) ? Egg : Package)
+
+function Precio({ texto, etiqueta, color }: { texto: string; etiqueta?: string; color: string }) {
   const { paleta } = useTema()
-  const rango =
-    modelo.precioMin === modelo.precioMax
-      ? formatear(modelo.precioMax)
-      : `${formatear(modelo.precioMin)} – ${formatear(modelo.precioMax)}`
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+      <Text style={[tipografia.cuerpoLg, tabular, { color, fontSize: 15, lineHeight: 20 }]}>{texto}</Text>
+      {etiqueta ? <Text style={[tipografia.caption, { color: paleta.texto3, fontSize: 11 }]}>{etiqueta}</Text> : null}
+    </View>
+  )
+}
+
+function CardCalzado({ tarjeta, ancho, onPress }: { tarjeta: TarjetaProducto; ancho: number; onPress: () => void }) {
+  const { paleta } = useTema()
+  const { modelo, color, agotado } = tarjeta
+  const colorTexto = agotado ? paleta.texto3 : paleta.texto
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={modelo.nombre}
+    <TarjetaGrid
+      ancho={ancho}
+      accessibilityLabel={color ? `${modelo.nombre} · ${color}` : modelo.nombre}
       onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: espacio.m,
-        paddingVertical: espacio.s,
-        backgroundColor: pressed ? paleta.superficie2 : 'transparent',
-        borderRadius: radio.sm,
-      })}
-    >
-      <View
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: radio.sm,
-          backgroundColor: paleta.superficie2,
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-          opacity: modelo.agotado ? 0.5 : 1,
-        }}
-      >
-        {modelo.foto ? (
-          <Image source={{ uri: modelo.foto }} style={{ width: 56, height: 56 }} />
+      opaca={agotado}
+      imagen={
+        tarjeta.foto ? (
+          <Image source={{ uri: tarjeta.foto }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
         ) : (
-          <Footprints size={24} color={paleta.textoDeshabilitado} />
-        )}
-      </View>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text
-          style={[tipografia.h3, { color: modelo.agotado ? paleta.texto3 : paleta.texto }]}
-          numberOfLines={1}
-        >
-          {modelo.nombre}
-        </Text>
-        <Text style={[tipografia.caption, { color: paleta.texto3 }]} numberOfLines={1}>
-          {[
-            modelo.marca,
-            modelo.referencia ? `Ref ${modelo.referencia}` : null,
-            `${modelo.colores.length || 1} ${modelo.colores.length === 1 ? 'color' : 'colores'}`,
-          ]
-            .filter(Boolean)
-            .join(' · ')}
-        </Text>
-      </View>
-      {!modelo.activo ? (
-        <Badge texto="DESCONTINUADO" tipo="neutro" />
-      ) : modelo.agotado ? (
-        <Badge texto="AGOTADO" tipo="peligro" />
+          <Footprints size={Math.round(ancho * 0.38)} strokeWidth={1.5} color={paleta.textoDeshabilitado} />
+        )
+      }
+      insignia={
+        !modelo.activo ? (
+          <Badge texto="DESCONTINUADO" tipo="neutro" />
+        ) : agotado ? (
+          <Badge texto="AGOTADO" tipo="peligro" />
+        ) : null
+      }
+    >
+      {tarjeta.precioMin === tarjeta.precioMax ? (
+        <Precio texto={formatear(tarjeta.precioMax)} color={colorTexto} />
       ) : (
-        <Text style={[tipografia.etiqueta, tabular, { color: paleta.primario }]}>{rango}</Text>
+        <View>
+          <Precio texto={formatear(tarjeta.precioMax)} etiqueta="Max" color={colorTexto} />
+          <Precio texto={formatear(tarjeta.precioMin)} etiqueta="Min" color={colorTexto} />
+        </View>
       )}
-      <ChevronRight size={20} color={paleta.texto3} />
-    </Pressable>
+      <Text style={[tipografia.cuerpoLg, { color: colorTexto, fontSize: 15, lineHeight: 20, marginTop: 6 }]} numberOfLines={2}>
+        {modelo.nombre}
+      </Text>
+      {modelo.marca ? (
+        <Text style={[tipografia.etiqueta, { color: paleta.texto3 }]} numberOfLines={1}>
+          {modelo.marca}
+        </Text>
+      ) : null}
+      {color ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: radio.full,
+              backgroundColor: colorAHex(color),
+              borderWidth: 1,
+              borderColor: paleta.bordeFuerte,
+            }}
+          />
+          <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]} numberOfLines={1}>
+            {color}
+          </Text>
+        </View>
+      ) : null}
+      <Text style={[tipografia.etiqueta, { color: paleta.texto3 }]}>
+        {`${tarjeta.numColores} ${tarjeta.numColores === 1 ? 'color' : 'colores'}`}
+      </Text>
+    </TarjetaGrid>
   )
 }
 
@@ -105,21 +120,20 @@ export default function Productos() {
   const { perfil } = useAuth()
   const { paleta } = useTema()
   const router = useRouter()
-  const { dispatch, items } = useCarrito()
-  const { mostrar } = useToast()
+  const { dispatch } = useCarrito()
+  const { width: anchoVentana } = useWindowDimensions()
 
   const [modo, setModo] = useState(0)
   const [busqueda, setBusqueda] = useState('')
-  const [categoria, setCategoria] = useState('Todas')
   const [cargando, setCargando] = useState(true)
   const [refrescando, setRefrescando] = useState(false)
   const [modelos, setModelos] = useState<ModeloCalzado[]>([])
   const [varios, setVarios] = useState<ProductoVarios[]>([])
   const [productoGranja, setProductoGranja] = useState<ProductoVarios | null>(null)
+  const [anadido, setAnadido] = useState<ProductoAnadido | null>(null)
   const [filtrosVisibles, setFiltrosVisibles] = useState(false)
-  const [marcasFiltro, setMarcasFiltro] = useState<string[]>([])
-  const [precioMaxFiltro, setPrecioMaxFiltro] = useState<number | null>(null)
-  const [verDescontinuados, setVerDescontinuados] = useState(false)
+  const [filtros, setFiltros] = useState<FiltrosProductos>(FILTROS_VACIOS)
+  const [anchoGrid, setAnchoGrid] = useState(0)
 
   const cargar = useCallback(async () => {
     if (!perfil) return
@@ -141,21 +155,15 @@ export default function Productos() {
 
   if (!perfil) return null
 
-  const q = busqueda.trim().toLowerCase()
-  const modelosBase = verDescontinuados ? modelos : modelos.filter((m) => m.activo)
-  const modelosVisibles = filtrarModelos(
-    categoria === 'Todas' ? modelosBase : modelosBase.filter((m) => m.categoria === categoria),
-    busqueda
-  )
-  const variosVisibles = q ? varios.filter((v) => v.nombre.toLowerCase().includes(q)) : varios
+  // Columnas según el ancho real del contenedor; antes de medir, la ventana.
+  const ancho = anchoGrid || anchoVentana
+  const columnas = columnasGrid(ancho)
+  const anchoCard = Math.max(0, Math.floor((ancho - GAP_GRID * 2 - GAP_GRID * (columnas - 1)) / columnas))
 
-  const marcasDisponibles = [...new Set(modelos.map((m) => m.marca).filter((m): m is string => !!m))].sort()
-  const precioMaxAbsoluto = modelos.length > 0 ? Math.max(...modelos.map((m) => m.precioMax)) : 0
-  const modelosFiltrados = modelosVisibles.filter((m) => {
-    const pasaMarca = marcasFiltro.length === 0 || (m.marca != null && marcasFiltro.includes(m.marca))
-    const pasaPrecio = precioMaxFiltro == null || m.precioMin <= precioMaxFiltro
-    return pasaMarca && pasaPrecio
-  })
+  const q = busqueda.trim().toLowerCase()
+  const tarjetas = tarjetasFiltradas(modelos, busqueda, filtros)
+  const variosVisibles = q ? varios.filter((v) => v.nombre.toLowerCase().includes(q)) : varios
+  const puedeEditarGranja = tienePermiso(perfil, 'inventario')
 
   const refrescar = async () => {
     setRefrescando(true)
@@ -163,30 +171,31 @@ export default function Productos() {
     setRefrescando(false)
   }
 
+  const grid = (hijos: React.ReactNode) => (
+    <View
+      onLayout={(e) => setAnchoGrid(e.nativeEvent.layout.width)}
+      style={{
+        marginHorizontal: -RELLENO_PANTALLA,
+        paddingHorizontal: GAP_GRID,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: GAP_GRID,
+      }}
+    >
+      {hijos}
+    </View>
+  )
+
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 56, gap: espacio.l }}
+        contentContainerStyle={{ padding: RELLENO_PANTALLA, paddingTop: 56, gap: espacio.l }}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={refrescando} onRefresh={refrescar} tintColor={paleta.primario} />
         }
       >
         <Text style={[tipografia.h1, { color: paleta.texto }]}>Productos</Text>
-
-        <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
-          <FilaLista
-            icono={
-              <CirculoIcono tono="exito">
-                <PackagePlus />
-              </CirculoIcono>
-            }
-            titulo="Recibir mercancía"
-            subtitulo="Entrada de mercancía nueva"
-            chevron
-            onPress={() => router.push('/recibir-mercancia')}
-          />
-        </Tarjeta>
 
         <ControlSegmentado
           opciones={['Calzado', 'Granja']}
@@ -207,157 +216,168 @@ export default function Productos() {
               autoCorrect={false}
             />
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Filtros"
-            onPress={() => setFiltrosVisibles(true)}
-            hitSlop={8}
-            style={{ padding: espacio.s }}
-          >
-            <SlidersHorizontal size={20} color={marcasFiltro.length > 0 || precioMaxFiltro != null ? paleta.primario : paleta.texto3} />
-          </Pressable>
+          {modo === 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Filtros"
+              accessibilityState={{ selected: filtroActivo(filtros) }}
+              onPress={() => setFiltrosVisibles(true)}
+              hitSlop={8}
+              style={{ padding: espacio.s }}
+            >
+              <SlidersHorizontal size={20} color={filtroActivo(filtros) ? paleta.primario : paleta.texto3} />
+            </Pressable>
+          ) : null}
         </View>
 
-        {modo === 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: espacio.s }}>
-            {CHIPS_CATEGORIA.map((c) => (
-              <Chip
-                key={c.valor}
-                etiqueta={c.etiqueta}
-                activo={categoria === c.valor}
-                onPress={() => setCategoria(c.valor)}
-              />
-            ))}
-            <Chip
-              etiqueta="Ver descontinuados"
-              activo={verDescontinuados}
-              onPress={() => setVerDescontinuados((v) => !v)}
-            />
-          </ScrollView>
-        ) : null}
-
         {cargando ? (
-          <View style={{ gap: espacio.m }}>
-            <Esqueleto alto={72} />
-            <Esqueleto alto={72} />
-            <Esqueleto alto={72} />
-          </View>
+          grid(
+            Array.from({ length: columnas * 2 }, (_, i) => (
+              <View key={i} style={{ width: anchoCard }}>
+                <Esqueleto alto={anchoCard + 96} radio={0} />
+              </View>
+            ))
+          )
         ) : modo === 0 ? (
-          modelosFiltrados.length === 0 ? (
+          tarjetas.length === 0 ? (
             <EstadoVacio
               icono={<Footprints />}
               titulo="No hay productos que coincidan"
-              mensaje="Prueba con otra búsqueda o categoría"
+              mensaje="Prueba con otra búsqueda o con otros filtros"
             />
           ) : (
-            <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
-              {modelosFiltrados.map((m, i) => (
-                <View key={m.clave}>
-                  {i > 0 ? (
-                    <View style={{ height: 1, backgroundColor: paleta.borde, marginLeft: 68 }} />
-                  ) : null}
-                  <CardModelo
-                    modelo={m}
-                    onPress={() => router.push(`/productos/${encodeURIComponent(m.clave)}`)}
-                  />
-                </View>
-              ))}
-            </Tarjeta>
+            grid(
+              tarjetas.map((t) => (
+                <CardCalzado
+                  key={t.clave}
+                  tarjeta={t}
+                  ancho={anchoCard}
+                  onPress={() =>
+                    router.push(
+                      `/productos/${encodeURIComponent(t.modelo.clave)}` +
+                        (t.color ? `?color=${encodeURIComponent(t.color)}` : '')
+                    )
+                  }
+                />
+              ))
+            )
           )
         ) : variosVisibles.length === 0 ? (
           <EstadoVacio icono={<Egg />} titulo="No hay productos de Granja" />
         ) : (
-          <Tarjeta estilo={{ paddingVertical: espacio.xs }}>
-            {variosVisibles.map((v, i) => (
-              <View key={v.id}>
-                {i > 0 ? <View style={{ height: 1, backgroundColor: paleta.borde, marginLeft: 56 }} /> : null}
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ flex: 1 }}>
-                    <FilaLista
-                      icono={
-                        <CirculoIcono tono="acento">
-                          <Egg />
-                        </CirculoIcono>
-                      }
-                      titulo={v.nombre}
-                      subtitulo={`Por ${v.unidad_medida} · precio al vender`}
-                      onPress={() => setProductoGranja(v)}
-                    />
-                  </View>
-                  {tienePermiso(perfil, 'inventario') ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Editar ${v.nombre}`}
-                      hitSlop={8}
-                      onPress={() => router.push(`/inventario/granja/editor?id=${v.id}`)}
-                      style={{ padding: espacio.m }}
-                    >
-                      <Pencil size={18} color={paleta.texto3} />
-                    </Pressable>
-                  ) : null}
-                </View>
-              </View>
-            ))}
-          </Tarjeta>
+          grid(
+            variosVisibles.map((v) => {
+              const Icono = iconoGranja(v.nombre)
+              return (
+                <TarjetaGrid
+                  key={v.id}
+                  ancho={anchoCard}
+                  accessibilityLabel={v.nombre}
+                  onPress={() => setProductoGranja(v)}
+                  imagen={
+                    v.foto_url ? (
+                      <Image source={{ uri: v.foto_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                    ) : (
+                      <Icono size={Math.round(anchoCard * 0.38)} strokeWidth={1.5} color={paleta.acento} />
+                    )
+                  }
+                  esquina={
+                    puedeEditarGranja ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Editar ${v.nombre}`}
+                        hitSlop={6}
+                        onPress={() => router.push(`/inventario/granja/editor?id=${v.id}`)}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: radio.full,
+                          backgroundColor: paleta.fondo,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          shadowColor: paleta.sombra,
+                          shadowOpacity: 0.12,
+                          shadowRadius: 4,
+                          shadowOffset: { width: 0, height: 1 },
+                          elevation: 2,
+                        }}
+                      >
+                        <Pencil size={18} color={paleta.texto2} />
+                      </Pressable>
+                    ) : null
+                  }
+                >
+                  <Text style={[tipografia.cuerpoLg, { color: paleta.texto, fontSize: 15, lineHeight: 20 }]}>
+                    Precio al vender
+                  </Text>
+                  <Text style={[tipografia.cuerpoLg, { color: paleta.texto, fontSize: 15, lineHeight: 20, marginTop: 6 }]} numberOfLines={2}>
+                    {v.nombre}
+                  </Text>
+                  <Text style={[tipografia.etiqueta, { color: paleta.texto3 }]} numberOfLines={1}>
+                    {`Por ${v.unidad_medida}`}
+                  </Text>
+                </TarjetaGrid>
+              )
+            })
+          )
         )}
       </ScrollView>
 
       <HojaVenderGranja
         visible={productoGranja != null}
         producto={productoGranja}
+        icono={
+          productoGranja
+            ? React.createElement(iconoGranja(productoGranja.nombre), { size: 56, strokeWidth: 1.5, color: paleta.acento })
+            : null
+        }
         onCerrar={() => setProductoGranja(null)}
         onAgregar={(cantidad, precio) => {
           if (!productoGranja) return
+          const granja = productoGranja
           dispatch({
             tipo: 'agregarConCantidad',
             cantidad,
             producto: {
               tipo: 'varios',
-              id: productoGranja.id,
-              titulo: productoGranja.nombre,
-              detalle: `por ${productoGranja.unidad_medida}`,
+              id: granja.id,
+              titulo: granja.nombre,
+              detalle: `por ${granja.unidad_medida}`,
               precio,
               stock: Number.POSITIVE_INFINITY,
-              unidad: productoGranja.unidad_medida,
+              unidad: granja.unidad_medida,
+              foto: granja.foto_url,
             },
           })
           setProductoGranja(null)
-          mostrar(`Agregado: ${productoGranja.nombre}`)
-        }}
-        onCompraRapida={(cantidad, precio) => {
-          if (!productoGranja) return
-          const granja = productoGranja
-          confirmarCompraRapida(items.length, () => {
-            dispatch({ tipo: 'limpiar' })
-            dispatch({
-              tipo: 'agregarConCantidad',
-              cantidad,
-              producto: {
-                tipo: 'varios',
-                id: granja.id,
-                titulo: granja.nombre,
-                detalle: `por ${granja.unidad_medida}`,
-                precio,
-                stock: Number.POSITIVE_INFINITY,
-                unidad: granja.unidad_medida,
-              },
-            })
-            setProductoGranja(null)
-            router.push('/ventas/nueva?modo=rapida')
+          setAnadido({
+            foto: granja.foto_url,
+            icono: React.createElement(iconoGranja(granja.nombre), { size: 48, strokeWidth: 1.5, color: paleta.acento }),
+            marca: 'Granja',
+            nombre: granja.nombre,
+            detalle: cantidadConUnidad(cantidad, granja.unidad_medida),
+            precio: cantidad * precio,
           })
         }}
       />
 
-      <HojaFiltrosProductos
+      <HojaProductoAnadido
+        producto={anadido}
+        onCerrar={() => setAnadido(null)}
+        onSeguir={() => setAnadido(null)}
+        onIrAlCarrito={() => {
+          setAnadido(null)
+          router.push('/ventas/nueva')
+        }}
+      />
+
+      <PanelFiltrosProductos
         visible={filtrosVisibles}
-        marcas={marcasDisponibles}
-        marcasSeleccionadas={marcasFiltro}
-        precioMinAbsoluto={0}
-        precioMaxAbsoluto={precioMaxAbsoluto}
-        precioSeleccionado={[0, precioMaxFiltro ?? precioMaxAbsoluto]}
-        onAplicar={(marcas, [, max]) => {
-          setMarcasFiltro(marcas)
-          setPrecioMaxFiltro(max)
+        modelos={modelos}
+        busqueda={busqueda}
+        filtros={filtros}
+        onAplicar={(f) => {
+          setFiltros(f)
           setFiltrosVisibles(false)
         }}
         onCerrar={() => setFiltrosVisibles(false)}

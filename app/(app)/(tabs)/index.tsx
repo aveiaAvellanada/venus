@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
 import {
@@ -10,7 +10,7 @@ import {
 } from 'lucide-react-native'
 import type { LucideIcon } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
-import { cerrarCajaSinDiferencia, obtenerCajaHoy, obtenerModoCierre } from '../../../lib/caja'
+import { obtenerCajaHoy } from '../../../lib/caja'
 import {
   granularidadParaRango,
   obtenerGastosPeriodo,
@@ -86,7 +86,6 @@ export default function Menu() {
   const verGastos = tienePermiso(perfil, 'gastos_fijos')
 
   const [estadoCaja, setEstadoCaja] = useState<EstadoCaja>('cargando')
-  const [modoCierre, setModoCierre] = useState<'con_diferencia' | 'sin_diferencia'>('con_diferencia')
   const [periodo, setPeriodo] = useState<Periodo | 'rango'>('hoy')
   const [rangoCustom, setRangoCustom] = useState<{ desde: string; hasta: string } | null>(null)
   const [granularidad, setGranularidad] = useState<Granularidad>('dia')
@@ -106,9 +105,6 @@ export default function Menu() {
         else setEstadoCaja(caja.estado === 'abierta' ? 'abierta' : 'cerrada')
       })
       .catch(() => setEstadoCaja('sin-abrir'))
-    obtenerModoCierre()
-      .then(setModoCierre)
-      .catch(() => setModoCierre('con_diferencia'))
   }, [])
 
   const cargarDatos = useCallback(async () => {
@@ -182,24 +178,8 @@ export default function Menu() {
       router.push('/caja')
       return
     }
-    if (modoCierre === 'sin_diferencia') {
-      Alert.alert('Cerrar caja', '¿Seguro que quieres cerrar la caja?', [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Cerrar caja',
-          style: 'destructive',
-          onPress: () => {
-            cerrarCajaSinDiferencia()
-              .then(() => {
-                mostrar('Caja cerrada')
-                cargarCaja()
-              })
-              .catch((e: any) => mostrar(e.message, 'error'))
-          },
-        },
-      ])
-      return
-    }
+    // Cerrar siempre lleva a la pantalla de cierre (efectivo contado, diferencia y
+    // justificación): el dueño descartó el cierre "sin diferencia" (bug A2).
     router.push('/caja/cierre')
   }
 
@@ -269,19 +249,19 @@ export default function Menu() {
               end={{ x: 1, y: 1 }}
               style={{ borderRadius: radio.lg, padding: espacio.l, gap: 4 }}
             >
-              <Text style={[tipografia.micro, { color: 'rgba(255,255,255,0.7)' }]}>
+              <Text style={[tipografia.micro, { color: paleta.sobreOscuraSuave }]}>
                 {esStaff ? 'Total vendido' : 'Vendido hoy'}
               </Text>
               <ContadorDinero
                 valor={total}
-                color="#FFFFFF"
+                color={paleta.sobreOscura}
                 estilo={[tipografia.displayXL, { fontSize: 36, lineHeight: 44 }]}
               />
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s }}>
                 {delta && !delta.sinBase && delta.direccion !== 'igual' ? (
                   <View
                     style={{
-                      backgroundColor: 'rgba(255,255,255,0.18)',
+                      backgroundColor: paleta.veloOscura,
                       borderRadius: radio.full,
                       paddingVertical: 3,
                       paddingHorizontal: 10,
@@ -291,14 +271,14 @@ export default function Menu() {
                       style={[
                         tipografia.caption,
                         tabular,
-                        { color: delta.direccion === 'sube' ? '#B9F6CE' : '#FFC9C9' },
+                        { color: paleta.sobreOscura },
                       ]}
                     >
                       {`${delta.direccion === 'sube' ? '▲' : '▼'} ${delta.pct}%`}
                     </Text>
                   </View>
                 ) : null}
-                <Text style={[tipografia.caption, { color: 'rgba(255,255,255,0.7)' }]}>
+                <Text style={[tipografia.caption, { color: paleta.sobreOscuraSuave }]}>
                   {`${numVentas} ${numVentas === 1 ? 'venta' : 'ventas'}`}
                 </Text>
               </View>

@@ -16,11 +16,13 @@ jest.mock('expo-haptics', () => ({
 }))
 
 const mockPush = jest.fn()
+const mockBack = jest.fn()
+let mockParams: { ref: string; color?: string } = { ref: '4521' }
 jest.mock('expo-router', () => {
   const ReactMock = require('react')
   return {
-    useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn() }),
-    useLocalSearchParams: () => ({ ref: '4521' }),
+    useRouter: () => ({ push: mockPush, replace: jest.fn(), back: mockBack }),
+    useLocalSearchParams: () => mockParams,
     useFocusEffect: (cb: () => void) => {
       ReactMock.useEffect(() => {
         cb()
@@ -44,7 +46,6 @@ jest.mock('../lib/inventario', () => ({
   listarCalzado: (...args: unknown[]) => mockListarCalzado(...args),
 }))
 
-import { Text } from 'react-native'
 import { TemaProvider } from './tema'
 import { CarritoProvider } from './carrito-contexto'
 import { ToastProvider } from '../components/ui'
@@ -101,40 +102,77 @@ const botones = (arbol: ReturnType<typeof renderer.create>) =>
 const existeTexto = (arbol: ReturnType<typeof renderer.create>, texto: string) =>
   arbol.root.findAllByProps({ children: texto }).length > 0
 
+const elegir = async (arbol: ReturnType<typeof renderer.create>, etiqueta: string) => {
+  const nodo = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === etiqueta)!
+  await act(async () => nodo.props.onPress!())
+}
+
+const barraAgregar = (arbol: ReturnType<typeof renderer.create>) =>
+  arbol.root.findAllByProps({ accessibilityLabel: 'Agregar al carrito' }).find((n: Nodo) => n.props.accessibilityState)!
+
 describe('Detalle de producto', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockParams = { ref: '4521' }
     mockListarCalzado.mockResolvedValue(CALZADO)
   })
 
-  it('muestra nombre, ref y rango de precio', async () => {
+  it('abre en el primer color con stock: Color, Marca · Ref y precio Max/Min en un renglón', async () => {
     conRol('empleado')
     const arbol = await montar()
     expect(existeTexto(arbol, 'Nike Air Max')).toBe(true)
-    expect(existeTexto(arbol, '$140.000 – $220.000')).toBe(true)
+    expect(existeTexto(arbol, 'Nike · Ref 4521')).toBe(true)
+    expect(existeTexto(arbol, 'Color: Negro')).toBe(true)
+    expect(existeTexto(arbol, '$220.000')).toBe(true)
+    expect(existeTexto(arbol, 'Max')).toBe(true)
+    expect(existeTexto(arbol, '$150.000')).toBe(true)
+    expect(existeTexto(arbol, 'Min')).toBe(true)
   })
 
-  it('elegir color filtra las tallas y la talla sin stock queda deshabilitada', async () => {
+  it('respeta el color de la tarjeta tocada (?color=)', async () => {
+    mockParams = { ref: '4521', color: 'Blanco' }
     conRol('empleado')
     const arbol = await montar()
-    const negro = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Negro')!
-    await act(async () => negro.props.onPress!())
-    // color Negro tiene tallas 40 (stock 5) y 41 (stock 0); la 39 es de Blanco
-    expect(botones(arbol).some((n: Nodo) => n.props.accessibilityLabel === 'Talla 39: 2 disponibles')).toBe(false)
-    const talla41 = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Talla 41: 0 disponibles')!
-    expect(talla41.props.accessibilityState?.disabled).toBe(true)
+    expect(existeTexto(arbol, 'Color: Blanco')).toBe(true)
+    expect(botones(arbol).some((n: Nodo) => n.props.accessibilityLabel === 'Talla 39: 2 disponibles')).toBe(true)
   })
 
-  it('dueño: elegir talla muestra su precio y Ver ficha navega a la variante', async () => {
+  it('miniaturas por color (sin pills); elegir color filtra tallas y la talla sin stock lleva raya y está deshabilitada', async () => {
+    conRol('empleado')
+    const arbol = await montar()
+    await elegir(arbol, 'Blanco')
+    expect(existeTexto(arbol, 'Color: Blanco')).toBe(true)
+    await elegir(arbol, 'Negro')
+    // color Negro tiene tallas 40 (stock 5) y 41 (stock 0); la 39 es de Blanco
+    expect(botones(arbol).some((n: Nodo) => n.props.accessibilityLabel === 'Talla 39: 2 disponibles')).toBe(false)
+    const talla41 = arbol.root
+      .findAllByProps({ accessibilityLabel: 'Talla 41: 0 disponibles' })
+      .find((n: Nodo) => n.props.accessibilityState)!
+    expect(talla41.props.accessibilityState?.disabled).toBe(true)
+    expect(arbol.root.findAllByProps({ testID: 'raya-diagonal' }).length).toBeGreaterThan(0)
+  })
+
+  it('un solo color: sin tira de miniaturas', async () => {
+    mockListarCalzado.mockResolvedValue(CALZADO.filter((c) => c.color === 'Negro'))
+    conRol('empleado')
+    const arbol = await montar()
+    expect(botones(arbol).some((n: Nodo) => n.props.accessibilityLabel === 'Negro')).toBe(false)
+  })
+
+  it('dueño: elegir talla muestra su precio exacto y el mínimo', async () => {
     conRol('dueno')
     const arbol = await montar()
-    const negro = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Negro')!
-    await act(async () => negro.props.onPress!())
-    const talla40 = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Talla 40: 5 disponibles')!
-    await act(async () => talla40.props.onPress!())
+    await elegir(arbol, 'Talla 40: 5 disponibles')
     expect(existeTexto(arbol, '$220.000')).toBe(true)
-    const ficha = arbol.root.findByProps({ accessibilityLabel: 'Ver ficha' })
-    await act(async () => ficha.props.onPress())
+    expect(existeTexto(arbol, 'Precio de venta · mínimo $150.000')).toBe(true)
+  })
+
+  it('Ver ficha es un enlace siempre visible (sin talla elegida) para quien tiene inventario', async () => {
+    conRol('empleado')
+    const arbol = await montar()
+    const ficha = arbol.root.findAllByProps({ accessibilityLabel: 'Ver ficha' }).find((n: Nodo) => n.props.onPress)!
+    expect(ficha.props.accessibilityRole).toBe('link')
+    await act(async () => ficha.props.onPress!())
     expect(mockPush).toHaveBeenCalledWith('/inventario/calzado/c1')
   })
 
@@ -144,58 +182,36 @@ describe('Detalle de producto', () => {
     expect(arbol.root.findAllByProps({ accessibilityLabel: 'Ver ficha' })).toHaveLength(0)
   })
 
-  it('con permiso de inventario (plantilla operativa) sí ve Ver ficha', async () => {
+  it('un solo botón de compra: sin Compra rápida; la barra se habilita al elegir talla con stock', async () => {
     conRol('empleado')
     const arbol = await montar()
-    const negro = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Negro')!
-    await act(async () => negro.props.onPress!())
-    const talla40 = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Talla 40: 5 disponibles')!
-    await act(async () => talla40.props.onPress!())
-    expect(arbol.root.findAllByProps({ accessibilityLabel: 'Ver ficha' }).length).toBeGreaterThan(0)
+    expect(arbol.root.findAllByProps({ accessibilityLabel: 'Compra rápida' })).toHaveLength(0)
+    expect(barraAgregar(arbol).props.accessibilityState).toMatchObject({ disabled: true })
+    await elegir(arbol, 'Talla 40: 5 disponibles')
+    expect(barraAgregar(arbol).props.accessibilityState).toMatchObject({ disabled: false })
   })
 
-  it('elegir talla habilita Agregar al carrito y NO navega (se queda en Productos)', async () => {
+  it('agregar abre "Producto añadido al carrito"; Seguir vuelve a la lista sin navegar al carrito', async () => {
     conRol('empleado')
     const arbol = await montar()
-    const negro = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Negro')!
-    await act(async () => negro.props.onPress!())
-    const talla40 = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Talla 40: 5 disponibles')!
-    await act(async () => talla40.props.onPress!())
-    const cta = arbol.root
-      .findAllByProps({ accessibilityLabel: 'Agregar al carrito' })
-      .find((n: Nodo) => n.props.onPress)!
-    await act(async () => cta.props.onPress!())
+    await elegir(arbol, 'Talla 40: 5 disponibles')
+    await act(async () => barraAgregar(arbol).props.onPress!())
+    expect(existeTexto(arbol, 'Producto añadido al carrito')).toBe(true)
+    expect(existeTexto(arbol, 'Nike Air Max Negro')).toBe(true)
+    expect(existeTexto(arbol, 'Talla 40')).toBe(true)
+    const seguir = arbol.root.findAllByProps({ accessibilityLabel: 'Seguir' }).find((n: Nodo) => n.props.onPress)!
+    await act(async () => seguir.props.onPress!())
+    expect(mockBack).toHaveBeenCalled()
     expect(mockPush).not.toHaveBeenCalled()
   })
 
-  it('Compra rápida limpia el carrito, agrega el ítem y navega con modo=rapida', async () => {
+  it('Ir al carrito navega al carrito', async () => {
     conRol('empleado')
     const arbol = await montar()
-    const negro = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Negro')!
-    await act(async () => negro.props.onPress!())
-    const talla40 = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Talla 40: 5 disponibles')!
-    await act(async () => talla40.props.onPress!())
-    const cta = arbol.root
-      .findAllByProps({ accessibilityLabel: 'Compra rápida' })
-      .find((n: Nodo) => n.props.onPress)!
-    await act(async () => cta.props.onPress!())
-    expect(mockPush).toHaveBeenCalledWith('/ventas/nueva?modo=rapida')
-  })
-
-  it('agregar al carrito muestra toast "Agregado: talla N · Color"', async () => {
-    conRol('empleado')
-    const arbol = await montar()
-    const negro = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Negro')!
-    await act(async () => negro.props.onPress!())
-    const talla40 = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Talla 40: 5 disponibles')!
-    await act(async () => talla40.props.onPress!())
-    const cta = arbol.root
-      .findAllByProps({ accessibilityLabel: 'Agregar al carrito' })
-      .find((n: Nodo) => n.props.onPress)!
-    await act(async () => cta.props.onPress!())
-    const textos = arbol.root
-      .findAllByType(Text)
-      .map((t: { props: { children?: unknown } }) => JSON.stringify(t.props.children))
-    expect(textos.join(' ')).toContain('Agregado: talla 40 · Negro')
+    await elegir(arbol, 'Talla 40: 5 disponibles')
+    await act(async () => barraAgregar(arbol).props.onPress!())
+    const ir = arbol.root.findAllByProps({ accessibilityLabel: 'Ir al carrito' }).find((n: Nodo) => n.props.onPress)!
+    await act(async () => ir.props.onPress!())
+    expect(mockPush).toHaveBeenCalledWith('/ventas/nueva')
   })
 })

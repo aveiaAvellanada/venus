@@ -24,7 +24,7 @@ declare
     'abrir_caja', 'actualizar_empleado', 'cambiar_estado_empleado', 'cambiar_mi_pin', 'cerrar_caja',
     'crear_empleado', 'guardar_producto_calzado', 'obtener_arqueo_caja', 'obtener_balance',
     'obtener_base_predeterminada', 'obtener_dashboard_dueno', 'obtener_deuda_proveedor',
-    'obtener_dias_trabajados', 'obtener_gastos_periodo', 'obtener_modo_cierre', 'obtener_reporte_diario',
+    'obtener_dias_trabajados', 'obtener_gastos_periodo', 'obtener_reporte_diario',
     'obtener_reporte_periodo', 'obtener_resumen_dia', 'obtener_ventas_por_subperiodo', 'reabrir_caja',
     'registrar_devolucion', 'registrar_venta', 'restablecer_pin_empleado'
   ];
@@ -60,6 +60,13 @@ begin
       and 'p_clave_idempotencia' = any (p.proargnames)
   ) then
     raise exception 'registrar_venta no tiene p_clave_idempotencia: la app nueva no podrá vender.';
+  end if;
+  if not exists (
+    select 1 from pg_proc p join pg_namespace s on s.oid = p.pronamespace
+    where s.nspname = 'public' and p.proname = 'registrar_venta'
+      and 'p_cliente_documento' = any (p.proargnames)
+  ) then
+    raise exception 'registrar_venta no tiene p_cliente_documento: falta la migración 20261011120100.';
   end if;
   select count(*) into n from pg_proc p join pg_namespace s on s.oid = p.pronamespace
   where s.nspname = 'public' and p.proname = 'registrar_venta';

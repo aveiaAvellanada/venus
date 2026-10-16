@@ -144,7 +144,7 @@ y totales de compra, lectura/validación de la plantilla Excel. Con tests en
    - **Reintento:** con una clave por factura; si se corta la red, reintentar no duplica la compra ni el stock.
    - **Base:** `registrar_compra` pide `recibir_mercancia` y `costos` (más `inventario` para cambiar un precio existente). Sin `costos` se sigue usando la llegada física de la app.
    - **Pendiente:** el precio sugerido de una referencia nueva sale vacío; las reglas de margen llegan en la fase 2.
-4. ✅ Carga masiva (+ `cargar_inventario`; migración `20261012140000_panel_carga_masiva.sql`, test `carga_masiva_test.sql`). **Migración pendiente de aplicar al remoto.**
+4. ✅ Carga masiva (+ `cargar_inventario`; migración `20261016185059_panel_carga_masiva.sql`, test `carga_masiva_test.sql`). Migración aplicada al remoto el 2026-10-16.
    - **Importar** (`/carga`): la plantilla de Excel de la app (`plantilla_carga_inventario.md`), arrastrando o eligiendo el archivo. Antes de guardar muestra:
      - cuántas tallas son nuevas (y cuántos pares entran), cuáles cambian (con el cambio: precio, descripción, marca o categoría) y cuáles quedan igual;
      - los errores con su número de fila del Excel, incluida una talla repetida en el archivo. Con un solo error no se puede guardar.

@@ -68,8 +68,8 @@ datos** (llamadas a Supabase) y de la **UI** (componentes en `app/`).
   está en `.gitignore`).
 
 ### Framework y runtime
-- **React Native 0.81.5** sobre **React 19.1.0**.
-- **Expo SDK 54** (managed workflow). Scripts: `expo start`, `--android`,
+- **React Native 0.86.3** sobre **React 19.2.3**.
+- **Expo SDK 57** (managed workflow). Scripts: `expo start`, `--android`,
   `--ios`, `--web`.
 - **expo-router ~6** → navegación basada en archivos (file-based routing).
 
@@ -259,7 +259,7 @@ los tipos TS (`lib/database.types.ts`) se generan a partir de él.
 | Capa | Tecnología |
 |---|---|
 | Lenguaje (todo el proyecto) | TypeScript estricto |
-| UI / móvil | React Native 0.81 + React 19 + Expo SDK 54 |
+| UI / móvil | React Native 0.86 + React 19.2 + Expo SDK 57 |
 | Navegación | expo-router 6 (file-based) |
 | Estado de auth | React Context (`lib/auth.tsx`) |
 | Cliente backend | `@supabase/supabase-js` |

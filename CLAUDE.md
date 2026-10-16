@@ -18,7 +18,7 @@ No hay personas fijas en el código. Hay **un dueño** (`users.rol = 'dueno'`, h
 TODA acción registra quién la hizo, cuándo y qué cambió. El dueño puede ver el historial de acciones de cada empleado. Las tablas llevan `created_by` y registro de auditoría en acciones críticas.
 
 ## Stack tecnológico
-- React Native con Expo SDK 54 (TypeScript estricto)
+- React Native 0.86 con Expo SDK 57 (TypeScript estricto) — la versión que corre Expo Go actual
 - expo-router (navegación basada en archivos)
 - Supabase (PostgreSQL 17, Auth, Storage) con RLS activado en todas las tablas
 - Online-first en esta versión. Offline-first diferido.
@@ -73,6 +73,7 @@ Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app c
 - Migraciones `20261009*` aplicadas al remoto el 2026-10-09 (verificación de despliegue OK, tipos regenerados). Pendiente: APK con EAS y prueba en teléfono, siguiendo `docs/despliegue.md`. CI en `.github/workflows/ci.yml`.
 - Rediseño de Productos y del carrito (ramas `rediseno-productos` / `rediseno-carrito`): paleta monocroma, carrito que se vacía al vender, cierre de caja siempre con conteo, cédula o razón social del cliente. Migraciones `20261011*` (`caja_cierre_siempre_con_diferencia`, `ventas_cliente_documento`) aplicadas al remoto el 2026-10-11 por SQL Editor (registradas en el historial; comprobado: 2 versiones, 0 cajas sin conteo, una sola `registrar_venta` con `p_cliente_documento`, columna `ventas.cliente_documento`). Los tipos de `shared/database.types.ts` ya las incluyen (generados de una base local con todas las migraciones; regenerar desde el remoto cuando haya acceso con la CLI).
 - Panel web de administración (solo el dueño; back-office, análisis, replicable para otros negocios) en `web/`: fase 0 hecha (login solo dueño, navegación, búsqueda global, Inicio, historial de acciones registrando en la base) y fase 1 construida (inventario y precios, proveedores, compras, carga masiva; `docs/panel-web-fase1.md`). Plan y fases en `docs/panel-web.md`.
+- Expo SDK 57 (React Native 0.86): es la versión que acepta el Expo Go actual (rama `claude/lucid-mccarthy-f4rpl6`, integrada). Pendiente: validar de punta a punta en un dispositivo.
 
 ## No construir en esta versión
 - Facturación electrónica DIAN

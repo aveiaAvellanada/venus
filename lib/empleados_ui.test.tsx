@@ -179,12 +179,12 @@ const matchText = (children: unknown, text: string): boolean => {
 
 const findAllByText = (root: renderer.ReactTestInstance, text: string) =>
   root.findAll(
-    (el: renderer.ReactTestInstance) => el.type === 'Text' && matchText(el.props.children, text)
+    (el: renderer.ReactTestInstance) => String(el.type) === 'Text' && matchText(el.props.children, text)
   )
 
 const findAllContainingText = (root: renderer.ReactTestInstance, substring: string) =>
   root.findAll((el: renderer.ReactTestInstance) => {
-    if (el.type !== 'Text') return false
+    if (String(el.type) !== 'Text') return false
     const flatten = (c: unknown): string => {
       if (typeof c === 'string') return c
       if (typeof c === 'number') return String(c)
@@ -615,7 +615,7 @@ describe('Empleados UI — tests de integración', () => {
         )
       })
       return tree!.root.findAll(
-        (el: renderer.ReactTestInstance) => el.type === 'TextInput' && el.props?.onChangeText
+        (el: renderer.ReactTestInstance) => String(el.type) === 'TextInput' && el.props?.onChangeText
       )
     }
 
@@ -662,7 +662,7 @@ describe('Empleados UI — tests de integración', () => {
       const root = tree!.root
       const campoPin = root.findAll(
         (el: renderer.ReactTestInstance) =>
-          el.type === 'TextInput' && el.props?.placeholder === '••••••' && el.props?.onChangeText
+          String(el.type) === 'TextInput' && el.props?.placeholder === '••••••' && el.props?.onChangeText
       )[0]
       await act(async () => {
         campoPin.props.onChangeText('48a29157')

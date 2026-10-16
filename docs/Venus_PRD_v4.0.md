@@ -736,7 +736,7 @@ de empezar a operar con Venus.
 
 ## 5. INFRAESTRUCTURA TÉCNICA
 
-- **Stack:** React Native / Expo SDK 54, expo-router, TypeScript, Supabase, Supabase Auth
+- **Stack:** React Native / Expo SDK 57, expo-router, TypeScript, Supabase, Supabase Auth
 - **Base de datos:** Supabase (PostgreSQL 17) con RLS activado en todas las tablas
 - **Storage:** Supabase Storage para fotos (plan gratuito: 1GB)
 - **Conectividad:** Online-first en esta versión. Offline-first diferido.

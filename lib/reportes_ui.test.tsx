@@ -120,9 +120,9 @@ const flatten = (c: unknown): string => {
   return ''
 }
 const findAllByText = (root: renderer.ReactTestInstance, text: string) =>
-  root.findAll((el: renderer.ReactTestInstance) => el.type === 'Text' && flatten(el.props.children).trim() === text.trim())
+  root.findAll((el: renderer.ReactTestInstance) => String(el.type) === 'Text' && flatten(el.props.children).trim() === text.trim())
 const findAllContainingText = (root: renderer.ReactTestInstance, substring: string) =>
-  root.findAll((el: renderer.ReactTestInstance) => el.type === 'Text' && flatten(el.props.children).includes(substring))
+  root.findAll((el: renderer.ReactTestInstance) => String(el.type) === 'Text' && flatten(el.props.children).includes(substring))
 
 // ── Suite ─────────────────────────────────────────────────────────────────────
 

@@ -187,7 +187,7 @@ const matchText = (children: unknown, text: string): boolean => {
 }
 
 const findAllByText = (root: renderer.ReactTestInstance, text: string) =>
-  root.findAll((el: renderer.ReactTestInstance) => el.type === 'Text' && matchText(el.props.children, text))
+  root.findAll((el: renderer.ReactTestInstance) => String(el.type) === 'Text' && matchText(el.props.children, text))
 
 // ── Suite ─────────────────────────────────────────────────────────────────────
 
@@ -286,7 +286,7 @@ describe('Devoluciones UI — tests de integración', () => {
       const granjaItemContainer = root.findByProps({ testID: 'item-devolucion-item-granja-1' })
       const warningTexts = granjaItemContainer.findAll(
         (el: renderer.ReactTestInstance) =>
-          el.type === 'Text' &&
+          String(el.type) === 'Text' &&
           matchText(
             el.props.children,
             'Los productos de Granja no aplican para cambio de producto.'
@@ -341,7 +341,7 @@ describe('Devoluciones UI — tests de integración', () => {
       // Modo "total" (por defecto): no debe haber aviso de bloqueo
       const warningTotal = root.findAll(
         (el: renderer.ReactTestInstance) =>
-          el.type === 'Text' &&
+          String(el.type) === 'Text' &&
           matchText(
             el.props.children,
             'Los productos de Granja no aplican para cambio de producto.'
@@ -357,7 +357,7 @@ describe('Devoluciones UI — tests de integración', () => {
 
       const warningParcial = root.findAll(
         (el: renderer.ReactTestInstance) =>
-          el.type === 'Text' &&
+          String(el.type) === 'Text' &&
           matchText(
             el.props.children,
             'Los productos de Granja no aplican para cambio de producto.'

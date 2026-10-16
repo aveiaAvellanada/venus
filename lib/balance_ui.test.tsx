@@ -107,10 +107,10 @@ const flatten = (c: unknown): string => {
 }
 
 const findAllByText = (root: renderer.ReactTestInstance, text: string) =>
-  root.findAll((el: renderer.ReactTestInstance) => el.type === 'Text' && flatten(el.props.children).trim() === text.trim())
+  root.findAll((el: renderer.ReactTestInstance) => String(el.type) === 'Text' && flatten(el.props.children).trim() === text.trim())
 
 const findAllContainingText = (root: renderer.ReactTestInstance, substring: string) =>
-  root.findAll((el: renderer.ReactTestInstance) => el.type === 'Text' && flatten(el.props.children).includes(substring))
+  root.findAll((el: renderer.ReactTestInstance) => String(el.type) === 'Text' && flatten(el.props.children).includes(substring))
 
 // ── Suite ─────────────────────────────────────────────────────────────────────
 
@@ -184,7 +184,7 @@ describe('Balance UI — tests de integración', () => {
 
       // El monto del balance se muestra con el color de texto de pérdida (paleta.peligroTexto)
       const montoRojo = root.findAll((el: renderer.ReactTestInstance) => {
-        if (el.type !== 'Text') return false
+        if (String(el.type) !== 'Text') return false
         const style = Array.isArray(el.props.style) ? Object.assign({}, ...el.props.style.filter(Boolean)) : el.props.style
         return flatten(el.props.children).includes('40.000') && style && style.color === paletaClara.peligroTexto
       })

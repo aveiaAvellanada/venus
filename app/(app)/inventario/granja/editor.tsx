@@ -100,7 +100,7 @@ export default function GranjaEditorScreen() {
           text: 'Cámara',
           onPress: async () => {
             const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              mediaTypes: ['images'],
               quality: 1,
             })
             if (!result.canceled) {
@@ -112,7 +112,7 @@ export default function GranjaEditorScreen() {
           text: 'Galería',
           onPress: async () => {
             const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              mediaTypes: ['images'],
               quality: 1,
             })
             if (!result.canceled) {

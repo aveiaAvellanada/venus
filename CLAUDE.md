@@ -47,7 +47,9 @@ Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app c
 - Una venta confirmada NUNCA se elimina; solo se corrige con nota o se procesa una devolución.
 - El inventario de calzado NUNCA queda en negativo; los agotados siguen visibles como AGOTADO.
 - **Granja no maneja stock** y su precio se define en el momento de la venta (no hay precio guardado).
-- Regateo permitido: cada zapato tiene precio mínimo y máximo; el precio final pagado queda guardado por item.
+- Regateo: el mínimo (obligatorio) y el máximo (opcional) son precios **recomendados**, por variante y, si se quiere, por rango de tallas de la referencia (`calzado_tramos_precio`, igual para todos los colores). El precio final de la venta es libre (sin aviso ni bloqueo); queda guardado por item con los recomendados y la garantía de ese momento.
+- Garantía: `productos_calzado.garantia_dias`, por referencia (`fijar_garantia_referencia`); queda en `venta_items.garantia_dias_snapshot`, se muestra en la venta y la devolución avisa si ya venció (no bloquea).
+- Cambio de calzado: el reemplazo es cualquier modelo activo (se busca la referencia, color y talla, y se fija su precio); la diferencia con lo realmente pagado se cobra (un solo medio) o se devuelve (efectivo por defecto).
 - Costos de compra, deudas con proveedores y balance requieren su permiso (`costos`, `deudas`, `balance`); por defecto solo el dueño los tiene.
 - Los pagos deben sumar EXACTAMENTE el total para confirmar; pagos mixtos permitidos (ej. efectivo + Nequi).
 - Devoluciones: no se puede devolver más de lo vendido; Granja no restituye stock; todo auditado.
@@ -74,6 +76,8 @@ Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app c
 - Rediseño de Productos y del carrito (ramas `rediseno-productos` / `rediseno-carrito`): paleta monocroma, carrito que se vacía al vender, cierre de caja siempre con conteo, cédula o razón social del cliente. Migraciones `20261011*` (`caja_cierre_siempre_con_diferencia`, `ventas_cliente_documento`) aplicadas al remoto el 2026-10-11 por SQL Editor (registradas en el historial; comprobado: 2 versiones, 0 cajas sin conteo, una sola `registrar_venta` con `p_cliente_documento`, columna `ventas.cliente_documento`). Los tipos de `shared/database.types.ts` ya las incluyen (generados de una base local con todas las migraciones; regenerar desde el remoto cuando haya acceso con la CLI).
 - Panel web de administración (solo el dueño; back-office, análisis, replicable para otros negocios) en `web/`: fase 0 hecha (login solo dueño, navegación, búsqueda global, Inicio, historial de acciones registrando en la base) y fase 1 construida (inventario y precios, proveedores, compras, carga masiva; `docs/panel-web-fase1.md`). Plan y fases en `docs/panel-web.md`.
 - Expo SDK 57 (React Native 0.86): es la versión que acepta el Expo Go actual (rama `claude/lucid-mccarthy-f4rpl6`, integrada). Pendiente: validar de punta a punta en un dispositivo.
+
+- Ajustes del 2026-10-16 (`docs/plan-ajustes-2026-10-16.md`): Ola 1 (teclado con `ScreenWrapper`, "Cédula o NIT", venta exitosa que vuelve al menú, Gastos en Perfil → Negocio) y Ola 2 (migración `20261017120000_precios_por_talla_garantia.sql`: máximo opcional, precio libre, tramos por talla, garantía, cambio con reemplazo de cualquier modelo). Ramas `ajustes-ola1` / `ajustes-ola2`. La migración NO está aplicada al remoto; los tipos de `shared/database.types.ts` se editaron a mano. Pendiente: pago mixto de la diferencia en un cambio (hoy un solo medio) y el diseño de stock por rangos (Recibir mercancía, Carga inicial y masiva).
 
 ## No construir en esta versión
 - Facturación electrónica DIAN

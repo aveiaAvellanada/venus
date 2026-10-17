@@ -11,7 +11,8 @@
 --    variantes de cada tramo y un trigger los aplica a las variantes nuevas.
 -- 3. fijar_garantia_referencia: la garantía se fija para toda la referencia.
 -- 4. registrar_venta: el mínimo y el máximo ya no son topes (el precio final es
---    libre); el precio pagado y los recomendados de ese momento quedan por item.
+--    libre); el precio pagado, los recomendados y la garantía de ese momento
+--    quedan por item (venta_items.garantia_dias_snapshot).
 -- 5. registrar_devolucion: el reemplazo de un cambio puede ser de cualquier
 --    modelo activo (la diferencia se cobra o se devuelve).
 -- 6. actualizar_precios_lote entiende el máximo vacío.
@@ -27,6 +28,10 @@ comment on column public.productos_calzado.precio_maximo is
   'Precio máximo recomendado (opcional). El precio final de venta es libre.';
 comment on column public.productos_calzado.garantia_dias is
   'Días de garantía desde la venta; se fija por referencia (null = sin garantía).';
+-- Lo prometido en la venta: la garantía de ese momento queda en cada item
+-- (aunque después se cambie la de la referencia).
+alter table public.venta_items
+  add column if not exists garantia_dias_snapshot integer check (garantia_dias_snapshot is null or garantia_dias_snapshot >= 0);
 
 -- ===== Utilidades =====
 create or replace function private.clave_referencia(p_ref text)
@@ -267,6 +272,7 @@ declare
   v_stock numeric(12,3);
   v_min numeric(12,2);
   v_max numeric(12,2);
+  v_garantia integer;
 begin
   if v_uid is null then
     raise exception 'No autenticado';
@@ -339,9 +345,10 @@ begin
 
     v_min := null;
     v_max := null;
+    v_garantia := null;
     if v_tipo = 'calzado' then
-      select descripcion, talla, color, stock_actual, precio_minimo, precio_maximo
-        into v_desc, v_talla, v_color, v_stock, v_min, v_max
+      select descripcion, talla, color, stock_actual, precio_minimo, precio_maximo, garantia_dias
+        into v_desc, v_talla, v_color, v_stock, v_min, v_max, v_garantia
         from public.productos_calzado
         where id = v_pid and activo
         for update;
@@ -371,12 +378,12 @@ begin
     insert into public.venta_items (venta_id, tipo_producto,
         producto_calzado_id, producto_varios_id,
         descripcion_snapshot, talla, color, cantidad, precio_unitario, subtotal,
-        precio_minimo_snapshot, precio_maximo_snapshot)
+        precio_minimo_snapshot, precio_maximo_snapshot, garantia_dias_snapshot)
       values (v_venta_id, v_tipo,
         case when v_tipo = 'calzado' then v_pid end,
         case when v_tipo = 'varios'  then v_pid end,
         v_desc, v_talla, v_color, v_cant, v_precio, round(v_precio * v_cant, 2),
-        v_min, v_max);
+        v_min, v_max, v_garantia);
 
     v_total := v_total + round(v_precio * v_cant, 2);
   end loop;

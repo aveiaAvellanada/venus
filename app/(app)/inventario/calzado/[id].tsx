@@ -167,6 +167,15 @@ export default function CalzadoDetailScreen() {
           </View>
         </Tarjeta>
 
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>Garantía</Text>
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2, marginTop: espacio.s }]}>
+            {producto.garantia_dias != null
+              ? `${producto.garantia_dias} ${producto.garantia_dias === 1 ? 'día' : 'días'} desde la venta`
+              : 'Sin garantía'}
+          </Text>
+        </Tarjeta>
+
         {verCostos && (
           <Tarjeta estilo={{ backgroundColor: paleta.advertenciaSoft, borderColor: paleta.advertenciaSoft }}>
             <Text style={[tipografia.etiqueta, { color: paleta.advertenciaTexto }]}>Costo de compra (solo dueño)</Text>

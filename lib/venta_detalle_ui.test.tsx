@@ -44,6 +44,7 @@ const DETALLE = {
   estado: 'completada',
   fecha: '15 jul 2026',
   hora: '2:14 p. m.',
+  creada: '2026-07-15T19:14:00.000Z',
   vendedor: 'Camilo Artunduaga',
   cliente: { nombre: 'Ana', apellido: 'Torres', telefono: '3001234567', documento: '1117123456' },
   nota: 'cliente pidió factura',
@@ -53,8 +54,8 @@ const DETALLE = {
   corregida: false,
   correccion_motivo: null,
   items: [
-    { descripcion: 'Nike Air Max', talla: '40', color: 'Negro', cantidad: 1, precio_unitario: 180000, subtotal: 180000 },
-    { descripcion: 'Medias x3', talla: null, color: null, cantidad: 3, precio_unitario: 5000, subtotal: 15000 },
+    { descripcion: 'Nike Air Max', talla: '40', color: 'Negro', cantidad: 1, precio_unitario: 180000, subtotal: 180000, garantia_dias: 30 },
+    { descripcion: 'Medias x3', talla: null, color: null, cantidad: 3, precio_unitario: 5000, subtotal: 15000, garantia_dias: null },
   ],
   pagos: [{ metodo: 'efectivo', monto: 195000 }],
 }
@@ -96,6 +97,15 @@ describe('Detalle de venta', () => {
     }
     expect(existeTexto(arbol, '$195.000')).toBe(true) // total
     expect(existeTexto(arbol, '$5.000')).toBe(true) // cambio
+  })
+
+  it('imprime la garantía prometida de cada zapato con su fecha de vencimiento', async () => {
+    const arbol = await montar()
+    const textos = arbol.root.findAllByType(require('react-native').Text)
+      .map((t: renderer.ReactTestInstance) => [].concat(t.props.children).join(''))
+    expect(textos.some((t: string) => t.startsWith('Garantía: 30 días · hasta 14 de ago de 2026'))).toBe(true)
+    // los productos sin garantía (Granja) no muestran la línea
+    expect(textos.filter((t: string) => t.startsWith('Garantía:'))).toHaveLength(1)
   })
 
   it('cliente solo con razón social: la muestra como título', async () => {

@@ -1716,6 +1716,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           descripcion_snapshot: string
+          garantia_dias_snapshot: number | null
           id: string
           precio_maximo_snapshot: number | null
           precio_minimo_snapshot: number | null
@@ -1752,6 +1753,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descripcion_snapshot?: string
+          garantia_dias_snapshot?: number | null
           id?: string
           precio_maximo_snapshot?: number | null
           precio_minimo_snapshot?: number | null

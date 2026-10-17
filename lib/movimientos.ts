@@ -21,6 +21,8 @@ export interface VentaDetalle {
   estado: string
   fecha: string
   hora: string
+  // Fecha y hora exactas de la venta (ISO): de aquí se cuenta la garantía.
+  creada: string
   vendedor: string | null
   cliente: { nombre: string | null; apellido: string | null; telefono: string | null; documento: string | null } | null
   nota: string | null
@@ -36,6 +38,8 @@ export interface VentaDetalle {
     cantidad: number
     precio_unitario: number
     subtotal: number
+    // Días de garantía prometidos en la venta (null = sin garantía).
+    garantia_dias: number | null
   }[]
   pagos: { metodo: string; monto: number }[]
 }
@@ -123,7 +127,7 @@ export async function obtenerVentaDetalle(id: string): Promise<VentaDetalle | nu
   const { data, error } = await supabase
     .from('ventas')
     .select(
-      '*, venta_items(descripcion_snapshot, talla, color, cantidad, precio_unitario, subtotal), metodos_pago_venta(metodo, monto), vendedor:users!ventas_vendedor_id_fkey(nombre)'
+      '*, venta_items(descripcion_snapshot, talla, color, cantidad, precio_unitario, subtotal, garantia_dias_snapshot), metodos_pago_venta(metodo, monto), vendedor:users!ventas_vendedor_id_fkey(nombre)'
     )
     .eq('id', id)
     .maybeSingle()
@@ -138,6 +142,7 @@ export async function obtenerVentaDetalle(id: string): Promise<VentaDetalle | nu
     estado: v.estado,
     fecha: fechaCorta(v.created_at),
     hora: horaCorta(v.created_at),
+    creada: v.created_at,
     vendedor: v.vendedor?.nombre ?? null,
     // Una venta con solo el documento (sin nombre) también muestra al cliente.
     cliente:
@@ -162,6 +167,7 @@ export async function obtenerVentaDetalle(id: string): Promise<VentaDetalle | nu
       cantidad: Number(i.cantidad),
       precio_unitario: Number(i.precio_unitario),
       subtotal: Number(i.subtotal),
+      garantia_dias: i.garantia_dias_snapshot != null ? Number(i.garantia_dias_snapshot) : null,
     })),
     pagos: (v.metodos_pago_venta ?? []).map((p: any) => ({ metodo: p.metodo, monto: Number(p.monto) })),
   }

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { ChevronRight } from 'lucide-react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useAuth } from '../../lib/auth'
@@ -8,7 +8,7 @@ import {
 } from '../../lib/usuarios'
 import { useTema } from '../../lib/tema'
 import { espacio, motion, radio, tipografia } from '../../lib/theme'
-import { Boton, CampoTexto, TecladoPin } from '../../components/ui'
+import { Boton, CampoTexto, TecladoPin, ScreenWrapper } from '../../components/ui'
 
 const LONGITUD_PIN = 6
 // Mientras quede alguna cuenta con el PIN viejo de 4 dígitos (debe cambiarlo al entrar).
@@ -114,11 +114,9 @@ export default function Login() {
 
   if (!usuario) {
     return (
-      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: espacio.xxl, gap: espacio.m }}
-        >
+      <ScreenWrapper
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: espacio.xxl, gap: espacio.m }}
+      >
           <Text style={[tipografia.h1, { color: paleta.texto, textAlign: 'center', marginBottom: espacio.l }]}>
             ¿Quién eres?
           </Text>
@@ -171,8 +169,7 @@ export default function Login() {
             ) : null}
             <Boton titulo="Continuar" onPress={continuarConEscrito} deshabilitado={escrito.trim() === ''} />
           </View>
-        </ScrollView>
-      </View>
+      </ScreenWrapper>
     )
   }
 

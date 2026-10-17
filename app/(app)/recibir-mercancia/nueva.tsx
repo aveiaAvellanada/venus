@@ -1,14 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  ActivityIndicator,
-  Modal,
-  Platform,
-  KeyboardAvoidingView,
-} from 'react-native'
+import { View, Text, TextInput, ScrollView, ActivityIndicator, Modal, KeyboardAvoidingView } from 'react-native'
 import { useRouter } from 'expo-router'
 import {
   ArrowLeft,
@@ -38,7 +29,7 @@ import {
 import { CATEGORIAS } from '../../../lib/excel'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
-import { Boton, CampoTexto, Chip, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Boton, CampoTexto, Chip, EstadoVacio, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
 
 interface SelectedItem {
   producto_calzado_id: string
@@ -54,7 +45,7 @@ interface SelectedItem {
 let currentSetProveedorSeleccionado: any = null
 let currentAddItem: any = null
 
-export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
+export default function RecepcionMercanciaNuevaScreen() {
   const requireModulo = useRequireModulo('recibir-mercancia')
   const { perfil } = useAuth()
   const router = useRouter()
@@ -412,12 +403,8 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
   const totalCosto = items.reduce((acc, curr) => acc + (curr.cantidad * curr.costo_unitario), 0)
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={{ flex: 1, backgroundColor: paleta.fondo }}
-      {...props}
-    >
-      {/* Header */}
+    <ScreenWrapper
+      header={
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: espacio.m,
         paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
@@ -428,12 +415,241 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
         </Presionable>
         <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Recibir Mercancía</Text>
       </View>
-
-      <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+      }
+      contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
+      overlay={
+        <>
+      {/* ================= MODAL CREAR PROVEEDOR ================= */}
+      <Modal
+        visible={showProviderModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowProviderModal(false)}
       >
+        <KeyboardAvoidingView style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }} behavior="padding">
+          <View style={{
+            backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '85%',
+          }}>
+            <View style={{
+              flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+              padding: espacio.xl, borderBottomWidth: 1, borderBottomColor: paleta.borde,
+            }}>
+              <Text style={[tipografia.h3, { color: paleta.texto }]}>Registrar Nuevo Proveedor</Text>
+              <Presionable accessibilityRole="button" accessibilityLabel="Cerrar"
+                onPress={() => setShowProviderModal(false)} hitSlop={12}>
+                <X size={24} color={paleta.texto2} />
+              </Presionable>
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.m }} keyboardShouldPersistTaps="handled">
+              <CampoTexto
+                etiqueta="Nombre *"
+                placeholder="Distribuidora del Norte"
+                value={provNombre}
+                onChangeText={setProvNombre}
+                testID="input-prov-nombre"
+              />
+              <CampoTexto
+                etiqueta="NIT / CC"
+                placeholder="12345678-9"
+                value={provNit}
+                onChangeText={setProvNit}
+                testID="input-prov-nit"
+              />
+              <CampoTexto
+                etiqueta="Teléfono"
+                placeholder="3123456789"
+                keyboardType="phone-pad"
+                value={provTelefono}
+                onChangeText={setProvTelefono}
+                testID="input-prov-telefono"
+              />
+              <CampoTexto
+                etiqueta="Ciudad / Dirección"
+                placeholder="Florencia, Caquetá"
+                value={provCiudad}
+                onChangeText={setProvCiudad}
+                testID="input-prov-ciudad"
+              />
+              <CampoTexto
+                etiqueta="Correo Electrónico (Email)"
+                placeholder="contacto@proveedor.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={provEmail}
+                onChangeText={setProvEmail}
+                testID="input-prov-email"
+              />
+              <CampoTexto
+                etiqueta="Notas y Observaciones"
+                placeholder="Notas adicionales..."
+                multiline
+                numberOfLines={3}
+                value={provNotas}
+                onChangeText={setProvNotas}
+                testID="input-prov-notas"
+              />
+
+              <Boton
+                titulo="Registrar Proveedor"
+                onPress={handleCrearProveedor}
+                cargando={creandoProveedor}
+                deshabilitado={creandoProveedor}
+              />
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ================= MODAL CREAR PRODUCTO (CALZADO) ================= */}
+      <Modal
+        visible={showCalzadoModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCalzadoModal(false)}
+        testID="modal-crear-calzado"
+        {...{
+          onSubmit: async (values: any) => {
+            setCreandoCalzado(true)
+            try {
+              const nuevoId = await guardarCalzado({
+                categoria: values.categoria,
+                descripcion: values.descripcion,
+                precio_minimo: values.precio_minimo,
+                precio_maximo: values.precio_maximo,
+                stock_minimo: values.stock_minimo,
+                stock_actual: 0,
+              })
+              setItems(prev => [...prev, {
+                producto_calzado_id: nuevoId,
+                descripcion: values.descripcion,
+                marca: values.marca ?? null,
+                referencia: null,
+                talla: null,
+                color: null,
+                cantidad: 1,
+                costo_unitario: 0
+              }])
+              setShowCalzadoModal(false)
+            } catch (err) {
+              console.error(err)
+            } finally {
+              setCreandoCalzado(false)
+            }
+          }
+        }}
+      >
+        <KeyboardAvoidingView style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }} behavior="padding">
+          <View style={{
+            backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '85%',
+          }}>
+            <View style={{
+              flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+              padding: espacio.xl, borderBottomWidth: 1, borderBottomColor: paleta.borde,
+            }}>
+              <Text style={[tipografia.h3, { color: paleta.texto }]}>Registrar Nuevo Calzado</Text>
+              <Presionable accessibilityRole="button" accessibilityLabel="Cerrar"
+                onPress={() => setShowCalzadoModal(false)} hitSlop={12}>
+                <X size={24} color={paleta.texto2} />
+              </Presionable>
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.m }} keyboardShouldPersistTaps="handled">
+              <View>
+                <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>Categoría *</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s }}>
+                  {CATEGORIAS.map(cat => (
+                    <Chip
+                      key={cat.valor}
+                      etiqueta={cat.etiqueta}
+                      activo={calzadoCategoria === cat.valor}
+                      onPress={() => setCalzadoCategoria(cat.valor)}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <CampoTexto
+                etiqueta="Descripción / Nombre *"
+                placeholder="Ej. Smash"
+                value={calzadoDescripcion}
+                onChangeText={setCalzadoDescripcion}
+                testID="input-calzado-desc"
+              />
+              <CampoTexto
+                etiqueta="Marca"
+                placeholder="Ej. Puma"
+                value={calzadoMarca}
+                onChangeText={setCalzadoMarca}
+                testID="input-calzado-marca"
+              />
+              <CampoTexto
+                etiqueta="Referencia"
+                placeholder="Ej. PM-048"
+                value={calzadoReferencia}
+                onChangeText={setCalzadoReferencia}
+                testID="input-calzado-ref"
+              />
+              <CampoTexto
+                etiqueta="Talla"
+                placeholder="Ej. 38"
+                value={calzadoTalla}
+                onChangeText={setCalzadoTalla}
+                testID="input-calzado-talla"
+              />
+              <CampoTexto
+                etiqueta="Color"
+                placeholder="Ej. Blanco / Negro"
+                value={calzadoColor}
+                onChangeText={setCalzadoColor}
+                testID="input-calzado-color"
+              />
+
+              <View style={{ flexDirection: 'row', gap: espacio.m }}>
+                <View style={{ flex: 1 }}>
+                  <CampoTexto
+                    etiqueta="Precio Mínimo *"
+                    placeholder="90000"
+                    keyboardType="number-pad"
+                    value={calzadoPrecioMin}
+                    onChangeText={setCalzadoPrecioMin}
+                    testID="input-calzado-preciomin"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <CampoTexto
+                    etiqueta="Precio Máximo *"
+                    placeholder="120000"
+                    keyboardType="number-pad"
+                    value={calzadoPrecioMax}
+                    onChangeText={setCalzadoPrecioMax}
+                    testID="input-calzado-preciomax"
+                  />
+                </View>
+              </View>
+
+              <CampoTexto
+                etiqueta="Stock Mínimo (Alerta)"
+                placeholder="1"
+                keyboardType="number-pad"
+                value={calzadoStockMin}
+                onChangeText={setCalzadoStockMin}
+                testID="input-calzado-stockmin"
+              />
+
+              <Boton
+                titulo="Registrar y Agregar Calzado"
+                onPress={handleCrearCalzado}
+                cargando={creandoCalzado}
+                deshabilitado={creandoCalzado}
+              />
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+        </>
+      }
+    >
         {/* 1. SELECCIÓN DE PROVEEDOR */}
         <Tarjeta>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: espacio.m }}>
@@ -680,237 +896,7 @@ export default function RecepcionMercanciaNuevaScreen(props: any = {}) {
           deshabilitado={loading}
           icono={<CircleCheckBig size={20} color={paleta.sobrePrimario} />}
         />
-      </ScrollView>
-
-      {/* ================= MODAL CREAR PROVEEDOR ================= */}
-      <Modal
-        visible={showProviderModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowProviderModal(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
-          <View style={{
-            backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '85%',
-          }}>
-            <View style={{
-              flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-              padding: espacio.xl, borderBottomWidth: 1, borderBottomColor: paleta.borde,
-            }}>
-              <Text style={[tipografia.h3, { color: paleta.texto }]}>Registrar Nuevo Proveedor</Text>
-              <Presionable accessibilityRole="button" accessibilityLabel="Cerrar"
-                onPress={() => setShowProviderModal(false)} hitSlop={12}>
-                <X size={24} color={paleta.texto2} />
-              </Presionable>
-            </View>
-
-            <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.m }} keyboardShouldPersistTaps="handled">
-              <CampoTexto
-                etiqueta="Nombre *"
-                placeholder="Distribuidora del Norte"
-                value={provNombre}
-                onChangeText={setProvNombre}
-                testID="input-prov-nombre"
-              />
-              <CampoTexto
-                etiqueta="NIT / CC"
-                placeholder="12345678-9"
-                value={provNit}
-                onChangeText={setProvNit}
-                testID="input-prov-nit"
-              />
-              <CampoTexto
-                etiqueta="Teléfono"
-                placeholder="3123456789"
-                keyboardType="phone-pad"
-                value={provTelefono}
-                onChangeText={setProvTelefono}
-                testID="input-prov-telefono"
-              />
-              <CampoTexto
-                etiqueta="Ciudad / Dirección"
-                placeholder="Florencia, Caquetá"
-                value={provCiudad}
-                onChangeText={setProvCiudad}
-                testID="input-prov-ciudad"
-              />
-              <CampoTexto
-                etiqueta="Correo Electrónico (Email)"
-                placeholder="contacto@proveedor.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={provEmail}
-                onChangeText={setProvEmail}
-                testID="input-prov-email"
-              />
-              <CampoTexto
-                etiqueta="Notas y Observaciones"
-                placeholder="Notas adicionales..."
-                multiline
-                numberOfLines={3}
-                value={provNotas}
-                onChangeText={setProvNotas}
-                testID="input-prov-notas"
-              />
-
-              <Boton
-                titulo="Registrar Proveedor"
-                onPress={handleCrearProveedor}
-                cargando={creandoProveedor}
-                deshabilitado={creandoProveedor}
-              />
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* ================= MODAL CREAR PRODUCTO (CALZADO) ================= */}
-      <Modal
-        visible={showCalzadoModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowCalzadoModal(false)}
-        testID="modal-crear-calzado"
-        {...{
-          onSubmit: async (values: any) => {
-            setCreandoCalzado(true)
-            try {
-              const nuevoId = await guardarCalzado({
-                categoria: values.categoria,
-                descripcion: values.descripcion,
-                precio_minimo: values.precio_minimo,
-                precio_maximo: values.precio_maximo,
-                stock_minimo: values.stock_minimo,
-                stock_actual: 0,
-              })
-              setItems(prev => [...prev, {
-                producto_calzado_id: nuevoId,
-                descripcion: values.descripcion,
-                marca: values.marca ?? null,
-                referencia: null,
-                talla: null,
-                color: null,
-                cantidad: 1,
-                costo_unitario: 0
-              }])
-              setShowCalzadoModal(false)
-            } catch (err) {
-              console.error(err)
-            } finally {
-              setCreandoCalzado(false)
-            }
-          }
-        }}
-      >
-        <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
-          <View style={{
-            backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '85%',
-          }}>
-            <View style={{
-              flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-              padding: espacio.xl, borderBottomWidth: 1, borderBottomColor: paleta.borde,
-            }}>
-              <Text style={[tipografia.h3, { color: paleta.texto }]}>Registrar Nuevo Calzado</Text>
-              <Presionable accessibilityRole="button" accessibilityLabel="Cerrar"
-                onPress={() => setShowCalzadoModal(false)} hitSlop={12}>
-                <X size={24} color={paleta.texto2} />
-              </Presionable>
-            </View>
-
-            <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.m }} keyboardShouldPersistTaps="handled">
-              <View>
-                <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>Categoría *</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s }}>
-                  {CATEGORIAS.map(cat => (
-                    <Chip
-                      key={cat.valor}
-                      etiqueta={cat.etiqueta}
-                      activo={calzadoCategoria === cat.valor}
-                      onPress={() => setCalzadoCategoria(cat.valor)}
-                    />
-                  ))}
-                </View>
-              </View>
-
-              <CampoTexto
-                etiqueta="Descripción / Nombre *"
-                placeholder="Ej. Smash"
-                value={calzadoDescripcion}
-                onChangeText={setCalzadoDescripcion}
-                testID="input-calzado-desc"
-              />
-              <CampoTexto
-                etiqueta="Marca"
-                placeholder="Ej. Puma"
-                value={calzadoMarca}
-                onChangeText={setCalzadoMarca}
-                testID="input-calzado-marca"
-              />
-              <CampoTexto
-                etiqueta="Referencia"
-                placeholder="Ej. PM-048"
-                value={calzadoReferencia}
-                onChangeText={setCalzadoReferencia}
-                testID="input-calzado-ref"
-              />
-              <CampoTexto
-                etiqueta="Talla"
-                placeholder="Ej. 38"
-                value={calzadoTalla}
-                onChangeText={setCalzadoTalla}
-                testID="input-calzado-talla"
-              />
-              <CampoTexto
-                etiqueta="Color"
-                placeholder="Ej. Blanco / Negro"
-                value={calzadoColor}
-                onChangeText={setCalzadoColor}
-                testID="input-calzado-color"
-              />
-
-              <View style={{ flexDirection: 'row', gap: espacio.m }}>
-                <View style={{ flex: 1 }}>
-                  <CampoTexto
-                    etiqueta="Precio Mínimo *"
-                    placeholder="90000"
-                    keyboardType="number-pad"
-                    value={calzadoPrecioMin}
-                    onChangeText={setCalzadoPrecioMin}
-                    testID="input-calzado-preciomin"
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <CampoTexto
-                    etiqueta="Precio Máximo *"
-                    placeholder="120000"
-                    keyboardType="number-pad"
-                    value={calzadoPrecioMax}
-                    onChangeText={setCalzadoPrecioMax}
-                    testID="input-calzado-preciomax"
-                  />
-                </View>
-              </View>
-
-              <CampoTexto
-                etiqueta="Stock Mínimo (Alerta)"
-                placeholder="1"
-                keyboardType="number-pad"
-                value={calzadoStockMin}
-                onChangeText={setCalzadoStockMin}
-                testID="input-calzado-stockmin"
-              />
-
-              <Boton
-                titulo="Registrar y Agregar Calzado"
-                onPress={handleCrearCalzado}
-                cargando={creandoCalzado}
-                deshabilitado={creandoCalzado}
-              />
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-    </KeyboardAvoidingView>
+    </ScreenWrapper>
   )
 }
 

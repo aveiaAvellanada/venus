@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, ScrollView, ActivityIndicator, Switch, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, ActivityIndicator, Switch } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, Save } from 'lucide-react-native'
 import { obtenerProveedorPorId, crearProveedor, actualizarProveedor } from '../../../lib/proveedores'
@@ -7,7 +7,7 @@ import { useRequireModulo } from '../../../lib/auth'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tipografia } from '../../../lib/theme'
-import { CampoTexto, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { CampoTexto, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
 
 export default function ProveedorEditorScreen() {
   const requireModulo = useRequireModulo('proveedores')
@@ -142,16 +142,50 @@ export default function ProveedorEditorScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: paleta.fondo }}
-    >
-      <Encabezado />
-
-      <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: 120, gap: espacio.l }}
-        showsVerticalScrollIndicator={false}
+    <ScreenWrapper
+      header={<Encabezado />}
+      contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xl, gap: espacio.l }}
+      footer={
+      <View
+        style={{
+          backgroundColor: paleta.fondo,
+          padding: espacio.l,
+          paddingBottom: paddingBarraInferior,
+          borderTopWidth: 1,
+          borderTopColor: paleta.borde,
+        }}
       >
+        {/* Boton no acepta testID; se usa un Presionable con los mismos tokens (testID requerido por la suite) */}
+        <Presionable
+          accessibilityRole="button"
+          accessibilityLabel={id ? 'Actualizar Proveedor' : 'Registrar Proveedor'}
+          accessibilityState={{ disabled: loading, busy: loading }}
+          disabled={loading}
+          onPress={loading ? undefined : handleGuardar}
+          testID="btn-guardar"
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: espacio.s,
+            height: 56,
+            borderRadius: radio.md,
+            backgroundColor: paleta.primario,
+            opacity: loading ? 0.45 : 1,
+          }}
+        >
+          {loading ? (
+            <ActivityIndicator color={paleta.sobrePrimario} />
+          ) : (
+            <Save size={20} color={paleta.sobrePrimario} />
+          )}
+          <Text style={[tipografia.cuerpoLg, { color: paleta.sobrePrimario }]}>
+            {id ? 'Actualizar Proveedor' : 'Registrar Proveedor'}
+          </Text>
+        </Presionable>
+      </View>
+      }
+    >
         <Tarjeta>
           <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.l }]}>Datos Generales</Text>
 
@@ -246,51 +280,6 @@ export default function ProveedorEditorScreen() {
             />
           </View>
         </Tarjeta>
-      </ScrollView>
-
-      {/* Botón de guardado fijo al fondo */}
-      <View
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: paleta.fondo,
-          padding: espacio.l,
-          paddingBottom: paddingBarraInferior,
-          borderTopWidth: 1,
-          borderTopColor: paleta.borde,
-        }}
-      >
-        {/* Boton no acepta testID; se usa un Presionable con los mismos tokens (testID requerido por la suite) */}
-        <Presionable
-          accessibilityRole="button"
-          accessibilityLabel={id ? 'Actualizar Proveedor' : 'Registrar Proveedor'}
-          accessibilityState={{ disabled: loading, busy: loading }}
-          disabled={loading}
-          onPress={loading ? undefined : handleGuardar}
-          testID="btn-guardar"
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: espacio.s,
-            height: 56,
-            borderRadius: radio.md,
-            backgroundColor: paleta.primario,
-            opacity: loading ? 0.45 : 1,
-          }}
-        >
-          {loading ? (
-            <ActivityIndicator color={paleta.sobrePrimario} />
-          ) : (
-            <Save size={20} color={paleta.sobrePrimario} />
-          )}
-          <Text style={[tipografia.cuerpoLg, { color: paleta.sobrePrimario }]}>
-            {id ? 'Actualizar Proveedor' : 'Registrar Proveedor'}
-          </Text>
-        </Presionable>
-      </View>
-    </KeyboardAvoidingView>
+    </ScreenWrapper>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Alert, Image, Text, TextInput, View } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, Egg, Footprints, Lock, Minus, Package, Plus, ShoppingBag, X } from 'lucide-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -16,7 +16,7 @@ import { obtenerCajaHoy } from '../../../lib/caja'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografiaCompacta as tc } from '../../../lib/theme'
 import {
-  BarraAccionInferior, Boton, CampoTexto, Chip, OverlayExito, Presionable, SliderPrecio,
+  BarraAccionInferior, Boton, CampoTexto, Chip, OverlayExito, Presionable, ScreenWrapper, SliderPrecio,
 } from '../../../components/ui'
 
 type Etapa = 'carrito' | 'ajustarPrecio' | 'cobrar' | 'confirmacion'
@@ -403,18 +403,20 @@ export default function NuevaVenta() {
   if (etapa === 'ajustarPrecio') {
     const item = items[0]
     return (
-      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-        <Cabecera titulo="Ajustar precio" boton={botonSalir} />
-        <ScrollView contentContainerStyle={{ paddingHorizontal: espacio.xl, gap: espacio.m }} keyboardShouldPersistTaps="handled">
-          {item ? <LineaCarrito item={item} dispatch={dispatch} /> : null}
-        </ScrollView>
-        <BarraAccionInferior
-          titulo="Continuar a pago"
-          deshabilitado={!cobrable}
-          inferior={insets.bottom}
-          onPress={() => setEtapa('cobrar')}
-        />
-      </View>
+      <ScreenWrapper
+        header={<Cabecera titulo="Ajustar precio" boton={botonSalir} />}
+        contentContainerStyle={{ paddingHorizontal: espacio.xl, gap: espacio.m }}
+        footer={
+          <BarraAccionInferior
+            titulo="Continuar a pago"
+            deshabilitado={!cobrable}
+            inferior={insets.bottom}
+            onPress={() => setEtapa('cobrar')}
+          />
+        }
+      >
+        {item ? <LineaCarrito item={item} dispatch={dispatch} /> : null}
+      </ScreenWrapper>
     )
   }
 
@@ -437,8 +439,9 @@ export default function NuevaVenta() {
             : { texto: `Sobran ${pesos(-diferencia)}`, ok: false }
 
     return (
-      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-        <Cabecera
+      <ScreenWrapper
+        header={
+          <Cabecera
           titulo="Cobrar"
           boton={
             <BotonCabecera
@@ -454,15 +457,25 @@ export default function NuevaVenta() {
             </BotonCabecera>
           }
         />
+        }
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: espacio.xl, paddingBottom: espacio.xl, gap: 10 }}
+        footer={
+          items.length > 0 ? (
+            <BarraAccionInferior
+              titulo="Confirmar venta"
+              onPress={confirmar}
+              cargando={guardando}
+              deshabilitado={!puedeConfirmar}
+              inferior={insets.bottom}
+            />
+          ) : null
+        }
+      >
         {items.length === 0 ? (
           <Vacio icono={<ShoppingBag size={32} color={paleta.textoDeshabilitado} />} titulo="Sin productos"
             mensaje="Agrega productos al carrito para cobrar." />
         ) : (
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ paddingHorizontal: espacio.xl, paddingBottom: espacio.xl, gap: 10 }}
-            keyboardShouldPersistTaps="handled"
-          >
+          <>
             <Text style={[tc.totalGrande, tabular, { color: paleta.texto, textAlign: 'center', paddingTop: 4, paddingBottom: espacio.s }]}>
               {pesos(total)}
             </Text>
@@ -524,31 +537,35 @@ export default function NuevaVenta() {
               onChangeText={t => setCliente(c => ({ ...c, telefono: t }))} />
             <CampoTexto compacto placeholder="Cédula o NIT" value={cliente.documento}
               onChangeText={t => setCliente(c => ({ ...c, documento: t }))} />
-          </ScrollView>
+          </>
         )}
-        {items.length > 0 ? (
-          <BarraAccionInferior
-            titulo="Confirmar venta"
-            onPress={confirmar}
-            cargando={guardando}
-            deshabilitado={!puedeConfirmar}
-            inferior={insets.bottom}
-          />
-        ) : null}
-      </View>
+      </ScreenWrapper>
     )
   }
 
   // etapa === 'carrito'
   const hayCalzado = items.some(i => i.producto.tipo === 'calzado')
   return (
-    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <Cabecera
+    <ScreenWrapper
+      header={
+        <Cabecera
         titulo="Carrito"
         derecha={`${items.length} ${items.length === 1 ? 'producto' : 'productos'}`}
         boton={botonSalir}
       />
-
+      }
+      contentContainerStyle={{ flexGrow: 1, paddingHorizontal: espacio.xl, paddingBottom: espacio.xl, gap: 10 }}
+      footer={
+        items.length > 0 ? (
+          <BarraAccionInferior
+            titulo={`Cobrar ${pesos(total)}`}
+            deshabilitado={!cobrable}
+            inferior={insets.bottom}
+            onPress={() => setEtapa('cobrar')}
+          />
+        ) : null
+      }
+    >
       {items.length === 0 ? (
         <View style={{ flex: 1, paddingBottom: insets.bottom }}>
           <Vacio icono={<ShoppingBag size={32} color={paleta.textoDeshabilitado} />} titulo="Tu carrito está vacío"
@@ -558,11 +575,6 @@ export default function NuevaVenta() {
         </View>
       ) : (
         <>
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ paddingHorizontal: espacio.xl, paddingBottom: espacio.xl, gap: 10 }}
-            keyboardShouldPersistTaps="handled"
-          >
             {items.map((i: ItemCarrito) => (
               <LineaCarrito key={`${i.producto.tipo}-${i.producto.id}`} item={i} dispatch={dispatch} />
             ))}
@@ -587,16 +599,8 @@ export default function NuevaVenta() {
                 </Text>
               </View>
             </View>
-          </ScrollView>
-
-          <BarraAccionInferior
-            titulo={`Cobrar ${pesos(total)}`}
-            deshabilitado={!cobrable}
-            inferior={insets.bottom}
-            onPress={() => setEtapa('cobrar')}
-          />
         </>
       )}
-    </View>
+    </ScreenWrapper>
   )
 }

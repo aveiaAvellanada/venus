@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {
-  View,
-  Text,
-  ScrollView,
-  ActivityIndicator,
-  Platform,
-  KeyboardAvoidingView,
-} from 'react-native'
+import { View, Text, ActivityIndicator } from 'react-native'
 import { useLocalSearchParams, useRouter, Redirect } from 'expo-router'
 import { ArrowLeft, CircleCheckBig, Wallet } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
@@ -15,7 +8,7 @@ import { obtenerCompraPorId, completarInformacionFinanciera } from '../../../lib
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
-import { Boton, CampoTexto, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Boton, CampoTexto, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
 
 export default function RecepcionDetalleFinancieroScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -182,13 +175,25 @@ export default function RecepcionDetalleFinancieroScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: paleta.fondo }}
+    <ScreenWrapper
+      header={<Encabezado />}
+      contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: espacio.xl, gap: espacio.l }}
+      footer={
+      <View style={{
+        backgroundColor: paleta.fondo, padding: espacio.l,
+        paddingBottom: paddingBarraInferior,
+        borderTopWidth: 1, borderTopColor: paleta.borde,
+      }}>
+        <Boton
+          titulo="Guardar y Completar Recepción"
+          onPress={handleCompletarFinanzas}
+          cargando={guardando}
+          deshabilitado={guardando}
+          icono={<Wallet size={20} color={paleta.sobrePrimario} />}
+        />
+      </View>
+      }
     >
-      <Encabezado />
-
-      <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: 120, gap: espacio.l }}>
         {/* Card de cabecera */}
         <Tarjeta>
           <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.s }]}>Detalles de Recepción</Text>
@@ -310,23 +315,6 @@ export default function RecepcionDetalleFinancieroScreen() {
             {formatMoneda(calcularTotal())}
           </Text>
         </View>
-      </ScrollView>
-
-      {/* Botón de guardado fijo al fondo */}
-      <View style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        backgroundColor: paleta.fondo, padding: espacio.l,
-        paddingBottom: paddingBarraInferior,
-        borderTopWidth: 1, borderTopColor: paleta.borde,
-      }}>
-        <Boton
-          titulo="Guardar y Completar Recepción"
-          onPress={handleCompletarFinanzas}
-          cargando={guardando}
-          deshabilitado={guardando}
-          icono={<Wallet size={20} color={paleta.sobrePrimario} />}
-        />
-      </View>
-    </KeyboardAvoidingView>
+    </ScreenWrapper>
   )
 }

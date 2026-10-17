@@ -1,14 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  ActivityIndicator,
-  Modal,
-  Platform,
-  KeyboardAvoidingView,
-} from 'react-native'
+import { View, Text, TextInput, ScrollView, ActivityIndicator, Modal, KeyboardAvoidingView } from 'react-native'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import {
   ArrowLeft,
@@ -41,7 +32,7 @@ import {
 import { listarCalzado, type ProductoCalzado } from '../../../lib/inventario'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
-import { Badge, Boton, CampoTexto, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Badge, Boton, CampoTexto, EstadoVacio, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
 
 // ── Tipos locales ─────────────────────────────────────────────────────────────
 
@@ -461,11 +452,8 @@ export default function NuevaDevolucionScreen() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: paleta.fondo }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      {/* Header */}
+    <ScreenWrapper
+      header={
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: espacio.m,
         paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
@@ -476,12 +464,20 @@ export default function NuevaDevolucionScreen() {
         </Presionable>
         <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Nueva Devolución</Text>
       </View>
-
-      <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+      }
+      contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
+      overlay={
+        modalReemplazoIdx !== null && (
+        <BuscadorReemplazoModal
+          idx={modalReemplazoIdx}
+          estadoItem={estadoItems[modalReemplazoIdx]}
+          onBuscar={buscarReemplazo}
+          onSeleccionar={seleccionarReemplazo}
+          onCerrar={cerrarModalReemplazo}
+        />
+        )
+      }
+    >
         {/* Info de la venta */}
         <Tarjeta>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s, marginBottom: espacio.s }}>
@@ -828,19 +824,7 @@ export default function NuevaDevolucionScreen() {
           deshabilitado={!puedeConfirmar}
           icono={<CircleCheckBig size={20} color={paleta.sobrePrimario} />}
         />
-      </ScrollView>
-
-      {/* Modal buscador de reemplazo */}
-      {modalReemplazoIdx !== null && (
-        <BuscadorReemplazoModal
-          idx={modalReemplazoIdx}
-          estadoItem={estadoItems[modalReemplazoIdx]}
-          onBuscar={buscarReemplazo}
-          onSeleccionar={seleccionarReemplazo}
-          onCerrar={cerrarModalReemplazo}
-        />
-      )}
-    </KeyboardAvoidingView>
+    </ScreenWrapper>
   )
 }
 
@@ -922,7 +906,10 @@ function BuscadorReemplazoModal({
       onRequestClose={onCerrar}
       testID="modal-buscar-reemplazo"
     >
-      <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}
+        behavior="padding"
+      >
         <View style={{
           backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '80%',
         }}>
@@ -942,7 +929,7 @@ function BuscadorReemplazoModal({
             </Presionable>
           </View>
 
-          <View style={{ padding: espacio.l, flex: 1 }}>
+          <View style={{ padding: espacio.l }}>
             <View style={{
               flexDirection: 'row', alignItems: 'center', gap: espacio.s,
               backgroundColor: paleta.superficie2, borderRadius: radio.md, paddingHorizontal: espacio.m, height: 44,
@@ -1009,7 +996,7 @@ function BuscadorReemplazoModal({
             </ScrollView>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }

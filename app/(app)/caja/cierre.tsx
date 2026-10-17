@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ActivityIndicator, ScrollView, Linking } from 'react-native'
+import { View, Text, ActivityIndicator, Linking } from 'react-native'
 import { useRouter } from 'expo-router'
 import { ArrowLeft, Check } from 'lucide-react-native'
 import { obtenerArqueoCaja, cerrarCaja, type ArqueoCaja } from '../../../lib/caja'
@@ -8,7 +8,7 @@ import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tabular, tipografia } from '../../../lib/theme'
-import { Boton, CampoTexto, OverlayExito, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Boton, CampoTexto, OverlayExito, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
 
 const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
 
@@ -157,12 +157,10 @@ export default function CierreCaja() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <Encabezado paleta={paleta} onVolver={() => router.back()} />
-      <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.xl }}
-        showsVerticalScrollIndicator={false}
-      >
+    <ScreenWrapper
+      header={<Encabezado paleta={paleta} onVolver={() => router.back()} />}
+      contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.xl }}
+    >
         <Tarjeta estilo={{ alignItems: 'center' }}>
           <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>Efectivo Esperado (Sistema)</Text>
           <Text style={[tipografia.display, tabular, { color: paleta.texto, marginTop: espacio.s }]}>
@@ -218,7 +216,6 @@ export default function CierreCaja() {
         )}
 
         <Boton titulo="Confirmar Cierre" onPress={handleCerrar} cargando={guardando} deshabilitado={guardando} />
-      </ScrollView>
-    </View>
+    </ScreenWrapper>
   )
 }

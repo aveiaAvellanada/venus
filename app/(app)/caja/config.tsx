@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, Switch, ActivityIndicator, ScrollView } from 'react-native'
+import { View, Text, Switch, ActivityIndicator } from 'react-native'
 import { Redirect, useRouter } from 'expo-router'
 import { ArrowLeft, History } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
@@ -10,7 +10,7 @@ import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tipografia } from '../../../lib/theme'
-import { Boton, CampoTexto, CirculoIcono, FilaLista, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Boton, CampoTexto, CirculoIcono, FilaLista, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
 
 const ETIQUETA_DIA: Record<DiaSemana, string> = {
   domingo: 'Domingo', lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles',
@@ -115,12 +115,10 @@ export default function CajaConfig() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <Encabezado paleta={paleta} onVolver={() => router.back()} />
-      <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
-        showsVerticalScrollIndicator={false}
-      >
+    <ScreenWrapper
+      header={<Encabezado paleta={paleta} onVolver={() => router.back()} />}
+      contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
+    >
         <Text style={[tipografia.h3, { color: paleta.texto }]}>Horario automático</Text>
 
         <Tarjeta>
@@ -203,7 +201,6 @@ export default function CajaConfig() {
         </Tarjeta>
 
         <Boton titulo="Guardar" onPress={guardar} cargando={guardando} deshabilitado={guardando} />
-      </ScrollView>
-    </View>
+    </ScreenWrapper>
   )
 }

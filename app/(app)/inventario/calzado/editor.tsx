@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, Image, ActivityIndicator, Alert, Switch } from 'react-native'
+import { View, Text, Image, ActivityIndicator, Alert, Switch } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, Camera, Pencil, Save } from 'lucide-react-native'
 import * as ImagePicker from 'expo-image-picker'
@@ -12,7 +12,7 @@ import { CATEGORIAS } from '../../../../lib/excel'
 import { usePaddingInferior } from '../../../../hooks/usePaddingInferior'
 import { useTema } from '../../../../lib/tema'
 import { espacio, radio, tipografia } from '../../../../lib/theme'
-import { Boton, CampoTexto, Chip, Presionable, Tarjeta, useToast } from '../../../../components/ui'
+import { Boton, CampoTexto, Chip, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../../components/ui'
 
 export default function CalzadoEditorScreen() {
   const requireModulo = useRequireModulo('inventario-calzado')
@@ -240,13 +240,20 @@ export default function CalzadoEditorScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <Encabezado />
-
-      <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
-        showsVerticalScrollIndicator={false}
-      >
+    <ScreenWrapper
+      header={<Encabezado />}
+      contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
+      footer={
+      <View style={{ padding: espacio.l, paddingBottom: paddingInferior, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
+        <Boton
+          titulo={id ? 'Actualizar producto' : 'Guardar producto'}
+          onPress={handleGuardar}
+          cargando={loading}
+          icono={<Save size={20} color={paleta.sobrePrimario} />}
+        />
+      </View>
+      }
+    >
         <View style={{ alignItems: 'center' }}>
           <Presionable
             accessibilityRole="button"
@@ -395,16 +402,6 @@ export default function CalzadoEditorScreen() {
             </View>
           </View>
         </Tarjeta>
-      </ScrollView>
-
-      <View style={{ padding: espacio.l, paddingBottom: paddingInferior, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
-        <Boton
-          titulo={id ? 'Actualizar producto' : 'Guardar producto'}
-          onPress={handleGuardar}
-          cargando={loading}
-          icono={<Save size={20} color={paleta.sobrePrimario} />}
-        />
-      </View>
-    </View>
+    </ScreenWrapper>
   )
 }

@@ -8,7 +8,7 @@ import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tipografia } from '../../../lib/theme'
-import { Badge, Boton, CampoTexto, Presionable, TarjetaMetrica, useToast } from '../../../components/ui'
+import { Badge, Boton, CampoTexto, Presionable, TarjetaMetrica, useToast, ScreenWrapper } from '../../../components/ui'
 
 const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
 
@@ -128,9 +128,10 @@ export default function CajaDashboard() {
 
   if (!estadoCaja) {
     return (
-      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-        <Encabezado paleta={paleta} onVolver={() => router.back()} />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, gap: espacio.xl }}>
+      <ScreenWrapper
+        header={<Encabezado paleta={paleta} onVolver={() => router.back()} />}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, gap: espacio.xl }}
+      >
           <Text style={[tipografia.h1, { color: paleta.texto, textAlign: 'center' }]}>Caja del Día</Text>
           <Text style={[tipografia.cuerpo, { color: paleta.texto2, textAlign: 'center' }]}>
             Aún no se ha abierto la caja para hoy.
@@ -145,8 +146,7 @@ export default function CajaDashboard() {
             />
             <Boton titulo="Abrir Caja del Día" onPress={handleAbrir} cargando={abriendo} deshabilitado={abriendo} />
           </View>
-        </View>
-      </View>
+      </ScreenWrapper>
     )
   }
 

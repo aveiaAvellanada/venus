@@ -98,6 +98,47 @@ export type Database = {
           },
         ]
       }
+      calzado_tramos_precio: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          precio_maximo: number | null
+          precio_minimo: number
+          referencia_clave: string
+          talla_desde: number
+          talla_hasta: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          precio_maximo?: number | null
+          precio_minimo: number
+          referencia_clave: string
+          talla_desde: number
+          talla_hasta: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          precio_maximo?: number | null
+          precio_minimo?: number
+          referencia_clave?: string
+          talla_desde?: number
+          talla_hasta?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calzado_tramos_precio_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cierres_caja: {
         Row: {
           apertura_at: string | null
@@ -527,10 +568,10 @@ export type Database = {
       }
       compras: {
         Row: {
+          clave_idempotencia: string | null
           condicion_pago: string | null
           created_at: string
           created_by: string | null
-          clave_idempotencia: string | null
           estado: string
           fecha_factura: string | null
           fecha_vencimiento: string | null
@@ -547,10 +588,10 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          clave_idempotencia?: string | null
           condicion_pago?: string | null
           created_at?: string
           created_by?: string | null
-          clave_idempotencia?: string | null
           estado?: string
           fecha_factura?: string | null
           fecha_vencimiento?: string | null
@@ -567,10 +608,10 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          clave_idempotencia?: string | null
           condicion_pago?: string | null
           created_at?: string
           created_by?: string | null
-          clave_idempotencia?: string | null
           estado?: string
           fecha_factura?: string | null
           fecha_vencimiento?: string | null
@@ -623,39 +664,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      calzado_tramos_precio: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          precio_maximo: number | null
-          precio_minimo: number
-          referencia_clave: string
-          talla_desde: number
-          talla_hasta: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          precio_maximo?: number | null
-          precio_minimo: number
-          referencia_clave: string
-          talla_desde: number
-          talla_hasta: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          precio_maximo?: number | null
-          precio_minimo?: number
-          referencia_clave?: string
-          talla_desde?: number
-          talla_hasta?: number
-        }
-        Relationships: []
       }
       devolucion_items: {
         Row: {
@@ -1735,6 +1743,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descripcion_snapshot: string
+          garantia_dias_snapshot?: number | null
           id?: string
           precio_maximo_snapshot?: number | null
           precio_minimo_snapshot?: number | null
@@ -1960,14 +1969,6 @@ export type Database = {
         Args: { p_aplicar?: boolean; p_ids: string[]; p_regla: Json }
         Returns: Json
       }
-      fijar_garantia_referencia: {
-        Args: { p_dias: number; p_referencia: string }
-        Returns: number
-      }
-      guardar_tramos_precio: {
-        Args: { p_referencia: string; p_tramos: Json }
-        Returns: Json
-      }
       cambiar_estado_empleado: {
         Args: { p_activo: boolean; p_id: string }
         Returns: undefined
@@ -2022,6 +2023,10 @@ export type Database = {
         }
         Returns: string
       }
+      fijar_garantia_referencia: {
+        Args: { p_dias: number; p_referencia: string }
+        Returns: number
+      }
       guardar_producto_calzado: {
         Args: {
           p_activo: boolean
@@ -2041,6 +2046,10 @@ export type Database = {
           p_talla: string
         }
         Returns: string
+      }
+      guardar_tramos_precio: {
+        Args: { p_referencia: string; p_tramos: Json }
+        Returns: Json
       }
       obtener_arqueo_caja: { Args: never; Returns: Json }
       obtener_balance: {

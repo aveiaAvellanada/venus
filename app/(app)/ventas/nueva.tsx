@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, View } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { ArrowLeft, Check, Egg, Footprints, Lock, Minus, Package, Plus, ShoppingBag, X } from 'lucide-react-native'
+import { ArrowLeft, Egg, Footprints, Lock, Minus, Package, Plus, ShoppingBag, X } from 'lucide-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRequireModulo } from '../../../lib/auth'
 import { useCarrito } from '../../../lib/carrito-contexto'
@@ -287,8 +287,6 @@ export default function NuevaVenta() {
   const [recibido, setRecibido] = useState('')
   const [cliente, setCliente] = useState(CLIENTE_VACIO)
   const [guardando, setGuardando] = useState(false)
-  // Lo que muestra la confirmación: el carrito ya se vació al registrar la venta.
-  const [ultimaVenta, setUltimaVenta] = useState<{ numero: number; total: number; metodos: MetodoPago[] } | null>(null)
   const [overlayVisible, setOverlayVisible] = useState(false)
   const [cajaEstado, setCajaEstado] = useState<'loading' | 'ok' | 'bloqueado'>('loading')
 
@@ -357,12 +355,11 @@ export default function NuevaVenta() {
     const intento = intentoVenta(intentoRef.current, venta)
     intentoRef.current = intento
     try {
-      const { numero } = await registrarVenta(venta, intento.clave)
+      await registrarVenta(venta, intento.clave)
       intentoRef.current = null
       // La venta ya existe: vaciar el carrito y el pago YA (no al tocar "Nueva venta"),
       // así salir con "Listo" o con atrás no deja lo vendido listo para venderse otra vez.
       // Si el registro falla, no se limpia: el reintento usa la misma clave.
-      setUltimaVenta({ numero, total, metodos })
       dispatch({ tipo: 'limpiar' })
       limpiarPago()
       setOverlayVisible(true)
@@ -383,13 +380,6 @@ export default function NuevaVenta() {
     } else {
       salirAtras()
     }
-  }
-
-  function nuevaVenta() {
-    dispatch({ tipo: 'limpiar' })
-    limpiarPago()
-    setUltimaVenta(null)
-    setEtapa('carrito')
   }
 
   const botonSalir = (
@@ -430,25 +420,8 @@ export default function NuevaVenta() {
 
   if (etapa === 'confirmacion') {
     return (
-      <View style={{ flex: 1, backgroundColor: paleta.fondo, paddingBottom: insets.bottom }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: espacio.m, padding: espacio.xxl }}>
-          <View style={{ width: 96, height: 96, borderRadius: radio.full, backgroundColor: paleta.superficieOscura, alignItems: 'center', justifyContent: 'center' }}>
-            <Check size={48} color={paleta.sobreOscura} strokeWidth={3} />
-          </View>
-          <Text style={[tc.tituloGrande, { color: paleta.texto, textAlign: 'center', marginTop: espacio.s }]}>
-            {`Venta #${ultimaVenta?.numero ?? ''} registrada`}
-          </Text>
-          {ultimaVenta ? (
-            <Text style={[tc.cuerpo, tabular, { color: paleta.texto2, textAlign: 'center' }]}>
-              {`${pesos(ultimaVenta.total)} · ${ultimaVenta.metodos.map(m => ETIQUETA[m]).join(' + ')}`}
-            </Text>
-          ) : null}
-          <View style={{ alignSelf: 'stretch', gap: espacio.s, marginTop: espacio.xl }}>
-            <Boton titulo="Nueva venta" variante="oscuro" pildora compacto onPress={nuevaVenta} />
-            <Boton titulo="Listo" variante="fantasma" compacto onPress={salirAtras} />
-          </View>
-        </View>
-        <OverlayExito visible={overlayVisible} onFin={() => setOverlayVisible(false)} />
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <OverlayExito visible={overlayVisible} mensaje="Venta exitosa" onFin={() => { setOverlayVisible(false); router.replace('/') }} />
       </View>
     )
   }
@@ -549,7 +522,7 @@ export default function NuevaVenta() {
               onChangeText={t => setCliente(c => ({ ...c, apellido: t }))} />
             <CampoTexto compacto placeholder="Teléfono" keyboardType="phone-pad" value={cliente.telefono}
               onChangeText={t => setCliente(c => ({ ...c, telefono: t }))} />
-            <CampoTexto compacto placeholder="Cédula o razón social" value={cliente.documento}
+            <CampoTexto compacto placeholder="Cédula o NIT" value={cliente.documento}
               onChangeText={t => setCliente(c => ({ ...c, documento: t }))} />
           </ScrollView>
         )}

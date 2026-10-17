@@ -144,7 +144,7 @@ describe('Nueva Venta restilizada', () => {
     expect(todoElTexto(arbol)).toContain('Cuadra')
   })
 
-  test('confirmación: overlay y pantalla de venta registrada', async () => {
+  test('confirmación: solo el chulo de venta exitosa y vuelve al menú', async () => {
     mockRegistrar.mockResolvedValue({ numero: 42 })
     const arbol = await montar({ conItem: true })
     presionarPorLabel(arbol, 'Cobrar $150.000')
@@ -157,7 +157,10 @@ describe('Nueva Venta restilizada', () => {
     await act(async () => {
       presionarPorLabel(arbol, 'Confirmar venta')
     })
-    expect(todoElTexto(arbol)).toContain('Venta #42 registrada')
+    expect(todoElTexto(arbol)).toContain('Venta exitosa')
+    expect(todoElTexto(arbol)).not.toContain('Nueva venta')
+    act(() => { jest.advanceTimersByTime(1300) })
+    expect(mockReplace).toHaveBeenCalledWith('/')
   })
 
   test('reintentar tras un fallo de red reusa la clave de la venta (no duplica)', async () => {
@@ -177,7 +180,7 @@ describe('Nueva Venta restilizada', () => {
     const [clave1, clave2] = mockRegistrar.mock.calls.map((c) => c[1])
     expect(clave1).toEqual(expect.any(String))
     expect(clave2).toBe(clave1)
-    expect(todoElTexto(arbol)).toContain('Venta #43 registrada')
+    expect(todoElTexto(arbol)).toContain('Venta exitosa')
   })
 
   test('carrito vacío muestra el estado vacío en vez del buscador', async () => {
@@ -195,7 +198,7 @@ describe('Nueva Venta restilizada', () => {
 
   // Bug A1: el carrito es global (CarritoProvider); si no se vacía al registrar,
   // lo vendido sigue ahí y se puede vender otra vez al volver.
-  test('tras registrar con éxito el carrito queda vacío, aunque se salga con "Listo"', async () => {
+  test('tras registrar con éxito el carrito queda vacío y se vuelve al menú', async () => {
     mockRegistrar.mockResolvedValue({ numero: 50 })
     const arbol = await montar({ conItem: true })
     expect(itemsEnCarrito).toBe(1)
@@ -207,10 +210,9 @@ describe('Nueva Venta restilizada', () => {
     act(() => { inputs[0].props.onChangeText('250000') })
     await act(async () => { presionarPorLabel(arbol, 'Confirmar venta') })
     expect(itemsEnCarrito).toBe(0)
-    // la confirmación lee el snapshot, no el carrito ya vacío
-    expect(todoElTexto(arbol)).toContain('Venta #50 registrada')
-    presionarPorLabel(arbol, 'Listo')
-    expect(mockBack).toHaveBeenCalled()
+    expect(todoElTexto(arbol)).toContain('Venta exitosa')
+    act(() => { jest.advanceTimersByTime(1300) })
+    expect(mockReplace).toHaveBeenCalledWith('/')
     expect(itemsEnCarrito).toBe(0)
   })
 
@@ -276,18 +278,17 @@ describe('Nueva Venta restilizada', () => {
     expect(mas().props.accessibilityState).toMatchObject({ disabled: true })
   })
 
-  test('cédula o razón social se envía con la venta; la confirmación muestra total y métodos', async () => {
+  test('cédula o NIT se envía con la venta', async () => {
     mockRegistrar.mockResolvedValue({ numero: 60 })
     const arbol = await montar({ conItem: true })
     presionarPorLabel(arbol, 'Cobrar $150.000')
     presionarPorLabel(arbol, 'Nequi')
     const doc = arbol.root.findAll(
-      (n: renderer.ReactTestInstance) => n.props?.placeholder === 'Cédula o razón social' && !!n.props.onChangeText
+      (n: renderer.ReactTestInstance) => n.props?.placeholder === 'Cédula o NIT' && !!n.props.onChangeText
     )[0]
     act(() => { doc.props.onChangeText(' 1117123456 ') })
     await act(async () => { presionarPorLabel(arbol, 'Confirmar venta') })
     expect(mockRegistrar.mock.calls[0][0].cliente.documento).toBe('1117123456')
-    expect(todoElTexto(arbol)).toContain('Venta #60 registrada')
-    expect(todoElTexto(arbol)).toContain('$150.000 · Nequi')
+    expect(todoElTexto(arbol)).toContain('Venta exitosa')
   })
 })

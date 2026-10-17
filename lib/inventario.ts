@@ -42,7 +42,7 @@ export async function guardarCalzado(datos: {
   talla?: string | null
   color?: string | null
   precio_minimo: number
-  precio_maximo: number
+  precio_maximo?: number | null
   costo_compra?: number | null
   stock_actual: number
   stock_minimo: number
@@ -59,7 +59,7 @@ export async function guardarCalzado(datos: {
     p_talla: datos.talla || (null as any),
     p_color: datos.color || (null as any),
     p_precio_minimo: datos.precio_minimo,
-    p_precio_maximo: datos.precio_maximo,
+    p_precio_maximo: (datos.precio_maximo ?? null) as unknown as number,
     p_costo_compra: datos.costo_compra || (null as any),
     p_stock_actual: datos.stock_actual,
     p_stock_minimo: datos.stock_minimo,

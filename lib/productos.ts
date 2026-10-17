@@ -19,6 +19,10 @@ export interface ModeloCalzado {
   variantes: ProductoCalzado[]
 }
 
+// El máximo es opcional: sin él, el precio de vitrina es el mínimo.
+export const maximoVitrina = (v: Pick<ProductoCalzado, 'precio_minimo' | 'precio_maximo'>): number =>
+  Number(v.precio_maximo ?? v.precio_minimo)
+
 const tallaNumerica = (talla: string | null) => {
   const n = parseFloat(talla ?? '')
   return Number.isNaN(n) ? Number.MAX_SAFE_INTEGER : n
@@ -57,7 +61,7 @@ export function agruparPorReferencia(
       foto: variantes.find((v) => v.foto_url)?.foto_url ?? null,
       colores,
       precioMin: Math.min(...variantes.map((v) => Number(v.precio_minimo))),
-      precioMax: Math.max(...variantes.map((v) => Number(v.precio_maximo))),
+      precioMax: Math.max(...variantes.map(maximoVitrina)),
       agotado: variantes.every((v) => Number(v.stock_actual) <= 0),
       activo: variantes.some((v) => v.activo),
       variantes: ordenadas,
@@ -107,7 +111,7 @@ export function resumenColor(modelo: ModeloCalzado, color: string): ResumenColor
     color,
     foto: vs.find((v) => v.foto_url)?.foto_url ?? null,
     precioMin: Math.min(...vs.map((v) => Number(v.precio_minimo))),
-    precioMax: Math.max(...vs.map((v) => Number(v.precio_maximo))),
+    precioMax: Math.max(...vs.map(maximoVitrina)),
     agotado: vs.every((v) => Number(v.stock_actual) <= 0),
   }
 }

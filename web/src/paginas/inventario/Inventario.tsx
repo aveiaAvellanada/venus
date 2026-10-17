@@ -334,7 +334,7 @@ function DetalleTallas({ tallas, costos }: { tallas: ProductoCalzado[]; costos: 
                 />
               </td>
               <td className="cifras py-1 pr-6 text-right">
-                {Number(t.precio_minimo) === Number(t.precio_maximo) ? pesos(t.precio_maximo) : `${pesos(t.precio_minimo)} – ${pesos(t.precio_maximo)}`}
+                {t.precio_maximo == null || Number(t.precio_minimo) === Number(t.precio_maximo) ? pesos(t.precio_minimo) : `${pesos(t.precio_minimo)} – ${pesos(t.precio_maximo)}`}
               </td>
               {costos ? <td className="cifras py-1 pr-6 text-right">{costos.get(t.id) ? pesos(costos.get(t.id)!.ultimo) : '—'}</td> : null}
               <td className="py-1">

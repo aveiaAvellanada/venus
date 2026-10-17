@@ -79,7 +79,7 @@ export function NuevaCompra() {
         referencia: p.referencia, descripcion: p.descripcion, marca: p.marca ?? '', categoria: p.categoria,
         color: p.color ?? '', existentes: {},
       }
-      r.existentes[p.talla] = { id: p.id, precio_minimo: Number(p.precio_minimo), precio_maximo: Number(p.precio_maximo) }
+      r.existentes[p.talla] = { id: p.id, precio_minimo: Number(p.precio_minimo), precio_maximo: Number(p.precio_maximo ?? p.precio_minimo) }
       mapa.set(clave, r)
     }
     return mapa

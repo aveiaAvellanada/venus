@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRequireModulo } from '../../../lib/auth'
 import { useCarrito } from '../../../lib/carrito-contexto'
 import {
-  calcularCambio, fueraDeRango, montoEfectivo, numArticulos, pagosCuadran, puedeCobrar, rangoDeslizador,
+  calcularCambio, montoEfectivo, numArticulos, pagosCuadran, puedeCobrar, rangoDeslizador,
   totalCarrito,
   type AccionCarrito, type ItemCarrito, type MetodoPago, type PagoInput,
 } from '../../../lib/carrito'
@@ -102,14 +102,14 @@ function Miniatura({ item }: { item: ItemCarrito }) {
   )
 }
 
-// Precio del calzado: deslizador de $1.000 en $1.000 entre mínimo y máximo, y caja
-// para escribir el precio exacto. Ambos se sincronizan. Fuera de rango se avisa
-// (el servidor lo rechazaría) y la pantalla no deja cobrar.
+// Precio del calzado: deslizador de $1.000 en $1.000 entre mínimo y máximo (solo si
+// el zapato tiene máximo) y caja para escribir el precio exacto, que es libre:
+// puede quedar fuera del rango recomendado. Ambos se sincronizan.
 function AjustePrecio({ item, dispatch }: { item: ItemCarrito; dispatch: (a: AccionCarrito) => void }) {
   const { paleta } = useTema()
   const min = item.producto.precioMin ?? item.precio
-  const max = item.producto.precioMax ?? item.precio
-  const rango = rangoDeslizador(min, max)
+  const max = item.producto.precioMax
+  const rango = max != null ? rangoDeslizador(min, max) : null
   const [texto, setTexto] = useState(miles(item.precio))
   const [editando, setEditando] = useState(false)
 
@@ -122,15 +122,17 @@ function AjustePrecio({ item, dispatch }: { item: ItemCarrito; dispatch: (a: Acc
 
   return (
     <View style={{ paddingHorizontal: 2 }}>
-      <SliderPrecio
-        valor={Math.min(rango.maximo, Math.max(rango.minimo, item.precio))}
-        minimo={rango.minimo}
-        maximo={rango.maximo}
-        paso={rango.paso}
-        mostrarValores={false}
-        accessibilityLabel={`Precio de ${item.producto.titulo}`}
-        onCambio={cambiar}
-      />
+      {rango ? (
+        <SliderPrecio
+          valor={Math.min(rango.maximo, Math.max(rango.minimo, item.precio))}
+          minimo={rango.minimo}
+          maximo={rango.maximo}
+          paso={rango.paso}
+          mostrarValores={false}
+          accessibilityLabel={`Precio de ${item.producto.titulo}`}
+          onCambio={cambiar}
+        />
+      ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espacio.s, marginTop: 4 }}>
         <Text numberOfLines={1} style={[tc.detalle, tabular, { color: paleta.texto3, fontFamily: tc.etiqueta.fontFamily, flexShrink: 1 }]}>{`Mín ${pesos(min)}`}</Text>
         <View style={{
@@ -153,7 +155,7 @@ function AjustePrecio({ item, dispatch }: { item: ItemCarrito; dispatch: (a: Acc
             style={[tc.input, tabular, { color: paleta.texto, fontSize: 13, width: 80, textAlign: 'right', padding: 0 }]}
           />
         </View>
-        <Text numberOfLines={1} style={[tc.detalle, tabular, { color: paleta.texto3, fontFamily: tc.etiqueta.fontFamily, flexShrink: 1 }]}>{`Máx ${pesos(max)}`}</Text>
+        <Text numberOfLines={1} style={[tc.detalle, tabular, { color: paleta.texto3, fontFamily: tc.etiqueta.fontFamily, flexShrink: 1 }]}>{max != null ? `Máx ${pesos(max)}` : ''}</Text>
       </View>
     </View>
   )
@@ -200,7 +202,6 @@ function CamposGranja({ item, dispatch }: { item: ItemCarrito; dispatch: (a: Acc
 function LineaCarrito({ item, dispatch }: { item: ItemCarrito; dispatch: (a: AccionCarrito) => void }) {
   const { paleta } = useTema()
   const esCalzado = item.producto.tipo === 'calzado'
-  const fuera = fueraDeRango(item)
   const detalle = esCalzado ? item.producto.detalle : `Granja · por ${item.producto.unidad ?? ''}`
 
   return (
@@ -213,13 +214,6 @@ function LineaCarrito({ item, dispatch }: { item: ItemCarrito; dispatch: (a: Acc
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={[tc.lineaTitulo, { color: paleta.texto }]} numberOfLines={2}>{item.producto.titulo}</Text>
           {detalle ? <Text style={[tc.detalle, { color: paleta.texto3 }]}>{detalle}</Text> : null}
-          {fuera ? (
-            <View style={{ alignSelf: 'flex-start', marginTop: 4, backgroundColor: paleta.peligroSoft, borderRadius: radio.full, paddingVertical: 3, paddingHorizontal: 10 }}>
-              <Text accessibilityLiveRegion="polite" style={[tc.detalle, tabular, { color: paleta.peligroTexto, fontFamily: tc.etiqueta.fontFamily }]}>
-                {`Fuera del rango: ${pesos(item.producto.precioMin ?? 0)} – ${pesos(item.producto.precioMax ?? 0)}`}
-              </Text>
-            </View>
-          ) : null}
         </View>
       </View>
 

@@ -162,7 +162,7 @@ export default function CalzadoDetailScreen() {
             <View style={{ width: 1, height: 32, backgroundColor: paleta.borde }} />
             <View style={{ alignItems: 'center' }}>
               <Text style={[tipografia.caption, { color: paleta.texto2 }]}>Máximo</Text>
-              <Text style={[tipografia.h2, tabular, { color: paleta.exitoTexto }]}>{formatCOP(producto.precio_maximo)}</Text>
+              <Text style={[tipografia.h2, tabular, { color: paleta.exitoTexto }]}>{producto.precio_maximo != null ? formatCOP(producto.precio_maximo) : "Sin máximo"}</Text>
             </View>
           </View>
         </Tarjeta>

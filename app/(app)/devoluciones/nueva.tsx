@@ -987,7 +987,7 @@ function BuscadorReemplazoModal({
                         .join('  •  ')}
                     </Text>
                     <Text style={[tipografia.caption, tabular, { color: paleta.primario }]}>
-                      {formatCOP(prod.precio_minimo)} – {formatCOP(prod.precio_maximo)}
+                      {prod.precio_maximo != null ? `${formatCOP(prod.precio_minimo)} – ${formatCOP(prod.precio_maximo)}` : formatCOP(prod.precio_minimo)}
                     </Text>
                   </View>
                   <CircleCheckBig size={22} color={paleta.exito} />

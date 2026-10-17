@@ -624,6 +624,39 @@ export type Database = {
           },
         ]
       }
+      calzado_tramos_precio: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          precio_maximo: number | null
+          precio_minimo: number
+          referencia_clave: string
+          talla_desde: number
+          talla_hasta: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          precio_maximo?: number | null
+          precio_minimo: number
+          referencia_clave: string
+          talla_desde: number
+          talla_hasta: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          precio_maximo?: number | null
+          precio_minimo?: number
+          referencia_clave?: string
+          talla_desde?: number
+          talla_hasta?: number
+        }
+        Relationships: []
+      }
       devolucion_items: {
         Row: {
           cambio_talla_color_id: string | null
@@ -1305,9 +1338,10 @@ export type Database = {
           created_by: string | null
           descripcion: string
           foto_url: string | null
+          garantia_dias: number | null
           id: string
           marca: string | null
-          precio_maximo: number
+          precio_maximo: number | null
           precio_minimo: number
           proveedor_id: string | null
           referencia: string | null
@@ -1325,9 +1359,10 @@ export type Database = {
           created_by?: string | null
           descripcion: string
           foto_url?: string | null
+          garantia_dias?: number | null
           id?: string
           marca?: string | null
-          precio_maximo?: number
+          precio_maximo?: number | null
           precio_minimo?: number
           proveedor_id?: string | null
           referencia?: string | null
@@ -1345,9 +1380,10 @@ export type Database = {
           created_by?: string | null
           descripcion?: string
           foto_url?: string | null
+          garantia_dias?: number | null
           id?: string
           marca?: string | null
-          precio_maximo?: number
+          precio_maximo?: number | null
           precio_minimo?: number
           proveedor_id?: string | null
           referencia?: string | null
@@ -1920,6 +1956,14 @@ export type Database = {
       }
       actualizar_precios_lote: {
         Args: { p_aplicar?: boolean; p_ids: string[]; p_regla: Json }
+        Returns: Json
+      }
+      fijar_garantia_referencia: {
+        Args: { p_dias: number; p_referencia: string }
+        Returns: number
+      }
+      guardar_tramos_precio: {
+        Args: { p_referencia: string; p_tramos: Json }
         Returns: Json
       }
       cambiar_estado_empleado: {

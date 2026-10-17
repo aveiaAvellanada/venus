@@ -58,11 +58,11 @@ const ZAPATO = {
 // el carrito ya poblado. Si sembráramos con un efecto que corre DESPUÉS
 // de que `NuevaVenta` monta, el `useState` inicial de `etapa` (que lee
 // `items.length` una sola vez, al montar) no vería el ítem a tiempo.
-function Sembrador({ children }: { children: React.ReactNode }) {
+function Sembrador({ children, sinMaximo = false }: { children: React.ReactNode; sinMaximo?: boolean }) {
   const { dispatch } = useCarrito()
   const [listo, setListo] = React.useState(false)
   React.useEffect(() => {
-    dispatch({ tipo: 'agregar', producto: ZAPATO })
+    dispatch({ tipo: 'agregar', producto: sinMaximo ? { ...ZAPATO, precioMax: undefined } : ZAPATO })
     setListo(true)
   }, [dispatch])
   return listo ? <>{children}</> : null
@@ -75,7 +75,7 @@ function Sonda() {
   return null
 }
 
-async function montar({ conItem = false } = {}) {
+async function montar({ conItem = false, sinMaximo = false } = {}) {
   mockObtenerCajaHoy.mockResolvedValue({ estado: 'abierta' })
   let arbol: renderer.ReactTestRenderer
   await act(async () => {
@@ -83,7 +83,7 @@ async function montar({ conItem = false } = {}) {
       <TemaProvider>
         <CarritoProvider>
           <ToastProvider>
-            {conItem ? <Sembrador><NuevaVenta /></Sembrador> : <NuevaVenta />}
+            {conItem ? <Sembrador sinMaximo={sinMaximo}><NuevaVenta /></Sembrador> : <NuevaVenta />}
             <Sonda />
           </ToastProvider>
         </CarritoProvider>
@@ -254,18 +254,29 @@ describe('Nueva Venta restilizada', () => {
     expect(todoElTexto(arbol)).toContain('Cobrar $199.500')
   })
 
-  test('precio fuera del rango: aviso y Cobrar deshabilitado hasta corregirlo', async () => {
+  test('precio fuera del rango recomendado: sin aviso y se puede cobrar', async () => {
     const arbol = await montar({ conItem: true })
     const caja = arbol.root.findByProps({ accessibilityLabel: 'Precio' })
     act(() => { caja.props.onFocus() })
     act(() => { caja.props.onChangeText('140000') })
-    expect(todoElTexto(arbol)).toContain('Fuera del rango: $150.000 – $220.000')
-    expect(barraCobrar(arbol).props.accessibilityState).toMatchObject({ disabled: true })
-    act(() => { caja.props.onChangeText('230000') })
-    expect(barraCobrar(arbol).props.accessibilityState).toMatchObject({ disabled: true })
-    act(() => { caja.props.onChangeText('200000') })
     expect(todoElTexto(arbol)).not.toContain('Fuera del rango')
     expect(barraCobrar(arbol).props.accessibilityState).toMatchObject({ disabled: false })
+    expect(todoElTexto(arbol)).toContain('Cobrar $140.000')
+    act(() => { caja.props.onChangeText('230000') })
+    expect(barraCobrar(arbol).props.accessibilityState).toMatchObject({ disabled: false })
+    act(() => { caja.props.onChangeText('') })
+    expect(barraCobrar(arbol).props.accessibilityState).toMatchObject({ disabled: true })
+  })
+
+  test('zapato sin máximo: sin deslizador, solo la caja de precio y el mínimo', async () => {
+    const arbol = await montar({ conItem: true, sinMaximo: true })
+    expect(arbol.root.findAllByType(Slider)).toHaveLength(0)
+    expect(todoElTexto(arbol)).toContain('Mín $150.000')
+    expect(todoElTexto(arbol)).not.toContain('Máx')
+    const caja = arbol.root.findByProps({ accessibilityLabel: 'Precio' })
+    act(() => { caja.props.onFocus() })
+    act(() => { caja.props.onChangeText('120000') })
+    expect(todoElTexto(arbol)).toContain('Cobrar $120.000')
   })
 
   test('el + se deshabilita al llegar al stock', async () => {

@@ -105,15 +105,10 @@ export const bajoMinimo = (item: ItemCarrito): boolean =>
   item.producto.precioMin != null &&
   item.precio < item.producto.precioMin
 
-// El servidor rechaza precios de calzado fuera de [precio_minimo, precio_maximo]
-// (registrar_venta, PRD §3.1.1): la app no deja cobrar hasta corregirlos.
-export const fueraDeRango = (item: ItemCarrito): boolean =>
-  item.producto.tipo === 'calzado' &&
-  ((item.producto.precioMin != null && item.precio < item.producto.precioMin) ||
-    (item.producto.precioMax != null && item.precio > item.producto.precioMax))
-
+// El mínimo y el máximo son precios recomendados: el precio final es libre
+// (varios pares, ofertas, regateo). Solo se exige que cada línea tenga precio.
 export const puedeCobrar = (items: ItemCarrito[]): boolean =>
-  totalCarrito(items) > 0 && !items.some(fueraDeRango)
+  totalCarrito(items) > 0 && items.every(i => i.precio > 0)
 
 // "Artículos" del resumen: pares de calzado + una por cada línea de Granja (va por peso).
 export const numArticulos = (items: ItemCarrito[]): number =>

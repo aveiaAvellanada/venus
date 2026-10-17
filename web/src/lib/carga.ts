@@ -54,8 +54,8 @@ function cambiosDe(actual: ProductoCalzado, d: FilaValida): string[] {
   const cambios: string[] = []
   const min = centavos(d.precio_min)
   const max = centavos(d.precio_max)
-  if (Number(actual.precio_minimo) !== min || Number(actual.precio_maximo) !== max) {
-    cambios.push(`Precio ${rango(Number(actual.precio_minimo), Number(actual.precio_maximo))} → ${rango(min, max)}`)
+  if (Number(actual.precio_minimo) !== min || Number(actual.precio_maximo ?? actual.precio_minimo) !== max) {
+    cambios.push(`Precio ${rango(Number(actual.precio_minimo), Number(actual.precio_maximo ?? actual.precio_minimo))} → ${rango(min, max)}`)
   }
   if (actual.descripcion !== d.descripcion) cambios.push(`Descripción: ${actual.descripcion} → ${d.descripcion}`)
   if ((actual.marca ?? null) !== d.marca) cambios.push(`Marca: ${actual.marca ?? 'sin marca'} → ${d.marca ?? 'sin marca'}`)
@@ -159,7 +159,7 @@ export function filasDeExportacion(productos: ProductoCalzado[], costos?: Map<st
       p.talla,
       p.color,
       Number(p.precio_minimo),
-      Number(p.precio_maximo),
+      p.precio_maximo != null ? Number(p.precio_maximo) : '',
       costos?.get(p.id)?.ultimo ?? null,
       p.stock_actual,
     ]),

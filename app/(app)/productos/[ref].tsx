@@ -15,6 +15,7 @@ import {
   colorInicial,
   coloresDeModelo,
   columnasTallas,
+  maximoVitrina,
   resumenColor,
   variantesDeColor,
 } from '../../../lib/productos'
@@ -110,10 +111,10 @@ export default function ProductoDetalleScreen() {
           talla: variante.talla,
           color: variante.color,
         }),
-        precio: Number(variante.precio_maximo),
+        precio: maximoVitrina(variante),
         stock: Number(variante.stock_actual),
         precioMin: Number(variante.precio_minimo),
-        precioMax: Number(variante.precio_maximo),
+        precioMax: variante.precio_maximo != null ? Number(variante.precio_maximo) : undefined,
         foto: variante.foto_url ?? fotoHero,
       },
     })
@@ -124,7 +125,7 @@ export default function ProductoDetalleScreen() {
       marca: modelo.marca ?? '',
       nombre: [modelo.nombre, colorActual].filter(Boolean).join(' '),
       detalle: `Talla ${variante.talla ?? '—'}`,
-      precio: Number(variante.precio_maximo),
+      precio: maximoVitrina(variante),
     })
   }
 
@@ -231,7 +232,7 @@ export default function ProductoDetalleScreen() {
                 ) : null}
                 {variante || !resumen || resumen.precioMin === resumen.precioMax ? (
                   <Text style={[tipografia.display, tabular, { color: paleta.texto, fontSize: 28, lineHeight: 34 }]}>
-                    {formatear(variante ? Number(variante.precio_maximo) : resumen?.precioMax ?? 0)}
+                    {formatear(variante ? maximoVitrina(variante) : resumen?.precioMax ?? 0)}
                   </Text>
                 ) : (
                   <View

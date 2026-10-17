@@ -149,13 +149,11 @@ describe('Movimientos', () => {
     expect(mockPush).toHaveBeenCalledWith('/devoluciones/d1')
   })
 
-  it('toggle a Gastos: staff ve total y filas', async () => {
+  it('ya no tiene vista de Gastos: solo Ventas y Devoluciones', async () => {
     conRol('admin')
     const arbol = await montar(<Movimientos />)
-    await act(async () => tabs(arbol)[2].props.onPress!())
-    expect(existeTexto(arbol, 'Arriendo')).toBe(true)
-    expect(existeTexto(arbol, 'Total gastos')).toBe(true)
-    expect(existeTexto(arbol, 'Gastos fijos')).toBe(true)
+    expect(tabs(arbol)).toHaveLength(2)
+    expect(existeTexto(arbol, 'Gastos')).toBe(false)
   })
 
   it('empleado: sin chips de período y consulta solo hoy', async () => {

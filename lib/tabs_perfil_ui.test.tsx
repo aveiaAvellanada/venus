@@ -98,7 +98,7 @@ describe('Perfil', () => {
   it('dueño ve toda la sección Negocio (Recibir mercancía, Proveedores, Reportes, Balance, Análisis IA, Carga inicial)', async () => {
     conPerfil('dueno')
     const arbol = await montar()
-    for (const t of ['Negocio', 'Recibir mercancía', 'Proveedores', 'Reportes', 'Balance', 'Análisis IA', 'Carga inicial']) {
+    for (const t of ['Negocio', 'Recibir mercancía', 'Proveedores', 'Reportes', 'Balance', 'Análisis IA', 'Carga inicial', 'Gastos', 'Gastos fijos']) {
       expect({ [t]: existeTexto(arbol, t) }).toEqual({ [t]: true })
     }
   })

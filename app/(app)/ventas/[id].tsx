@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
-import { ArrowLeft, StickyNote, Undo2, UserRound } from 'lucide-react-native'
+import { ArrowLeft, StickyNote, UserRound } from 'lucide-react-native'
 import { badgeEstadoVenta, obtenerVentaDetalle } from '../../../lib/movimientos'
 import type { VentaDetalle } from '../../../lib/movimientos'
 import { useTema } from '../../../lib/tema'
@@ -192,8 +192,7 @@ export default function VentaDetalleScreen() {
             {PUEDE_DEVOLVER.includes(venta.estado) ? (
               <Boton
                 titulo="Hacer devolución"
-                variante="secundario"
-                icono={<Undo2 size={20} color={paleta.primario} />}
+                variante="oscuro"
                 onPress={() => router.push(`/devoluciones/nueva?numero=${venta.numero}`)}
               />
             ) : null}

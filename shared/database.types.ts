@@ -685,7 +685,7 @@ export type Database = {
           conteo_id: string
           created_at?: string
           created_by?: string | null
-          diferencia?: never
+          diferencia?: number | null
           id?: string
           motivo?: string | null
           nota?: string | null
@@ -699,7 +699,7 @@ export type Database = {
           conteo_id?: string
           created_at?: string
           created_by?: string | null
-          diferencia?: never
+          diferencia?: number | null
           id?: string
           motivo?: string | null
           nota?: string | null

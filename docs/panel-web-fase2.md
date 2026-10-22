@@ -1,6 +1,6 @@
 # Panel web — Fase 2: Control de inventario (plan)
 
-Estado: entrega 1 (Conteo físico) construida el 2026-10-22; falta aplicar su migración al remoto.
+Estado: entrega 1 (Conteo físico) construida el 2026-10-22. Su migración se aplicó al remoto el mismo día en una transacción y quedó registrada con la versión `20261022180000`. Comprobado: tablas con RLS, sin escritura directa, 6 triggers, `registrar_conteo` ejecutable con sesión y no por anon, `verificar_despliegue` OK y tipos regenerados del remoto.
 Marco general: `docs/panel-web.md`. Fase 1: `docs/panel-web-fase1.md`.
 
 Objetivo: saber por qué cada producto tiene el stock que tiene y corregirlo con

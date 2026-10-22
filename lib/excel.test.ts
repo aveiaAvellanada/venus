@@ -104,3 +104,16 @@ describe('validarFilas — costo opcional y número de fila', () => {
     expect(validarFilas([fila]).errores[0].fila).toBe(10)
   })
 })
+
+describe('validarFilas — dos colores', () => {
+  it('guarda el color como "Rojo y blanco" aunque el Excel diga "rojo/blanco"', () => {
+    const { validas } = validarFilas([{ ...filaBase, color: 'rojo/blanco' }])
+    expect(validas[0].color).toBe('Rojo y blanco')
+  })
+
+  it('más de dos colores es un error de la fila', () => {
+    const { validas, errores } = validarFilas([{ ...filaBase, color: 'rojo, blanco, azul' }])
+    expect(validas).toHaveLength(0)
+    expect(errores[0].errores).toContain('Un zapato tiene máximo dos colores (ej. "Rojo y blanco").')
+  })
+})

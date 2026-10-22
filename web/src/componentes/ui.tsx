@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
 import { LoaderCircle, X } from 'lucide-react'
+import { hexesDeColor } from '@shared/colores'
 
 export function Tarjeta({ titulo, accion, children, className = '' }: {
   titulo?: ReactNode
@@ -54,6 +55,28 @@ export function Boton({ variante = 'primario', cargando = false, children, class
       {cargando ? <LoaderCircle aria-hidden className="size-4 animate-spin" /> : null}
       {children}
     </button>
+  )
+}
+
+// Círculo con el color del zapato; con dos colores ("Rojo y blanco") se parte a
+// la mitad: el primero a la izquierda y el segundo a la derecha.
+export function PuntoColor({ color }: { color: string }) {
+  return (
+    <span aria-hidden data-testid="punto-color" className="inline-flex size-2.5 shrink-0 overflow-hidden rounded-full border border-borde-fuerte align-middle">
+      {hexesDeColor(color).map((hex, i) => (
+        <span key={i} data-testid="punto-color-mitad" className="flex-1" style={{ backgroundColor: hex }} />
+      ))}
+    </span>
+  )
+}
+
+// Color con su círculo, para las líneas de detalle ("Venus · ● Rojo y blanco").
+export function ConColor({ color }: { color: string }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <PuntoColor color={color} />
+      {color}
+    </span>
   )
 }
 

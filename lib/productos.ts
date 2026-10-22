@@ -214,27 +214,6 @@ export function cantidadConUnidad(cantidad: number, unidad: string): string {
   return `${n} ${plural}`
 }
 
-const COLORES: Record<string, string> = {
-  negro: '#1C1C1E',
-  blanco: '#FFFFFF',
-  gris: '#9CA3AF',
-  azul: '#2563EB',
-  rojo: '#DC2626',
-  verde: '#16A34A',
-  amarillo: '#EAB308',
-  café: '#92400E',
-  cafe: '#92400E',
-  marrón: '#92400E',
-  marron: '#92400E',
-  rosado: '#EC4899',
-  rosa: '#EC4899',
-  morado: '#8B5CF6',
-  naranja: '#F97316',
-  beige: '#D6C7A1',
-  dorado: '#EAB308',
-  plateado: '#CBD5E1',
-}
-
-export function colorAHex(nombre: string): string {
-  return COLORES[nombre.trim().toLowerCase()] ?? '#9CA3AF'
-}
+// Colores de calzado (hasta dos, "Rojo y blanco"): viven en shared/ para que la
+// app y el panel web usen las mismas reglas.
+export { colorAHex, coloresDeNombre, hexesDeColor, MAX_COLORES, MENSAJE_MAX_COLORES, nombreColores } from '../shared/colores'

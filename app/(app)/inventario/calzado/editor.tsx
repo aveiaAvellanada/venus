@@ -11,6 +11,7 @@ import { claveReferencia, fijarGarantiaReferencia } from '../../../../lib/tramos
 import { PreciosPorTalla } from '../../../../components/PreciosPorTalla'
 import { comprimirYSubirImagen } from '../../../../lib/imagenes'
 import { CATEGORIAS } from '../../../../lib/excel'
+import { coloresDeNombre, MAX_COLORES, MENSAJE_MAX_COLORES } from '../../../../lib/productos'
 import { usePaddingInferior } from '../../../../hooks/usePaddingInferior'
 import { useTema } from '../../../../lib/tema'
 import { espacio, radio, tipografia } from '../../../../lib/theme'
@@ -109,7 +110,10 @@ export default function CalzadoEditorScreen() {
     if (perfil && puedeEditar) {
       fetchProducto()
     }
-  }, [id, perfil, puedeEditar])
+    // Depende de perfil?.id y no del objeto: al volver de la cámara o la galería
+    // la app relee el perfil (objeto nuevo) y volver a cargar pisaría la foto
+    // recién subida y lo que no se ha guardado.
+  }, [id, perfil?.id, puedeEditar, verCostos])
 
   if (requireModulo) return requireModulo
 
@@ -189,6 +193,10 @@ export default function CalzadoEditorScreen() {
     const max = precioMaximo.trim() ? parseFloat(precioMaximo) : null
     if (max != null && max < min) {
       mostrar('El precio máximo no puede ser menor que el mínimo.', 'error')
+      return
+    }
+    if (coloresDeNombre(color).length > MAX_COLORES) {
+      mostrar(MENSAJE_MAX_COLORES, 'error')
       return
     }
     if (garantia.trim() && !claveReferencia(referencia)) {
@@ -364,7 +372,7 @@ export default function CalzadoEditorScreen() {
               <CampoTexto etiqueta="Talla" value={talla} onChangeText={setTalla} placeholder="Ej. 42" />
             </View>
             <View style={{ flex: 1 }}>
-              <CampoTexto etiqueta="Color" value={color} onChangeText={setColor} placeholder="Ej. Blanco" />
+              <CampoTexto etiqueta="Color" value={color} onChangeText={setColor} placeholder="Ej. Rojo y blanco" />
             </View>
           </View>
         </Tarjeta>

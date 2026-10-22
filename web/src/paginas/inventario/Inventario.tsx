@@ -8,7 +8,7 @@ import {
   type EstadoInventario, type GrupoReferencia, type ProductoCalzado,
 } from '../../lib/inventario'
 import { actualizarTalla, costosPorProducto, listarCalzado } from '../../lib/datos/inventario'
-import { Boton, Cargando, Insignia, MensajeError } from '../../componentes/ui'
+import { Boton, Cargando, ConColor, Insignia, MensajeError } from '../../componentes/ui'
 import { CambiarPrecios } from './CambiarPrecios'
 
 const ESTADOS: { valor: EstadoInventario; titulo: string }[] = [
@@ -258,7 +258,7 @@ function FilaGrupo({ grupo: g, costo, conCostos, abierto, marcado, alAbrir, alMa
           {abierto ? <ChevronDown aria-hidden className="mt-0.5 size-4 text-texto3" /> : <ChevronRight aria-hidden className="mt-0.5 size-4 text-texto3" />}
           <span>
             <span className="block font-medium">{g.referencia ?? '—'} · {g.descripcion}</span>
-            <span className="block text-xs text-texto3">{[g.marca, g.color].filter(Boolean).join(' · ')}</span>
+            <span className="block text-xs text-texto3">{g.marca}{g.marca && g.color ? ' · ' : ''}{g.color ? <ConColor color={g.color} /> : null}</span>
           </span>
         </button>
       </td>

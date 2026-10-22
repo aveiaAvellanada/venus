@@ -11,7 +11,6 @@ import { useCarrito } from '../../../lib/carrito-contexto'
 import { listarCalzado } from '../../../lib/inventario'
 import {
   agruparPorReferencia,
-  colorAHex,
   colorInicial,
   coloresDeModelo,
   columnasTallas,
@@ -28,6 +27,7 @@ import {
   Esqueleto,
   EstadoVacio,
   HojaProductoAnadido,
+  PuntoColor,
   RayaDiagonal,
 } from '../../../components/ui'
 import type { ProductoAnadido } from '../../../components/ui'
@@ -200,19 +200,7 @@ export default function ProductoDetalleScreen() {
                         <Footprints size={32} strokeWidth={1.5} color={paleta.textoDeshabilitado} />
                       )}
                       {c ? (
-                        <View
-                          style={{
-                            position: 'absolute',
-                            left: 6,
-                            bottom: 6,
-                            width: 12,
-                            height: 12,
-                            borderRadius: radio.full,
-                            backgroundColor: colorAHex(c),
-                            borderWidth: 1,
-                            borderColor: paleta.bordeFuerte,
-                          }}
-                        />
+                        <PuntoColor color={c} tamano={12} style={{ position: 'absolute', left: 6, bottom: 6 }} />
                       ) : null}
                       {r.agotado ? <RayaDiagonal /> : null}
                     </Pressable>

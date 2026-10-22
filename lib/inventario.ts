@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { orIlike } from './busqueda'
+import { nombreColores } from './productos'
 import type { Database } from './database.types'
 
 export type ProductoCalzado = Database['public']['Tables']['productos_calzado']['Row']
@@ -57,7 +58,8 @@ export async function guardarCalzado(datos: {
     p_marca: datos.marca || (null as any),
     p_referencia: datos.referencia || (null as any),
     p_talla: datos.talla || (null as any),
-    p_color: datos.color || (null as any),
+    // "rojo/blanco" se guarda como "Rojo y blanco" (hasta dos colores).
+    p_color: nombreColores(datos.color) || (null as any),
     p_precio_minimo: datos.precio_minimo,
     p_precio_maximo: (datos.precio_maximo ?? null) as unknown as number,
     p_costo_compra: datos.costo_compra || (null as any),

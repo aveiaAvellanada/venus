@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, ArrowLeft, Paperclip, Plus } from 'lucide-react'
 import { pesos } from '@shared/formato'
 import { hoyEn } from '@shared/fechas'
+import { nombreColores } from '@shared/colores'
 import {
   avisosFactura, erroresFactura, filaVacia, rangosDesdeExistentes, resumenFactura,
   type Factura, type FilaFactura, type TallaExistente,
@@ -47,7 +48,8 @@ interface ReferenciaConocida {
   existentes: Record<string, TallaExistente>
 }
 
-const claveRef = (referencia: string, color: string) => `${plano(referencia)}|${plano(color)}`
+// "rojo/blanco" reconoce la referencia guardada como "Rojo y blanco".
+const claveRef = (referencia: string, color: string) => `${plano(referencia)}|${plano(nombreColores(color) ?? '')}`
 
 export function NuevaCompra() {
   const navegar = useNavigate()

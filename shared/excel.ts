@@ -8,6 +8,8 @@
 // `valor` es lo que acepta el CHECK de productos_calzado.categoria y lo único
 // que puede viajar a la base; `etiqueta` es lo que lee el usuario. Difieren solo
 // en Clasico/Clásico: la tilde nunca puede llegar a la DB.
+import { coloresDeNombre, MAX_COLORES, MENSAJE_MAX_COLORES, nombreColores } from './colores';
+
 export const CATEGORIAS = [
   { valor: 'Chanclas', etiqueta: 'Chanclas' },
   { valor: 'Escolar', etiqueta: 'Escolar' },
@@ -131,6 +133,10 @@ export function validarFilas(
       erroresFila.push('Stock inválido');
     }
 
+    if (coloresDeNombre(color != null ? String(color) : null).length > MAX_COLORES) {
+      erroresFila.push(MENSAJE_MAX_COLORES);
+    }
+
     if (erroresFila.length > 0) {
       errores.push({
         fila: filaNum,
@@ -145,7 +151,8 @@ export function validarFilas(
         marca: marca ? String(marca).trim() : null,
         referencia: referencia != null && String(referencia).trim() !== '' ? String(referencia).trim() : null,
         talla: talla != null && String(talla).trim() !== '' ? String(talla).trim() : null,
-        color: color ? String(color).trim() : null,
+        // "rojo/blanco" → "Rojo y blanco": así se reconoce la talla que ya existe.
+        color: color != null ? nombreColores(String(color)) : null,
         precio_min: nPrecioMin,
         precio_max: nPrecioMax,
         costo: sinCosto ? null : nCosto,

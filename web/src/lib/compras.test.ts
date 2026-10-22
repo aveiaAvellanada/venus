@@ -113,3 +113,17 @@ describe('validación', () => {
     ])
   })
 })
+
+describe('dos colores', () => {
+  const rango = [{ desde: '20', hasta: '45', costo: '1000', minimo: '2000', maximo: '3000' }]
+
+  it('lo nuevo se registra como "Rojo y blanco" aunque se escriba "rojo/blanco"', () => {
+    const f = fila({ referencia: 'Z', descripcion: 'Z', categoria: 'Otros', color: 'rojo/blanco', cantidades: { '40': '1' }, rangos: rango })
+    expect(payloadFactura(factura([f])).items[0].color).toBe('Rojo y blanco')
+  })
+
+  it('más de dos colores no se puede guardar', () => {
+    const f = fila({ referencia: 'Z', descripcion: 'Z', categoria: 'Otros', color: 'rojo, blanco, azul', cantidades: { '40': '1' }, rangos: rango })
+    expect(erroresFactura(factura([f]), HOY)).toEqual(['En Z: Un zapato tiene máximo dos colores (ej. "Rojo y blanco").'])
+  })
+})

@@ -10,7 +10,6 @@ import type { ProductoVarios } from '../../../lib/inventario'
 import {
   agruparPorReferencia,
   cantidadConUnidad,
-  colorAHex,
   columnasGrid,
   FILTROS_VACIOS,
   filtroActivo,
@@ -28,6 +27,7 @@ import {
   HojaProductoAnadido,
   HojaVenderGranja,
   PanelFiltrosProductos,
+  PuntoColor,
   TarjetaGrid,
 } from '../../../components/ui'
 import type { ProductoAnadido } from '../../../components/ui'
@@ -94,16 +94,7 @@ function CardCalzado({ tarjeta, ancho, onPress }: { tarjeta: TarjetaProducto; an
       ) : null}
       {color ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <View
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: radio.full,
-              backgroundColor: colorAHex(color),
-              borderWidth: 1,
-              borderColor: paleta.bordeFuerte,
-            }}
-          />
+          <PuntoColor color={color} tamano={10} />
           <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]} numberOfLines={1}>
             {color}
           </Text>

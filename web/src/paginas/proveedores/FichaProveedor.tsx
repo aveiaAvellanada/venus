@@ -8,7 +8,7 @@ import { enlaceWhatsApp } from '@shared/proveedores'
 import { comprasDelProveedor, itemsDelProveedor, obtenerProveedor, pagosDelProveedor } from '../../lib/datos/proveedores'
 import { NEGOCIO } from '../../lib/negocio'
 import { costosPorReferencia, esDeuda, resumirDeudas, type CompraResumen } from '../../lib/proveedores'
-import { Boton, Cargando, Insignia, MensajeError, Tarjeta } from '../../componentes/ui'
+import { Boton, Cargando, ConColor, Insignia, MensajeError, Tarjeta } from '../../componentes/ui'
 import { Cuentas } from './Cuentas'
 import { Documentos } from './Documentos'
 import { EditarProveedor } from './EditarProveedor'
@@ -273,7 +273,7 @@ function Costos({ compras }: { compras?: CompraResumen[] }) {
             <tr key={f.clave} className="border-b border-borde last:border-0">
               <td className="px-4 py-3">
                 <span className="block font-medium">{f.referencia ?? '—'} · {f.descripcion}</span>
-                <span className="block text-xs text-texto3">{[f.color, `${f.compras} compra${f.compras === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}</span>
+                <span className="block text-xs text-texto3">{f.color ? <><ConColor color={f.color} />{' · '}</> : null}{`${f.compras} compra${f.compras === 1 ? '' : 's'}`}</span>
               </td>
               <td className="py-3 pr-3 text-texto2">{f.tallas.join(', ') || '—'}</td>
               <td className="cifras py-3 pr-3 text-right">{f.unidades}</td>

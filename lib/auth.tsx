@@ -59,6 +59,19 @@ async function fetchPerfil(userId: string): Promise<ResultadoPerfil> {
   }
 }
 
+export function mismoPerfil(a: Perfil, b: Perfil): boolean {
+  return (
+    a.id === b.id &&
+    a.nombre === b.nombre &&
+    a.usuario === b.usuario &&
+    a.rol === b.rol &&
+    a.activo === b.activo &&
+    a.debeCambiarPin === b.debeCambiarPin &&
+    a.permisos.length === b.permisos.length &&
+    a.permisos.every((p, i) => p === b.permisos[i])
+  )
+}
+
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null)
   const [perfil, setPerfil] = useState<Perfil | null>(null)
@@ -69,6 +82,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const aplicarPerfil = useCallback((userId: string, res: ResultadoPerfil) => {
     if ('perfil' in res) {
+      // Si nada cambió se conserva el mismo objeto, para no disparar efectos que
+      // dependen de `perfil` cada vez que se vuelve a la app.
+      if (perfilRef.current && mismoPerfil(perfilRef.current, res.perfil)) {
+        setMotivoSinPerfil(null)
+        return
+      }
       perfilRef.current = res.perfil
       setPerfil(res.perfil)
       setMotivoSinPerfil(null)

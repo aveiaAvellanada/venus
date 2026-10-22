@@ -1,12 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Alert, Image, Text, TextInput, View } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { ArrowLeft, Check, Egg, Footprints, Lock, Minus, Package, Plus, ShoppingBag, X } from 'lucide-react-native'
+import { ArrowLeft, Egg, Footprints, Lock, Minus, Package, Plus, ShoppingBag, X } from 'lucide-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRequireModulo } from '../../../lib/auth'
 import { useCarrito } from '../../../lib/carrito-contexto'
 import {
-  calcularCambio, fueraDeRango, montoEfectivo, numArticulos, pagosCuadran, puedeCobrar, rangoDeslizador,
+  calcularCambio, montoEfectivo, numArticulos, pagosCuadran, puedeCobrar, rangoDeslizador,
   totalCarrito,
   type AccionCarrito, type ItemCarrito, type MetodoPago, type PagoInput,
 } from '../../../lib/carrito'
@@ -16,7 +16,7 @@ import { obtenerCajaHoy } from '../../../lib/caja'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografiaCompacta as tc } from '../../../lib/theme'
 import {
-  BarraAccionInferior, Boton, CampoTexto, Chip, OverlayExito, Presionable, SliderPrecio,
+  BarraAccionInferior, Boton, CampoTexto, Chip, OverlayExito, Presionable, ScreenWrapper, SliderPrecio,
 } from '../../../components/ui'
 
 type Etapa = 'carrito' | 'ajustarPrecio' | 'cobrar' | 'confirmacion'
@@ -102,14 +102,14 @@ function Miniatura({ item }: { item: ItemCarrito }) {
   )
 }
 
-// Precio del calzado: deslizador de $1.000 en $1.000 entre mínimo y máximo, y caja
-// para escribir el precio exacto. Ambos se sincronizan. Fuera de rango se avisa
-// (el servidor lo rechazaría) y la pantalla no deja cobrar.
+// Precio del calzado: deslizador de $1.000 en $1.000 entre mínimo y máximo (solo si
+// el zapato tiene máximo) y caja para escribir el precio exacto, que es libre:
+// puede quedar fuera del rango recomendado. Ambos se sincronizan.
 function AjustePrecio({ item, dispatch }: { item: ItemCarrito; dispatch: (a: AccionCarrito) => void }) {
   const { paleta } = useTema()
   const min = item.producto.precioMin ?? item.precio
-  const max = item.producto.precioMax ?? item.precio
-  const rango = rangoDeslizador(min, max)
+  const max = item.producto.precioMax
+  const rango = max != null ? rangoDeslizador(min, max) : null
   const [texto, setTexto] = useState(miles(item.precio))
   const [editando, setEditando] = useState(false)
 
@@ -122,15 +122,17 @@ function AjustePrecio({ item, dispatch }: { item: ItemCarrito; dispatch: (a: Acc
 
   return (
     <View style={{ paddingHorizontal: 2 }}>
-      <SliderPrecio
-        valor={Math.min(rango.maximo, Math.max(rango.minimo, item.precio))}
-        minimo={rango.minimo}
-        maximo={rango.maximo}
-        paso={rango.paso}
-        mostrarValores={false}
-        accessibilityLabel={`Precio de ${item.producto.titulo}`}
-        onCambio={cambiar}
-      />
+      {rango ? (
+        <SliderPrecio
+          valor={Math.min(rango.maximo, Math.max(rango.minimo, item.precio))}
+          minimo={rango.minimo}
+          maximo={rango.maximo}
+          paso={rango.paso}
+          mostrarValores={false}
+          accessibilityLabel={`Precio de ${item.producto.titulo}`}
+          onCambio={cambiar}
+        />
+      ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espacio.s, marginTop: 4 }}>
         <Text numberOfLines={1} style={[tc.detalle, tabular, { color: paleta.texto3, fontFamily: tc.etiqueta.fontFamily, flexShrink: 1 }]}>{`Mín ${pesos(min)}`}</Text>
         <View style={{
@@ -153,7 +155,7 @@ function AjustePrecio({ item, dispatch }: { item: ItemCarrito; dispatch: (a: Acc
             style={[tc.input, tabular, { color: paleta.texto, fontSize: 13, width: 80, textAlign: 'right', padding: 0 }]}
           />
         </View>
-        <Text numberOfLines={1} style={[tc.detalle, tabular, { color: paleta.texto3, fontFamily: tc.etiqueta.fontFamily, flexShrink: 1 }]}>{`Máx ${pesos(max)}`}</Text>
+        <Text numberOfLines={1} style={[tc.detalle, tabular, { color: paleta.texto3, fontFamily: tc.etiqueta.fontFamily, flexShrink: 1 }]}>{max != null ? `Máx ${pesos(max)}` : ''}</Text>
       </View>
     </View>
   )
@@ -200,7 +202,6 @@ function CamposGranja({ item, dispatch }: { item: ItemCarrito; dispatch: (a: Acc
 function LineaCarrito({ item, dispatch }: { item: ItemCarrito; dispatch: (a: AccionCarrito) => void }) {
   const { paleta } = useTema()
   const esCalzado = item.producto.tipo === 'calzado'
-  const fuera = fueraDeRango(item)
   const detalle = esCalzado ? item.producto.detalle : `Granja · por ${item.producto.unidad ?? ''}`
 
   return (
@@ -213,13 +214,6 @@ function LineaCarrito({ item, dispatch }: { item: ItemCarrito; dispatch: (a: Acc
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={[tc.lineaTitulo, { color: paleta.texto }]} numberOfLines={2}>{item.producto.titulo}</Text>
           {detalle ? <Text style={[tc.detalle, { color: paleta.texto3 }]}>{detalle}</Text> : null}
-          {fuera ? (
-            <View style={{ alignSelf: 'flex-start', marginTop: 4, backgroundColor: paleta.peligroSoft, borderRadius: radio.full, paddingVertical: 3, paddingHorizontal: 10 }}>
-              <Text accessibilityLiveRegion="polite" style={[tc.detalle, tabular, { color: paleta.peligroTexto, fontFamily: tc.etiqueta.fontFamily }]}>
-                {`Fuera del rango: ${pesos(item.producto.precioMin ?? 0)} – ${pesos(item.producto.precioMax ?? 0)}`}
-              </Text>
-            </View>
-          ) : null}
         </View>
       </View>
 
@@ -287,8 +281,6 @@ export default function NuevaVenta() {
   const [recibido, setRecibido] = useState('')
   const [cliente, setCliente] = useState(CLIENTE_VACIO)
   const [guardando, setGuardando] = useState(false)
-  // Lo que muestra la confirmación: el carrito ya se vació al registrar la venta.
-  const [ultimaVenta, setUltimaVenta] = useState<{ numero: number; total: number; metodos: MetodoPago[] } | null>(null)
   const [overlayVisible, setOverlayVisible] = useState(false)
   const [cajaEstado, setCajaEstado] = useState<'loading' | 'ok' | 'bloqueado'>('loading')
 
@@ -357,12 +349,11 @@ export default function NuevaVenta() {
     const intento = intentoVenta(intentoRef.current, venta)
     intentoRef.current = intento
     try {
-      const { numero } = await registrarVenta(venta, intento.clave)
+      await registrarVenta(venta, intento.clave)
       intentoRef.current = null
       // La venta ya existe: vaciar el carrito y el pago YA (no al tocar "Nueva venta"),
       // así salir con "Listo" o con atrás no deja lo vendido listo para venderse otra vez.
       // Si el registro falla, no se limpia: el reintento usa la misma clave.
-      setUltimaVenta({ numero, total, metodos })
       dispatch({ tipo: 'limpiar' })
       limpiarPago()
       setOverlayVisible(true)
@@ -383,13 +374,6 @@ export default function NuevaVenta() {
     } else {
       salirAtras()
     }
-  }
-
-  function nuevaVenta() {
-    dispatch({ tipo: 'limpiar' })
-    limpiarPago()
-    setUltimaVenta(null)
-    setEtapa('carrito')
   }
 
   const botonSalir = (
@@ -413,42 +397,27 @@ export default function NuevaVenta() {
   if (etapa === 'ajustarPrecio') {
     const item = items[0]
     return (
-      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-        <Cabecera titulo="Ajustar precio" boton={botonSalir} />
-        <ScrollView contentContainerStyle={{ paddingHorizontal: espacio.xl, gap: espacio.m }} keyboardShouldPersistTaps="handled">
-          {item ? <LineaCarrito item={item} dispatch={dispatch} /> : null}
-        </ScrollView>
-        <BarraAccionInferior
-          titulo="Continuar a pago"
-          deshabilitado={!cobrable}
-          inferior={insets.bottom}
-          onPress={() => setEtapa('cobrar')}
-        />
-      </View>
+      <ScreenWrapper
+        header={<Cabecera titulo="Ajustar precio" boton={botonSalir} />}
+        contentContainerStyle={{ paddingHorizontal: espacio.xl, gap: espacio.m }}
+        footer={
+          <BarraAccionInferior
+            titulo="Continuar a pago"
+            deshabilitado={!cobrable}
+            inferior={insets.bottom}
+            onPress={() => setEtapa('cobrar')}
+          />
+        }
+      >
+        {item ? <LineaCarrito item={item} dispatch={dispatch} /> : null}
+      </ScreenWrapper>
     )
   }
 
   if (etapa === 'confirmacion') {
     return (
-      <View style={{ flex: 1, backgroundColor: paleta.fondo, paddingBottom: insets.bottom }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: espacio.m, padding: espacio.xxl }}>
-          <View style={{ width: 96, height: 96, borderRadius: radio.full, backgroundColor: paleta.superficieOscura, alignItems: 'center', justifyContent: 'center' }}>
-            <Check size={48} color={paleta.sobreOscura} strokeWidth={3} />
-          </View>
-          <Text style={[tc.tituloGrande, { color: paleta.texto, textAlign: 'center', marginTop: espacio.s }]}>
-            {`Venta #${ultimaVenta?.numero ?? ''} registrada`}
-          </Text>
-          {ultimaVenta ? (
-            <Text style={[tc.cuerpo, tabular, { color: paleta.texto2, textAlign: 'center' }]}>
-              {`${pesos(ultimaVenta.total)} · ${ultimaVenta.metodos.map(m => ETIQUETA[m]).join(' + ')}`}
-            </Text>
-          ) : null}
-          <View style={{ alignSelf: 'stretch', gap: espacio.s, marginTop: espacio.xl }}>
-            <Boton titulo="Nueva venta" variante="oscuro" pildora compacto onPress={nuevaVenta} />
-            <Boton titulo="Listo" variante="fantasma" compacto onPress={salirAtras} />
-          </View>
-        </View>
-        <OverlayExito visible={overlayVisible} onFin={() => setOverlayVisible(false)} />
+      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
+        <OverlayExito visible={overlayVisible} mensaje="Venta exitosa" onFin={() => { setOverlayVisible(false); router.replace('/') }} />
       </View>
     )
   }
@@ -464,8 +433,9 @@ export default function NuevaVenta() {
             : { texto: `Sobran ${pesos(-diferencia)}`, ok: false }
 
     return (
-      <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-        <Cabecera
+      <ScreenWrapper
+        header={
+          <Cabecera
           titulo="Cobrar"
           boton={
             <BotonCabecera
@@ -481,15 +451,25 @@ export default function NuevaVenta() {
             </BotonCabecera>
           }
         />
+        }
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: espacio.xl, paddingBottom: espacio.xl, gap: 10 }}
+        footer={
+          items.length > 0 ? (
+            <BarraAccionInferior
+              titulo="Confirmar venta"
+              onPress={confirmar}
+              cargando={guardando}
+              deshabilitado={!puedeConfirmar}
+              inferior={insets.bottom}
+            />
+          ) : null
+        }
+      >
         {items.length === 0 ? (
           <Vacio icono={<ShoppingBag size={32} color={paleta.textoDeshabilitado} />} titulo="Sin productos"
             mensaje="Agrega productos al carrito para cobrar." />
         ) : (
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ paddingHorizontal: espacio.xl, paddingBottom: espacio.xl, gap: 10 }}
-            keyboardShouldPersistTaps="handled"
-          >
+          <>
             <Text style={[tc.totalGrande, tabular, { color: paleta.texto, textAlign: 'center', paddingTop: 4, paddingBottom: espacio.s }]}>
               {pesos(total)}
             </Text>
@@ -549,33 +529,37 @@ export default function NuevaVenta() {
               onChangeText={t => setCliente(c => ({ ...c, apellido: t }))} />
             <CampoTexto compacto placeholder="Teléfono" keyboardType="phone-pad" value={cliente.telefono}
               onChangeText={t => setCliente(c => ({ ...c, telefono: t }))} />
-            <CampoTexto compacto placeholder="Cédula o razón social" value={cliente.documento}
+            <CampoTexto compacto placeholder="Cédula o NIT" value={cliente.documento}
               onChangeText={t => setCliente(c => ({ ...c, documento: t }))} />
-          </ScrollView>
+          </>
         )}
-        {items.length > 0 ? (
-          <BarraAccionInferior
-            titulo="Confirmar venta"
-            onPress={confirmar}
-            cargando={guardando}
-            deshabilitado={!puedeConfirmar}
-            inferior={insets.bottom}
-          />
-        ) : null}
-      </View>
+      </ScreenWrapper>
     )
   }
 
   // etapa === 'carrito'
   const hayCalzado = items.some(i => i.producto.tipo === 'calzado')
   return (
-    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <Cabecera
+    <ScreenWrapper
+      header={
+        <Cabecera
         titulo="Carrito"
         derecha={`${items.length} ${items.length === 1 ? 'producto' : 'productos'}`}
         boton={botonSalir}
       />
-
+      }
+      contentContainerStyle={{ flexGrow: 1, paddingHorizontal: espacio.xl, paddingBottom: espacio.xl, gap: 10 }}
+      footer={
+        items.length > 0 ? (
+          <BarraAccionInferior
+            titulo={`Cobrar ${pesos(total)}`}
+            deshabilitado={!cobrable}
+            inferior={insets.bottom}
+            onPress={() => setEtapa('cobrar')}
+          />
+        ) : null
+      }
+    >
       {items.length === 0 ? (
         <View style={{ flex: 1, paddingBottom: insets.bottom }}>
           <Vacio icono={<ShoppingBag size={32} color={paleta.textoDeshabilitado} />} titulo="Tu carrito está vacío"
@@ -585,11 +569,6 @@ export default function NuevaVenta() {
         </View>
       ) : (
         <>
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ paddingHorizontal: espacio.xl, paddingBottom: espacio.xl, gap: 10 }}
-            keyboardShouldPersistTaps="handled"
-          >
             {items.map((i: ItemCarrito) => (
               <LineaCarrito key={`${i.producto.tipo}-${i.producto.id}`} item={i} dispatch={dispatch} />
             ))}
@@ -614,16 +593,8 @@ export default function NuevaVenta() {
                 </Text>
               </View>
             </View>
-          </ScrollView>
-
-          <BarraAccionInferior
-            titulo={`Cobrar ${pesos(total)}`}
-            deshabilitado={!cobrable}
-            inferior={insets.bottom}
-            onPress={() => setEtapa('cobrar')}
-          />
         </>
       )}
-    </View>
+    </ScreenWrapper>
   )
 }

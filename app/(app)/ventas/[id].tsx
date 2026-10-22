@@ -1,10 +1,11 @@
 import React, { useCallback, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
-import { ArrowLeft, StickyNote, Undo2, UserRound } from 'lucide-react-native'
-import { badgeEstadoVenta, obtenerVentaDetalle } from '../../../lib/movimientos'
+import { ArrowLeft, StickyNote, UserRound } from 'lucide-react-native'
+import { badgeEstadoVenta, fechaCorta, obtenerVentaDetalle } from '../../../lib/movimientos'
 import type { VentaDetalle } from '../../../lib/movimientos'
 import { useTema } from '../../../lib/tema'
+import { vencimientoGarantia } from '../../../lib/tramos'
 import { espacio, tabular, tipografia } from '../../../lib/theme'
 import { Badge, Boton, CirculoIcono, Esqueleto, EstadoVacio, Tarjeta } from '../../../components/ui'
 
@@ -139,6 +140,11 @@ export default function VentaDetalleScreen() {
                           {formatear(item.subtotal)}
                         </Text>
                       </View>
+                      {item.garantia_dias != null ? (
+                        <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+                          {`Garantía: ${item.garantia_dias} ${item.garantia_dias === 1 ? 'día' : 'días'} · hasta ${fechaCorta(vencimientoGarantia(venta.creada, item.garantia_dias).toISOString())}`}
+                        </Text>
+                      ) : null}
                     </View>
                   </View>
                 ))}
@@ -192,8 +198,7 @@ export default function VentaDetalleScreen() {
             {PUEDE_DEVOLVER.includes(venta.estado) ? (
               <Boton
                 titulo="Hacer devolución"
-                variante="secundario"
-                icono={<Undo2 size={20} color={paleta.primario} />}
+                variante="oscuro"
                 onPress={() => router.push(`/devoluciones/nueva?numero=${venta.numero}`)}
               />
             ) : null}

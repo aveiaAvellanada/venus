@@ -19,6 +19,10 @@ export interface ModeloCalzado {
   variantes: ProductoCalzado[]
 }
 
+// El máximo es opcional: sin él, el precio de vitrina es el mínimo.
+export const maximoVitrina = (v: Pick<ProductoCalzado, 'precio_minimo' | 'precio_maximo'>): number =>
+  Number(v.precio_maximo ?? v.precio_minimo)
+
 const tallaNumerica = (talla: string | null) => {
   const n = parseFloat(talla ?? '')
   return Number.isNaN(n) ? Number.MAX_SAFE_INTEGER : n
@@ -57,7 +61,7 @@ export function agruparPorReferencia(
       foto: variantes.find((v) => v.foto_url)?.foto_url ?? null,
       colores,
       precioMin: Math.min(...variantes.map((v) => Number(v.precio_minimo))),
-      precioMax: Math.max(...variantes.map((v) => Number(v.precio_maximo))),
+      precioMax: Math.max(...variantes.map(maximoVitrina)),
       agotado: variantes.every((v) => Number(v.stock_actual) <= 0),
       activo: variantes.some((v) => v.activo),
       variantes: ordenadas,
@@ -107,7 +111,7 @@ export function resumenColor(modelo: ModeloCalzado, color: string): ResumenColor
     color,
     foto: vs.find((v) => v.foto_url)?.foto_url ?? null,
     precioMin: Math.min(...vs.map((v) => Number(v.precio_minimo))),
-    precioMax: Math.max(...vs.map((v) => Number(v.precio_maximo))),
+    precioMax: Math.max(...vs.map(maximoVitrina)),
     agotado: vs.every((v) => Number(v.stock_actual) <= 0),
   }
 }
@@ -210,27 +214,6 @@ export function cantidadConUnidad(cantidad: number, unidad: string): string {
   return `${n} ${plural}`
 }
 
-const COLORES: Record<string, string> = {
-  negro: '#1C1C1E',
-  blanco: '#FFFFFF',
-  gris: '#9CA3AF',
-  azul: '#2563EB',
-  rojo: '#DC2626',
-  verde: '#16A34A',
-  amarillo: '#EAB308',
-  café: '#92400E',
-  cafe: '#92400E',
-  marrón: '#92400E',
-  marron: '#92400E',
-  rosado: '#EC4899',
-  rosa: '#EC4899',
-  morado: '#8B5CF6',
-  naranja: '#F97316',
-  beige: '#D6C7A1',
-  dorado: '#EAB308',
-  plateado: '#CBD5E1',
-}
-
-export function colorAHex(nombre: string): string {
-  return COLORES[nombre.trim().toLowerCase()] ?? '#9CA3AF'
-}
+// Colores de calzado (hasta dos, "Rojo y blanco"): viven en shared/ para que la
+// app y el panel web usen las mismas reglas.
+export { colorAHex, coloresDeNombre, hexesDeColor, MAX_COLORES, MENSAJE_MAX_COLORES, nombreColores } from '../shared/colores'

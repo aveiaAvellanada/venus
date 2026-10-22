@@ -162,9 +162,18 @@ export default function CalzadoDetailScreen() {
             <View style={{ width: 1, height: 32, backgroundColor: paleta.borde }} />
             <View style={{ alignItems: 'center' }}>
               <Text style={[tipografia.caption, { color: paleta.texto2 }]}>Máximo</Text>
-              <Text style={[tipografia.h2, tabular, { color: paleta.exitoTexto }]}>{formatCOP(producto.precio_maximo)}</Text>
+              <Text style={[tipografia.h2, tabular, { color: paleta.exitoTexto }]}>{producto.precio_maximo != null ? formatCOP(producto.precio_maximo) : "Sin máximo"}</Text>
             </View>
           </View>
+        </Tarjeta>
+
+        <Tarjeta>
+          <Text style={[tipografia.h3, { color: paleta.texto }]}>Garantía</Text>
+          <Text style={[tipografia.cuerpo, { color: paleta.texto2, marginTop: espacio.s }]}>
+            {producto.garantia_dias != null
+              ? `${producto.garantia_dias} ${producto.garantia_dias === 1 ? 'día' : 'días'} desde la venta`
+              : 'Sin garantía'}
+          </Text>
         </Tarjeta>
 
         {verCostos && (

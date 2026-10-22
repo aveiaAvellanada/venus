@@ -1,15 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import {
-  View,
-  Text,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
-  Linking,
-  Modal,
-  Platform,
-  KeyboardAvoidingView,
-} from 'react-native'
+import { View, Text, ScrollView, ActivityIndicator, Alert, Linking, Modal, KeyboardAvoidingView } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import {
   ArrowLeft,
@@ -43,7 +33,7 @@ import {
 } from '../../../lib/proveedores'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
-import { Badge, Boton, CampoTexto, CirculoIcono, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Badge, Boton, CampoTexto, CirculoIcono, EstadoVacio, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
 
 export default function ProveedorDetailScreen() {
   const requireModulo = useRequireModulo('proveedores')
@@ -319,13 +309,205 @@ export default function ProveedorDetailScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <Encabezado />
-
-      <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
-        showsVerticalScrollIndicator={false}
+    <ScreenWrapper
+      header={<Encabezado />}
+      contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
+      overlay={
+        <>
+      {/* 4. Modal de nueva cuenta bancaria */}
+      <Modal
+        animationType="slide"
+        transparent
+        visible={cuentaModalVisible}
+        onRequestClose={() => setCuentaModalVisible(false)}
       >
+        <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
+          <KeyboardAvoidingView
+            behavior="padding"
+            style={{ backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '85%' }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingHorizontal: espacio.xl,
+                paddingVertical: espacio.l,
+                borderBottomWidth: 1,
+                borderBottomColor: paleta.borde,
+              }}
+            >
+              <Text style={[tipografia.h3, { color: paleta.texto }]}>Nueva Cuenta Bancaria</Text>
+              <Presionable
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar"
+                onPress={() => setCuentaModalVisible(false)}
+                hitSlop={12}
+              >
+                <X size={24} color={paleta.texto2} />
+              </Presionable>
+            </View>
+
+            <ScrollView
+              contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.l }}
+              showsVerticalScrollIndicator={false}
+            >
+              <CampoTexto
+                etiqueta="Banco *"
+                value={banco}
+                onChangeText={setBanco}
+                placeholder="ej: Bancolombia, Nequi, Daviplata"
+                testID="input-banco"
+              />
+
+              <View>
+                <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>
+                  Tipo de Cuenta *
+                </Text>
+                <View style={{ flexDirection: 'row', gap: espacio.s }}>
+                  {(['ahorros', 'corriente'] as const).map((tipo) => {
+                    const activo = tipoCuenta === tipo
+                    return (
+                      <Presionable
+                        key={tipo}
+                        accessibilityRole="button"
+                        accessibilityLabel={tipo === 'ahorros' ? 'Ahorros' : 'Corriente'}
+                        accessibilityState={{ selected: activo }}
+                        onPress={() => setTipoCuenta(tipo)}
+                        style={{
+                          flex: 1,
+                          paddingVertical: espacio.m,
+                          borderRadius: radio.sm,
+                          alignItems: 'center',
+                          backgroundColor: activo ? paleta.primarioSoft : paleta.superficie2,
+                          borderWidth: 1,
+                          borderColor: activo ? paleta.primario : paleta.borde,
+                        }}
+                      >
+                        <Text style={[tipografia.cuerpo, { color: activo ? paleta.primario : paleta.texto2 }]}>
+                          {tipo === 'ahorros' ? 'Ahorros' : 'Corriente'}
+                        </Text>
+                      </Presionable>
+                    )
+                  })}
+                </View>
+              </View>
+
+              <CampoTexto
+                etiqueta="Número de Cuenta *"
+                value={numeroCuenta}
+                onChangeText={setNumeroCuenta}
+                placeholder="Número de cuenta"
+                keyboardType="number-pad"
+                testID="input-numero-cuenta"
+              />
+
+              <CampoTexto
+                etiqueta="Titular (Opcional)"
+                value={titular}
+                onChangeText={setTitular}
+                placeholder="Nombre del titular"
+                testID="input-titular"
+              />
+
+              <Boton
+                titulo="Guardar Cuenta"
+                onPress={handleGuardarCuenta}
+                cargando={guardandoCuenta}
+                deshabilitado={guardandoCuenta}
+              />
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
+
+      {/* 5. Modal de registro de pago */}
+      <Modal
+        animationType="slide"
+        transparent
+        visible={pagoModalVisible}
+        onRequestClose={() => {
+          setPagoModalVisible(false)
+          setCompraSeleccionada(null)
+        }}
+      >
+        <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
+          <KeyboardAvoidingView
+            behavior="padding"
+            style={{ backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '85%' }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingHorizontal: espacio.xl,
+                paddingVertical: espacio.l,
+                borderBottomWidth: 1,
+                borderBottomColor: paleta.borde,
+              }}
+            >
+              <Text style={[tipografia.h3, { color: paleta.texto }]}>Registrar Pago</Text>
+              <Presionable
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar"
+                onPress={() => {
+                  setPagoModalVisible(false)
+                  setCompraSeleccionada(null)
+                }}
+                hitSlop={12}
+              >
+                <X size={24} color={paleta.texto2} />
+              </Presionable>
+            </View>
+
+            {compraSeleccionada && (
+              <ScrollView
+                contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.l }}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={{ backgroundColor: paleta.superficie2, borderRadius: radio.sm, padding: espacio.l, gap: 4 }}>
+                  <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>
+                    Compra: {new Date(compraSeleccionada.created_at).toLocaleDateString('es-CO')}
+                  </Text>
+                  <Text style={[tipografia.cuerpo, tabular, { color: paleta.texto2 }]}>
+                    Saldo Pendiente: ${Number(compraSeleccionada.saldo_pendiente).toLocaleString('es-CO')}
+                  </Text>
+                </View>
+
+                <CampoTexto
+                  etiqueta="Monto del Pago *"
+                  value={montoPago}
+                  onChangeText={setMontoPago}
+                  placeholder="Monto en COP"
+                  keyboardType="number-pad"
+                  testID="input-monto-pago"
+                />
+
+                <CampoTexto
+                  etiqueta="Notas / Observaciones"
+                  value={notasPago}
+                  onChangeText={setNotasPago}
+                  placeholder="Comprobante, Nequi ref, etc."
+                  multiline
+                  numberOfLines={3}
+                  testID="input-notas-pago"
+                />
+
+                <Boton
+                  titulo="Registrar Pago"
+                  onPress={handleGuardarPago}
+                  cargando={guardandoPago}
+                  deshabilitado={guardandoPago}
+                />
+              </ScrollView>
+            )}
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
+        </>
+      }
+    >
         {/* 1. Información General */}
         <Tarjeta>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: espacio.l }}>
@@ -566,199 +748,6 @@ export default function ProveedorDetailScreen() {
             )}
           </View>
         )}
-      </ScrollView>
-
-      {/* 4. Modal de nueva cuenta bancaria */}
-      <Modal
-        animationType="slide"
-        transparent
-        visible={cuentaModalVisible}
-        onRequestClose={() => setCuentaModalVisible(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '85%' }}
-          >
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                paddingHorizontal: espacio.xl,
-                paddingVertical: espacio.l,
-                borderBottomWidth: 1,
-                borderBottomColor: paleta.borde,
-              }}
-            >
-              <Text style={[tipografia.h3, { color: paleta.texto }]}>Nueva Cuenta Bancaria</Text>
-              <Presionable
-                accessibilityRole="button"
-                accessibilityLabel="Cerrar"
-                onPress={() => setCuentaModalVisible(false)}
-                hitSlop={12}
-              >
-                <X size={24} color={paleta.texto2} />
-              </Presionable>
-            </View>
-
-            <ScrollView
-              contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.l }}
-              showsVerticalScrollIndicator={false}
-            >
-              <CampoTexto
-                etiqueta="Banco *"
-                value={banco}
-                onChangeText={setBanco}
-                placeholder="ej: Bancolombia, Nequi, Daviplata"
-                testID="input-banco"
-              />
-
-              <View>
-                <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>
-                  Tipo de Cuenta *
-                </Text>
-                <View style={{ flexDirection: 'row', gap: espacio.s }}>
-                  {(['ahorros', 'corriente'] as const).map((tipo) => {
-                    const activo = tipoCuenta === tipo
-                    return (
-                      <Presionable
-                        key={tipo}
-                        accessibilityRole="button"
-                        accessibilityLabel={tipo === 'ahorros' ? 'Ahorros' : 'Corriente'}
-                        accessibilityState={{ selected: activo }}
-                        onPress={() => setTipoCuenta(tipo)}
-                        style={{
-                          flex: 1,
-                          paddingVertical: espacio.m,
-                          borderRadius: radio.sm,
-                          alignItems: 'center',
-                          backgroundColor: activo ? paleta.primarioSoft : paleta.superficie2,
-                          borderWidth: 1,
-                          borderColor: activo ? paleta.primario : paleta.borde,
-                        }}
-                      >
-                        <Text style={[tipografia.cuerpo, { color: activo ? paleta.primario : paleta.texto2 }]}>
-                          {tipo === 'ahorros' ? 'Ahorros' : 'Corriente'}
-                        </Text>
-                      </Presionable>
-                    )
-                  })}
-                </View>
-              </View>
-
-              <CampoTexto
-                etiqueta="Número de Cuenta *"
-                value={numeroCuenta}
-                onChangeText={setNumeroCuenta}
-                placeholder="Número de cuenta"
-                keyboardType="number-pad"
-                testID="input-numero-cuenta"
-              />
-
-              <CampoTexto
-                etiqueta="Titular (Opcional)"
-                value={titular}
-                onChangeText={setTitular}
-                placeholder="Nombre del titular"
-                testID="input-titular"
-              />
-
-              <Boton
-                titulo="Guardar Cuenta"
-                onPress={handleGuardarCuenta}
-                cargando={guardandoCuenta}
-                deshabilitado={guardandoCuenta}
-              />
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </View>
-      </Modal>
-
-      {/* 5. Modal de registro de pago */}
-      <Modal
-        animationType="slide"
-        transparent
-        visible={pagoModalVisible}
-        onRequestClose={() => {
-          setPagoModalVisible(false)
-          setCompraSeleccionada(null)
-        }}
-      >
-        <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '85%' }}
-          >
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                paddingHorizontal: espacio.xl,
-                paddingVertical: espacio.l,
-                borderBottomWidth: 1,
-                borderBottomColor: paleta.borde,
-              }}
-            >
-              <Text style={[tipografia.h3, { color: paleta.texto }]}>Registrar Pago</Text>
-              <Presionable
-                accessibilityRole="button"
-                accessibilityLabel="Cerrar"
-                onPress={() => {
-                  setPagoModalVisible(false)
-                  setCompraSeleccionada(null)
-                }}
-                hitSlop={12}
-              >
-                <X size={24} color={paleta.texto2} />
-              </Presionable>
-            </View>
-
-            {compraSeleccionada && (
-              <ScrollView
-                contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.l }}
-                showsVerticalScrollIndicator={false}
-              >
-                <View style={{ backgroundColor: paleta.superficie2, borderRadius: radio.sm, padding: espacio.l, gap: 4 }}>
-                  <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>
-                    Compra: {new Date(compraSeleccionada.created_at).toLocaleDateString('es-CO')}
-                  </Text>
-                  <Text style={[tipografia.cuerpo, tabular, { color: paleta.texto2 }]}>
-                    Saldo Pendiente: ${Number(compraSeleccionada.saldo_pendiente).toLocaleString('es-CO')}
-                  </Text>
-                </View>
-
-                <CampoTexto
-                  etiqueta="Monto del Pago *"
-                  value={montoPago}
-                  onChangeText={setMontoPago}
-                  placeholder="Monto en COP"
-                  keyboardType="number-pad"
-                  testID="input-monto-pago"
-                />
-
-                <CampoTexto
-                  etiqueta="Notas / Observaciones"
-                  value={notasPago}
-                  onChangeText={setNotasPago}
-                  placeholder="Comprobante, Nequi ref, etc."
-                  multiline
-                  numberOfLines={3}
-                  testID="input-notas-pago"
-                />
-
-                <Boton
-                  titulo="Registrar Pago"
-                  onPress={handleGuardarPago}
-                  cargando={guardandoPago}
-                  deshabilitado={guardandoPago}
-                />
-              </ScrollView>
-            )}
-          </KeyboardAvoidingView>
-        </View>
-      </Modal>
-    </View>
+    </ScreenWrapper>
   )
 }

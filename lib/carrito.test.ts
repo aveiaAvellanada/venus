@@ -1,6 +1,6 @@
 import {
   carritoReducer, bajoMinimo, totalCarrito, pagosCuadran, montoEfectivo, calcularCambio,
-  detalleCalzado, precioInicial, fueraDeRango, puedeCobrar, numArticulos, rangoDeslizador,
+  detalleCalzado, precioInicial, puedeCobrar, numArticulos, rangoDeslizador,
   type ItemCarrito, type ProductoVendible,
 } from './carrito'
 
@@ -202,24 +202,15 @@ describe('detalleCalzado — subtítulo con marca', () => {
 })
 
 describe('rediseño del carrito — rango de precio', () => {
-  test('fueraDeRango: bajo el mínimo o sobre el máximo; Granja nunca', () => {
-    let items = carritoReducer([], { tipo: 'agregar', producto: calzado() })
-    expect(fueraDeRango(items[0])).toBe(false)
-    items = carritoReducer(items, { tipo: 'cambiarPrecio', id: 'c1', precio: 4999 })
-    expect(fueraDeRango(items[0])).toBe(true)
-    items = carritoReducer(items, { tipo: 'cambiarPrecio', id: 'c1', precio: 10001 })
-    expect(fueraDeRango(items[0])).toBe(true)
-    items = carritoReducer(items, { tipo: 'cambiarPrecio', id: 'c1', precio: 10000 })
-    expect(fueraDeRango(items[0])).toBe(false)
-    const g = carritoReducer([], { tipo: 'agregar', producto: granja() })
-    expect(fueraDeRango(carritoReducer(g, { tipo: 'cambiarPrecio', id: 'g1', precio: 1 })[0])).toBe(false)
-  })
-
-  test('puedeCobrar: total > 0 y ninguna línea fuera de rango', () => {
+  test('puedeCobrar: el precio final es libre (bajo el mínimo o sobre el máximo); solo exige precio y total', () => {
     expect(puedeCobrar([])).toBe(false)
     let items = carritoReducer([], { tipo: 'agregar', producto: calzado() })
     expect(puedeCobrar(items)).toBe(true)
     items = carritoReducer(items, { tipo: 'cambiarPrecio', id: 'c1', precio: 3000 })
+    expect(puedeCobrar(items)).toBe(true)
+    items = carritoReducer(items, { tipo: 'cambiarPrecio', id: 'c1', precio: 20000 })
+    expect(puedeCobrar(items)).toBe(true)
+    items = carritoReducer(items, { tipo: 'cambiarPrecio', id: 'c1', precio: 0 })
     expect(puedeCobrar(items)).toBe(false)
   })
 

@@ -1,13 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import {
-  View,
-  Text,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
-  Platform,
-  KeyboardAvoidingView,
-} from 'react-native'
+import { View, Text, ActivityIndicator, Alert } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import {
   ArrowLeft,
@@ -42,7 +34,7 @@ import {
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
-import { Badge, Boton, CampoTexto, CirculoIcono, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Badge, Boton, CampoTexto, CirculoIcono, EstadoVacio, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
 import { SelectorPermisos } from '../../../components/SelectorPermisos'
 import { resumenPermisos, type Permiso } from '../../../lib/permisos'
 import { MENSAJE_PIN_DEBIL, pinDebil, pinValido } from '../../../lib/usuarios'
@@ -383,13 +375,10 @@ export default function EmpleadoDetalleScreen() {
   const montoSug = montoSugeridoPago(sueldoNum, diasEsteMes, diasEsp)
 
   return (
-    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <Encabezado paleta={paleta} onVolver={() => router.back()} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
-          showsVerticalScrollIndicator={false}
-        >
+    <ScreenWrapper
+      header={<Encabezado paleta={paleta} onVolver={() => router.back()} />}
+      contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
+    >
           {/* ── Cabecera del empleado ── */}
           <Tarjeta>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.m }}>
@@ -683,8 +672,6 @@ export default function EmpleadoDetalleScreen() {
               ))
             )}
           </Tarjeta>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
+    </ScreenWrapper>
   )
 }

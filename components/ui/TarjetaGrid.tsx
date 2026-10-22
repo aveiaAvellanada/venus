@@ -14,18 +14,20 @@ interface Props {
   // Acción arriba a la derecha (lápiz de editar en Granja).
   esquina?: React.ReactNode
   opaca?: boolean
+  testID?: string
   children: React.ReactNode
 }
 
 // Tarjeta del grid de Productos (Calzado y Granja): imagen cuadrada sobre
 // superficie2 y debajo el cuerpo de texto (rediseño §2 y §5).
-export function TarjetaGrid({ ancho, accessibilityLabel, onPress, imagen, insignia, esquina, opaca, children }: Props) {
+export function TarjetaGrid({ ancho, accessibilityLabel, onPress, imagen, insignia, esquina, opaca, testID, children }: Props) {
   const { paleta } = useTema()
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
+      testID={testID}
       style={({ pressed }) => ({ width: ancho, backgroundColor: paleta.fondo, opacity: pressed ? 0.85 : 1 })}
     >
       <View

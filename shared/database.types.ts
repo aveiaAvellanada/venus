@@ -98,6 +98,47 @@ export type Database = {
           },
         ]
       }
+      calzado_tramos_precio: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          precio_maximo: number | null
+          precio_minimo: number
+          referencia_clave: string
+          talla_desde: number
+          talla_hasta: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          precio_maximo?: number | null
+          precio_minimo: number
+          referencia_clave: string
+          talla_desde: number
+          talla_hasta: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          precio_maximo?: number | null
+          precio_minimo?: number
+          referencia_clave?: string
+          talla_desde?: number
+          talla_hasta?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calzado_tramos_precio_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cierres_caja: {
         Row: {
           apertura_at: string | null
@@ -527,10 +568,10 @@ export type Database = {
       }
       compras: {
         Row: {
+          clave_idempotencia: string | null
           condicion_pago: string | null
           created_at: string
           created_by: string | null
-          clave_idempotencia: string | null
           estado: string
           fecha_factura: string | null
           fecha_vencimiento: string | null
@@ -547,10 +588,10 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          clave_idempotencia?: string | null
           condicion_pago?: string | null
           created_at?: string
           created_by?: string | null
-          clave_idempotencia?: string | null
           estado?: string
           fecha_factura?: string | null
           fecha_vencimiento?: string | null
@@ -567,10 +608,10 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          clave_idempotencia?: string | null
           condicion_pago?: string | null
           created_at?: string
           created_by?: string | null
-          clave_idempotencia?: string | null
           estado?: string
           fecha_factura?: string | null
           fecha_vencimiento?: string | null
@@ -617,6 +658,140 @@ export type Database = {
           },
           {
             foreignKeyName: "compras_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conteo_items: {
+        Row: {
+          contado: number
+          conteo_id: string
+          created_at: string
+          created_by: string | null
+          diferencia: number | null
+          id: string
+          motivo: string | null
+          nota: string | null
+          producto_id: string
+          sistema: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          contado: number
+          conteo_id: string
+          created_at?: string
+          created_by?: string | null
+          diferencia?: number | null
+          id?: string
+          motivo?: string | null
+          nota?: string | null
+          producto_id: string
+          sistema: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          contado?: number
+          conteo_id?: string
+          created_at?: string
+          created_by?: string | null
+          diferencia?: number | null
+          id?: string
+          motivo?: string | null
+          nota?: string | null
+          producto_id?: string
+          sistema?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conteo_items_conteo_id_fkey"
+            columns: ["conteo_id"]
+            isOneToOne: false
+            referencedRelation: "conteos_inventario"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteo_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteo_items_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos_calzado"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteo_items_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conteos_inventario: {
+        Row: {
+          alcance: string
+          clave_idempotencia: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          nota: string | null
+          tallas_ajustadas: number
+          tallas_contadas: number
+          unidades_faltantes: number
+          unidades_sobrantes: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          alcance: string
+          clave_idempotencia?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nota?: string | null
+          tallas_ajustadas: number
+          tallas_contadas: number
+          unidades_faltantes?: number
+          unidades_sobrantes?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          alcance?: string
+          clave_idempotencia?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nota?: string | null
+          tallas_ajustadas?: number
+          tallas_contadas?: number
+          unidades_faltantes?: number
+          unidades_sobrantes?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conteos_inventario_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteos_inventario_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -1305,9 +1480,10 @@ export type Database = {
           created_by: string | null
           descripcion: string
           foto_url: string | null
+          garantia_dias: number | null
           id: string
           marca: string | null
-          precio_maximo: number
+          precio_maximo: number | null
           precio_minimo: number
           proveedor_id: string | null
           referencia: string | null
@@ -1325,9 +1501,10 @@ export type Database = {
           created_by?: string | null
           descripcion: string
           foto_url?: string | null
+          garantia_dias?: number | null
           id?: string
           marca?: string | null
-          precio_maximo?: number
+          precio_maximo?: number | null
           precio_minimo?: number
           proveedor_id?: string | null
           referencia?: string | null
@@ -1345,9 +1522,10 @@ export type Database = {
           created_by?: string | null
           descripcion?: string
           foto_url?: string | null
+          garantia_dias?: number | null
           id?: string
           marca?: string | null
-          precio_maximo?: number
+          precio_maximo?: number | null
           precio_minimo?: number
           proveedor_id?: string | null
           referencia?: string | null
@@ -1680,6 +1858,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           descripcion_snapshot: string
+          garantia_dias_snapshot: number | null
           id: string
           precio_maximo_snapshot: number | null
           precio_minimo_snapshot: number | null
@@ -1698,6 +1877,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descripcion_snapshot: string
+          garantia_dias_snapshot?: number | null
           id?: string
           precio_maximo_snapshot?: number | null
           precio_minimo_snapshot?: number | null
@@ -1716,6 +1896,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descripcion_snapshot?: string
+          garantia_dias_snapshot?: number | null
           id?: string
           precio_maximo_snapshot?: number | null
           precio_minimo_snapshot?: number | null
@@ -1976,6 +2157,10 @@ export type Database = {
         }
         Returns: string
       }
+      fijar_garantia_referencia: {
+        Args: { p_dias: number; p_referencia: string }
+        Returns: number
+      }
       guardar_producto_calzado: {
         Args: {
           p_activo: boolean
@@ -1995,6 +2180,10 @@ export type Database = {
           p_talla: string
         }
         Returns: string
+      }
+      guardar_tramos_precio: {
+        Args: { p_referencia: string; p_tramos: Json }
+        Returns: Json
       }
       obtener_arqueo_caja: { Args: never; Returns: Json }
       obtener_balance: {
@@ -2070,6 +2259,10 @@ export type Database = {
       }
       registrar_compra: {
         Args: { p_clave_idempotencia?: string; p_compra: Json }
+        Returns: Json
+      }
+      registrar_conteo: {
+        Args: { p_clave_idempotencia?: string; p_conteo: Json }
         Returns: Json
       }
       registrar_devolucion: {

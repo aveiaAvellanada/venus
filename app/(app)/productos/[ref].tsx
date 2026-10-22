@@ -11,10 +11,10 @@ import { useCarrito } from '../../../lib/carrito-contexto'
 import { listarCalzado } from '../../../lib/inventario'
 import {
   agruparPorReferencia,
-  colorAHex,
   colorInicial,
   coloresDeModelo,
   columnasTallas,
+  maximoVitrina,
   resumenColor,
   variantesDeColor,
 } from '../../../lib/productos'
@@ -27,6 +27,7 @@ import {
   Esqueleto,
   EstadoVacio,
   HojaProductoAnadido,
+  PuntoColor,
   RayaDiagonal,
 } from '../../../components/ui'
 import type { ProductoAnadido } from '../../../components/ui'
@@ -110,10 +111,10 @@ export default function ProductoDetalleScreen() {
           talla: variante.talla,
           color: variante.color,
         }),
-        precio: Number(variante.precio_maximo),
+        precio: maximoVitrina(variante),
         stock: Number(variante.stock_actual),
         precioMin: Number(variante.precio_minimo),
-        precioMax: Number(variante.precio_maximo),
+        precioMax: variante.precio_maximo != null ? Number(variante.precio_maximo) : undefined,
         foto: variante.foto_url ?? fotoHero,
       },
     })
@@ -124,7 +125,7 @@ export default function ProductoDetalleScreen() {
       marca: modelo.marca ?? '',
       nombre: [modelo.nombre, colorActual].filter(Boolean).join(' '),
       detalle: `Talla ${variante.talla ?? '—'}`,
-      precio: Number(variante.precio_maximo),
+      precio: maximoVitrina(variante),
     })
   }
 
@@ -199,19 +200,7 @@ export default function ProductoDetalleScreen() {
                         <Footprints size={32} strokeWidth={1.5} color={paleta.textoDeshabilitado} />
                       )}
                       {c ? (
-                        <View
-                          style={{
-                            position: 'absolute',
-                            left: 6,
-                            bottom: 6,
-                            width: 12,
-                            height: 12,
-                            borderRadius: radio.full,
-                            backgroundColor: colorAHex(c),
-                            borderWidth: 1,
-                            borderColor: paleta.bordeFuerte,
-                          }}
-                        />
+                        <PuntoColor color={c} tamano={12} style={{ position: 'absolute', left: 6, bottom: 6 }} />
                       ) : null}
                       {r.agotado ? <RayaDiagonal /> : null}
                     </Pressable>
@@ -231,7 +220,7 @@ export default function ProductoDetalleScreen() {
                 ) : null}
                 {variante || !resumen || resumen.precioMin === resumen.precioMax ? (
                   <Text style={[tipografia.display, tabular, { color: paleta.texto, fontSize: 28, lineHeight: 34 }]}>
-                    {formatear(variante ? Number(variante.precio_maximo) : resumen?.precioMax ?? 0)}
+                    {formatear(variante ? maximoVitrina(variante) : resumen?.precioMax ?? 0)}
                   </Text>
                 ) : (
                   <View

@@ -37,6 +37,7 @@ import {
   SelectorRango,
   Tarjeta,
   TarjetaMetrica,
+  useEspacioTabBar,
   useToast,
 } from '../../../components/ui'
 import type { TipoBadge } from '../../../components/ui'
@@ -46,8 +47,8 @@ type EstadoCaja = 'cargando' | 'sin-abrir' | 'abierta' | 'cerrada'
 const BADGE_CAJA: Record<EstadoCaja, { texto: string; tipo: TipoBadge; punto: boolean }> = {
   cargando: { texto: '···', tipo: 'neutro', punto: false },
   'sin-abrir': { texto: 'SIN ABRIR', tipo: 'neutro', punto: false },
-  abierta: { texto: 'ABIERTA', tipo: 'exito', punto: true },
-  cerrada: { texto: 'CERRADA', tipo: 'peligro', punto: false },
+  abierta: { texto: 'ABIERTA', tipo: 'verde', punto: true },
+  cerrada: { texto: 'CERRADA', tipo: 'salmon', punto: false },
 }
 
 const PERIODOS: { clave: Periodo; etiqueta: string }[] = [
@@ -80,6 +81,7 @@ export default function Menu() {
   const { paleta } = useTema()
   const router = useRouter()
   const { mostrar } = useToast()
+  const espacioTabBar = useEspacioTabBar()
 
   // Historial/períodos (reportes) y gastos de todos (gastos_fijos) son permisos aparte.
   const esStaff = tienePermiso(perfil, 'reportes')
@@ -186,7 +188,7 @@ export default function Menu() {
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 56, gap: espacio.l }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 56, gap: espacio.l , paddingBottom: espacioTabBar }}
         refreshControl={
           <RefreshControl refreshing={refrescando} onRefresh={refrescar} tintColor={paleta.primario} />
         }
@@ -344,8 +346,8 @@ export default function Menu() {
         )}
 
         {porVencer.length > 0 ? (
-          <Tarjeta estilo={{ borderColor: paleta.advertencia, backgroundColor: paleta.advertenciaSoft }}>
-            <Text style={[tipografia.etiqueta, { color: paleta.texto, marginBottom: espacio.s }]}>
+          <Tarjeta estilo={{ borderColor: paleta.salmonBorde, backgroundColor: paleta.salmonSoft }}>
+            <Text style={[tipografia.etiqueta, { color: paleta.salmonTexto, marginBottom: espacio.s }]}>
               Gastos fijos por vencer
             </Text>
             {porVencer.map((g, i) => (

@@ -1,19 +1,21 @@
 import React from 'react'
 import { Alert, ScrollView, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
-import { Camera, ChartColumn, KeyRound, LogOut, PackagePlus, Scale, Sparkles, SunMoon, Truck, Users, Wallet } from 'lucide-react-native'
+import { CalendarClock, Camera, ChartColumn, KeyRound, LogOut, PackagePlus, ReceiptText, Scale, Sparkles, SunMoon, Truck, Users, Wallet } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
 import { esDueno as esDuenoPerfil, puedeAcceder, resumenPermisos } from '../../../lib/permisos'
 import { useTema } from '../../../lib/tema'
 import type { ModoTema } from '../../../lib/theme'
 import { espacio, radio, tipografia } from '../../../lib/theme'
-import { Badge, CirculoIcono, ControlSegmentado, FilaLista, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Badge, CirculoIcono, ControlSegmentado, FilaLista, Presionable, Tarjeta, useEspacioTabBar, useToast } from '../../../components/ui'
 
 const MODOS: ModoTema[] = ['claro', 'oscuro', 'sistema']
 
 const NEGOCIO = [
   { id: 'recibir-mercancia', titulo: 'Recibir mercancía', sub: 'Entrada de mercancía nueva', ruta: '/recibir-mercancia', Icono: PackagePlus },
   { id: 'proveedores', titulo: 'Proveedores', sub: 'Datos, cuentas y deudas', ruta: '/proveedores', Icono: Truck },
+  { id: 'gastos-variables', titulo: 'Gastos', sub: 'Imprevistos por categoría', ruta: '/gastos', Icono: ReceiptText },
+  { id: 'gastos-fijos', titulo: 'Gastos fijos', sub: 'Recurrentes y vencimientos', ruta: '/gastos/fijos', Icono: CalendarClock },
   { id: 'reportes', titulo: 'Reportes', sub: 'El negocio a fondo', ruta: '/reportes', Icono: ChartColumn },
   { id: 'balance', titulo: 'Balance', sub: 'Ingresos − egresos', ruta: '/balance', Icono: Scale },
   { id: 'analisis-ia', titulo: 'Análisis IA', sub: 'Recomendaciones de compra', ruta: undefined, Icono: Sparkles },
@@ -23,6 +25,7 @@ const NEGOCIO = [
 export default function Perfil() {
   const { perfil, cerrarSesion } = useAuth()
   const { paleta, modo, setModo } = useTema()
+  const espacioTabBar = useEspacioTabBar()
   const router = useRouter()
   const { mostrar } = useToast()
 
@@ -47,7 +50,7 @@ export default function Perfil() {
 
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingTop: 56, gap: espacio.l }}>
+      <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingTop: 56, gap: espacio.l , paddingBottom: espacioTabBar }}>
         <View style={{ alignItems: 'center', gap: espacio.s }}>
           <View
             style={{

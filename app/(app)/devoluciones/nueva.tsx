@@ -1,14 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  ActivityIndicator,
-  Modal,
-  Platform,
-  KeyboardAvoidingView,
-} from 'react-native'
+import { View, Text, ActivityIndicator } from 'react-native'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import {
   ArrowLeft,
@@ -22,7 +13,6 @@ import {
   Search,
   TrendingDown,
   TrendingUp,
-  X,
 } from 'lucide-react-native'
 import { useRequireModulo } from '../../../lib/auth'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
@@ -38,10 +28,11 @@ import {
   type VentaItemParaDevolucion,
   type ItemDevolucionInput,
 } from '../../../lib/devoluciones'
-import { listarCalzado, type ProductoCalzado } from '../../../lib/inventario'
+import type { ProductoCalzado } from '../../../lib/inventario'
+import { garantiaVigente } from '../../../lib/tramos'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
-import { Badge, Boton, CampoTexto, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Badge, Boton, CampoTexto, EstadoVacio, HojaReemplazo, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
 
 // ── Tipos locales ─────────────────────────────────────────────────────────────
 
@@ -51,9 +42,6 @@ interface EstadoItem {
   cambio_talla_color_id?: string
   precio_reemplazo?: number
   // UI state
-  busquedaReemplazo: string
-  resultadosBusqueda: ProductoCalzado[]
-  buscandoReemplazo: boolean
   reemplazoSeleccionado?: ProductoCalzado
 }
 
@@ -135,9 +123,6 @@ export default function NuevaDevolucionScreen() {
           data.items.map((it) => ({
             venta_item_id: it.venta_item_id,
             cantidad: disponible(it),
-            busquedaReemplazo: '',
-            resultadosBusqueda: [],
-            buscandoReemplazo: false,
           }))
         )
       } catch (err: unknown) {
@@ -162,8 +147,6 @@ export default function NuevaDevolucionScreen() {
           cantidad: disponible(venta.items[i]),
           cambio_talla_color_id: undefined,
           precio_reemplazo: undefined,
-          busquedaReemplazo: '',
-          resultadosBusqueda: [],
           reemplazoSeleccionado: undefined,
         }))
       )
@@ -173,8 +156,6 @@ export default function NuevaDevolucionScreen() {
           ...ei,
           cambio_talla_color_id: undefined,
           precio_reemplazo: undefined,
-          busquedaReemplazo: '',
-          resultadosBusqueda: [],
           reemplazoSeleccionado: undefined,
         }))
       )
@@ -185,8 +166,6 @@ export default function NuevaDevolucionScreen() {
           ...ei,
           cambio_talla_color_id: undefined,
           precio_reemplazo: undefined,
-          busquedaReemplazo: '',
-          resultadosBusqueda: [],
           reemplazoSeleccionado: undefined,
         }))
       )
@@ -227,6 +206,11 @@ export default function NuevaDevolucionScreen() {
     return netearDevolucion('cambio', itemsCambio)
   }, [tipo, estadoItems, venta])
 
+  // En un cambio, el excedente que se devuelve al cliente sale por defecto en efectivo.
+  useEffect(() => {
+    if (tipo === 'cambio' && neto.monto_devuelto > 0 && metodoReembolso === null) setMetodoReembolso('efectivo')
+  }, [tipo, neto.monto_devuelto, metodoReembolso])
+
   // ── Actualizar cantidad por item ──────────────────────────────────────────
   function actualizarCantidad(idx: number, val: string) {
     const n = parseInt(val.replace(/[^0-9]/g, ''), 10) || 0
@@ -254,51 +238,16 @@ export default function NuevaDevolucionScreen() {
     setModalReemplazoIdx(null)
   }
 
-  async function buscarReemplazo(idx: number, query: string) {
-    setEstadoItems((prev) =>
-      prev.map((ei, i) =>
-        i === idx ? { ...ei, busquedaReemplazo: query, buscandoReemplazo: true } : ei
-      )
-    )
-    if (!query.trim()) {
-      setEstadoItems((prev) =>
-        prev.map((ei, i) =>
-          i === idx ? { ...ei, resultadosBusqueda: [], buscandoReemplazo: false } : ei
-        )
-      )
-      return
-    }
-    try {
-      const resultados = await listarCalzado({ busqueda: query.trim() })
-      setEstadoItems((prev) =>
-        prev.map((ei, i) =>
-          i === idx
-            ? { ...ei, resultadosBusqueda: resultados, buscandoReemplazo: false }
-            : ei
-        )
-      )
-    } catch {
-      setEstadoItems((prev) =>
-        prev.map((ei, i) => (i === idx ? { ...ei, buscandoReemplazo: false } : ei))
-      )
-    }
-  }
-
-  function seleccionarReemplazo(idx: number, prod: ProductoCalzado) {
+  function seleccionarReemplazo(idx: number, prod: ProductoCalzado, precio: number) {
     setEstadoItems((prev) =>
       prev.map((ei, i) =>
         i === idx
-          ? {
-              ...ei,
-              cambio_talla_color_id: prod.id,
-              reemplazoSeleccionado: prod,
-              busquedaReemplazo: '',
-              resultadosBusqueda: [],
-            }
+          ? { ...ei, cambio_talla_color_id: prod.id, reemplazoSeleccionado: prod, precio_reemplazo: precio }
           : ei
       )
     )
     cerrarModalReemplazo()
+    setErroresValidacion([])
   }
 
   // ── Confirmar devolución ──────────────────────────────────────────────────
@@ -461,11 +410,8 @@ export default function NuevaDevolucionScreen() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: paleta.fondo }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      {/* Header */}
+    <ScreenWrapper
+      header={
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: espacio.m,
         paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
@@ -476,12 +422,18 @@ export default function NuevaDevolucionScreen() {
         </Presionable>
         <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Nueva Devolución</Text>
       </View>
-
-      <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+      }
+      contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
+      overlay={
+        <HojaReemplazo
+          visible={modalReemplazoIdx !== null}
+          onCerrar={cerrarModalReemplazo}
+          onElegir={(v, precio) => {
+            if (modalReemplazoIdx !== null) seleccionarReemplazo(modalReemplazoIdx, v, precio)
+          }}
+        />
+      }
+    >
         {/* Info de la venta */}
         <Tarjeta>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s, marginBottom: espacio.s }}>
@@ -580,6 +532,21 @@ export default function NuevaDevolucionScreen() {
                     <Text style={[tipografia.caption, tabular, { color: paleta.texto3 }]}>
                       Precio: {formatCOP(ventaItem.precio_unitario)} c/u
                     </Text>
+                    {esCalzado && garantiaVigente(venta.fecha, ventaItem.garantia_dias) === false ? (
+                      <View
+                        testID={`aviso-garantia-${ventaItem.venta_item_id}`}
+                        style={{
+                          flexDirection: 'row', alignItems: 'center', gap: espacio.xs, alignSelf: 'flex-start',
+                          backgroundColor: paleta.advertenciaSoft, borderRadius: radio.full,
+                          paddingVertical: 3, paddingHorizontal: 10, marginTop: 4,
+                        }}
+                      >
+                        <CircleAlert size={13} color={paleta.advertenciaTexto} />
+                        <Text style={[tipografia.caption, { color: paleta.advertenciaTexto }]}>
+                          Este zapato ya no tiene garantía
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
                   <Badge texto={esCalzado ? 'Calzado' : 'Granja'} tipo={esCalzado ? 'neutro' : 'exito'} />
                 </View>
@@ -828,19 +795,7 @@ export default function NuevaDevolucionScreen() {
           deshabilitado={!puedeConfirmar}
           icono={<CircleCheckBig size={20} color={paleta.sobrePrimario} />}
         />
-      </ScrollView>
-
-      {/* Modal buscador de reemplazo */}
-      {modalReemplazoIdx !== null && (
-        <BuscadorReemplazoModal
-          idx={modalReemplazoIdx}
-          estadoItem={estadoItems[modalReemplazoIdx]}
-          onBuscar={buscarReemplazo}
-          onSeleccionar={seleccionarReemplazo}
-          onCerrar={cerrarModalReemplazo}
-        />
-      )}
-    </KeyboardAvoidingView>
+    </ScreenWrapper>
   )
 }
 
@@ -893,123 +848,5 @@ function MetodoPicker({
         )
       })}
     </View>
-  )
-}
-
-// ── Sub-componente: modal buscador de reemplazo ───────────────────────────────
-
-interface BuscadorReemplazoModalProps {
-  idx: number
-  estadoItem: EstadoItem
-  onBuscar: (idx: number, query: string) => void
-  onSeleccionar: (idx: number, prod: ProductoCalzado) => void
-  onCerrar: () => void
-}
-
-function BuscadorReemplazoModal({
-  idx,
-  estadoItem,
-  onBuscar,
-  onSeleccionar,
-  onCerrar,
-}: BuscadorReemplazoModalProps) {
-  const { paleta } = useTema()
-  return (
-    <Modal
-      visible
-      animationType="slide"
-      transparent
-      onRequestClose={onCerrar}
-      testID="modal-buscar-reemplazo"
-    >
-      <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
-        <View style={{
-          backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '80%',
-        }}>
-          <View style={{
-            flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-            padding: espacio.l, borderBottomWidth: 1, borderBottomColor: paleta.borde,
-          }}>
-            <Text style={[tipografia.h3, { color: paleta.texto }]}>Buscar calzado de reemplazo</Text>
-            <Presionable
-              accessibilityRole="button"
-              accessibilityLabel="Cerrar buscador de reemplazo"
-              onPress={onCerrar}
-              hitSlop={12}
-              testID="btn-cerrar-modal-reemplazo"
-            >
-              <X size={24} color={paleta.texto2} />
-            </Presionable>
-          </View>
-
-          <View style={{ padding: espacio.l, flex: 1 }}>
-            <View style={{
-              flexDirection: 'row', alignItems: 'center', gap: espacio.s,
-              backgroundColor: paleta.superficie2, borderRadius: radio.md, paddingHorizontal: espacio.m, height: 44,
-              marginBottom: espacio.m,
-            }}>
-              <Search size={18} color={paleta.texto3} />
-              <TextInput
-                style={[tipografia.cuerpo, { flex: 1, color: paleta.texto }]}
-                placeholder="Buscar por descripción, talla, color…"
-                placeholderTextColor={paleta.textoDeshabilitado}
-                autoFocus
-                value={estadoItem.busquedaReemplazo}
-                onChangeText={(q) => onBuscar(idx, q)}
-                testID="input-buscar-reemplazo"
-              />
-              {estadoItem.buscandoReemplazo && (
-                <ActivityIndicator size="small" color={paleta.primario} />
-              )}
-            </View>
-
-            <ScrollView
-              style={{ maxHeight: 400 }}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              {estadoItem.resultadosBusqueda.length === 0 &&
-              !estadoItem.buscandoReemplazo &&
-              estadoItem.busquedaReemplazo.trim() !== '' ? (
-                <EstadoVacio icono={<Search />} titulo="Sin resultados" mensaje="Prueba con otra búsqueda." />
-              ) : null}
-
-              {estadoItem.resultadosBusqueda.map((prod) => (
-                <Presionable
-                  key={prod.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Seleccionar ${prod.descripcion}`}
-                  onPress={() => onSeleccionar(idx, prod)}
-                  testID={`resultado-reemplazo-${prod.id}`}
-                  style={{
-                    flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-                    paddingVertical: espacio.m, borderBottomWidth: 1, borderBottomColor: paleta.borde,
-                  }}
-                >
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>{prod.descripcion}</Text>
-                    <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
-                      {[
-                        prod.marca,
-                        prod.referencia && `Ref: ${prod.referencia}`,
-                        prod.talla && `T: ${prod.talla}`,
-                        prod.color && `C: ${prod.color}`,
-                        `Stock: ${prod.stock_actual}`,
-                      ]
-                        .filter(Boolean)
-                        .join('  •  ')}
-                    </Text>
-                    <Text style={[tipografia.caption, tabular, { color: paleta.primario }]}>
-                      {formatCOP(prod.precio_minimo)} – {formatCOP(prod.precio_maximo)}
-                    </Text>
-                  </View>
-                  <CircleCheckBig size={22} color={paleta.exito} />
-                </Presionable>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </View>
-    </Modal>
   )
 }

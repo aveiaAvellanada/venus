@@ -2,7 +2,10 @@ import {
   agruparPorReferencia,
   cantidadConUnidad,
   colorAHex,
+  coloresDeNombre,
   colorInicial,
+  hexesDeColor,
+  nombreColores,
   columnasGrid,
   columnasTallas,
   contarModelos,
@@ -120,6 +123,34 @@ describe('colorAHex', () => {
     expect(colorAHex('blanco')).toBe('#FFFFFF')
     expect(colorAHex('CAFÉ')).toBe('#92400E')
     expect(colorAHex('fucsia neon')).toBe('#9CA3AF')
+  })
+
+  it('con varias palabras usa el color base', () => {
+    expect(colorAHex('Azul rey')).toBe('#2563EB')
+  })
+})
+
+describe('zapatos de dos colores', () => {
+  it('separa "Rojo y blanco" y las otras formas de escribirlo', () => {
+    expect(coloresDeNombre('Rojo y blanco')).toEqual(['Rojo', 'blanco'])
+    expect(coloresDeNombre('rojo/blanco')).toEqual(['rojo', 'blanco'])
+    expect(coloresDeNombre('Rojo, Blanco')).toEqual(['Rojo', 'Blanco'])
+    expect(coloresDeNombre('Negro')).toEqual(['Negro'])
+    expect(coloresDeNombre('  ')).toEqual([])
+    expect(coloresDeNombre(null)).toEqual([])
+  })
+
+  it('nombra los colores con "y": el primero en mayúscula, el segundo en minúscula', () => {
+    expect(nombreColores('rojo/blanco')).toBe('Rojo y blanco')
+    expect(nombreColores('Azul Y Blanco')).toBe('Azul y blanco')
+    expect(nombreColores('negro')).toBe('Negro')
+    expect(nombreColores('Azul rey')).toBe('Azul rey')
+    expect(nombreColores('')).toBeNull()
+  })
+
+  it('el círculo lleva un color o dos mitades', () => {
+    expect(hexesDeColor('Negro')).toEqual(['#1C1C1E'])
+    expect(hexesDeColor('Rojo y blanco')).toEqual(['#DC2626', '#FFFFFF'])
   })
 })
 

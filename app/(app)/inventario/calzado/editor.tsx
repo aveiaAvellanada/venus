@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, Image, ActivityIndicator, Alert, Switch } from 'react-native'
+import { View, Text, Image, ActivityIndicator, Alert, Switch } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, Camera, Pencil, Save } from 'lucide-react-native'
 import * as ImagePicker from 'expo-image-picker'
@@ -7,12 +7,15 @@ import { useAuth, useRequireModulo } from '../../../../lib/auth'
 import { tienePermiso } from '../../../../lib/permisos'
 import { supabase } from '../../../../lib/supabase'
 import { guardarCalzado } from '../../../../lib/inventario'
+import { claveReferencia, fijarGarantiaReferencia } from '../../../../lib/tramos'
+import { PreciosPorTalla } from '../../../../components/PreciosPorTalla'
 import { comprimirYSubirImagen } from '../../../../lib/imagenes'
 import { CATEGORIAS } from '../../../../lib/excel'
+import { coloresDeNombre, MAX_COLORES, MENSAJE_MAX_COLORES } from '../../../../lib/productos'
 import { usePaddingInferior } from '../../../../hooks/usePaddingInferior'
 import { useTema } from '../../../../lib/tema'
 import { espacio, radio, tipografia } from '../../../../lib/theme'
-import { Boton, CampoTexto, Chip, Presionable, Tarjeta, useToast } from '../../../../components/ui'
+import { Boton, CampoTexto, Chip, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../../components/ui'
 
 export default function CalzadoEditorScreen() {
   const requireModulo = useRequireModulo('inventario-calzado')
@@ -30,6 +33,9 @@ export default function CalzadoEditorScreen() {
   const [descripcion, setDescripcion] = useState('')
   const [marca, setMarca] = useState('')
   const [referencia, setReferencia] = useState('')
+  const [garantia, setGarantia] = useState('')
+  const [garantiaInicial, setGarantiaInicial] = useState('')
+  const [referenciaInicial, setReferenciaInicial] = useState('')
   const [talla, setTalla] = useState('')
   const [color, setColor] = useState('')
   const [precioMinimo, setPrecioMinimo] = useState('')
@@ -66,6 +72,9 @@ export default function CalzadoEditorScreen() {
         setDescripcion(data.descripcion || '')
         setMarca(data.marca || '')
         setReferencia(data.referencia || '')
+        setReferenciaInicial(data.referencia || '')
+        setGarantia(data.garantia_dias != null ? String(data.garantia_dias) : '')
+        setGarantiaInicial(data.garantia_dias != null ? String(data.garantia_dias) : '')
         setTalla(data.talla || '')
         setColor(data.color || '')
         setPrecioMinimo(data.precio_minimo?.toString() || '')
@@ -101,7 +110,10 @@ export default function CalzadoEditorScreen() {
     if (perfil && puedeEditar) {
       fetchProducto()
     }
-  }, [id, perfil, puedeEditar])
+    // Depende de perfil?.id y no del objeto: al volver de la cámara o la galería
+    // la app relee el perfil (objeto nuevo) y volver a cargar pisaría la foto
+    // recién subida y lo que no se ha guardado.
+  }, [id, perfil?.id, puedeEditar, verCostos])
 
   if (requireModulo) return requireModulo
 
@@ -173,8 +185,22 @@ export default function CalzadoEditorScreen() {
   }
 
   const handleGuardar = async () => {
-    if (!categoria || !descripcion || !precioMinimo || !precioMaximo || !stockActual || !stockMinimo) {
+    if (!categoria || !descripcion || !precioMinimo || !stockActual || !stockMinimo) {
       mostrar('Por favor llena los campos obligatorios (*).', 'error')
+      return
+    }
+    const min = parseFloat(precioMinimo)
+    const max = precioMaximo.trim() ? parseFloat(precioMaximo) : null
+    if (max != null && max < min) {
+      mostrar('El precio máximo no puede ser menor que el mínimo.', 'error')
+      return
+    }
+    if (coloresDeNombre(color).length > MAX_COLORES) {
+      mostrar(MENSAJE_MAX_COLORES, 'error')
+      return
+    }
+    if (garantia.trim() && !claveReferencia(referencia)) {
+      mostrar('La garantía se fija por referencia: escribe la referencia.', 'error')
       return
     }
 
@@ -188,14 +214,20 @@ export default function CalzadoEditorScreen() {
         referencia: referencia || null,
         talla: talla || null,
         color: color || null,
-        precio_minimo: parseFloat(precioMinimo),
-        precio_maximo: parseFloat(precioMaximo),
+        precio_minimo: min,
+        precio_maximo: max,
         costo_compra: costoCompra ? parseFloat(costoCompra) : null,
         stock_actual: parseInt(stockActual, 10),
         stock_minimo: parseInt(stockMinimo, 10),
         foto_url: fotoUrl || null,
         activo,
       })
+
+      // La garantía es de toda la referencia, no solo de esta talla y color.
+      const cambioGarantia = garantia.trim() !== garantiaInicial.trim()
+      if (claveReferencia(referencia) && (cambioGarantia || (!id && garantia.trim()))) {
+        await fijarGarantiaReferencia(referencia.trim(), garantia.trim() ? parseInt(garantia, 10) : null)
+      }
 
       if (!id) {
         Alert.alert(
@@ -240,13 +272,20 @@ export default function CalzadoEditorScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <Encabezado />
-
-      <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
-        showsVerticalScrollIndicator={false}
-      >
+    <ScreenWrapper
+      header={<Encabezado />}
+      contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
+      footer={
+      <View style={{ padding: espacio.l, paddingBottom: paddingInferior, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
+        <Boton
+          titulo={id ? 'Actualizar producto' : 'Guardar producto'}
+          onPress={handleGuardar}
+          cargando={loading}
+          icono={<Save size={20} color={paleta.sobrePrimario} />}
+        />
+      </View>
+      }
+    >
         <View style={{ alignItems: 'center' }}>
           <Presionable
             accessibilityRole="button"
@@ -312,6 +351,18 @@ export default function CalzadoEditorScreen() {
           <View style={{ marginTop: espacio.m }}>
             <CampoTexto etiqueta="Referencia" value={referencia} onChangeText={setReferencia} placeholder="Ej. NK-001" />
           </View>
+          <View style={{ marginTop: espacio.m }}>
+            <CampoTexto
+              etiqueta="Garantía (días)"
+              value={garantia}
+              onChangeText={(t) => setGarantia(t.replace(/[^0-9]/g, ''))}
+              placeholder="Sin garantía"
+              keyboardType="number-pad"
+            />
+            <Text style={[tipografia.caption, { color: paleta.texto3, marginTop: 4 }]}>
+              Aplica a todas las tallas y colores de la referencia.
+            </Text>
+          </View>
         </Tarjeta>
 
         <Tarjeta>
@@ -321,7 +372,7 @@ export default function CalzadoEditorScreen() {
               <CampoTexto etiqueta="Talla" value={talla} onChangeText={setTalla} placeholder="Ej. 42" />
             </View>
             <View style={{ flex: 1 }}>
-              <CampoTexto etiqueta="Color" value={color} onChangeText={setColor} placeholder="Ej. Blanco" />
+              <CampoTexto etiqueta="Color" value={color} onChangeText={setColor} placeholder="Ej. Rojo y blanco" />
             </View>
           </View>
         </Tarjeta>
@@ -386,7 +437,7 @@ export default function CalzadoEditorScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <CampoTexto
-                etiqueta="Precio máximo *"
+                etiqueta="Precio máximo (opcional)"
                 value={precioMaximo}
                 onChangeText={setPrecioMaximo}
                 placeholder="0.00"
@@ -395,16 +446,19 @@ export default function CalzadoEditorScreen() {
             </View>
           </View>
         </Tarjeta>
-      </ScrollView>
 
-      <View style={{ padding: espacio.l, paddingBottom: paddingInferior, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
-        <Boton
-          titulo={id ? 'Actualizar producto' : 'Guardar producto'}
-          onPress={handleGuardar}
-          cargando={loading}
-          icono={<Save size={20} color={paleta.sobrePrimario} />}
-        />
-      </View>
-    </View>
+        {id && claveReferencia(referenciaInicial) ? (
+          <PreciosPorTalla referencia={referenciaInicial} />
+        ) : (
+          <Tarjeta>
+            <Text style={[tipografia.h3, { color: paleta.texto }]}>Precios por talla</Text>
+            <Text style={[tipografia.caption, { color: paleta.texto3, marginTop: 4 }]}>
+              {id
+                ? 'Para fijar precios distintos por talla, esta referencia necesita un nombre de referencia.'
+                : 'Guarda el producto con su referencia y luego podrás fijar precios distintos por rango de tallas.'}
+            </Text>
+          </Tarjeta>
+        )}
+    </ScreenWrapper>
   )
 }

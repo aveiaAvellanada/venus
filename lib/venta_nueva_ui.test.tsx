@@ -58,11 +58,11 @@ const ZAPATO = {
 // el carrito ya poblado. Si sembráramos con un efecto que corre DESPUÉS
 // de que `NuevaVenta` monta, el `useState` inicial de `etapa` (que lee
 // `items.length` una sola vez, al montar) no vería el ítem a tiempo.
-function Sembrador({ children }: { children: React.ReactNode }) {
+function Sembrador({ children, sinMaximo = false }: { children: React.ReactNode; sinMaximo?: boolean }) {
   const { dispatch } = useCarrito()
   const [listo, setListo] = React.useState(false)
   React.useEffect(() => {
-    dispatch({ tipo: 'agregar', producto: ZAPATO })
+    dispatch({ tipo: 'agregar', producto: sinMaximo ? { ...ZAPATO, precioMax: undefined } : ZAPATO })
     setListo(true)
   }, [dispatch])
   return listo ? <>{children}</> : null
@@ -75,7 +75,7 @@ function Sonda() {
   return null
 }
 
-async function montar({ conItem = false } = {}) {
+async function montar({ conItem = false, sinMaximo = false } = {}) {
   mockObtenerCajaHoy.mockResolvedValue({ estado: 'abierta' })
   let arbol: renderer.ReactTestRenderer
   await act(async () => {
@@ -83,7 +83,7 @@ async function montar({ conItem = false } = {}) {
       <TemaProvider>
         <CarritoProvider>
           <ToastProvider>
-            {conItem ? <Sembrador><NuevaVenta /></Sembrador> : <NuevaVenta />}
+            {conItem ? <Sembrador sinMaximo={sinMaximo}><NuevaVenta /></Sembrador> : <NuevaVenta />}
             <Sonda />
           </ToastProvider>
         </CarritoProvider>
@@ -144,7 +144,7 @@ describe('Nueva Venta restilizada', () => {
     expect(todoElTexto(arbol)).toContain('Cuadra')
   })
 
-  test('confirmación: overlay y pantalla de venta registrada', async () => {
+  test('confirmación: solo el chulo de venta exitosa y vuelve al menú', async () => {
     mockRegistrar.mockResolvedValue({ numero: 42 })
     const arbol = await montar({ conItem: true })
     presionarPorLabel(arbol, 'Cobrar $150.000')
@@ -157,7 +157,10 @@ describe('Nueva Venta restilizada', () => {
     await act(async () => {
       presionarPorLabel(arbol, 'Confirmar venta')
     })
-    expect(todoElTexto(arbol)).toContain('Venta #42 registrada')
+    expect(todoElTexto(arbol)).toContain('Venta exitosa')
+    expect(todoElTexto(arbol)).not.toContain('Nueva venta')
+    act(() => { jest.advanceTimersByTime(1300) })
+    expect(mockReplace).toHaveBeenCalledWith('/')
   })
 
   test('reintentar tras un fallo de red reusa la clave de la venta (no duplica)', async () => {
@@ -177,7 +180,7 @@ describe('Nueva Venta restilizada', () => {
     const [clave1, clave2] = mockRegistrar.mock.calls.map((c) => c[1])
     expect(clave1).toEqual(expect.any(String))
     expect(clave2).toBe(clave1)
-    expect(todoElTexto(arbol)).toContain('Venta #43 registrada')
+    expect(todoElTexto(arbol)).toContain('Venta exitosa')
   })
 
   test('carrito vacío muestra el estado vacío en vez del buscador', async () => {
@@ -195,7 +198,7 @@ describe('Nueva Venta restilizada', () => {
 
   // Bug A1: el carrito es global (CarritoProvider); si no se vacía al registrar,
   // lo vendido sigue ahí y se puede vender otra vez al volver.
-  test('tras registrar con éxito el carrito queda vacío, aunque se salga con "Listo"', async () => {
+  test('tras registrar con éxito el carrito queda vacío y se vuelve al menú', async () => {
     mockRegistrar.mockResolvedValue({ numero: 50 })
     const arbol = await montar({ conItem: true })
     expect(itemsEnCarrito).toBe(1)
@@ -207,10 +210,9 @@ describe('Nueva Venta restilizada', () => {
     act(() => { inputs[0].props.onChangeText('250000') })
     await act(async () => { presionarPorLabel(arbol, 'Confirmar venta') })
     expect(itemsEnCarrito).toBe(0)
-    // la confirmación lee el snapshot, no el carrito ya vacío
-    expect(todoElTexto(arbol)).toContain('Venta #50 registrada')
-    presionarPorLabel(arbol, 'Listo')
-    expect(mockBack).toHaveBeenCalled()
+    expect(todoElTexto(arbol)).toContain('Venta exitosa')
+    act(() => { jest.advanceTimersByTime(1300) })
+    expect(mockReplace).toHaveBeenCalledWith('/')
     expect(itemsEnCarrito).toBe(0)
   })
 
@@ -252,18 +254,29 @@ describe('Nueva Venta restilizada', () => {
     expect(todoElTexto(arbol)).toContain('Cobrar $199.500')
   })
 
-  test('precio fuera del rango: aviso y Cobrar deshabilitado hasta corregirlo', async () => {
+  test('precio fuera del rango recomendado: sin aviso y se puede cobrar', async () => {
     const arbol = await montar({ conItem: true })
     const caja = arbol.root.findByProps({ accessibilityLabel: 'Precio' })
     act(() => { caja.props.onFocus() })
     act(() => { caja.props.onChangeText('140000') })
-    expect(todoElTexto(arbol)).toContain('Fuera del rango: $150.000 – $220.000')
-    expect(barraCobrar(arbol).props.accessibilityState).toMatchObject({ disabled: true })
-    act(() => { caja.props.onChangeText('230000') })
-    expect(barraCobrar(arbol).props.accessibilityState).toMatchObject({ disabled: true })
-    act(() => { caja.props.onChangeText('200000') })
     expect(todoElTexto(arbol)).not.toContain('Fuera del rango')
     expect(barraCobrar(arbol).props.accessibilityState).toMatchObject({ disabled: false })
+    expect(todoElTexto(arbol)).toContain('Cobrar $140.000')
+    act(() => { caja.props.onChangeText('230000') })
+    expect(barraCobrar(arbol).props.accessibilityState).toMatchObject({ disabled: false })
+    act(() => { caja.props.onChangeText('') })
+    expect(barraCobrar(arbol).props.accessibilityState).toMatchObject({ disabled: true })
+  })
+
+  test('zapato sin máximo: sin deslizador, solo la caja de precio y el mínimo', async () => {
+    const arbol = await montar({ conItem: true, sinMaximo: true })
+    expect(arbol.root.findAllByType(Slider)).toHaveLength(0)
+    expect(todoElTexto(arbol)).toContain('Mín $150.000')
+    expect(todoElTexto(arbol)).not.toContain('Máx')
+    const caja = arbol.root.findByProps({ accessibilityLabel: 'Precio' })
+    act(() => { caja.props.onFocus() })
+    act(() => { caja.props.onChangeText('120000') })
+    expect(todoElTexto(arbol)).toContain('Cobrar $120.000')
   })
 
   test('el + se deshabilita al llegar al stock', async () => {
@@ -276,18 +289,17 @@ describe('Nueva Venta restilizada', () => {
     expect(mas().props.accessibilityState).toMatchObject({ disabled: true })
   })
 
-  test('cédula o razón social se envía con la venta; la confirmación muestra total y métodos', async () => {
+  test('cédula o NIT se envía con la venta', async () => {
     mockRegistrar.mockResolvedValue({ numero: 60 })
     const arbol = await montar({ conItem: true })
     presionarPorLabel(arbol, 'Cobrar $150.000')
     presionarPorLabel(arbol, 'Nequi')
     const doc = arbol.root.findAll(
-      (n: renderer.ReactTestInstance) => n.props?.placeholder === 'Cédula o razón social' && !!n.props.onChangeText
+      (n: renderer.ReactTestInstance) => n.props?.placeholder === 'Cédula o NIT' && !!n.props.onChangeText
     )[0]
     act(() => { doc.props.onChangeText(' 1117123456 ') })
     await act(async () => { presionarPorLabel(arbol, 'Confirmar venta') })
     expect(mockRegistrar.mock.calls[0][0].cliente.documento).toBe('1117123456')
-    expect(todoElTexto(arbol)).toContain('Venta #60 registrada')
-    expect(todoElTexto(arbol)).toContain('$150.000 · Nequi')
+    expect(todoElTexto(arbol)).toContain('Venta exitosa')
   })
 })

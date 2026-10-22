@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, ScrollView, Image, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, Image } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { ArrowLeft, Camera } from 'lucide-react-native'
@@ -8,7 +8,7 @@ import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, radio, tipografia } from '../../../lib/theme'
-import { Boton, CampoTexto, Presionable, useToast } from '../../../components/ui'
+import { Boton, CampoTexto, Presionable, useToast, ScreenWrapper } from '../../../components/ui'
 
 // Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
 function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
@@ -93,16 +93,10 @@ export default function GastosFijosEditorScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: paleta.fondo }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <ScreenWrapper
+      header={<Encabezado paleta={paleta} onVolver={() => router.back()} />}
+      contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
     >
-      <Encabezado paleta={paleta} onVolver={() => router.back()} />
-
-      <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
-        showsVerticalScrollIndicator={false}
-      >
         <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Ej: Arriendo, Luz, Internet</Text>
 
         <CampoTexto
@@ -180,7 +174,6 @@ export default function GastosFijosEditorScreen() {
         </View>
 
         <Boton titulo="Guardar Contrato" onPress={handleSave} cargando={saving} deshabilitado={saving} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </ScreenWrapper>
   )
 }

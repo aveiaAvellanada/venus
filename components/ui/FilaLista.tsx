@@ -7,7 +7,8 @@ import { espacio, tipografia } from '../../lib/theme'
 interface Props {
   icono?: React.ReactNode
   titulo: string
-  subtitulo?: string
+  // Texto, o tramos de <Text> (p. ej. lo buscado en negrita).
+  subtitulo?: React.ReactNode
   derecha?: React.ReactNode
   chevron?: boolean
   onPress?: () => void

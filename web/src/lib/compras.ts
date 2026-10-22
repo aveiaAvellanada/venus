@@ -1,3 +1,4 @@
+import { coloresDeNombre, MAX_COLORES, MENSAJE_MAX_COLORES, nombreColores } from '@shared/colores'
 import { leerPesos } from './proveedores'
 
 // Factura de compra en el panel (fase 1, A1). Lógica pura: la pantalla edita
@@ -192,6 +193,7 @@ export function erroresFactura(f: Factura, hoy: string): string[] {
     const textoMalo = Object.entries(fila.cantidades).some(([, v]) => v.trim() !== '' && cantidad(v) === 0)
     if (textoMalo) errores.push(`En ${nombreFila(fila, i)} hay cantidades que no son números enteros.`)
     if (!tallas.length) return
+    if (coloresDeNombre(fila.color).length > MAX_COLORES) errores.push(`En ${nombreFila(fila, i)}: ${MENSAJE_MAX_COLORES}`)
     const hayNuevas = tallas.some((x) => !fila.existentes[x.talla])
     if (hayNuevas && !fila.descripcion.trim()) errores.push(`Falta la descripción de ${nombreFila(fila, i)}.`)
     if (hayNuevas && !fila.categoria) errores.push(`Falta la categoría de ${nombreFila(fila, i)}.`)
@@ -263,7 +265,8 @@ export function itemsDeFactura(f: Factura): ItemCompra[] {
         descripcion: fila.descripcion.trim(),
         marca: fila.marca.trim() || undefined,
         categoria: fila.categoria,
-        color: fila.color.trim() || undefined,
+        // "rojo/blanco" → "Rojo y blanco" (hasta dos colores).
+        color: nombreColores(fila.color) ?? undefined,
         ...precios,
       }
     }),

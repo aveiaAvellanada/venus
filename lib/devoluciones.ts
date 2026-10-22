@@ -48,6 +48,8 @@ export type VentaItemParaDevolucion = {
   cantidad_vendida: number
   cantidad_ya_devuelta: number
   precio_unitario: number
+  // Días de garantía prometidos al vender (null = sin garantía registrada).
+  garantia_dias: number | null
 }
 
 export type VentaParaDevolucion = {
@@ -93,7 +95,7 @@ export async function buscarVentaParaDevolucion(numero: number): Promise<VentaPa
 
   const { data: items, error: e2 } = await supabase
     .from('venta_items')
-    .select('id, tipo_producto, descripcion_snapshot, talla, color, cantidad, precio_unitario')
+    .select('id, tipo_producto, descripcion_snapshot, talla, color, cantidad, precio_unitario, garantia_dias_snapshot')
     .eq('venta_id', venta.id)
   if (e2) throw e2
 
@@ -133,6 +135,7 @@ export async function buscarVentaParaDevolucion(numero: number): Promise<VentaPa
       cantidad_vendida: Number(i.cantidad),
       cantidad_ya_devuelta: yaDevuelto[i.id] ?? 0,
       precio_unitario: Number(i.precio_unitario),
+      garantia_dias: i.garantia_dias_snapshot != null ? Number(i.garantia_dias_snapshot) : null,
     })),
   }
 }

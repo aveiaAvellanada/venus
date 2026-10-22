@@ -54,8 +54,8 @@ export async function buscarProductos(texto: string): Promise<ProductoEncontrado
       titulo: p.descripcion,
       detalle: [p.referencia, p.marca, p.color, p.talla && `talla ${p.talla}`].filter(Boolean).join(' · '),
       stock: p.stock_actual,
-      precio: p.precio_minimo === p.precio_maximo
-        ? pesos(p.precio_maximo)
+      precio: p.precio_maximo == null || p.precio_minimo === p.precio_maximo
+        ? pesos(p.precio_minimo)
         : `${pesos(p.precio_minimo)} – ${pesos(p.precio_maximo)}`,
     })),
     ...(granja.data ?? []).map((p) => ({

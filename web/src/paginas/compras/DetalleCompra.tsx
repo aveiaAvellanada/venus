@@ -9,7 +9,7 @@ import { compararTallas } from '../../lib/inventario'
 import { NEGOCIO } from '../../lib/negocio'
 import { esDeuda } from '../../lib/proveedores'
 import { plano } from '../../navegacion'
-import { Boton, Cargando, Insignia, MensajeError, Tarjeta } from '../../componentes/ui'
+import { Boton, Cargando, ConColor, Insignia, MensajeError, Tarjeta } from '../../componentes/ui'
 import { Documentos } from '../proveedores/Documentos'
 import { RegistrarPago } from '../proveedores/RegistrarPago'
 import { Vencimiento } from '../proveedores/Vencimiento'
@@ -131,7 +131,7 @@ export function DetalleCompra() {
               <tr key={g.clave} className="border-b border-borde last:border-0">
                 <td className="px-4 py-3">
                   <span className="block font-medium">{g.referencia ?? '—'} · {g.descripcion}</span>
-                  <span className="block text-xs text-texto3">{g.color ?? ''}</span>
+                  <span className="block text-xs text-texto3">{g.color ? <ConColor color={g.color} /> : null}</span>
                 </td>
                 <td className="py-3 pr-3">
                   <span className="flex flex-wrap gap-1">

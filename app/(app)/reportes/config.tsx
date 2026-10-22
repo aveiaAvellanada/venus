@@ -8,7 +8,7 @@ import { obtenerReporteConfig, guardarReporteConfig } from '../../../lib/reporte
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tipografia } from '../../../lib/theme'
-import { Boton, CampoTexto, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Boton, CampoTexto, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
 
 // Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
 function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
@@ -101,10 +101,10 @@ export default function ReportesConfig() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <Encabezado paleta={paleta} onVolver={() => router.back()} />
-
-      <View style={{ padding: espacio.xl, gap: espacio.l }}>
+    <ScreenWrapper
+      header={<Encabezado paleta={paleta} onVolver={() => router.back()} />}
+      contentContainerStyle={{ padding: espacio.xl, gap: espacio.l }}
+    >
         <Tarjeta>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flex: 1, marginRight: espacio.m }}>
@@ -163,7 +163,6 @@ export default function ReportesConfig() {
         </View>
 
         <Boton titulo="Guardar" cargando={saving} onPress={guardar} />
-      </View>
-    </View>
+    </ScreenWrapper>
   )
 }

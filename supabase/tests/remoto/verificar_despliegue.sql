@@ -22,7 +22,7 @@ declare
   -- RPC que la app llama (grep "\.rpc(" en lib/ y app/). Si se agrega una, va aquí.
   rpc_app text[] := array[
     'abrir_caja', 'actualizar_empleado', 'cambiar_estado_empleado', 'cambiar_mi_pin', 'cerrar_caja',
-    'crear_empleado', 'guardar_producto_calzado', 'obtener_arqueo_caja', 'obtener_balance',
+    'crear_empleado', 'fijar_garantia_referencia', 'guardar_producto_calzado', 'guardar_tramos_precio', 'obtener_arqueo_caja', 'obtener_balance',
     'obtener_base_predeterminada', 'obtener_dashboard_dueno', 'obtener_deuda_proveedor',
     'obtener_dias_trabajados', 'obtener_gastos_periodo', 'obtener_reporte_diario',
     'obtener_reporte_periodo', 'obtener_resumen_dia', 'obtener_ventas_por_subperiodo', 'reabrir_caja',

@@ -11,7 +11,7 @@ export interface ProductoCalzado {
   categoria: string
   talla: string | null
   precio_minimo: number
-  precio_maximo: number
+  precio_maximo: number | null
   stock_actual: number
   stock_minimo: number
   activo: boolean
@@ -72,7 +72,7 @@ export function agrupar(productos: ProductoCalzado[]): GrupoReferencia[] {
         tallas,
         stock: activas.reduce((s, t) => s + t.stock_actual, 0),
         precioMin: Math.min(...base.map((t) => Number(t.precio_minimo))),
-        precioMax: Math.max(...base.map((t) => Number(t.precio_maximo))),
+        precioMax: Math.max(...base.map((t) => Number(t.precio_maximo ?? t.precio_minimo))),
         agotado: activas.length > 0 && activas.every((t) => t.stock_actual === 0),
         bajoMinimo: activas.some((t) => t.stock_actual <= t.stock_minimo),
         activo: activas.length > 0,
@@ -133,7 +133,7 @@ export function totales(grupos: GrupoReferencia[], costos?: Map<string, Costo>):
     for (const p of g.tallas) {
       if (!p.activo) continue
       t.unidades += p.stock_actual
-      t.valorPrecio += p.stock_actual * Number(p.precio_maximo)
+      t.valorPrecio += p.stock_actual * Number(p.precio_maximo ?? p.precio_minimo)
       const costo = costos?.get(p.id)?.ultimo
       if (costo === undefined) {
         if (p.stock_actual > 0) t.sinCosto += 1
@@ -155,7 +155,7 @@ export function aCsv(grupos: GrupoReferencia[], costos?: Map<string, Costo>): st
     'Precio mínimo', 'Precio máximo', ...(costos ? ['Último costo'] : []), 'Activo']
   const filas = grupos.flatMap((g) => g.tallas.map((p) => [
     p.referencia, p.descripcion, p.marca, p.color, p.categoria, p.talla, p.stock_actual, p.stock_minimo,
-    p.precio_minimo, p.precio_maximo, ...(costos ? [costos.get(p.id)?.ultimo ?? ''] : []), p.activo ? 'Sí' : 'No',
+    p.precio_minimo, p.precio_maximo ?? '', ...(costos ? [costos.get(p.id)?.ultimo ?? ''] : []), p.activo ? 'Sí' : 'No',
   ]))
   return '﻿' + [columnas, ...filas].map((f) => f.map(celda).join(';')).join('\r\n')
 }

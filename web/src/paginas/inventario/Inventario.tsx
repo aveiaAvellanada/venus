@@ -8,7 +8,7 @@ import {
   type EstadoInventario, type GrupoReferencia, type ProductoCalzado,
 } from '../../lib/inventario'
 import { actualizarTalla, costosPorProducto, listarCalzado } from '../../lib/datos/inventario'
-import { Boton, Cargando, Insignia, MensajeError } from '../../componentes/ui'
+import { Boton, Cargando, ConColor, Insignia, MensajeError } from '../../componentes/ui'
 import { CambiarPrecios } from './CambiarPrecios'
 
 const ESTADOS: { valor: EstadoInventario; titulo: string }[] = [
@@ -76,7 +76,7 @@ export function Inventario() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Inventario y precios</h1>
-          <p className="text-texto2">Calzado por referencia, con sus tallas. El stock solo cambia con compras, ventas y devoluciones.</p>
+          <p className="text-texto2">Calzado por referencia, con sus tallas. El stock solo cambia con compras, ventas, devoluciones y el conteo físico.</p>
         </div>
         <Boton variante="fantasma" onClick={exportar} disabled={!filtrados.length}>
           <Download aria-hidden className="size-4" />
@@ -258,7 +258,7 @@ function FilaGrupo({ grupo: g, costo, conCostos, abierto, marcado, alAbrir, alMa
           {abierto ? <ChevronDown aria-hidden className="mt-0.5 size-4 text-texto3" /> : <ChevronRight aria-hidden className="mt-0.5 size-4 text-texto3" />}
           <span>
             <span className="block font-medium">{g.referencia ?? '—'} · {g.descripcion}</span>
-            <span className="block text-xs text-texto3">{[g.marca, g.color].filter(Boolean).join(' · ')}</span>
+            <span className="block text-xs text-texto3">{g.marca}{g.marca && g.color ? ' · ' : ''}{g.color ? <ConColor color={g.color} /> : null}</span>
           </span>
         </button>
       </td>
@@ -334,7 +334,7 @@ function DetalleTallas({ tallas, costos }: { tallas: ProductoCalzado[]; costos: 
                 />
               </td>
               <td className="cifras py-1 pr-6 text-right">
-                {Number(t.precio_minimo) === Number(t.precio_maximo) ? pesos(t.precio_maximo) : `${pesos(t.precio_minimo)} – ${pesos(t.precio_maximo)}`}
+                {t.precio_maximo == null || Number(t.precio_minimo) === Number(t.precio_maximo) ? pesos(t.precio_minimo) : `${pesos(t.precio_minimo)} – ${pesos(t.precio_maximo)}`}
               </td>
               {costos ? <td className="cifras py-1 pr-6 text-right">{costos.get(t.id) ? pesos(costos.get(t.id)!.ultimo) : '—'}</td> : null}
               <td className="py-1">

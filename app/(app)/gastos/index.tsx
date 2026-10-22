@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, FlatList, Modal, ActivityIndicator, Image, ScrollView, RefreshControl, Switch } from 'react-native'
+import { View, Text, FlatList, KeyboardAvoidingView, Modal, ActivityIndicator, Image, ScrollView, RefreshControl, Switch } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { ArrowLeft, Camera, Plus, Receipt, X } from 'lucide-react-native'
@@ -212,9 +212,11 @@ export default function GastosVariablesScreen() {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
+        <KeyboardAvoidingView style={{ flex: 1, backgroundColor: paleta.fondo }} behavior="padding">
         <ScrollView
-          style={{ flex: 1, backgroundColor: paleta.fondo }}
+          style={{ flex: 1 }}
           contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferiorXxxl }}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           <View
@@ -318,6 +320,7 @@ export default function GastosVariablesScreen() {
             <Boton titulo="Guardar Gasto" onPress={handleSave} cargando={saving} deshabilitado={saving} />
           </View>
         </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   )

@@ -118,6 +118,27 @@ function NuevaDevolucionScreen() {
   )
 }
 
+
+// Flujo del buscador de reemplazo: tarjeta del modelo (una por color, como en
+// Productos) → talla → "Usar este reemplazo" (el precio arranca en el mínimo y la
+// pantalla permite ajustarlo después).
+async function elegirReemplazo(root: renderer.ReactTestInstance, clave: string, talla: string, stock: number) {
+  const modelo = root.findAll(
+    (n: renderer.ReactTestInstance) => typeof n.props?.testID === 'string'
+      && n.props.testID.startsWith(`resultado-reemplazo-${clave}|`) && !!n.props.onPress
+  )[0]
+  await act(async () => { modelo.props.onPress() })
+  const chip = root.findAll(
+    (n: renderer.ReactTestInstance) => n.props?.accessibilityLabel === `Talla ${talla}: ${stock} disponibles` && !!n.props.onPress
+  )[0]
+  await act(async () => { chip.props.onPress() })
+  const usar = root.findAll(
+    (n: renderer.ReactTestInstance) => typeof n.props?.accessibilityLabel === 'string'
+      && n.props.accessibilityLabel.startsWith('Usar este reemplazo') && !!n.props.onPress
+  )[0]
+  await act(async () => { usar.props.onPress() })
+}
+
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const VENTA_CON_CALZADO_Y_GRANJA = {
@@ -401,9 +422,6 @@ describe('Devoluciones UI — tests de integración', () => {
 
       // Abrir el modal de búsqueda de reemplazo
       const buscarBtn = root.findByProps({ testID: 'btn-buscar-reemplazo-item-calzado-2' })
-      await act(async () => {
-        buscarBtn.props.onPress()
-      })
 
       // Simular búsqueda con resultados
       const productoReemplazo = {
@@ -418,19 +436,19 @@ describe('Devoluciones UI — tests de integración', () => {
         categoria: 'Botas caucho',
         stock_minimo: 2,
         created_at: '2026-06-01T00:00:00Z',
+        activo: true,
       }
       ;(apiInventario.listarCalzado as jest.Mock).mockResolvedValue([productoReemplazo])
+      await act(async () => {
+        buscarBtn.props.onPress()
+      })
 
       const inputBuscar = root.findByProps({ testID: 'input-buscar-reemplazo' })
       await act(async () => {
         inputBuscar.props.onChangeText('Botas')
       })
 
-      // Seleccionar el producto de reemplazo
-      const resultadoBtn = root.findByProps({ testID: 'resultado-reemplazo-pc-reemplazo-1' })
-      await act(async () => {
-        resultadoBtn.props.onPress()
-      })
+      await elegirReemplazo(root, 'BPR-42', '42', 5)
 
       // Ingresar precio de reemplazo mayor al original (80000 → 120000)
       const precioInput = root.findByProps({ testID: 'input-precio-reemplazo-item-calzado-2' })
@@ -466,9 +484,6 @@ describe('Devoluciones UI — tests de integración', () => {
 
       // Abrir el modal de búsqueda
       const buscarBtn = root.findByProps({ testID: 'btn-buscar-reemplazo-item-calzado-2' })
-      await act(async () => {
-        buscarBtn.props.onPress()
-      })
 
       const productoReemplazo = {
         id: 'pc-reemplazo-2',
@@ -482,18 +497,19 @@ describe('Devoluciones UI — tests de integración', () => {
         categoria: 'Chanclas',
         stock_minimo: 1,
         created_at: '2026-06-01T00:00:00Z',
+        activo: true,
       }
       ;(apiInventario.listarCalzado as jest.Mock).mockResolvedValue([productoReemplazo])
+      await act(async () => {
+        buscarBtn.props.onPress()
+      })
 
       const inputBuscar = root.findByProps({ testID: 'input-buscar-reemplazo' })
       await act(async () => {
         inputBuscar.props.onChangeText('Chanclas')
       })
 
-      const resultadoBtn = root.findByProps({ testID: 'resultado-reemplazo-pc-reemplazo-2' })
-      await act(async () => {
-        resultadoBtn.props.onPress()
-      })
+      await elegirReemplazo(root, 'Chanclas básicas', '42', 10)
 
       // Precio de reemplazo menor al original (80000 → 50000)
       const precioInput = root.findByProps({ testID: 'input-precio-reemplazo-item-calzado-2' })
@@ -650,9 +666,6 @@ describe('Devoluciones UI — tests de integración', () => {
 
       // Abrir modal de búsqueda de reemplazo
       const buscarBtn = root.findByProps({ testID: 'btn-buscar-reemplazo-item-calzado-2' })
-      await act(async () => {
-        buscarBtn.props.onPress()
-      })
 
       // Simular resultados de búsqueda
       const productoReemplazo = {
@@ -667,19 +680,19 @@ describe('Devoluciones UI — tests de integración', () => {
         categoria: 'Botas caucho',
         stock_minimo: 1,
         created_at: '2026-06-01T00:00:00Z',
+        activo: true,
       }
       ;(apiInventario.listarCalzado as jest.Mock).mockResolvedValue([productoReemplazo])
+      await act(async () => {
+        buscarBtn.props.onPress()
+      })
 
       const inputBuscar = root.findByProps({ testID: 'input-buscar-reemplazo' })
       await act(async () => {
         inputBuscar.props.onChangeText('Botas premium')
       })
 
-      // Seleccionar producto de reemplazo
-      const resultadoBtn = root.findByProps({ testID: 'resultado-reemplazo-pc-reemplazo-3' })
-      await act(async () => {
-        resultadoBtn.props.onPress()
-      })
+      await elegirReemplazo(root, 'BPD-42', '42', 3)
 
       // Precio de reemplazo: 120000 (original 80000 → diferencia = +40000)
       const precioInput = root.findByProps({ testID: 'input-precio-reemplazo-item-calzado-2' })
@@ -748,6 +761,61 @@ describe('Devoluciones UI — tests de integración', () => {
       })
 
       expect(apiDevoluciones.registrarDevolucion).not.toHaveBeenCalled()
+    })
+  })
+
+  // ── Garantía y cambio con precio ─────────────────────────────────────────
+
+  describe('5. Garantía vencida y cambio con precio libre', () => {
+    const conGarantia = (dias: number | null, fecha: string) => ({
+      ...VENTA_SOLO_CALZADO,
+      fecha,
+      items: [{ ...VENTA_SOLO_CALZADO.items[0], garantia_dias: dias }],
+    })
+
+    test('garantía vencida: avisa que el zapato ya no tiene garantía', async () => {
+      ;(apiDevoluciones.buscarVentaParaDevolucion as jest.Mock).mockResolvedValue(conGarantia(30, '2026-01-10T10:00:00Z'))
+      await act(async () => { tree = renderer.create(<NuevaDevolucionScreen />) })
+      expect(findAllByText(tree!.root, 'Este zapato ya no tiene garantía').length).toBeGreaterThan(0)
+    })
+
+    test('garantía vigente o sin garantía registrada: no avisa', async () => {
+      const hoy = new Date().toISOString()
+      ;(apiDevoluciones.buscarVentaParaDevolucion as jest.Mock).mockResolvedValue(conGarantia(30, hoy))
+      await act(async () => { tree = renderer.create(<NuevaDevolucionScreen />) })
+      expect(findAllByText(tree!.root, 'Este zapato ya no tiene garantía')).toHaveLength(0)
+      ;(apiDevoluciones.buscarVentaParaDevolucion as jest.Mock).mockResolvedValue(conGarantia(null, '2026-01-10T10:00:00Z'))
+      await act(async () => { tree = renderer.create(<NuevaDevolucionScreen />) })
+      expect(findAllByText(tree!.root, 'Este zapato ya no tiene garantía')).toHaveLength(0)
+    })
+
+    test('cambio por un modelo más barato: el precio arranca en el mínimo y el excedente sale en efectivo', async () => {
+      ;(apiDevoluciones.buscarVentaParaDevolucion as jest.Mock).mockResolvedValue(VENTA_SOLO_CALZADO)
+      ;(apiDevoluciones.registrarDevolucion as jest.Mock).mockResolvedValue({ devolucion_id: 'dev-9' })
+      await act(async () => { tree = renderer.create(<NuevaDevolucionScreen />) })
+      const root = tree!.root
+      await act(async () => { root.findByProps({ testID: 'btn-tipo-cambio' }).props.onPress() })
+      ;(apiInventario.listarCalzado as jest.Mock).mockResolvedValue([{
+        id: 'pc-barato', descripcion: 'Havaiana', marca: 'Havaianas', talla: '37', color: 'Negro', referencia: 'HAV-1',
+        stock_actual: 4, precio_minimo: 45000, precio_maximo: null, categoria: 'Chanclas', stock_minimo: 1,
+        created_at: '2026-06-01T00:00:00Z', activo: true,
+      }])
+      await act(async () => { root.findByProps({ testID: 'btn-buscar-reemplazo-item-calzado-2' }).props.onPress() })
+      await act(async () => { root.findByProps({ testID: 'input-buscar-reemplazo' }).props.onChangeText('Havaiana') })
+      await elegirReemplazo(root, 'HAV-1', '37', 4)
+      // Excedente al cliente: 80.000 pagados − 45.000 = 35.000, en efectivo por defecto.
+      expect(findAllByText(root, 'Método de reembolso *').length).toBeGreaterThan(0)
+      await act(async () => { root.findByProps({ testID: 'input-motivo' }).props.onChangeText('Prefirió otra chancla') })
+      await act(async () => { root.findByProps({ accessibilityLabel: 'Confirmar devolución' }).props.onPress?.() })
+      expect(apiDevoluciones.registrarDevolucion).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tipo_devolucion: 'cambio',
+          monto_devuelto: 35000,
+          monto_cobrado: 0,
+          metodo_reembolso: 'efectivo',
+          items: [expect.objectContaining({ cambio_talla_color_id: 'pc-barato', precio_reemplazo: 45000 })],
+        })
+      )
     })
   })
 })

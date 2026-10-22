@@ -14,7 +14,7 @@ import { costosPorProducto, listarCalzado } from '../../lib/datos/inventario'
 import { listarProveedores } from '../../lib/datos/proveedores'
 import { descargarExcel, leerArchivoExcel } from '../../lib/excel'
 import { NEGOCIO } from '../../lib/negocio'
-import { AvisoError, Boton, Cargando, Insignia, MensajeError, Tarjeta } from '../../componentes/ui'
+import { AvisoError, Boton, Cargando, ConColor, Insignia, MensajeError, Tarjeta } from '../../componentes/ui'
 
 interface Lectura {
   nombre: string
@@ -322,7 +322,7 @@ function Fila({ f }: { f: FilaRevisada }) {
       <td className="cifras px-4 py-2.5 text-texto3">{f.fila}</td>
       <td className="py-2.5 pr-3">
         <span className="block font-medium">{d.referencia ? `${d.referencia} · ` : ''}{d.descripcion}</span>
-        <span className="block text-xs text-texto3">{[d.marca, d.color].filter(Boolean).join(' · ')}</span>
+        <span className="block text-xs text-texto3">{d.marca}{d.marca && d.color ? ' · ' : ''}{d.color ? <ConColor color={d.color} /> : null}</span>
       </td>
       <td className="cifras py-2.5 pr-3">{d.talla ?? 'Única'}</td>
       <td className="py-2.5 pr-3 text-texto2">{etiqueta(d.categoria)}</td>

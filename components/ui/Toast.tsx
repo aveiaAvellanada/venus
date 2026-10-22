@@ -62,7 +62,8 @@ function VistaToast({ mensaje, tipo }: { mensaje: string; tipo: TipoToast }) {
         position: 'absolute',
         left: espacio.xl,
         right: espacio.xl,
-        bottom: 64 + insets.bottom + espacio.l,
+        // Encima de la barra flotante de pestañas (TabBar: margen + 62 de alto).
+        bottom: Math.max(24, insets.bottom + 12) + 62 + 26,
         flexDirection: 'row',
         alignItems: 'center',
         gap: espacio.s,

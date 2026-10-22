@@ -21,7 +21,7 @@ export interface RegistrarVentaInput {
   items: ItemCarrito[]
   pagos: PagoInput[]
   efectivoRecibido: number | null
-  // documento: cédula, NIT o razón social (texto libre, opcional).
+  // documento: cédula o NIT (texto libre, opcional).
   cliente?: { nombre?: string; apellido?: string; telefono?: string; documento?: string }
 }
 

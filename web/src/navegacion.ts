@@ -58,9 +58,9 @@ export const NAVEGACION: GrupoNavegacion[] = [
         palabras: ['excel', 'importar', 'exportar'],
       },
       {
-        id: 'conteo', titulo: 'Conteo físico', ruta: '/conteo', icono: ClipboardCheck, fase: 2, lista: false,
+        id: 'conteo', titulo: 'Conteo físico', ruta: '/conteo', icono: ClipboardCheck, fase: 2, lista: true,
         descripcion: 'Toma de inventario: lo contado contra el sistema, diferencias y ajuste con motivo, todo registrado.',
-        palabras: ['ajuste', 'toma de inventario'],
+        palabras: ['ajuste', 'toma de inventario', 'contar', 'faltantes'],
       },
       {
         id: 'kardex', titulo: 'Kardex', ruta: '/kardex', icono: ArrowLeftRight, fase: 2, lista: false,

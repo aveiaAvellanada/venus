@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native'
+import { Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { crearEmpleado } from '../../../lib/empleados'
@@ -9,7 +9,7 @@ import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tipografia } from '../../../lib/theme'
-import { Boton, CampoTexto, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Boton, CampoTexto, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
 import { SelectorPermisos } from '../../../components/SelectorPermisos'
 
 // Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
@@ -71,14 +71,10 @@ export default function NuevoEmpleado() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <Encabezado paleta={paleta} onVolver={() => router.back()} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+    <ScreenWrapper
+      header={<Encabezado paleta={paleta} onVolver={() => router.back()} />}
+      contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
+    >
           <Tarjeta>
             <View style={{ gap: espacio.m }}>
               <CampoTexto etiqueta="Nombre *" placeholder="Nombre completo" value={nombre} onChangeText={setNombre} />
@@ -120,8 +116,6 @@ export default function NuevoEmpleado() {
           </Tarjeta>
 
           <Boton titulo="Crear empleado" onPress={crear} cargando={guardando} deshabilitado={guardando} />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
+    </ScreenWrapper>
   )
 }

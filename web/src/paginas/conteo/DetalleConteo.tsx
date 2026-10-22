@@ -33,7 +33,7 @@ export function DetalleConteo() {
         Conteos
       </Link>
       <header>
-        <h1 className="text-2xl font-bold">Conteo · {c.alcance}</h1>
+        <h1 className="text-titulo">Conteo · {c.alcance}</h1>
         <p className="text-texto2">{fechaDeConteo(c.created_at)}{c.autor ? ` · por ${c.autor}` : ''}</p>
       </header>
 
@@ -102,7 +102,7 @@ function Dato({ titulo, valor, peligro = false }: { titulo: string; valor: strin
   return (
     <div>
       <dt className="text-texto3">{titulo}</dt>
-      <dd className={`cifras text-2xl font-bold ${peligro ? 'text-peligro-texto' : ''}`}>{valor}</dd>
+      <dd className={`cifras text-2xl font-extrabold tracking-tight ${peligro ? 'text-peligro-texto' : ''}`}>{valor}</dd>
     </div>
   )
 }

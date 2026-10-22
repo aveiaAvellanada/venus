@@ -1,56 +1,110 @@
 @import "tailwindcss";
 
-/* Mismos colores que la app del celular (lib/theme.ts), claro y oscuro. */
+/* Mismos colores que la app del celular (lib/theme.ts: paletaClara y
+   paletaOscura, paleta monocroma). El tema sale de data-tema en <html>
+   ("claro" | "oscuro"); sin él, el del sistema (lib/tema.ts). */
 :root {
+  --primario: #111111;
+  --primario-press: #000000;
+  --primario-soft: #f0f0f1;
+  --sobre-primario: #ffffff;
+  --acento: #6b6b72;
+  --acento-soft: #ededef;
   --fondo: #ffffff;
-  --superficie: #f6f8fc;
-  --superficie2: #eef2f9;
-  --borde: #e2e8f0;
-  --borde-fuerte: #cbd5e1;
-  --texto: #0b1220;
-  --texto2: #475569;
-  --texto3: #64748b;
-  --primario: #1e66f5;
-  --primario-press: #1747c8;
-  --primario-soft: #ebf1fe;
-  --acento: #f59e0b;
-  --exito: #16a34a;
-  --exito-soft: #e7f6ec;
-  --exito-texto: #15803d;
-  --peligro: #dc2626;
-  --peligro-soft: #fdecec;
-  --peligro-texto: #b91c1c;
+  --superficie: #f6f6f7;
+  --superficie2: #ededef;
+  --borde: #e4e4e7;
+  --borde-fuerte: #cfcfd4;
+  --texto: #0e0e10;
+  --texto2: #4b4b52;
+  --texto3: #6b6b72;
+  --texto-deshabilitado: #a1a1a8;
+  --exito: #3f3f46;
+  --exito-soft: #ededef;
+  --exito-texto: #27272a;
+  --peligro: #18181b;
+  --peligro-soft: #e4e4e7;
+  --peligro-texto: #18181b;
   --advertencia: #d97706;
   --advertencia-soft: #fef3c7;
   --advertencia-texto: #92400e;
+  --salmon-soft: #f7c5bc;
+  --salmon-borde: #eea597;
+  --salmon-texto: #7a2414;
+  --verde-soft: #d2f47a;
+  --verde-texto: #2e4700;
+  --overlay: rgba(14, 14, 16, 0.5);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --fondo: #0b1220;
-    --superficie: #121c30;
-    --superficie2: #1a2740;
-    --borde: #26334d;
-    --borde-fuerte: #33425f;
-    --texto: #f2f6fc;
-    --texto2: #a9b4c6;
-    --texto3: #8291a9;
-    --primario: #4c82f7;
-    --primario-press: #6d9af9;
-    --primario-soft: #16264a;
-    --acento: #f5b840;
-    --exito: #3fbf6f;
-    --exito-soft: #0f2e1c;
-    --exito-texto: #7bdca0;
-    --peligro: #f07171;
-    --peligro-soft: #3a1520;
-    --peligro-texto: #f5a3a3;
+  :root:not([data-tema="claro"]) {
+    --primario: #f4f4f5;
+    --primario-press: #ffffff;
+    --primario-soft: #2a2a2e;
+    --sobre-primario: #0e0e10;
+    --acento: #a1a1a8;
+    --acento-soft: #232326;
+    --fondo: #0e0e10;
+    --superficie: #151517;
+    --superficie2: #202023;
+    --borde: #2d2d31;
+    --borde-fuerte: #3a3a40;
+    --texto: #f4f4f5;
+    --texto2: #b4b4ba;
+    --texto3: #8a8a91;
+    --texto-deshabilitado: #5c5c63;
+    --exito: #c4c4ca;
+    --exito-soft: #1f1f22;
+    --exito-texto: #d4d4d8;
+    --peligro: #f4f4f5;
+    --peligro-soft: #2a2a2e;
+    --peligro-texto: #f4f4f5;
     --advertencia: #f2a93b;
     --advertencia-soft: #3a2a10;
     --advertencia-texto: #f7c87e;
+    --salmon-soft: #3a1e18;
+    --salmon-borde: #6e3427;
+    --salmon-texto: #f5a58f;
+    --verde-soft: #12301d;
+    --verde-texto: #7fe0a3;
+    --overlay: rgba(0, 0, 0, 0.6);
     color-scheme: dark;
   }
+}
+
+:root[data-tema="oscuro"] {
+  --primario: #f4f4f5;
+  --primario-press: #ffffff;
+  --primario-soft: #2a2a2e;
+  --sobre-primario: #0e0e10;
+  --acento: #a1a1a8;
+  --acento-soft: #232326;
+  --fondo: #0e0e10;
+  --superficie: #151517;
+  --superficie2: #202023;
+  --borde: #2d2d31;
+  --borde-fuerte: #3a3a40;
+  --texto: #f4f4f5;
+  --texto2: #b4b4ba;
+  --texto3: #8a8a91;
+  --texto-deshabilitado: #5c5c63;
+  --exito: #c4c4ca;
+  --exito-soft: #1f1f22;
+  --exito-texto: #d4d4d8;
+  --peligro: #f4f4f5;
+  --peligro-soft: #2a2a2e;
+  --peligro-texto: #f4f4f5;
+  --advertencia: #f2a93b;
+  --advertencia-soft: #3a2a10;
+  --advertencia-texto: #f7c87e;
+  --salmon-soft: #3a1e18;
+  --salmon-borde: #6e3427;
+  --salmon-texto: #f5a58f;
+  --verde-soft: #12301d;
+  --verde-texto: #7fe0a3;
+  --overlay: rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -62,10 +116,13 @@
   --color-texto: var(--texto);
   --color-texto2: var(--texto2);
   --color-texto3: var(--texto3);
+  --color-texto-deshabilitado: var(--texto-deshabilitado);
   --color-primario: var(--primario);
   --color-primario-press: var(--primario-press);
   --color-primario-soft: var(--primario-soft);
+  --color-sobre-primario: var(--sobre-primario);
   --color-acento: var(--acento);
+  --color-acento-soft: var(--acento-soft);
   --color-exito: var(--exito);
   --color-exito-soft: var(--exito-soft);
   --color-exito-texto: var(--exito-texto);
@@ -75,13 +132,29 @@
   --color-advertencia: var(--advertencia);
   --color-advertencia-soft: var(--advertencia-soft);
   --color-advertencia-texto: var(--advertencia-texto);
+  --color-salmon-soft: var(--salmon-soft);
+  --color-salmon-borde: var(--salmon-borde);
+  --color-salmon-texto: var(--salmon-texto);
+  --color-verde-soft: var(--verde-soft);
+  --color-verde-texto: var(--verde-texto);
+  --color-overlay: var(--overlay);
   --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Tipografía de la app (lib/theme.ts → tipografia): h1 28/34 extra, h3 18/24 negrita. */
+  --text-titulo: 28px;
+  --text-titulo--line-height: 34px;
+  --text-titulo--letter-spacing: -0.4px;
+  --text-titulo--font-weight: 800;
+  --text-subtitulo: 18px;
+  --text-subtitulo--line-height: 24px;
+  --text-subtitulo--font-weight: 700;
 }
 
 body {
   background: var(--fondo);
   color: var(--texto);
   font-family: var(--font-sans);
+  /* Cuerpo de la app: Plus Jakarta Sans media (500). */
+  font-weight: 500;
   -webkit-font-smoothing: antialiased;
 }
 

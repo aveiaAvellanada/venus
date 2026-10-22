@@ -178,7 +178,7 @@ export function NuevaCompra() {
       </Link>
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Nueva compra</h1>
+          <h1 className="text-titulo">Nueva compra</h1>
           <p className="text-texto2">
             La factura del proveedor: una fila por referencia y color, con la cantidad de cada talla. Al guardar sube el stock.
           </p>

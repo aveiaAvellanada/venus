@@ -44,7 +44,7 @@ export function Boton({ variante = 'primario', cargando = false, children, class
   cargando?: boolean
 }) {
   const estilos = variante === 'primario'
-    ? 'bg-primario text-white hover:bg-primario-press disabled:opacity-50'
+    ? 'bg-primario text-sobre-primario hover:bg-primario-press disabled:opacity-50'
     : 'text-texto2 hover:bg-superficie2 hover:text-texto'
   return (
     <button
@@ -107,7 +107,7 @@ export function Dialogo({ titulo, alCerrar, children, pie, ancho = 'max-w-lg' }:
   ancho?: string
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-[8vh]" onMouseDown={alCerrar}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-overlay px-4 py-[8vh]" onMouseDown={alCerrar}>
       <div
         role="dialog"
         aria-modal="true"
@@ -117,7 +117,7 @@ export function Dialogo({ titulo, alCerrar, children, pie, ancho = 'max-w-lg' }:
         className={`w-full ${ancho} rounded-2xl border border-borde bg-fondo shadow-2xl`}
       >
         <header className="flex items-center justify-between border-b border-borde px-5 py-4">
-          <h2 className="text-lg font-semibold">{titulo}</h2>
+          <h2 className="text-subtitulo">{titulo}</h2>
           <button type="button" aria-label="Cerrar" onClick={alCerrar} className="rounded-lg p-1.5 text-texto3 hover:bg-superficie2">
             <X className="size-5" />
           </button>
@@ -143,5 +143,15 @@ export function AvisoError({ error }: { error: unknown }) {
     <p role="alert" className="rounded-xl bg-peligro-soft px-3 py-2 text-sm text-peligro-texto">
       {error instanceof Error ? error.message : 'Algo salió mal.'}
     </p>
+  )
+}
+
+// Logo con los colores del tema (en oscuro, cuadro claro con la letra oscura).
+export function Logo({ className = '' }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 64 64" className={className}>
+      <rect width="64" height="64" rx="14" className="fill-primario" />
+      <path d="M18 18h8l6 20 6-20h8L36 46h-8z" className="fill-sobre-primario" />
+    </svg>
   )
 }

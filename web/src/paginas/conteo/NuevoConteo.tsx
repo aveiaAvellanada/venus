@@ -164,7 +164,7 @@ export function NuevoConteo() {
       </Link>
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Nuevo conteo</h1>
+          <h1 className="text-titulo">Nuevo conteo</h1>
           <p className="text-texto2">
             Escribe cuántos pares hay de cada talla. Enter pasa a la siguiente. Lo que no cuentes no se toca.
           </p>

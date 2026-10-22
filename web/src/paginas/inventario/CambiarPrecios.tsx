@@ -72,7 +72,7 @@ export function CambiarPrecios({ ids, alCerrar, alAplicar }: { ids: string[]; al
   const cambian = vista?.filas.filter((f) => Number(f.min_nuevo) !== Number(f.min_antes) || Number(f.max_nuevo) !== Number(f.max_antes)).length ?? 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-[6vh]" onMouseDown={alCerrar}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-overlay px-4 py-[6vh]" onMouseDown={alCerrar}>
       <div
         role="dialog"
         aria-modal="true"

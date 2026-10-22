@@ -30,7 +30,7 @@ export function Inicio() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-titulo">
           {saludo(horaEn(ahora, NEGOCIO.zonaHoraria))}{nombre ? `, ${nombre}` : ''}
         </h1>
         <p className="text-texto2">{fecha.charAt(0).toUpperCase() + fecha.slice(1)}</p>

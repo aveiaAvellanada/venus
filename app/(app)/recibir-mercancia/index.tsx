@@ -180,7 +180,7 @@ export default function RecibirMercanciaIndex() {
           <Presionable
             accessibilityRole="button"
             accessibilityLabel={`Ver recepción de ${providerName}`}
-            onPress={() => router.push(`/recibir-mercancia/${item.id}`)}
+            onPress={() => router.push(`/recibir-mercancia/completar/${item.id}`)}
           >
             {contenido}
           </Presionable>

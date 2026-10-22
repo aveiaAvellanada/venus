@@ -10,7 +10,7 @@ export default function RecibirMercanciaLayout() {
     <Pila>
       <Pila.Screen name="index" />
       <Pila.Screen name="nueva" />
-      <Pila.Screen name="[id]" />
+      <Pila.Screen name="completar/[id]" />
     </Pila>
   )
 }

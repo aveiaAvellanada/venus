@@ -176,7 +176,4 @@ export function costosPorReferencia(items: ItemComprado[]): CostoReferencia[] {
 }
 
 // Monto escrito con puntos de miles ("1.250.000") → número; vacío o inválido → NaN.
-export function leerPesos(texto: string): number {
-  const limpio = texto.replace(/[$\s.]/g, '').replace(',', '.')
-  return limpio === '' ? NaN : Number(limpio)
-}
+export { leerPesos } from '@shared/formato'

@@ -69,7 +69,7 @@ Leyenda: ✅ los datos ya existen · 🆕 necesita cambios en la base.
 | A1 | **Compras y recepción** | Factura del proveedor en una grilla rápida: referencia, **matriz de tallas** (34–44 con cantidad por talla en una sola fila), costo, precio sugerido. Crea productos nuevos en la misma fila. Adjunta foto o PDF de la factura. Contado o crédito con vencimiento. Al confirmar sube el stock. | ✅ compras, compra_items, triggers de stock |
 | A2 | **Inventario y precios** | Tabla editable de calzado y Granja: filtros (categoría, marca, talla, agotados, bajo mínimo), costo, margen, precio mín/máx, stock mínimo. Edición en lote (por ejemplo, +10% a una categoría). Valor del inventario a costo y a precio. | ✅ productos · 🆕 RPC de cambio de precios en lote |
 | A3 | **Reglas de precio** | Margen objetivo por categoría o marca: al recibir, el precio mín/máx se sugiere solo desde el costo. Alerta de productos vendidos por debajo del margen. | 🆕 reglas_precio |
-| A4 | **Conteo físico** | Toma de inventario por categoría: cantidad contada contra sistema, diferencias y ajuste con motivo (daño, pérdida, error). Todo auditado. | 🆕 ajustes_inventario + RPC |
+| A4 | **Conteo físico** ✅ | Toma de inventario por categoría: cantidad contada contra sistema, diferencias y ajuste con motivo (daño, pérdida, error). Todo auditado. | ✅ conteos_inventario + conteo_items + `registrar_conteo` |
 | A5 | **Kardex por producto** | Entradas, ventas, devoluciones y ajustes con saldo, para saber por qué un producto tiene el stock que tiene. | 🆕 vista/RPC sobre compras, ventas, devoluciones y ajustes |
 | A6 | **Etiquetas** | PDF para imprimir con código de barras, referencia, talla y precio. Base para escanear en el celular al vender (más adelante). | 🆕 código por producto |
 | A7 | **Reposición y órdenes de compra** | Sugiere qué pedir según el stock mínimo y el ritmo de venta. Arma la orden al proveedor, la envía por WhatsApp o PDF y luego se recibe contra esa orden. | 🆕 ordenes_compra |
@@ -105,7 +105,7 @@ En orden de necesidad:
    las tablas importantes (tabla, registro, acción, antes, después, quién,
    cuándo). Solo el dueño la lee. Cuanto antes exista, más historia habrá.
 2. Cambio de precios en lote (RPC con auditoría).
-3. `ajustes_inventario` + RPC, y kardex.
+3. ✅ Conteo físico (`conteos_inventario`, `conteo_items` —los ajustes— y `registrar_conteo`); falta el kardex.
 4. Código por producto para etiquetas.
 5. `reglas_precio`.
 6. `ordenes_compra` + ítems.
@@ -125,7 +125,7 @@ explícito, RPC en la lista de `verificar_despliegue.sql` si la usa una app.
 |---|---|
 | **0. Cimientos** ✅ | Fusionar el PR #1. Crear `web/` y `shared/`, login solo para el dueño, estructura y navegación, búsqueda global, publicación y CI. La auditoría empieza a registrar. Hecho el 2026-10-09; además, Inicio (B1) ya funciona. Publicación: `web/README.md`. |
 | **1. Mercancía** (plan: `docs/panel-web-fase1.md`) | A1 Compras y recepción con matriz de tallas, A2 Inventario y precios, A8 Proveedores, A9 Carga masiva. |
-| **2. Control de inventario** | A4 Conteo físico, A5 Kardex, A6 Etiquetas, A3 Reglas de precio, A7 Reposición y órdenes de compra. |
+| **2. Control de inventario** (plan: `docs/panel-web-fase2.md`) | A4 Conteo físico ✅, A5 Kardex, A6 Etiquetas, A3 Reglas de precio, A7 Reposición y órdenes de compra. |
 | **3. Dinero** | B2 Ventas, B3 Reportes, B4 Balance, B5 Caja, B6 Gastos, B7 Clientes. |
 | **4. Gente y control** | C1 Empleados y permisos, C2 Historial de acciones, C4 Respaldo. |
 | **5. Replicable** | C3 Configuración del negocio, catálogos como tablas (también en el celular), marca blanca, script de instancia nueva, verificación en dos pasos. |

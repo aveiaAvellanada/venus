@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { Stack } from 'expo-router'
 import { ActivityIndicator, Alert, Text, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import * as SplashScreen from 'expo-splash-screen'
 import {
   useFonts,
@@ -92,11 +93,13 @@ export default function RootLayout() {
   if (!fuentesListas) return null
 
   return (
-    <TemaProvider>
-      <BarraEstado />
-      <AuthProvider>
-        <Navegacion />
-      </AuthProvider>
-    </TemaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <TemaProvider>
+        <BarraEstado />
+        <AuthProvider>
+          <Navegacion />
+        </AuthProvider>
+      </TemaProvider>
+    </GestureHandlerRootView>
   )
 }

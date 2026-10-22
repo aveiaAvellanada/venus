@@ -11,7 +11,7 @@ import Animated, {
 import { useTema } from '../../lib/tema'
 import { motion, radio, tipografia } from '../../lib/theme'
 import type { Granularidad, VentasBucket } from '../../lib/dashboard'
-import { etiquetaBucket } from '../../lib/dashboard'
+import { etiquetaBucket, etiquetaDia } from '../../lib/dashboard'
 
 interface Props {
   datos: VentasBucket[]
@@ -89,8 +89,12 @@ export function GraficoBarras({ datos, granularidad }: Props) {
 
   const anchoColumna = Math.max(0, (anchoBarras - SEPARACION * (datos.length - 1)) / datos.length)
 
-  // Con muchos buckets (mes = 30), etiquetar solo cada n para no amontonar.
-  const salto = datos.length > 8 ? Math.ceil(datos.length / 6) : 1
+  // Con muchos días (un rango largo) el eje lleva el número del día, cada n
+  // para no amontonar; el detalle al tocar dice el día completo.
+  const muchosDias = granularidad === 'dia' && datos.length > 8
+  const salto = datos.length > 8 ? Math.ceil(datos.length / 7) : 1
+  const eje = (inicio: string) => (muchosDias ? String(Number(inicio.slice(8, 10))) : etiquetaBucket(inicio, granularidad))
+  const detalle = (inicio: string) => (granularidad === 'dia' ? etiquetaDia(inicio) : etiquetaBucket(inicio, granularidad))
 
   return (
     <View style={{ gap: 6 }}>
@@ -106,7 +110,7 @@ export function GraficoBarras({ datos, granularidad }: Props) {
             }}
           >
             <Text style={[tipografia.caption, { color: paleta.fondo }]}>
-              {`${etiquetaBucket(datos[seleccion].inicio, granularidad)} · `}
+              {`${detalle(datos[seleccion].inicio)} · `}
               <Text style={[tipografia.caption, { color: paleta.fondo, fontVariant: ['tabular-nums'] }]}>
                 {formatear(datos[seleccion].total)}
               </Text>
@@ -123,7 +127,7 @@ export function GraficoBarras({ datos, granularidad }: Props) {
           <Pressable
             key={d.inicio}
             accessibilityRole="button"
-            accessibilityLabel={`${etiquetaBucket(d.inicio, granularidad)}: ${formatear(d.total)}`}
+            accessibilityLabel={`${detalle(d.inicio)}: ${formatear(d.total)}`}
             onPress={() => setSeleccion(seleccion === i ? null : i)}
             style={{ flex: 1, height: '100%', justifyContent: 'flex-end' }}
           >
@@ -142,9 +146,9 @@ export function GraficoBarras({ datos, granularidad }: Props) {
           <Text
             key={d.inicio}
             numberOfLines={1}
-            style={[tipografia.micro, { flex: 1, textAlign: 'center', color: paleta.texto3, fontSize: 9 }]}
+            style={[tipografia.micro, { flex: 1, textAlign: 'center', color: paleta.texto3, fontSize: muchosDias ? 10 : 9 }]}
           >
-            {i % salto === 0 ? etiquetaBucket(d.inicio, granularidad) : ''}
+            {i % salto === 0 ? eje(d.inicio) : ''}
           </Text>
         ))}
       </View>

@@ -1,5 +1,5 @@
-import { Stack } from 'expo-router'
 import { useRequireModulo } from '../../../lib/auth'
+import { Pila } from '../../../components/Pila'
 
 export default function RecibirMercanciaLayout() {
   // Enforce access control at the layout level
@@ -7,10 +7,10 @@ export default function RecibirMercanciaLayout() {
   if (requireModulo) return requireModulo
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="nueva" />
-      <Stack.Screen name="[id]" />
-    </Stack>
+    <Pila>
+      <Pila.Screen name="index" />
+      <Pila.Screen name="nueva" />
+      <Pila.Screen name="[id]" />
+    </Pila>
   )
 }

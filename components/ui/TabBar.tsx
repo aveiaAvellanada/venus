@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { useRouter, type Tabs } from 'expo-router'
+import { useRouter } from 'expo-router'
+import type { MaterialTopTabBarProps } from 'expo-router/js-top-tabs'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring } from 'react-native-reanimated'
@@ -11,8 +12,8 @@ import { useTema } from '../../lib/tema'
 import { fuentes, motion, radio } from '../../lib/theme'
 import { Presionable } from './Presionable'
 
-// expo-router incluye react-navigation internamente y no exporta este tipo.
-type BottomTabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>>[0]
+// Las pestañas son deslizables (expo-router/js-top-tabs); la barra es la misma.
+type PropsBarra = Pick<MaterialTopTabBarProps, 'state' | 'navigation'>
 
 // Spec §6.1: 5 slots — Menú · Movimientos · [+] · Productos · Perfil.
 const TABS: Record<string, { Icono: LucideIcon; label: string }> = {
@@ -98,7 +99,7 @@ function Tab({
   )
 }
 
-export function TabBar({ state, navigation }: BottomTabBarProps) {
+export function TabBar({ state, navigation }: PropsBarra) {
   const { paleta } = useTema()
   const margenInferior = useMargenInferior()
   const router = useRouter()

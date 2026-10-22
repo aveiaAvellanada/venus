@@ -82,6 +82,8 @@ Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app c
 
 - Cambios de la maqueta `docs/maquetas/movimientos.html` (2026-10-21, rama `maqueta-movimientos`): barra inferior flotante en píldora (`useEspacioTabBar` para el espacio al final de cada pestaña), barras del gráfico en píldora, salmón `#F7C5BC` (gastos fijos por vencer, caja CERRADA) y verde `#D2F47A` (caja ABIERTA) en `lib/theme.ts`, buscador del reemplazo igual a Productos → Calzado, y Movimientos por producto, agrupado por día y con buscador dentro del período elegido. Migración `20261022022841_devoluciones_ven_ventas_de_otros_dias` aplicada al remoto el 2026-10-21 (probada con rollback).
 
+- Navegación con swipe (2026-10-22, rama `app-swipe-calendario`): pestañas deslizables con `expo-router/js-top-tabs` (`react-native-pager-view` 8.0.2, incluida en Expo Go SDK 57, y `react-native-tab-view`) y la misma `TabBar` flotante; swipe atrás desde el borde izquierdo en todas las pantallas internas con `components/Pila.tsx` (pila JS de react-navigation incluida en expo-router, en vez de `<Stack>`; `OPCIONES_MODAL` para las hojas que se cierran hacia abajo). `GestureHandlerRootView` en `app/_layout.tsx`. En el Menú se quitó "Año" y "Mes" es el mes calendario con `CalendarioMes` (día numerado, intensidad por ventas, flechas para meses anteriores); en Movimientos "Mes" sigue siendo los últimos 30 días.
+
 ## No construir en esta versión
 - Facturación electrónica DIAN
 - E-commerce o catálogo por WhatsApp

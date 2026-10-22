@@ -1,14 +1,14 @@
-import { Stack } from 'expo-router'
 import { useRequireModulo } from '../../../lib/auth'
+import { Pila } from '../../../components/Pila'
 
 export default function ReportesLayout() {
   const requireModulo = useRequireModulo('reportes')
   if (requireModulo) return requireModulo
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="periodos" />
-      <Stack.Screen name="config" />
-    </Stack>
+    <Pila>
+      <Pila.Screen name="index" />
+      <Pila.Screen name="periodos" />
+      <Pila.Screen name="config" />
+    </Pila>
   )
 }

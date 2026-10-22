@@ -26,6 +26,7 @@ export interface TallaExistente {
   id: string
   precio_minimo: number
   precio_maximo: number
+  foto_url?: string | null
 }
 
 export interface FilaFactura {
@@ -39,6 +40,9 @@ export interface FilaFactura {
   existentes: Record<string, TallaExistente>
   cantidades: Record<string, string>
   rangos: RangoPrecio[]
+  // Foto nueva de esta referencia y color (URL pública ya subida). Al guardar
+  // queda en todas sus tallas. Vacía = se conserva la que tenga.
+  foto?: string
 }
 
 export type Condicion = 'contado' | 'credito'
@@ -67,7 +71,39 @@ export const rangoCompleto = (o: Partial<RangoPrecio> = {}): RangoPrecio => ({
 })
 
 export function filaVacia(id: string): FilaFactura {
-  return { id, referencia: '', descripcion: '', marca: '', categoria: '', color: '', existentes: {}, cantidades: {}, rangos: [rangoCompleto()] }
+  return { id, referencia: '', descripcion: '', marca: '', categoria: '', color: '', existentes: {}, cantidades: {}, rangos: [rangoCompleto()], foto: '' }
+}
+
+// "Otro color": la misma referencia con todo igual (descripción, marca,
+// categoría, costo y precios por rango), sin color, cantidades ni foto.
+export function otroColor(fila: FilaFactura, id: string): FilaFactura {
+  return {
+    ...fila,
+    id,
+    color: '',
+    existentes: {},
+    cantidades: {},
+    rangos: fila.rangos.map((r) => ({ ...r })),
+    foto: '',
+  }
+}
+
+// Foto que se ve en la fila: la nueva o, si no hay, la que ya tiene ese color.
+export function fotoDeFila(fila: FilaFactura): string | null {
+  return fila.foto || Object.values(fila.existentes).find((e) => e.foto_url)?.foto_url || null
+}
+
+// El color se escribe en dos campos (hasta dos colores). Se guarda como
+// "Rojo y blanco"; aquí se parte y se une sin perder lo que se está escribiendo.
+export function partesColor(color: string): [string, string] {
+  const i = color.search(/\s+y\s+/i)
+  if (i < 0) return [color, '']
+  const resto = color.slice(i).replace(/^\s+y\s+/i, '')
+  return [color.slice(0, i), resto]
+}
+
+export function unirColores(primero: string, segundo: string): string {
+  return segundo.trim() ? `${primero} y ${segundo}` : primero
 }
 
 // "Precio distinto desde la talla X": parte el rango que contiene a X en dos,

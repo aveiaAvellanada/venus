@@ -97,6 +97,11 @@ export function DetalleCompra() {
           La compra quedó guardada, pero el archivo de la factura no se pudo subir. Súbelo abajo.
         </p>
       ) : null}
+      {parametros.get('foto') === 'fallo' ? (
+        <p role="alert" className="rounded-xl bg-advertencia-soft px-3 py-2 text-sm text-advertencia-texto">
+          La compra quedó guardada, pero la foto de algún color no se pudo asignar. Ponla desde la app en Productos.
+        </p>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Tarjeta>

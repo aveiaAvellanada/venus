@@ -67,7 +67,9 @@ export default function GranjaEditorScreen() {
     if (perfil && puedeEditar) {
       fetchProducto()
     }
-  }, [id, perfil, puedeEditar])
+    // perfil?.id y no el objeto: al volver de la cámara o la galería se relee el
+    // perfil y volver a cargar pisaría la foto recién subida.
+  }, [id, perfil?.id, puedeEditar])
 
   if (requireModulo) return requireModulo
 

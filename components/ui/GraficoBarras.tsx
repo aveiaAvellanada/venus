@@ -22,15 +22,21 @@ const ALTO = 110
 
 const formatear = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
+const SEPARACION = 6
+
 // Receta 6: la barra crece con scaleY (origin bottom), stagger 30ms.
+// Barras en píldora, redondas arriba y abajo: nunca más bajas que su ancho, así
+// que la más baja (o un día en cero, más tenue) se ve como un círculo.
 function Barra({
   proporcion,
   destacada,
   indice,
+  ancho,
 }: {
   proporcion: number
   destacada: boolean
   indice: number
+  ancho: number
 }) {
   const { paleta } = useTema()
   const escala = useSharedValue(0)
@@ -52,13 +58,12 @@ function Barra({
       style={[
         {
           width: '100%',
-          height: Math.max(ALTO * proporcion, proporcion > 0 ? 4 : 2),
-          borderTopLeftRadius: 4,
-          borderTopRightRadius: 4,
+          height: Math.min(ALTO, Math.max(ALTO * proporcion, ancho)),
+          borderRadius: radio.full,
           backgroundColor: destacada ? paleta.primario : paleta.primarioSoft,
           borderWidth: destacada ? 0 : 1,
-          borderBottomWidth: 0,
           borderColor: paleta.borde,
+          opacity: proporcion === 0 ? 0.5 : 1,
           transformOrigin: 'bottom',
         },
         animado,
@@ -70,6 +75,7 @@ function Barra({
 export function GraficoBarras({ datos, granularidad }: Props) {
   const { paleta } = useTema()
   const [seleccion, setSeleccion] = useState<number | null>(null)
+  const [anchoBarras, setAnchoBarras] = useState(0)
 
   const max = datos.reduce((m, d) => Math.max(m, d.total), 0)
 
@@ -80,6 +86,8 @@ export function GraficoBarras({ datos, granularidad }: Props) {
       </View>
     )
   }
+
+  const anchoColumna = Math.max(0, (anchoBarras - SEPARACION * (datos.length - 1)) / datos.length)
 
   // Con muchos buckets (mes = 30), etiquetar solo cada n para no amontonar.
   const salto = datos.length > 8 ? Math.ceil(datos.length / 6) : 1
@@ -107,7 +115,10 @@ export function GraficoBarras({ datos, granularidad }: Props) {
         ) : null}
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: ALTO, gap: 4 }}>
+      <View
+        onLayout={(e) => setAnchoBarras(e.nativeEvent.layout.width)}
+        style={{ flexDirection: 'row', alignItems: 'flex-end', height: ALTO, gap: SEPARACION }}
+      >
         {datos.map((d, i) => (
           <Pressable
             key={d.inicio}
@@ -116,12 +127,17 @@ export function GraficoBarras({ datos, granularidad }: Props) {
             onPress={() => setSeleccion(seleccion === i ? null : i)}
             style={{ flex: 1, height: '100%', justifyContent: 'flex-end' }}
           >
-            <Barra proporcion={max > 0 ? d.total / max : 0} destacada={d.total === max} indice={i} />
+            <Barra
+              proporcion={max > 0 ? d.total / max : 0}
+              destacada={d.total === max}
+              indice={i}
+              ancho={anchoColumna}
+            />
           </Pressable>
         ))}
       </View>
 
-      <View style={{ flexDirection: 'row', gap: 4 }}>
+      <View style={{ flexDirection: 'row', gap: SEPARACION }}>
         {datos.map((d, i) => (
           <Text
             key={d.inicio}

@@ -33,6 +33,7 @@ import {
   FilaLista,
   SelectorRango,
   Tarjeta,
+  useEspacioTabBar,
 } from '../../../components/ui'
 import type { TonoIcono } from '../../../components/ui'
 
@@ -62,6 +63,7 @@ export default function Movimientos() {
   const { perfil } = useAuth()
   const { paleta } = useTema()
   const router = useRouter()
+  const espacioTabBar = useEspacioTabBar()
 
   // Otros días = historial (reportes); los gastos de todos = gastos_fijos.
   const esStaff = tienePermiso(perfil, 'reportes')
@@ -121,7 +123,7 @@ export default function Movimientos() {
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 56, gap: espacio.l }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 56, gap: espacio.l , paddingBottom: espacioTabBar }}
         refreshControl={
           <RefreshControl refreshing={refrescando} onRefresh={refrescar} tintColor={paleta.primario} />
         }

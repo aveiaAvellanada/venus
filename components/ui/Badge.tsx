@@ -11,7 +11,7 @@ import Animated, {
 import { useTema } from '../../lib/tema'
 import { radio, tipografia } from '../../lib/theme'
 
-export type TipoBadge = 'exito' | 'peligro' | 'advertencia' | 'neutro'
+export type TipoBadge = 'exito' | 'peligro' | 'advertencia' | 'neutro' | 'salmon' | 'verde'
 
 interface Props {
   texto: string
@@ -47,6 +47,8 @@ export function Badge({ texto, tipo = 'neutro', punto = false }: Props) {
     peligro: { fondo: paleta.peligroSoft, texto: paleta.peligroTexto },
     advertencia: { fondo: paleta.advertenciaSoft, texto: paleta.advertenciaTexto },
     neutro: { fondo: paleta.superficie2, texto: paleta.texto2 },
+    salmon: { fondo: paleta.salmonSoft, texto: paleta.salmonTexto },
+    verde: { fondo: paleta.verdeSoft, texto: paleta.verdeTexto },
   }[tipo]
 
   return (

@@ -29,6 +29,7 @@ import {
   PanelFiltrosProductos,
   PuntoColor,
   TarjetaGrid,
+  useEspacioTabBar,
 } from '../../../components/ui'
 import type { ProductoAnadido } from '../../../components/ui'
 
@@ -113,6 +114,7 @@ export default function Productos() {
   const router = useRouter()
   const { dispatch } = useCarrito()
   const { width: anchoVentana } = useWindowDimensions()
+  const espacioTabBar = useEspacioTabBar()
 
   const [modo, setModo] = useState(0)
   const [busqueda, setBusqueda] = useState('')
@@ -180,7 +182,7 @@ export default function Productos() {
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
       <ScrollView
-        contentContainerStyle={{ padding: RELLENO_PANTALLA, paddingTop: 56, gap: espacio.l }}
+        contentContainerStyle={{ padding: RELLENO_PANTALLA, paddingTop: 56, gap: espacio.l , paddingBottom: espacioTabBar }}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={refrescando} onRefresh={refrescar} tintColor={paleta.primario} />

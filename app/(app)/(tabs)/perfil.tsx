@@ -7,7 +7,7 @@ import { esDueno as esDuenoPerfil, puedeAcceder, resumenPermisos } from '../../.
 import { useTema } from '../../../lib/tema'
 import type { ModoTema } from '../../../lib/theme'
 import { espacio, radio, tipografia } from '../../../lib/theme'
-import { Badge, CirculoIcono, ControlSegmentado, FilaLista, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { Badge, CirculoIcono, ControlSegmentado, FilaLista, Presionable, Tarjeta, useEspacioTabBar, useToast } from '../../../components/ui'
 
 const MODOS: ModoTema[] = ['claro', 'oscuro', 'sistema']
 
@@ -25,6 +25,7 @@ const NEGOCIO = [
 export default function Perfil() {
   const { perfil, cerrarSesion } = useAuth()
   const { paleta, modo, setModo } = useTema()
+  const espacioTabBar = useEspacioTabBar()
   const router = useRouter()
   const { mostrar } = useToast()
 
@@ -49,7 +50,7 @@ export default function Perfil() {
 
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingTop: 56, gap: espacio.l }}>
+      <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingTop: 56, gap: espacio.l , paddingBottom: espacioTabBar }}>
         <View style={{ alignItems: 'center', gap: espacio.s }}>
           <View
             style={{

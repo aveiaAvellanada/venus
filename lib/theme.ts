@@ -29,6 +29,13 @@ export interface Paleta {
   advertencia: string
   advertenciaSoft: string
   advertenciaTexto: string
+  // Estados con color (único color fuera de la escala de grises): salmón para
+  // "Gastos fijos por vencer" y la caja cerrada; verde para la caja abierta.
+  salmonSoft: string
+  salmonBorde: string
+  salmonTexto: string
+  verdeSoft: string
+  verdeTexto: string
   overlay: string
   // Superficie oscura fija en ambos temas (hero, barra "Agregar al carrito",
   // píldoras "Ir al carrito" / "Mostrar artículos") y lo que va encima.
@@ -68,6 +75,11 @@ export const paletaClara: Paleta = {
   advertencia: '#D97706',
   advertenciaSoft: '#FEF3C7',
   advertenciaTexto: '#92400E',
+  salmonSoft: '#F7C5BC',
+  salmonBorde: '#EEA597',
+  salmonTexto: '#7A2414',
+  verdeSoft: '#D2F47A',
+  verdeTexto: '#2E4700',
   overlay: 'rgba(14,14,16,0.5)',
   superficieOscura: '#1F1F22',
   sobreOscura: '#FFFFFF',
@@ -103,6 +115,11 @@ export const paletaOscura: Paleta = {
   advertencia: '#F2A93B',
   advertenciaSoft: '#3A2A10',
   advertenciaTexto: '#F7C87E',
+  salmonSoft: '#3A1E18',
+  salmonBorde: '#6E3427',
+  salmonTexto: '#F5A58F',
+  verdeSoft: '#12301D',
+  verdeTexto: '#7FE0A3',
   overlay: 'rgba(0,0,0,0.6)',
   superficieOscura: '#2A2A2E',
   sobreOscura: '#FFFFFF',

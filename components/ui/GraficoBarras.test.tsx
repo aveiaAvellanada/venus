@@ -52,12 +52,12 @@ describe('GraficoBarras', () => {
 
   it('las barras son píldoras: nunca más bajas que su ancho', async () => {
     const arbol = await montar(<GraficoBarras datos={DATOS} granularidad="dia" />)
-    const fila = arbol.root.findAll((n: { props: { onLayout?: unknown } }) => typeof n.props.onLayout === 'function')[0]
+    const fila = arbol.root.findAll((n) => typeof n.props.onLayout === 'function')[0]
     // 3 columnas en 300 de ancho con 6 de separación → 96 cada una
     await act(async () => fila.props.onLayout({ nativeEvent: { layout: { width: 300, height: 110 } } }))
     const estilos = arbol.root
-      .findAll((n: { type: unknown; props: { style?: unknown } }) => typeof n.type === 'string' && n.props.style != null)
-      .map((n: { props: { style: unknown } }) => Object.assign({}, ...[n.props.style].flat(3).filter(Boolean)))
+      .findAll((n) => typeof n.type === 'string' && n.props.style != null)
+      .map((n) => Object.assign({}, ...[n.props.style].flat(3).filter(Boolean)))
       .filter((e: { transformOrigin?: string }) => e.transformOrigin === 'bottom')
     expect(estilos).toHaveLength(3)
     for (const e of estilos) expect(e.borderRadius).toBe(999)

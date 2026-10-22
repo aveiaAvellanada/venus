@@ -15,98 +15,29 @@ import {
   filtroActivo,
   tarjetasFiltradas,
 } from '../../../lib/productos'
-import type { FiltrosProductos, ModeloCalzado, TarjetaProducto } from '../../../lib/productos'
+import type { FiltrosProductos, ModeloCalzado } from '../../../lib/productos'
 import { useTema } from '../../../lib/tema'
-import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
+import { espacio, radio, tipografia } from '../../../lib/theme'
 import {
   Badge,
   CampoTexto,
+  CardCalzado,
   ControlSegmentado,
   Esqueleto,
   EstadoVacio,
   HojaProductoAnadido,
   HojaVenderGranja,
   PanelFiltrosProductos,
-  PuntoColor,
   TarjetaGrid,
   useEspacioTabBar,
 } from '../../../components/ui'
 import type { ProductoAnadido } from '../../../components/ui'
-
-const formatear = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
 // Grid (rediseño §2): el espacio entre columnas es el mismo margen lateral.
 const GAP_GRID = espacio.s
 const RELLENO_PANTALLA = espacio.xl
 
 const iconoGranja = (nombre: string) => (/huevo/i.test(nombre) ? Egg : Package)
-
-function Precio({ texto, etiqueta, color }: { texto: string; etiqueta?: string; color: string }) {
-  const { paleta } = useTema()
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-      <Text style={[tipografia.cuerpoLg, tabular, { color, fontSize: 15, lineHeight: 20 }]}>{texto}</Text>
-      {etiqueta ? <Text style={[tipografia.caption, { color: paleta.texto3, fontSize: 11 }]}>{etiqueta}</Text> : null}
-    </View>
-  )
-}
-
-function CardCalzado({ tarjeta, ancho, onPress }: { tarjeta: TarjetaProducto; ancho: number; onPress: () => void }) {
-  const { paleta } = useTema()
-  const { modelo, color, agotado } = tarjeta
-  const colorTexto = agotado ? paleta.texto3 : paleta.texto
-
-  return (
-    <TarjetaGrid
-      ancho={ancho}
-      accessibilityLabel={color ? `${modelo.nombre} · ${color}` : modelo.nombre}
-      onPress={onPress}
-      opaca={agotado}
-      imagen={
-        tarjeta.foto ? (
-          <Image source={{ uri: tarjeta.foto }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-        ) : (
-          <Footprints size={Math.round(ancho * 0.38)} strokeWidth={1.5} color={paleta.textoDeshabilitado} />
-        )
-      }
-      insignia={
-        !modelo.activo ? (
-          <Badge texto="DESCONTINUADO" tipo="neutro" />
-        ) : agotado ? (
-          <Badge texto="AGOTADO" tipo="peligro" />
-        ) : null
-      }
-    >
-      {tarjeta.precioMin === tarjeta.precioMax ? (
-        <Precio texto={formatear(tarjeta.precioMax)} color={colorTexto} />
-      ) : (
-        <View>
-          <Precio texto={formatear(tarjeta.precioMax)} etiqueta="Max" color={colorTexto} />
-          <Precio texto={formatear(tarjeta.precioMin)} etiqueta="Min" color={colorTexto} />
-        </View>
-      )}
-      <Text style={[tipografia.cuerpoLg, { color: colorTexto, fontSize: 15, lineHeight: 20, marginTop: 6 }]} numberOfLines={2}>
-        {modelo.nombre}
-      </Text>
-      {modelo.marca ? (
-        <Text style={[tipografia.etiqueta, { color: paleta.texto3 }]} numberOfLines={1}>
-          {modelo.marca}
-        </Text>
-      ) : null}
-      {color ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <PuntoColor color={color} tamano={10} />
-          <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]} numberOfLines={1}>
-            {color}
-          </Text>
-        </View>
-      ) : null}
-      <Text style={[tipografia.etiqueta, { color: paleta.texto3 }]}>
-        {`${tarjeta.numColores} ${tarjeta.numColores === 1 ? 'color' : 'colores'}`}
-      </Text>
-    </TarjetaGrid>
-  )
-}
 
 export default function Productos() {
   const { perfil } = useAuth()

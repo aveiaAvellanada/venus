@@ -1,23 +1,32 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Modal, Text, TextInput, View } from 'react-native'
-import { ArrowLeft, Search, X } from 'lucide-react-native'
+import React, { useEffect, useState } from 'react'
+import { Modal, Pressable, Text, TextInput, useWindowDimensions, View } from 'react-native'
+import { ArrowLeft, Footprints, Search, SlidersHorizontal, X } from 'lucide-react-native'
 import { listarCalzado, type ProductoCalzado } from '../../lib/inventario'
 import { rangoDeslizador } from '../../lib/carrito'
 import {
-  agruparPorReferencia, coloresDeModelo, maximoVitrina, variantesDeColor, type ModeloCalzado,
+  agruparPorReferencia, coloresDeModelo, columnasGrid, FILTROS_VACIOS, filtroActivo, maximoVitrina,
+  tarjetasFiltradas, variantesDeColor, type FiltrosProductos, type ModeloCalzado, type TarjetaProducto,
 } from '../../lib/productos'
 import { useTema } from '../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../lib/theme'
 import { Boton } from './Boton'
+import { CampoTexto } from './CampoTexto'
+import { CardCalzado } from './CardCalzado'
 import { ChipTalla } from './ChipTalla'
 import { Chip } from './Chip'
 import { EstadoVacio } from './EstadoVacio'
+import { Esqueleto } from './Esqueleto'
+import { PanelFiltrosProductos } from './PanelFiltrosProductos'
 import { Presionable } from './Presionable'
 import { ScreenWrapper } from './ScreenWrapper'
 import { SliderPrecio } from './SliderPrecio'
 
 const pesos = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 const soloEntero = (t: string) => t.replace(/[^0-9]/g, '')
+
+// Mismo grid que Productos: el espacio entre columnas es el mismo margen lateral.
+const GAP_GRID = espacio.s
+const RELLENO = espacio.xl
 
 interface Props {
   visible: boolean
@@ -26,60 +35,56 @@ interface Props {
   onElegir: (variante: ProductoCalzado, precio: number) => void
 }
 
-// Buscador de zapato de reemplazo, igual que agregar al carrito: se busca la
-// referencia, se elige color y talla y se fija el precio (deslizador entre el
-// mínimo y el máximo, o precio escrito: es libre). Cualquier modelo sirve; la
-// diferencia con lo pagado la calcula la pantalla de devolución.
+// Buscador de zapato de reemplazo. El primer paso se ve igual que Productos →
+// Calzado (mismo buscador, filtros y grid, con todo el catálogo a la vista); al
+// tocar una tarjeta se elige talla y precio con ese color ya marcado (deslizador
+// entre el mínimo y el máximo, o precio escrito: es libre). Cualquier modelo
+// activo sirve; la diferencia con lo pagado la calcula la pantalla de devolución.
 export function HojaReemplazo({ visible, onCerrar, onElegir }: Props) {
   const { paleta } = useTema()
+  const { width: anchoVentana } = useWindowDimensions()
+  const [catalogo, setCatalogo] = useState<ModeloCalzado[]>([])
+  const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState('')
-  const [buscando, setBuscando] = useState(false)
-  const [resultados, setResultados] = useState<ProductoCalzado[]>([])
+  const [filtros, setFiltros] = useState<FiltrosProductos>(FILTROS_VACIOS)
+  const [filtrosVisibles, setFiltrosVisibles] = useState(false)
+  const [anchoGrid, setAnchoGrid] = useState(0)
   const [modelo, setModelo] = useState<ModeloCalzado | null>(null)
   const [color, setColor] = useState<string | null>(null)
   const [varianteId, setVarianteId] = useState<string | null>(null)
   const [precioTxt, setPrecioTxt] = useState('')
-  const peticion = useRef(0)
 
-  // Cada vez que se abre arranca limpia.
+  // Cada vez que se abre arranca limpia y trae el catálogo activo.
   useEffect(() => {
     if (!visible) return
-    setBusqueda(''); setResultados([]); setModelo(null); setColor(null); setVarianteId(null); setPrecioTxt('')
+    setBusqueda(''); setFiltros(FILTROS_VACIOS); setModelo(null); setColor(null); setVarianteId(null); setPrecioTxt('')
+    let vigente = true
+    setCargando(true)
+    listarCalzado()
+      .then((filas) => { if (vigente) setCatalogo(agruparPorReferencia(filas)) })
+      .catch(() => { if (vigente) setCatalogo([]) })
+      .finally(() => { if (vigente) setCargando(false) })
+    return () => { vigente = false }
   }, [visible])
 
-  const buscar = (q: string) => {
-    setBusqueda(q)
-    const mia = ++peticion.current
-    if (!q.trim()) {
-      setResultados([]); setBuscando(false)
-      return
-    }
-    setBuscando(true)
-    listarCalzado({ busqueda: q.trim() })
-      .then((r) => { if (mia === peticion.current) setResultados(r) })
-      .catch(() => { if (mia === peticion.current) setResultados([]) })
-      .finally(() => { if (mia === peticion.current) setBuscando(false) })
+  const elegirTarjeta = (t: TarjetaProducto) => {
+    setModelo(t.modelo); setColor(t.color); setVarianteId(null); setPrecioTxt('')
   }
 
-  // El modelo se muestra completo (todas sus tallas y colores), aunque la
-  // búsqueda haya traído solo algunas filas (p. ej. al buscar una talla).
-  const elegirModelo = async (m: ModeloCalzado) => {
-    setModelo(m); setVarianteId(null); setPrecioTxt('')
-    setColor(coloresDeModelo(m)[0] ?? '')
-    try {
-      const filas = await listarCalzado({ busqueda: m.referencia ?? m.nombre })
-      const completo = agruparPorReferencia(filas).find((g) => g.clave.toLowerCase() === m.clave.toLowerCase())
-      if (completo) {
-        setModelo(completo)
-        const colores = coloresDeModelo(completo)
-        setColor((c) => (c != null && colores.includes(c) ? c : colores[0] ?? ''))
-      }
-    } catch {
-      // se queda con las filas de la búsqueda
-    }
-  }
+  const ancho = anchoGrid || anchoVentana
+  const columnas = columnasGrid(ancho)
+  const anchoCard = Math.max(0, Math.floor((ancho - GAP_GRID * 2 - GAP_GRID * (columnas - 1)) / columnas))
+  const tarjetas = tarjetasFiltradas(catalogo, busqueda, filtros)
 
-  const modelos = agruparPorReferencia(resultados)
+  const grid = (hijos: React.ReactNode) => (
+    <View
+      onLayout={(e) => setAnchoGrid(e.nativeEvent.layout.width)}
+      style={{ marginHorizontal: -RELLENO, paddingHorizontal: GAP_GRID, flexDirection: 'row', flexWrap: 'wrap', gap: GAP_GRID }}
+    >
+      {hijos}
+    </View>
+  )
+
   const colores = modelo ? coloresDeModelo(modelo) : []
   const variantes = modelo && color != null ? variantesDeColor(modelo, color) : []
   const variante = variantes.find((v) => v.id === varianteId) ?? null
@@ -121,12 +126,12 @@ export function HojaReemplazo({ visible, onCerrar, onElegir }: Props) {
       testID="modal-buscar-reemplazo">
       <ScreenWrapper
         header={cabecera}
-        contentContainerStyle={{ paddingHorizontal: espacio.xl, paddingBottom: espacio.xxl, gap: espacio.m }}
+        contentContainerStyle={{ paddingHorizontal: RELLENO, paddingBottom: espacio.xxl, gap: modelo ? espacio.m : espacio.l }}
         footer={
           modelo ? (
             <View style={{ padding: espacio.l, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
               <Boton
-                titulo={variante && precio > 0 ? `Usar este reemplazo · ${pesos(precio)}` : 'Elige color, talla y precio'}
+                titulo={variante && precio > 0 ? 'Usar este reemplazo' : 'Elige color, talla y precio'}
                 deshabilitado={!variante || precio <= 0}
                 onPress={() => variante && onElegir(variante, precio)}
               />
@@ -136,50 +141,56 @@ export function HojaReemplazo({ visible, onCerrar, onElegir }: Props) {
       >
         {!modelo ? (
           <>
-            <View style={{
-              flexDirection: 'row', alignItems: 'center', gap: espacio.s,
-              backgroundColor: paleta.superficie2, borderRadius: radio.md, paddingHorizontal: espacio.m, height: 44,
-            }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s }}>
               <Search size={18} color={paleta.texto3} />
-              <TextInput
-                style={[tipografia.cuerpo, { flex: 1, color: paleta.texto }]}
-                placeholder="Busca la referencia, marca o nombre…"
-                placeholderTextColor={paleta.textoDeshabilitado}
-                autoFocus
-                value={busqueda}
-                onChangeText={buscar}
-                testID="input-buscar-reemplazo"
-              />
-              {buscando ? <ActivityIndicator size="small" color={paleta.primario} /> : null}
+              <View style={{ flex: 1 }}>
+                <CampoTexto
+                  placeholder="Buscar por nombre, marca o ref…"
+                  value={busqueda}
+                  onChangeText={setBusqueda}
+                  autoCorrect={false}
+                  testID="input-buscar-reemplazo"
+                />
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Filtros"
+                accessibilityState={{ selected: filtroActivo(filtros) }}
+                onPress={() => setFiltrosVisibles(true)}
+                hitSlop={8}
+                style={{ padding: espacio.s }}
+              >
+                <SlidersHorizontal size={20} color={filtroActivo(filtros) ? paleta.primario : paleta.texto3} />
+              </Pressable>
             </View>
 
-            {!buscando && busqueda.trim() !== '' && modelos.length === 0 ? (
-              <EstadoVacio icono={<Search />} titulo="Sin resultados" mensaje="Prueba con otra búsqueda." />
-            ) : null}
-
-            {modelos.map((m) => (
-              <Presionable
-                key={m.clave}
-                accessibilityRole="button"
-                accessibilityLabel={`Elegir ${m.nombre}`}
-                testID={`resultado-reemplazo-${m.clave}`}
-                onPress={() => elegirModelo(m)}
-                style={{
-                  borderWidth: 1, borderColor: paleta.borde, borderRadius: radio.md, backgroundColor: paleta.superficie,
-                  padding: espacio.m, gap: 2,
-                }}
-              >
-                <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>{m.nombre}</Text>
-                <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
-                  {[m.marca, m.referencia ? `Ref ${m.referencia}` : null, `${m.colores.length || 1} ${m.colores.length === 1 ? 'color' : 'colores'}`]
-                    .filter(Boolean).join(' · ')}
-                </Text>
-                <Text style={[tipografia.caption, tabular, { color: paleta.primario }]}>
-                  {m.precioMin === m.precioMax ? pesos(m.precioMin) : `${pesos(m.precioMin)} – ${pesos(m.precioMax)}`}
-                  {m.agotado ? '  ·  AGOTADO' : ''}
-                </Text>
-              </Presionable>
-            ))}
+            {cargando ? (
+              grid(
+                Array.from({ length: columnas * 2 }, (_, i) => (
+                  <View key={i} style={{ width: anchoCard }}>
+                    <Esqueleto alto={anchoCard + 96} radio={0} />
+                  </View>
+                ))
+              )
+            ) : tarjetas.length === 0 ? (
+              <EstadoVacio
+                icono={<Footprints />}
+                titulo="No hay productos que coincidan"
+                mensaje="Prueba con otra búsqueda o con otros filtros"
+              />
+            ) : (
+              grid(
+                tarjetas.map((t) => (
+                  <CardCalzado
+                    key={t.clave}
+                    tarjeta={t}
+                    ancho={anchoCard}
+                    testID={`resultado-reemplazo-${t.clave}`}
+                    onPress={() => elegirTarjeta(t)}
+                  />
+                ))
+              )
+            )}
           </>
         ) : (
           <>
@@ -259,6 +270,18 @@ export function HojaReemplazo({ visible, onCerrar, onElegir }: Props) {
           </>
         )}
       </ScreenWrapper>
+
+      <PanelFiltrosProductos
+        visible={filtrosVisibles}
+        modelos={catalogo}
+        busqueda={busqueda}
+        filtros={filtros}
+        onAplicar={(f) => {
+          setFiltros(f)
+          setFiltrosVisibles(false)
+        }}
+        onCerrar={() => setFiltrosVisibles(false)}
+      />
     </Modal>
   )
 }

@@ -665,6 +665,140 @@ export type Database = {
           },
         ]
       }
+      conteo_items: {
+        Row: {
+          contado: number
+          conteo_id: string
+          created_at: string
+          created_by: string | null
+          diferencia: number | null
+          id: string
+          motivo: string | null
+          nota: string | null
+          producto_id: string
+          sistema: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          contado: number
+          conteo_id: string
+          created_at?: string
+          created_by?: string | null
+          diferencia?: never
+          id?: string
+          motivo?: string | null
+          nota?: string | null
+          producto_id: string
+          sistema: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          contado?: number
+          conteo_id?: string
+          created_at?: string
+          created_by?: string | null
+          diferencia?: never
+          id?: string
+          motivo?: string | null
+          nota?: string | null
+          producto_id?: string
+          sistema?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conteo_items_conteo_id_fkey"
+            columns: ["conteo_id"]
+            isOneToOne: false
+            referencedRelation: "conteos_inventario"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteo_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteo_items_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos_calzado"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteo_items_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conteos_inventario: {
+        Row: {
+          alcance: string
+          clave_idempotencia: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          nota: string | null
+          tallas_ajustadas: number
+          tallas_contadas: number
+          unidades_faltantes: number
+          unidades_sobrantes: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          alcance: string
+          clave_idempotencia?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nota?: string | null
+          tallas_ajustadas: number
+          tallas_contadas: number
+          unidades_faltantes?: number
+          unidades_sobrantes?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          alcance?: string
+          clave_idempotencia?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nota?: string | null
+          tallas_ajustadas?: number
+          tallas_contadas?: number
+          unidades_faltantes?: number
+          unidades_sobrantes?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conteos_inventario_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteos_inventario_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devolucion_items: {
         Row: {
           cambio_talla_color_id: string | null
@@ -2125,6 +2259,10 @@ export type Database = {
       }
       registrar_compra: {
         Args: { p_clave_idempotencia?: string; p_compra: Json }
+        Returns: Json
+      }
+      registrar_conteo: {
+        Args: { p_clave_idempotencia?: string; p_conteo: Json }
         Returns: Json
       }
       registrar_devolucion: {

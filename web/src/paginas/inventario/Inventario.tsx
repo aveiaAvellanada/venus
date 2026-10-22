@@ -76,7 +76,7 @@ export function Inventario() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Inventario y precios</h1>
-          <p className="text-texto2">Calzado por referencia, con sus tallas. El stock solo cambia con compras, ventas y devoluciones.</p>
+          <p className="text-texto2">Calzado por referencia, con sus tallas. El stock solo cambia con compras, ventas, devoluciones y el conteo físico.</p>
         </div>
         <Boton variante="fantasma" onClick={exportar} disabled={!filtrados.length}>
           <Download aria-hidden className="size-4" />

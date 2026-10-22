@@ -10,6 +10,9 @@ import { Inventario } from '../paginas/inventario/Inventario'
 import { NoEncontrada } from '../paginas/NoEncontrada'
 import { Proximamente } from '../paginas/Proximamente'
 import { Carga } from '../paginas/carga/Carga'
+import { Conteos } from '../paginas/conteo/Conteos'
+import { DetalleConteo } from '../paginas/conteo/DetalleConteo'
+import { NuevoConteo } from '../paginas/conteo/NuevoConteo'
 import { Compras } from '../paginas/compras/Compras'
 import { DetalleCompra } from '../paginas/compras/DetalleCompra'
 import { NuevaCompra } from '../paginas/compras/NuevaCompra'
@@ -46,6 +49,9 @@ export function Rutas() {
           <Route path="/carga" element={<Carga />} />
           <Route path="/proveedores" element={<Proveedores />} />
           <Route path="/proveedores/:id" element={<FichaProveedor />} />
+          <Route path="/conteo" element={<Conteos />} />
+          <Route path="/conteo/nuevo" element={<NuevoConteo />} />
+          <Route path="/conteo/:id" element={<DetalleConteo />} />
           {SECCIONES.filter((s) => !s.lista).map((s) => (
             <Route key={s.id} path={s.ruta} element={<Proximamente seccion={s} />} />
           ))}

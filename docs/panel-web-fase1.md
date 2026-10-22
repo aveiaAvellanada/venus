@@ -141,6 +141,11 @@ y totales de compra, lectura/validación de la plantilla Excel. Con tests en
      - costo y precios por rango de tallas, con "Precio distinto desde la talla…".
    - **Al guardar:** resumen (tallas nuevas, precios que cambian, total). Si falta algo, la lista de lo que falta.
    - **Borrador:** queda guardado en el navegador.
+   - **Ajustes del 2026-10-22:**
+     - **Otro color** copia la fila debajo, con todo igual menos el color, las cantidades y la foto.
+     - **Foto** por referencia y color: se comprime a 500 KB y se sube al bucket `productos`, el mismo de la app. Al guardar queda en todas las tallas de ese color.
+     - **Marca** con lista de las ya usadas, y se puede escribir una nueva.
+     - **Color** en dos campos (color y segundo color, opcional): la lista trae los ya usados, también los de dos colores, más los básicos, y acepta uno nuevo.
    - **Reintento:** con una clave por factura; si se corta la red, reintentar no duplica la compra ni el stock.
    - **Base:** `registrar_compra` pide `recibir_mercancia` y `costos` (más `inventario` para cambiar un precio existente). Sin `costos` se sigue usando la llegada física de la app.
    - **Pendiente:** el precio sugerido de una referencia nueva sale vacío; las reglas de margen llegan en la fase 2.

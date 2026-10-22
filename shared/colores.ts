@@ -22,6 +22,12 @@ const COLORES: Record<string, string> = {
   plateado: '#CBD5E1',
 }
 
+// Los que se sugieren al escribir un color (sin repetir sinónimos).
+export const COLORES_BASE: string[] = [
+  'Negro', 'Blanco', 'Gris', 'Azul', 'Rojo', 'Verde', 'Amarillo', 'Café',
+  'Rosado', 'Morado', 'Naranja', 'Beige', 'Dorado', 'Plateado',
+]
+
 export function colorAHex(nombre: string): string {
   const n = nombre.trim().toLowerCase()
   // "Azul rey" → azul: el primer término suele ser el color base.

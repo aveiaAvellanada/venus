@@ -6,7 +6,7 @@ import { hoyEn } from '@shared/fechas'
 import type { ProductoCalzado } from '../../lib/inventario'
 import { costosPorProducto, listarCalzado } from '../../lib/datos/inventario'
 import { listarProveedores, subirDocumento } from '../../lib/datos/proveedores'
-import { listarCompras, obtenerCompra, registrarCompra } from '../../lib/datos/compras'
+import { fijarFotos, listarCompras, obtenerCompra, registrarCompra, subirFotoProducto } from '../../lib/datos/compras'
 import { Compras } from './Compras'
 import { DetalleCompra } from './DetalleCompra'
 import { NuevaCompra } from './NuevaCompra'
@@ -18,7 +18,13 @@ vi.mock('../../lib/datos/proveedores', async (original) => ({
   subirDocumento: vi.fn(),
   documentosDelProveedor: vi.fn().mockResolvedValue([]),
 }))
-vi.mock('../../lib/datos/compras', () => ({ listarCompras: vi.fn(), obtenerCompra: vi.fn(), registrarCompra: vi.fn() }))
+vi.mock('../../lib/datos/compras', () => ({
+  listarCompras: vi.fn(), obtenerCompra: vi.fn(), registrarCompra: vi.fn(), subirFotoProducto: vi.fn(), fijarFotos: vi.fn(),
+}))
+vi.mock('../../lib/imagen', async (original) => ({
+  ...(await original<typeof import('../../lib/imagen')>()),
+  comprimirFoto: vi.fn().mockResolvedValue(new Blob(['jpg'], { type: 'image/jpeg' })),
+}))
 
 const HOY = hoyEn()
 const p = (o: Partial<ProductoCalzado>): ProductoCalzado => ({
@@ -31,7 +37,12 @@ beforeEach(() => {
   vi.mocked(listarProveedores).mockResolvedValue([
     { id: 'p1', nombre: 'Calzado Andino', nit_cedula: null, telefono: null, ciudad: null, notas: null, activo: true },
   ])
-  vi.mocked(listarCalzado).mockResolvedValue([p({ id: 'a38' }), p({ id: 'a39', talla: '39' })])
+  vi.mocked(listarCalzado).mockResolvedValue([
+    p({ id: 'a38' }), p({ id: 'a39', talla: '39' }),
+    p({ id: 'v1', referencia: 'BV-2', marca: 'Verlon', color: 'Rojo y blanco', talla: '40' }),
+  ])
+  vi.mocked(subirFotoProducto).mockResolvedValue('https://fotos/nueva.jpg')
+  vi.mocked(fijarFotos).mockResolvedValue()
   vi.mocked(costosPorProducto).mockResolvedValue(new Map([['a38', { ultimo: 60000, promedio: 60000 }]]))
   vi.mocked(registrarCompra).mockResolvedValue({ compra_id: 'c9', repetida: false })
   vi.mocked(obtenerCompra).mockResolvedValue(null)
@@ -131,5 +142,67 @@ describe('Nueva compra', () => {
     unmount()
     pintar('/compras/nueva')
     expect(await screen.findByLabelText('Referencia de la fila 1')).toHaveValue('BORRADOR-1')
+  })
+
+  it('marca y color: se eligen de lo ya creado o se escribe uno nuevo, hasta dos colores', async () => {
+    pintar('/compras/nueva')
+    await screen.findByLabelText('Referencia de la fila 1')
+    const opciones = (id: string) => [...document.querySelectorAll(`#${id} option`)].map((o) => o.getAttribute('value'))
+    expect(opciones('opciones-marca')).toEqual(['Kalzado', 'Verlon'])
+    // El primer color ofrece los de dos colores ya usados y los sueltos; el segundo, solo sueltos.
+    expect(opciones('opciones-color')[0]).toBe('Rojo y blanco')
+    expect(opciones('opciones-color')).toContain('Negro')
+    expect(opciones('opciones-color-simple')).not.toContain('Rojo y blanco')
+    expect(screen.getByLabelText('Segundo color de la fila 1')).toBeDisabled()
+
+    // Elegir o escribir "Rojo y blanco" lo reparte en los dos campos al salir.
+    await userEvent.type(screen.getByLabelText('Color de la fila 1'), 'Rojo y blanco')
+    expect(screen.getByLabelText('Color de la fila 1')).toHaveValue('Rojo y blanco')
+    await userEvent.tab()
+    expect(screen.getByLabelText('Color de la fila 1')).toHaveValue('Rojo')
+    expect(screen.getByLabelText('Segundo color de la fila 1')).toHaveValue('blanco')
+    // Uno nuevo, nunca visto, también vale.
+    await userEvent.clear(screen.getByLabelText('Segundo color de la fila 1'))
+    await userEvent.type(screen.getByLabelText('Segundo color de la fila 1'), 'Fucsia neón')
+    expect(screen.getByLabelText('Color de la fila 1')).toHaveValue('Rojo')
+    expect(screen.getByLabelText('Segundo color de la fila 1')).toHaveValue('Fucsia neón')
+  })
+
+  it('"Otro color" copia la referencia con sus precios, sin color ni cantidades, y cada color guarda su foto', async () => {
+    pintar('/compras/nueva')
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Proveedor *' }), 'p1')
+    await userEvent.type(screen.getByLabelText('Referencia de la fila 1'), 'NV-5')
+    await userEvent.type(screen.getByLabelText('Color de la fila 1'), 'Negro')
+    await userEvent.type(screen.getByLabelText('Descripción de la fila 1'), 'Tennis nuevo')
+    await userEvent.type(screen.getByLabelText('Marca de la fila 1'), 'Verlon')
+    await userEvent.selectOptions(screen.getByLabelText('Categoría de la fila 1'), 'Tennis')
+    await userEvent.type(screen.getByLabelText('Costo tallas 20–45 de la fila 1'), '50000')
+    await userEvent.type(screen.getByLabelText('Precio mínimo tallas 20–45 de la fila 1'), '80000')
+    await userEvent.type(screen.getByLabelText('Precio máximo tallas 20–45 de la fila 1'), '100000')
+    await userEvent.type(screen.getByLabelText('Talla 38 de la fila 1'), '2')
+    await userEvent.upload(screen.getByLabelText('Foto de la fila 1'), new File(['x'], 'negro.jpg', { type: 'image/jpeg' }))
+    expect(await screen.findByText('Foto nueva')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Otro color' }))
+    expect(screen.getByLabelText('Color de la fila 2')).toHaveFocus()
+    expect(screen.getByLabelText('Color de la fila 2')).toHaveValue('')
+    expect(screen.getByLabelText('Referencia de la fila 2')).toHaveValue('NV-5')
+    expect(screen.getByLabelText('Descripción de la fila 2')).toHaveValue('Tennis nuevo')
+    expect(screen.getByLabelText('Marca de la fila 2')).toHaveValue('Verlon')
+    expect(screen.getByLabelText('Categoría de la fila 2')).toHaveValue('Tennis')
+    expect(screen.getByLabelText('Precio mínimo tallas 20–45 de la fila 2')).toHaveValue('80000')
+    expect(screen.getByLabelText('Talla 38 de la fila 2')).toHaveValue('')
+    expect(screen.getAllByText('Sin foto')).toHaveLength(1)
+
+    await userEvent.keyboard('Azul')
+    await userEvent.type(screen.getByLabelText('Talla 39 de la fila 2'), '3')
+    await userEvent.click(screen.getByRole('button', { name: 'Revisar y guardar' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Guardar y subir stock' }))
+    const [factura] = vi.mocked(registrarCompra).mock.lastCall!
+    expect(factura.filas.map((f) => [f.referencia, f.color, f.foto])).toEqual([
+      ['NV-5', 'Negro', 'https://fotos/nueva.jpg'],
+      ['NV-5', 'Azul', ''],
+    ])
+    expect(fijarFotos).toHaveBeenCalledWith('c9', factura)
   })
 })

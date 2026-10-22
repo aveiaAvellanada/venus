@@ -4,12 +4,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, ArrowLeft, Paperclip, Plus } from 'lucide-react'
 import { pesos } from '@shared/formato'
 import { hoyEn } from '@shared/fechas'
-import { nombreColores } from '@shared/colores'
+import { COLORES_BASE, coloresDeNombre, nombreColores } from '@shared/colores'
 import {
-  avisosFactura, erroresFactura, filaVacia, rangosDesdeExistentes, resumenFactura,
+  avisosFactura, erroresFactura, filaVacia, otroColor, rangosDesdeExistentes, resumenFactura,
   type Factura, type FilaFactura, type TallaExistente,
 } from '../../lib/compras'
-import { registrarCompra } from '../../lib/datos/compras'
+import { fijarFotos, registrarCompra } from '../../lib/datos/compras'
 import { costosPorProducto, listarCalzado } from '../../lib/datos/inventario'
 import { listarProveedores, subirDocumento } from '../../lib/datos/proveedores'
 import { comprimirFoto, MAX_PDF } from '../../lib/imagen'
@@ -81,17 +81,54 @@ export function NuevaCompra() {
         referencia: p.referencia, descripcion: p.descripcion, marca: p.marca ?? '', categoria: p.categoria,
         color: p.color ?? '', existentes: {},
       }
-      r.existentes[p.talla] = { id: p.id, precio_minimo: Number(p.precio_minimo), precio_maximo: Number(p.precio_maximo ?? p.precio_minimo) }
+      r.existentes[p.talla] = {
+        id: p.id, precio_minimo: Number(p.precio_minimo), precio_maximo: Number(p.precio_maximo ?? p.precio_minimo), foto_url: p.foto_url ?? null,
+      }
       mapa.set(clave, r)
     }
     return mapa
   }, [inventario.data])
   const referencias = useMemo(() => [...new Set([...conocidas.values()].map((r) => r.referencia))].sort(), [conocidas])
-  const colores = useMemo(() => [...new Set([...conocidas.values()].map((r) => r.color).filter(Boolean))].sort(), [conocidas])
+  // Marcas y colores ya usados en el inventario, para elegirlos o escribir uno nuevo.
+  const marcas = useMemo(
+    () => [...new Set((inventario.data ?? []).map((p) => p.marca?.trim()).filter((m): m is string => !!m))].sort((a, b) => a.localeCompare(b, 'es')),
+    [inventario.data],
+  )
+  const coloresUsados = useMemo(
+    () => [...new Set((inventario.data ?? []).map((p) => nombreColores(p.color)).filter((c): c is string => !!c))],
+    [inventario.data],
+  )
+  const coloresSimples = useMemo(() => {
+    const vistos = new Map<string, string>()
+    for (const c of [...COLORES_BASE, ...coloresUsados.flatMap((c) => coloresDeNombre(c))]) {
+      const nombre = nombreColores(c)!
+      if (!vistos.has(plano(nombre))) vistos.set(plano(nombre), nombre)
+    }
+    return [...vistos.values()].sort((a, b) => a.localeCompare(b, 'es'))
+  }, [coloresUsados])
+  // Para el primer color: los de dos colores ya usados ("Rojo y blanco") y los sueltos.
+  const colores = useMemo(
+    () => [...coloresUsados.filter((c) => coloresDeNombre(c).length > 1).sort((a, b) => a.localeCompare(b, 'es')), ...coloresSimples],
+    [coloresUsados, coloresSimples],
+  )
 
   const cambiarFactura = (cambios: Partial<Factura>) => setBorrador((b) => ({ ...b, factura: { ...b.factura, ...cambios } }))
   const cambiarFila = (id: string, fila: FilaFactura) =>
     setBorrador((b) => ({ ...b, factura: { ...b.factura, filas: b.factura.filas.map((x) => (x.id === id ? fila : x)) } }))
+  // La foto llega cuando termina de subir: se pone sobre la fila como esté en ese momento.
+  const fijarFoto = (id: string, foto: string) =>
+    setBorrador((b) => ({ ...b, factura: { ...b.factura, filas: b.factura.filas.map((x) => (x.id === id ? { ...x, foto } : x)) } }))
+
+  // "Otro color": la misma referencia justo debajo, lista para escribir el color.
+  function agregarOtroColor(fila: FilaFactura) {
+    const nueva = otroColor(fila, nuevoId())
+    setBorrador((b) => {
+      const filas = [...b.factura.filas]
+      filas.splice(filas.findIndex((x) => x.id === fila.id) + 1, 0, nueva)
+      return { ...b, factura: { ...b.factura, filas } }
+    })
+    setTimeout(() => document.getElementById(`color-${nueva.id}`)?.focus(), 0)
+  }
 
   // Al escribir referencia y color de algo que ya existe: trae descripción, marca,
   // categoría, las tallas existentes y sus precios (y el último costo).
@@ -133,6 +170,13 @@ export function NuevaCompra() {
   const guardar = useMutation({
     mutationFn: async () => {
       const resultado = await registrarCompra(f, borrador.clave)
+      let fotoFallo = false
+      try {
+        await fijarFotos(resultado.compra_id, f)
+      } catch {
+        // La compra ya quedó: la foto se puede poner después desde la app.
+        fotoFallo = true
+      }
       if (archivo) {
         try {
           if (archivo.type === 'application/pdf') {
@@ -143,10 +187,10 @@ export function NuevaCompra() {
           }
         } catch {
           // La compra ya quedó: el archivo se puede subir después desde el detalle.
-          return { ...resultado, archivoFallo: true }
+          return { ...resultado, archivoFallo: true, fotoFallo }
         }
       }
-      return { ...resultado, archivoFallo: false }
+      return { ...resultado, archivoFallo: false, fotoFallo }
     },
     onSuccess: async (r) => {
       try { localStorage.removeItem(BORRADOR) } catch { /* nada */ }
@@ -156,7 +200,8 @@ export function NuevaCompra() {
         cliente.invalidateQueries({ queryKey: ['compras'] }),
         cliente.invalidateQueries({ queryKey: ['proveedores'] }),
       ])
-      navegar(`/compras/${r.compra_id}${r.archivoFallo ? '?archivo=fallo' : ''}`)
+      const avisos = [r.archivoFallo ? 'archivo=fallo' : '', r.fotoFallo ? 'foto=fallo' : ''].filter(Boolean).join('&')
+      navegar(`/compras/${r.compra_id}${avisos ? `?${avisos}` : ''}`)
     },
   })
 
@@ -242,6 +287,12 @@ export function NuevaCompra() {
       <datalist id="opciones-color">
         {colores.map((c) => <option key={c} value={c} />)}
       </datalist>
+      <datalist id="opciones-color-simple">
+        {coloresSimples.map((c) => <option key={c} value={c} />)}
+      </datalist>
+      <datalist id="opciones-marca">
+        {marcas.map((m) => <option key={m} value={m} />)}
+      </datalist>
 
       {f.filas.map((fila, i) => (
         <FilaReferencia
@@ -249,8 +300,12 @@ export function NuevaCompra() {
           fila={fila}
           indice={i}
           opcionesReferencia="opciones-referencia"
+          opcionesMarca="opciones-marca"
           opcionesColor="opciones-color"
+          opcionesColorSimple="opciones-color-simple"
           alCambiar={(nueva) => cambiarFila(fila.id, nueva)}
+          alOtroColor={() => agregarOtroColor(fila)}
+          alFoto={(url) => fijarFoto(fila.id, url)}
           alReconocer={() => reconocer(fila)}
           alQuitar={() => cambiarFactura({ filas: f.filas.length > 1 ? f.filas.filter((x) => x.id !== fila.id) : [filaVacia(nuevoId())] })}
           alSalirDeTalla={(talla, direccion) => moverEntreFilas(i, talla, direccion)}

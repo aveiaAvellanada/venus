@@ -1,10 +1,13 @@
-import { type KeyboardEvent } from 'react'
-import { Scissors, Trash2, X } from 'lucide-react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { Camera, CopyPlus, LoaderCircle, Scissors, Trash2, X } from 'lucide-react'
 import { pesos } from '@shared/formato'
 import {
-  dividirRango, enRango, subtotalFila, TALLAS, unidadesFila, unirRango, type FilaFactura, type RangoPrecio,
+  dividirRango, enRango, fotoDeFila, partesColor, subtotalFila, TALLAS, unidadesFila, unirColores, unirRango,
+  type FilaFactura, type RangoPrecio,
 } from '../../lib/compras'
-import { Insignia } from '../../componentes/ui'
+import { subirFotoProducto } from '../../lib/datos/compras'
+import { comprimirFoto } from '../../lib/imagen'
+import { Insignia, PuntoColor } from '../../componentes/ui'
 
 export const CATEGORIAS = [
   { valor: 'Chanclas', titulo: 'Chanclas' },
@@ -21,19 +24,54 @@ const soloDigitos = (t: string) => t.replace(/[^\d.]/g, '')
 
 // Una referencia (mismo modelo y color) de la factura: datos, cantidades por
 // talla (20–45) y costo/precios por rango de tallas.
-export function FilaReferencia({ fila, indice, opcionesReferencia, opcionesColor, alCambiar, alReconocer, alQuitar, alSalirDeTalla }: {
+export function FilaReferencia({
+  fila, indice, opcionesReferencia, opcionesMarca, opcionesColor, opcionesColorSimple,
+  alCambiar, alReconocer, alQuitar, alOtroColor, alFoto, alSalirDeTalla,
+}: {
   fila: FilaFactura
   indice: number
   opcionesReferencia: string
+  opcionesMarca: string
+  // Colores ya usados (también los de dos, "Rojo y blanco") y los básicos.
   opcionesColor: string
+  // Solo colores sueltos, para el segundo color.
+  opcionesColorSimple: string
   alCambiar: (f: FilaFactura) => void
   alReconocer: () => void
   alQuitar: () => void
+  alOtroColor: () => void
+  alFoto: (url: string) => void
   alSalirDeTalla: (talla: string, direccion: 'abajo' | 'arriba') => void
 }) {
+  // Los dos campos de color se editan tal cual se escriben; "Rojo y blanco"
+  // escrito o elegido en el primero se reparte en los dos al salir del campo.
+  const [color1, setColor1] = useState(() => partesColor(fila.color)[0])
+  const [color2, setColor2] = useState(() => partesColor(fila.color)[1])
+  useEffect(() => {
+    // El color cambió desde fuera (reconocer, "Otro color"): se vuelve a partir.
+    if (unirColores(color1, color2) === fila.color) return
+    const [a, b] = partesColor(fila.color)
+    setColor1(a)
+    setColor2(b)
+  }, [fila.color])
+  const cambiarColor = (primero: string, segundo: string) => {
+    setColor1(primero)
+    setColor2(segundo)
+    alCambiar({ ...fila, color: unirColores(primero, segundo) })
+  }
+  function salirDelColor() {
+    if (!color2.trim()) {
+      const [a, b] = partesColor(color1)
+      if (b.trim()) {
+        setColor1(a)
+        setColor2(b)
+      }
+    }
+    alReconocer()
+  }
   const nuevas = TALLAS.filter((t) => Number(fila.cantidades[t]) > 0 && !fila.existentes[t]).length
   const conocida = Object.keys(fila.existentes).length > 0
-  const campo = (clave: 'referencia' | 'descripcion' | 'marca' | 'color') => ({
+  const campo = (clave: 'referencia' | 'descripcion' | 'marca') => ({
     value: fila[clave],
     onChange: (e: { target: { value: string } }) => alCambiar({ ...fila, [clave]: e.target.value }),
   })
@@ -56,13 +94,35 @@ export function FilaReferencia({ fila, indice, opcionesReferencia, opcionesColor
   return (
     <section aria-label={`Referencia ${indice + 1}`} className="flex flex-col gap-3 rounded-2xl border border-borde bg-fondo p-4">
       <div className="flex flex-wrap items-end gap-2">
+        <FotoColor fila={fila} indice={indice} alFoto={alFoto} />
         <label className="w-36 text-xs text-texto3">
           Referencia
           <input {...campo('referencia')} list={opcionesReferencia} onBlur={alReconocer} aria-label={`Referencia de la fila ${indice + 1}`} className={entrada} />
         </label>
         <label className="w-32 text-xs text-texto3">
-          Color
-          <input {...campo('color')} list={opcionesColor} onBlur={alReconocer} aria-label={`Color de la fila ${indice + 1}`} className={entrada} />
+          <span className="flex items-center gap-1">Color {fila.color.trim() ? <PuntoColor color={fila.color} /> : null}</span>
+          <input
+            id={`color-${fila.id}`}
+            value={color1}
+            onChange={(e) => cambiarColor(e.target.value, color2)}
+            list={opcionesColor}
+            onBlur={salirDelColor}
+            aria-label={`Color de la fila ${indice + 1}`}
+            className={entrada}
+          />
+        </label>
+        <label className="w-32 text-xs text-texto3">
+          Segundo color
+          <input
+            value={color2}
+            onChange={(e) => cambiarColor(color1, e.target.value)}
+            list={opcionesColorSimple}
+            onBlur={alReconocer}
+            placeholder="Opcional"
+            disabled={!color1.trim()}
+            aria-label={`Segundo color de la fila ${indice + 1}`}
+            className={`${entrada} disabled:opacity-50`}
+          />
         </label>
         <label className="min-w-48 flex-1 text-xs text-texto3">
           Descripción
@@ -70,7 +130,7 @@ export function FilaReferencia({ fila, indice, opcionesReferencia, opcionesColor
         </label>
         <label className="w-32 text-xs text-texto3">
           Marca
-          <input {...campo('marca')} aria-label={`Marca de la fila ${indice + 1}`} className={entrada} />
+          <input {...campo('marca')} list={opcionesMarca} aria-label={`Marca de la fila ${indice + 1}`} className={entrada} />
         </label>
         <label className="w-36 text-xs text-texto3">
           Categoría
@@ -89,9 +149,18 @@ export function FilaReferencia({ fila, indice, opcionesReferencia, opcionesColor
         </span>
         <button
           type="button"
+          onClick={alOtroColor}
+          title="Agrega debajo la misma referencia con otro color: copia descripción, marca, categoría, costo y precios"
+          className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-borde px-2.5 py-1.5 text-xs font-semibold text-texto2 hover:bg-superficie2 hover:text-texto"
+        >
+          <CopyPlus aria-hidden className="size-4" />
+          Otro color
+        </button>
+        <button
+          type="button"
           aria-label={`Quitar la fila ${indice + 1}`}
           onClick={alQuitar}
-          className="ml-auto rounded-lg p-1.5 text-texto3 hover:bg-peligro-soft hover:text-peligro-texto"
+          className="rounded-lg p-1.5 text-texto3 hover:bg-peligro-soft hover:text-peligro-texto"
         >
           <Trash2 className="size-4" />
         </button>
@@ -179,5 +248,57 @@ export function FilaReferencia({ fila, indice, opcionesReferencia, opcionesColor
         {unidadesFila(fila)} pares · subtotal <strong className="cifras text-texto">{pesos(subtotalFila(fila))}</strong>
       </p>
     </section>
+  )
+}
+
+// Foto de esta referencia y color: se comprime a 500 KB y se sube al elegirla;
+// al guardar la compra queda en todas sus tallas. Si ya tenía, se muestra esa.
+function FotoColor({ fila, indice, alFoto }: { fila: FilaFactura; indice: number; alFoto: (url: string) => void }) {
+  const entradaArchivo = useRef<HTMLInputElement>(null)
+  const [subiendo, setSubiendo] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const foto = fotoDeFila(fila)
+
+  async function elegir(archivo: File | undefined) {
+    if (!archivo) return
+    setSubiendo(true)
+    setError(null)
+    try {
+      alFoto(await subirFotoProducto(await comprimirFoto(archivo)))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo subir la foto.')
+    } finally {
+      setSubiendo(false)
+      if (entradaArchivo.current) entradaArchivo.current.value = ''
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <input
+        ref={entradaArchivo}
+        type="file"
+        accept="image/*"
+        aria-label={`Foto de la fila ${indice + 1}`}
+        className="hidden"
+        onChange={(e) => elegir(e.target.files?.[0])}
+      />
+      <button
+        type="button"
+        onClick={() => entradaArchivo.current?.click()}
+        title={error ?? (foto ? 'Cambiar la foto de este color' : 'Agregar la foto de este color')}
+        className={`relative flex size-16 items-center justify-center overflow-hidden rounded-xl border bg-superficie2 text-texto3 hover:border-borde-fuerte ${error ? 'border-peligro' : 'border-borde'}`}
+      >
+        {foto ? <img src={foto} alt="" className="size-full object-cover" /> : <Camera aria-hidden className="size-5" />}
+        {subiendo ? (
+          <span className="absolute inset-0 flex items-center justify-center bg-overlay">
+            <LoaderCircle aria-hidden className="size-5 animate-spin text-white" />
+          </span>
+        ) : null}
+      </button>
+      <span className={`text-[10px] ${error ? 'text-peligro-texto' : 'text-texto3'}`}>
+        {subiendo ? 'Subiendo…' : error ? 'No se subió' : fila.foto ? 'Foto nueva' : foto ? 'Foto' : 'Sin foto'}
+      </span>
+    </div>
   )
 }

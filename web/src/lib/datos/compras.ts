@@ -1,5 +1,8 @@
 import type { Json } from '@shared/database.types'
+import { nombreColores } from '@shared/colores'
 import { payloadFactura, type Factura } from '../compras'
+import { nuevoId } from '../id'
+import { plano } from '../../navegacion'
 import { supabase } from '../supabase'
 
 // Compras del panel web (fase 1, A1). La factura completa se guarda con la RPC
@@ -105,4 +108,38 @@ export async function registrarCompra(factura: Factura, clave: string): Promise<
   })
   if (error) throw new Error(error.message)
   return data as unknown as ResultadoCompra
+}
+
+// Foto del zapato (ya comprimida a 500 KB) en el bucket público `productos`,
+// el mismo que usa la app. Devuelve la URL pública.
+export async function subirFotoProducto(foto: Blob): Promise<string> {
+  const ruta = `${Date.now()}_${nuevoId().slice(0, 8)}.jpg`
+  const { error } = await supabase.storage.from('productos').upload(ruta, foto, { contentType: 'image/jpeg' })
+  if (error) throw new Error(error.message)
+  return supabase.storage.from('productos').getPublicUrl(ruta).data.publicUrl
+}
+
+const claveColor = (referencia: string | null, color: string | null) =>
+  `${plano(referencia ?? '')}|${plano(nombreColores(color) ?? '')}`
+
+// Después de guardar la compra: la foto nueva de cada referencia y color queda
+// en todas sus tallas (las que ya había y las que se acaban de crear).
+export async function fijarFotos(compraId: string, factura: Factura): Promise<void> {
+  const conFoto = factura.filas.filter((f) => f.foto)
+  if (!conFoto.length) return
+  const { data, error } = await supabase
+    .from('compra_items')
+    .select('producto_calzado_id, referencia, color')
+    .eq('compra_id', compraId)
+  if (error) throw new Error(error.message)
+  for (const fila of conFoto) {
+    const clave = claveColor(fila.referencia, fila.color)
+    const ids = new Set(Object.values(fila.existentes).map((e) => e.id))
+    for (const item of data ?? []) {
+      if (item.producto_calzado_id && claveColor(item.referencia, item.color) === clave) ids.add(item.producto_calzado_id)
+    }
+    if (!ids.size) continue
+    const { error: e } = await supabase.from('productos_calzado').update({ foto_url: fila.foto }).in('id', [...ids])
+    if (e) throw new Error(e.message)
+  }
 }

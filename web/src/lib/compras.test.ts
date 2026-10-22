@@ -1,6 +1,7 @@
 import {
   avisosFactura, dividirRango, erroresFactura, filaVacia, payloadFactura, rangoDeTalla, rangosDesdeExistentes,
   redondearPrecio, resumenFactura, subtotalFila, TALLAS, unirRango, type Factura, type FilaFactura,
+  fotoDeFila, otroColor, partesColor, unirColores,
 } from './compras'
 
 const HOY = '2026-10-12'
@@ -125,5 +126,35 @@ describe('dos colores', () => {
   it('más de dos colores no se puede guardar', () => {
     const f = fila({ referencia: 'Z', descripcion: 'Z', categoria: 'Otros', color: 'rojo, blanco, azul', cantidades: { '40': '1' }, rangos: rango })
     expect(erroresFactura(factura([f]), HOY)).toEqual(['En Z: Un zapato tiene máximo dos colores (ej. "Rojo y blanco").'])
+  })
+})
+
+describe('otro color, foto y dos colores', () => {
+  it('otroColor copia todo menos color, cantidades, tallas existentes y foto', () => {
+    const fila = {
+      ...filaVacia('a'), referencia: 'NV-5', descripcion: 'Tennis', marca: 'Verlon', categoria: 'Tennis', color: 'Negro',
+      cantidades: { '38': '2' }, foto: 'https://f/1.jpg',
+      existentes: { '38': { id: 'x', precio_minimo: 1, precio_maximo: 2 } },
+      rangos: [{ desde: '20', hasta: '45', costo: '50.000', minimo: '80.000', maximo: '100.000' }],
+    }
+    const copia = otroColor(fila, 'b')
+    expect(copia).toEqual({ ...fila, id: 'b', color: '', cantidades: {}, existentes: {}, foto: '' })
+    expect(copia.rangos).not.toBe(fila.rangos)
+  })
+
+  it('la foto que se ve: la nueva o la que ya tenía ese color', () => {
+    const fila = { ...filaVacia('a'), existentes: { '38': { id: 'x', precio_minimo: 1, precio_maximo: 2, foto_url: 'https://f/vieja.jpg' } } }
+    expect(fotoDeFila(fila)).toBe('https://f/vieja.jpg')
+    expect(fotoDeFila({ ...fila, foto: 'https://f/nueva.jpg' })).toBe('https://f/nueva.jpg')
+    expect(fotoDeFila(filaVacia('b'))).toBeNull()
+  })
+
+  it('el color se parte en dos campos y se une sin perder lo que se escribe', () => {
+    expect(partesColor('Rojo y blanco')).toEqual(['Rojo', 'blanco'])
+    expect(partesColor('Azul ')).toEqual(['Azul ', ''])
+    expect(partesColor('Azul rey y gris')).toEqual(['Azul rey', 'gris'])
+    expect(unirColores('Rojo', 'blanco')).toBe('Rojo y blanco')
+    expect(unirColores('Rojo', ' ')).toBe('Rojo')
+    expect(partesColor(unirColores('Verde', 'neón '))).toEqual(['Verde', 'neón '])
   })
 })

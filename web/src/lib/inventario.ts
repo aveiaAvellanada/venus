@@ -16,6 +16,7 @@ export interface ProductoCalzado {
   stock_minimo: number
   activo: boolean
   proveedor_id: string | null
+  foto_url?: string | null
 }
 
 export interface Costo {

@@ -55,7 +55,7 @@ export function Compras() {
     <div className="flex flex-col gap-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Compras y recepción</h1>
+          <h1 className="text-titulo">Compras y recepción</h1>
           <p className="text-texto2">Facturas de los proveedores. Al registrar una, el stock sube solo.</p>
         </div>
         <Boton onClick={() => navegar('/compras/nueva')}>

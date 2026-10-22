@@ -49,7 +49,7 @@ export function Proveedores() {
     <div className="flex flex-col gap-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Proveedores</h1>
+          <h1 className="text-titulo">Proveedores</h1>
           <p className="text-texto2">Datos, cuentas, documentos, deudas y pagos de cada proveedor.</p>
         </div>
         <Boton onClick={() => setCreando(true)}>
@@ -62,17 +62,17 @@ export function Proveedores() {
         <div className="grid gap-3 sm:grid-cols-3">
           <Tarjeta>
             <p className="text-sm text-texto2">Deuda con proveedores</p>
-            <p className="cifras mt-1 text-2xl font-bold">{pesos(totales.deuda)}</p>
+            <p className="cifras mt-1 text-2xl font-extrabold tracking-tight">{pesos(totales.deuda)}</p>
             <p className="text-xs text-texto3">{totales.proveedores} proveedor{totales.proveedores === 1 ? '' : 'es'} con saldo</p>
           </Tarjeta>
           <Tarjeta>
             <p className="text-sm text-texto2">Vencido</p>
-            <p className={`cifras mt-1 text-2xl font-bold ${totales.vencido > 0 ? 'text-peligro-texto' : ''}`}>{pesos(totales.vencido)}</p>
+            <p className={`cifras mt-1 text-2xl font-extrabold tracking-tight ${totales.vencido > 0 ? 'text-peligro-texto' : ''}`}>{pesos(totales.vencido)}</p>
             <p className="text-xs text-texto3">Compras a crédito con la fecha de pago ya pasada</p>
           </Tarjeta>
           <Tarjeta>
             <p className="text-sm text-texto2">Proveedores activos</p>
-            <p className="cifras mt-1 text-2xl font-bold">{(proveedores.data ?? []).filter((p) => p.activo).length}</p>
+            <p className="cifras mt-1 text-2xl font-extrabold tracking-tight">{(proveedores.data ?? []).filter((p) => p.activo).length}</p>
             <p className="text-xs text-texto3">{(proveedores.data ?? []).filter((p) => !p.activo).length} inactivos</p>
           </Tarjeta>
         </div>

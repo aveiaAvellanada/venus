@@ -59,7 +59,7 @@ export function FichaProveedor() {
 
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">
+          <h1 className="flex flex-wrap items-center gap-2 text-titulo">
             {p.nombre}
             {p.activo ? null : <Insignia>Inactivo</Insignia>}
           </h1>
@@ -91,19 +91,19 @@ export function FichaProveedor() {
         <div className="grid gap-3 sm:grid-cols-3">
           <Tarjeta>
             <p className="text-sm text-texto2">Se le debe</p>
-            <p className="cifras mt-1 text-2xl font-bold">{pesos(deuda?.deuda ?? 0)}</p>
+            <p className="cifras mt-1 text-2xl font-extrabold tracking-tight">{pesos(deuda?.deuda ?? 0)}</p>
             <p className="text-xs text-texto3">{deuda ? `${deuda.compras} compra${deuda.compras === 1 ? '' : 's'} a crédito con saldo` : 'Sin compras pendientes de pago'}</p>
           </Tarjeta>
           <Tarjeta>
             <p className="text-sm text-texto2">Vencido</p>
-            <p className={`cifras mt-1 text-2xl font-bold ${deuda?.vencido ? 'text-peligro-texto' : ''}`}>{pesos(deuda?.vencido ?? 0)}</p>
+            <p className={`cifras mt-1 text-2xl font-extrabold tracking-tight ${deuda?.vencido ? 'text-peligro-texto' : ''}`}>{pesos(deuda?.vencido ?? 0)}</p>
             <div className="mt-0.5 text-xs text-texto3">
               Próximo pago: {deuda ? <Vencimiento fecha={deuda.proximoVencimiento} hoy={hoy} /> : '—'}
             </div>
           </Tarjeta>
           <Tarjeta>
             <p className="text-sm text-texto2">Comprado en total</p>
-            <p className="cifras mt-1 text-2xl font-bold">
+            <p className="cifras mt-1 text-2xl font-extrabold tracking-tight">
               {pesos(compras.data.filter((c) => c.estado === 'completada').reduce((s, c) => s + (c.total ?? 0), 0))}
             </p>
             <p className="text-xs text-texto3">{compras.data.filter((c) => c.estado !== 'cancelada').length} compras registradas</p>

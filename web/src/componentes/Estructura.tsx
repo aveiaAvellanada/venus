@@ -5,6 +5,7 @@ import { LogOut, Menu, Search, X } from 'lucide-react'
 import { useSesion } from '../lib/auth'
 import { BarraLateral } from './BarraLateral'
 import { BusquedaGlobal } from './BusquedaGlobal'
+import { SelectorTema } from './SelectorTema'
 import { Boton } from './ui'
 
 export function Estructura() {
@@ -44,7 +45,7 @@ export function Estructura() {
 
       {menuAbierto ? (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setMenuAbierto(false)} />
+          <div className="absolute inset-0 bg-overlay" onClick={() => setMenuAbierto(false)} />
           <aside className="absolute inset-y-0 left-0 w-72 max-w-[85vw] border-r border-borde bg-fondo">
             <button
               aria-label="Cerrar menú"
@@ -76,6 +77,7 @@ export function Estructura() {
             <kbd className="hidden rounded-md border border-borde px-1.5 text-xs sm:inline">Ctrl K</kbd>
           </button>
           <div className="ml-auto flex items-center gap-2">
+            <SelectorTema />
             <span className="hidden text-sm text-texto2 sm:inline">{nombre}</span>
             <Boton variante="fantasma" onClick={cerrarSesion} aria-label="Salir">
               <LogOut aria-hidden className="size-4" />

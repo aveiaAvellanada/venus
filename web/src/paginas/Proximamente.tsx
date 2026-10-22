@@ -9,7 +9,7 @@ export function Proximamente({ seccion }: { seccion: Seccion }) {
         <seccion.icono aria-hidden className="size-7" />
       </div>
       <Insignia tono="primario">Llega en la fase {seccion.fase}</Insignia>
-      <h1 className="mt-3 text-2xl font-bold">{seccion.titulo}</h1>
+      <h1 className="mt-3 text-titulo">{seccion.titulo}</h1>
       <p className="mt-3 text-texto2">{seccion.descripcion}</p>
       <Link to="/" className="mt-8 inline-block text-sm font-semibold text-primario hover:underline">
         Volver al inicio

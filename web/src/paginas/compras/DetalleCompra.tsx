@@ -79,7 +79,7 @@ export function DetalleCompra() {
 
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">
+          <h1 className="flex flex-wrap items-center gap-2 text-titulo">
             {c.numero_factura ? `Factura ${c.numero_factura}` : 'Compra sin número de factura'}
             <Insignia tono={estado.tono}>{estado.texto}</Insignia>
           </h1>
@@ -101,16 +101,16 @@ export function DetalleCompra() {
       <div className="grid gap-3 sm:grid-cols-3">
         <Tarjeta>
           <p className="text-sm text-texto2">Total</p>
-          <p className="cifras mt-1 text-2xl font-bold">{c.total == null ? '—' : pesos(c.total)}</p>
+          <p className="cifras mt-1 text-2xl font-extrabold tracking-tight">{c.total == null ? '—' : pesos(c.total)}</p>
           <p className="text-xs text-texto3">{grupos.length} referencias · {unidades} pares</p>
         </Tarjeta>
         <Tarjeta>
           <p className="text-sm text-texto2">Pagado</p>
-          <p className="cifras mt-1 text-2xl font-bold">{c.total == null ? '—' : pesos(c.monto_pagado)}</p>
+          <p className="cifras mt-1 text-2xl font-extrabold tracking-tight">{c.total == null ? '—' : pesos(c.monto_pagado)}</p>
         </Tarjeta>
         <Tarjeta>
           <p className="text-sm text-texto2">Saldo</p>
-          <p className="cifras mt-1 text-2xl font-bold">{deuda ? pesos(c.saldo_pendiente) : pesos(0)}</p>
+          <p className="cifras mt-1 text-2xl font-extrabold tracking-tight">{deuda ? pesos(c.saldo_pendiente) : pesos(0)}</p>
           {deuda ? <div className="mt-0.5 text-xs text-texto3">Vence: <Vencimiento fecha={c.fecha_vencimiento} hoy={hoy} /></div> : null}
         </Tarjeta>
       </div>

@@ -2,7 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router'
 import { useSesion } from '../lib/auth'
 import { NEGOCIO } from '../lib/negocio'
-import { Boton } from '../componentes/ui'
+import { Boton, Logo } from '../componentes/ui'
+import { SelectorTema } from '../componentes/SelectorTema'
 
 export function Entrar() {
   const { estado, entrar } = useSesion()
@@ -30,10 +31,11 @@ export function Entrar() {
   const aviso = error ?? (estado.tipo === 'fuera' ? estado.aviso : null)
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-superficie px-4">
+    <main className="relative flex min-h-dvh items-center justify-center bg-superficie px-4">
+      <div className="absolute right-4 top-4"><SelectorTema /></div>
       <form onSubmit={enviar} className="w-full max-w-sm rounded-3xl border border-borde bg-fondo p-8 shadow-sm">
-        <img src="/favicon.svg" alt="" className="mb-6 size-12" />
-        <h1 className="text-2xl font-bold">{NEGOCIO.nombre}</h1>
+        <Logo className="mb-6 size-12" />
+        <h1 className="text-titulo">{NEGOCIO.nombre}</h1>
         <p className="mb-8 text-sm text-texto2">Panel del dueño</p>
 
         <div className="mb-4">

@@ -127,7 +127,7 @@ export function Carga() {
     <div className="flex flex-col gap-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Carga masiva</h1>
+          <h1 className="text-titulo">Carga masiva</h1>
           <p className="max-w-2xl text-texto2">
             Sube el inventario en Excel con la plantilla de siempre, revisa y guarda. También puedes descargarlo,
             corregir precios en Excel y volver a subirlo.
@@ -308,7 +308,7 @@ function Cifra({ titulo, valor, detalle, alerta = false }: { titulo: string; val
   return (
     <div className={`rounded-2xl border p-4 ${alerta ? 'border-peligro-texto/30 bg-peligro-soft text-peligro-texto' : 'border-borde bg-fondo'}`}>
       <p className={`text-sm ${alerta ? '' : 'text-texto2'}`}>{titulo}</p>
-      <p className="cifras mt-1 text-2xl font-bold">{valor.toLocaleString('es-CO')}</p>
+      <p className="cifras mt-1 text-2xl font-extrabold tracking-tight">{valor.toLocaleString('es-CO')}</p>
       <p className={`text-xs ${alerta ? '' : 'text-texto3'}`}>{detalle}</p>
     </div>
   )

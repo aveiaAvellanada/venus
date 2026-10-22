@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router'
 import { NAVEGACION } from '../navegacion'
 import { NEGOCIO } from '../lib/negocio'
+import { Logo } from './ui'
 
 export function BarraLateral({ alNavegar }: { alNavegar?: () => void }) {
   return (
     <nav aria-label="Secciones" className="flex h-full flex-col gap-6 overflow-y-auto px-3 py-5">
       <div className="flex items-center gap-3 px-2">
-        <img src="/favicon.svg" alt="" className="size-9" />
+        <Logo className="size-9" />
         <div>
           <p className="font-bold leading-tight">{NEGOCIO.nombre}</p>
           <p className="text-xs text-texto3">Panel del dueño</p>

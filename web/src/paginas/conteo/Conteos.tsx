@@ -19,7 +19,7 @@ export function Conteos() {
     <div className="flex flex-col gap-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Conteo físico</h1>
+          <h1 className="text-titulo">Conteo físico</h1>
           <p className="text-texto2">
             Cuenta lo que hay en la tienda y compáralo con el sistema. Al confirmar, el stock queda igual a lo contado y cada diferencia guarda su motivo.
           </p>

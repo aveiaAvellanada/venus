@@ -44,7 +44,7 @@ grant execute on function pg_temp.sin_efecto(text), pg_temp.error_de(text), pg_t
 do $$
 declare
   v_dueno uuid := gen_random_uuid();
-  v_luisa uuid; v_pedro uuid;
+  v_luisa uuid; v_pedro uuid; v_marta uuid;
   v_hoy date;
   v_prov uuid; v_zapato uuid; v_venta uuid; v_item uuid; v_vieja uuid;
   v_n bigint; v_err text;
@@ -168,10 +168,34 @@ begin
   if v_n <> 1 then
     raise exception 'FALLO: con permiso de reportes no ve el historial';
   end if;
+
   insert into public.proveedores (nombre) values ('Proveedor de Pedro');
   if pg_temp.error_de('select public.obtener_balance(current_date, current_date)') = ''
      or pg_temp.error_de(format('select public.obtener_deuda_proveedor(%L)', v_prov)) = '' then
     raise exception 'FALLO: la plantilla administrativa no incluye balance ni deudas';
+  end if;
+
+  -- Devoluciones sin reportes: Marta ve la venta vieja con sus productos y pagos
+  -- (para buscarla y hacer el cambio o la garantía); Luisa, sin ninguno, sigue sin verla.
+  execute 'reset role';
+  insert into public.venta_items (venta_id, tipo_producto, producto_calzado_id, descripcion_snapshot,
+      cantidad, precio_unitario, subtotal)
+    values (v_vieja, 'calzado', v_zapato, 'Zapato Test', 1, 1000, 1000);
+  insert into public.metodos_pago_venta (venta_id, metodo, monto) values (v_vieja, 'efectivo', 1000);
+  perform pg_temp.como(v_dueno);
+  v_marta := public.crear_empleado('Marta Test', 'marta.t', '615204', array['ventas','devoluciones']);
+  perform pg_temp.como(v_marta);
+  select (select count(*) from public.ventas where id = v_vieja)
+       + (select count(*) from public.venta_items where venta_id = v_vieja)
+       + (select count(*) from public.metodos_pago_venta where venta_id = v_vieja) into v_n;
+  if v_n <> 3 then
+    raise exception 'FALLO: con permiso de devoluciones no ve la venta de otro día (vio %)', v_n;
+  end if;
+  perform pg_temp.como(v_luisa);
+  select (select count(*) from public.venta_items where venta_id = v_vieja)
+       + (select count(*) from public.metodos_pago_venta where venta_id = v_vieja) into v_n;
+  if v_n <> 0 then
+    raise exception 'FALLO: sin reportes ni devoluciones vio productos o pagos de otros días';
   end if;
 
   -- ===== El dueño cambia permisos: aplica de inmediato =====

@@ -12,6 +12,7 @@ No hay personas fijas en el código. Hay **un dueño** (`users.rol = 'dueno'`, h
 - **Permisos** (filas del cuadro del PRD v4.0 §2; deben coincidir en `lib/permisos.ts` y `private.permisos_validos()`): operación `ventas`, `devoluciones`, `inventario`, `recibir_mercancia`, `caja`, `gastos`; administración `proveedores`, `gastos_fijos`, `reportes`, `carga_inicial`; finanzas `costos`, `deudas`, `balance`.
 - **Plantillas** (solo preseleccionan): *Operativo* = operación; *Administrativo* = operación + administración. Finanzas nunca viene en plantilla: el dueño la entrega a propósito.
 - **Solo el dueño, no delegable:** crear/desactivar empleados, permisos, PIN de otros, sueldos y pagos a empleados, configuración de caja y de reportes automáticos, dashboard del dueño.
+- **Ventas de otros días:** las ve quien tiene `reportes` (historial) o `devoluciones` (para buscar la venta de una garantía o un cambio); el resto solo las de hoy y las separadas. En Movimientos, los chips de período salen con cualquiera de los dos; en el Menú, solo con `reportes`.
 - **Dónde se aplica:** en la base con `private.tiene_permiso('<permiso>')` / `private.es_dueno()` (exigen la cuenta activa) en RLS y RPC; en la app con `tienePermiso(perfil, ...)`, `esDueno(perfil)` y `useRequireModulo`. La base manda: nunca confíes solo en la UI.
 
 ### Auditoría
@@ -78,6 +79,8 @@ Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app c
 - Expo SDK 57 (React Native 0.86): es la versión que acepta el Expo Go actual (rama `claude/lucid-mccarthy-f4rpl6`, integrada). Pendiente: validar de punta a punta en un dispositivo.
 
 - Ajustes del 2026-10-16 (`docs/plan-ajustes-2026-10-16.md`): Ola 1 (teclado con `ScreenWrapper`, "Cédula o NIT", venta exitosa que vuelve al menú, Gastos en Perfil → Negocio) y Ola 2 (migración `20261017043632_precios_por_talla_garantia.sql`: máximo opcional, precio libre, tramos por talla, garantía, cambio con reemplazo de cualquier modelo). Ramas `ajustes-ola1` / `ajustes-ola2`. Migración `20261017043632_precios_por_talla_garantia` aplicada al remoto el 2026-10-17 (verificada: una sola `registrar_venta`, máximo nullable, columnas de garantía, tabla de tramos con RLS y la prueba `precios_por_talla_test.sql` corrida con rollback); tipos regenerados del remoto. Pendiente: pago mixto de la diferencia en un cambio (hoy un solo medio) y el diseño de stock por rangos (Recibir mercancía, Carga inicial y masiva).
+
+- Cambios de la maqueta `docs/maquetas/movimientos.html` (2026-10-21, rama `maqueta-movimientos`): barra inferior flotante en píldora (`useEspacioTabBar` para el espacio al final de cada pestaña), barras del gráfico en píldora, salmón `#F7C5BC` (gastos fijos por vencer, caja CERRADA) y verde `#D2F47A` (caja ABIERTA) en `lib/theme.ts`, buscador del reemplazo igual a Productos → Calzado, y Movimientos por producto, agrupado por día y con buscador dentro del período elegido. Migración `20261022022841_devoluciones_ven_ventas_de_otros_dias` aplicada al remoto el 2026-10-21 (probada con rollback).
 
 ## No construir en esta versión
 - Facturación electrónica DIAN

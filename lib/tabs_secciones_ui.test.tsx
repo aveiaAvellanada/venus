@@ -68,10 +68,33 @@ const tipoPrueba = (rol: string): TipoPerfilPrueba =>
   rol === 'dueno' ? 'dueno' : rol === 'admin' ? 'administrativo' : 'operativo'
 
 
+const { diaBogota } = jest.requireActual('./movimientos')
+const HOY = diaBogota(new Date().toISOString())
+const HACE_10_DIAS = diaBogota(new Date(Date.now() - 10 * 86400000).toISOString())
+
+const producto = (id: string, descripcion: string, talla: string, color: string, precio: number, extra = {}) => ({
+  id, descripcion, talla, color, esGranja: false, cantidad: 1, precio, devuelto: 0, cambiado: false, ...extra,
+})
+
 const VENTAS = [
-  { id: 'v1', numero: 102, total: 195000, estado: 'completada', hora: '2:14 p. m.', metodos: ['efectivo'] },
-  { id: 'v2', numero: 101, total: 180000, estado: 'cancelada', hora: '1:48 p. m.', metodos: ['nequi'] },
+  {
+    id: 'v1', numero: 102, total: 195000, estado: 'completada', hora: '2:14 p. m.', dia: HOY, metodos: ['efectivo'],
+    nota: null, cliente: { nombre: 'María', apellido: 'Rojas', documento: '1117512345', telefono: null },
+    items: [
+      producto('i1', 'Tennis Nike Air Runner', '38', 'Blanco y negro', 135000),
+      { ...producto('i2', 'Concentrado pollito 2 kg', '', '', 30000), talla: null, color: null, esGranja: true, cantidad: 2 },
+    ],
+  },
+  {
+    id: 'v2', numero: 101, total: 180000, estado: 'cancelada', hora: '1:48 p. m.', dia: HOY, metodos: ['nequi'],
+    nota: null, cliente: null, items: [producto('i3', 'Bota Brahma Trabajo', '41', 'Café', 180000)],
+  },
 ]
+
+const VENTA_VIEJA = {
+  id: 'v0', numero: 90, total: 120000, estado: 'completada', hora: '6:30 p. m.', dia: HACE_10_DIAS, metodos: ['efectivo'],
+  nota: null, cliente: null, items: [producto('i0', 'Escolar Croydon Clásico', '34', 'Negro', 120000)],
+}
 
 const DEVS = [
   {
@@ -83,6 +106,10 @@ const DEVS = [
     monto_cobrado: 0,
     hora: '2:40 p. m.',
     fecha: '15 jul 2026',
+    dia: HOY,
+    motivo: 'Se despegó la suela',
+    cliente: null,
+    productos: [{ descripcion: 'Tennis Nike Air Runner', talla: '38', color: 'Blanco y negro' }],
   },
 ]
 
@@ -128,14 +155,48 @@ describe('Movimientos', () => {
     mockGastosPeriodo.mockResolvedValue(GASTOS)
   })
 
-  it('staff: vista Ventas lista las ventas y navega al detalle', async () => {
+  it('Ventas: una fila por producto que abre su venta; arriba productos y ventas, sin el total en dinero', async () => {
     conRol('dueno')
     const arbol = await montar(<Movimientos />)
-    expect(existeTexto(arbol, 'Venta #102')).toBe(true)
+    expect(existeTexto(arbol, 'Tennis Nike Air Runner')).toBe(true)
+    expect(existeTexto(arbol, 'Concentrado pollito 2 kg')).toBe(true)
+    expect(existeTexto(arbol, '2 × ')).toBe(true)
     expect(existeTexto(arbol, 'CANCELADA')).toBe(true)
-    const fila = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Venta #102')
+    // la venta cancelada no cuenta
+    expect(existeTexto(arbol, '3 productos · 1 venta')).toBe(true)
+    expect(existeTexto(arbol, 'Venta #102')).toBe(false)
+    const fila = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Concentrado pollito 2 kg')
     await act(async () => fila!.props.onPress!())
     expect(mockPush).toHaveBeenCalledWith('/ventas/v1')
+  })
+
+  it('con Hoy no hay títulos de día; con Mes la lista se agrupa por día', async () => {
+    conRol('dueno')
+    mockListarVentas.mockResolvedValue([...VENTAS, VENTA_VIEJA])
+    const arbol = await montar(<Movimientos />)
+    expect(existeTexto(arbol, 'Hoy')).toBe(true) // el chip
+    expect(arbol.root.findAllByProps({ children: 'Hoy' }).filter((n: { type: unknown }) => n.type === 'Text')).toHaveLength(1)
+    const mes = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Mes')
+    await act(async () => mes!.props.onPress!())
+    // título "Hoy" del grupo, además del chip
+    expect(arbol.root.findAllByProps({ children: 'Hoy' }).filter((n: { type: unknown }) => n.type === 'Text').length).toBeGreaterThan(1)
+    expect(existeTexto(arbol, 'Escolar Croydon Clásico')).toBe(true)
+  })
+
+  it('el buscador filtra lo del período y avisa cuando no hay resultados', async () => {
+    conRol('dueno')
+    const arbol = await montar(<Movimientos />)
+    const campo = arbol.root.findByProps({ testID: 'input-buscar-movimientos' })
+    await act(async () => campo.props.onChangeText('maria'))
+    expect(existeTexto(arbol, '2 resultados')).toBe(true)
+    expect(existeTexto(arbol, 'Bota Brahma Trabajo')).toBe(false)
+    // los chips de período siguen visibles mientras se busca
+    expect(existeTexto(arbol, 'Semana')).toBe(true)
+    await act(async () => campo.props.onChangeText('zzz'))
+    expect(existeTexto(arbol, 'Sin resultados')).toBe(true)
+    const borrar = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Borrar búsqueda')
+    await act(async () => borrar!.props.onPress!())
+    expect(existeTexto(arbol, 'Bota Brahma Trabajo')).toBe(true)
   })
 
   it('toggle a Devoluciones: lista y navega al detalle', async () => {
@@ -156,8 +217,14 @@ describe('Movimientos', () => {
     expect(existeTexto(arbol, 'Gastos')).toBe(false)
   })
 
-  it('empleado: sin chips de período y consulta solo hoy', async () => {
-    conRol('empleado')
+  it('con permiso de devoluciones (sin reportes) puede elegir el período para buscar ventas viejas', async () => {
+    mockUseAuth.mockReturnValue({ perfil: perfilPrueba('operativo', 'Prueba', ['ventas', 'devoluciones']), cerrarSesion: jest.fn() })
+    const arbol = await montar(<Movimientos />)
+    expect(existeTexto(arbol, 'Semana')).toBe(true)
+  })
+
+  it('sin reportes ni devoluciones: sin chips de período y consulta solo hoy', async () => {
+    mockUseAuth.mockReturnValue({ perfil: perfilPrueba('operativo', 'Prueba', ['ventas', 'caja']), cerrarSesion: jest.fn() })
     const arbol = await montar(<Movimientos />)
     expect(existeTexto(arbol, 'Semana')).toBe(false)
     const hoy = rangoParaPeriodo('hoy')

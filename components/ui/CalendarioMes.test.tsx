@@ -29,11 +29,11 @@ const DATOS = [
 ]
 
 const textos = (arbol: ReturnType<typeof renderer.create>) =>
-  arbol.root.findAll((n: { type: unknown }) => n.type === 'Text').map((n: { props: { children: unknown } }) =>
-    [n.props.children].flat(3).filter((c) => typeof c === 'string' || typeof c === 'number').join(''))
+  arbol.root.findAll((n) => (n.type as unknown) === 'Text').map((n) =>
+    [n.props.children].flat(3).filter((c: unknown) => typeof c === 'string' || typeof c === 'number').join(''))
 
 const boton = (arbol: ReturnType<typeof renderer.create>, etiqueta: string): Nodo =>
-  arbol.root.findAll((n: Nodo) => n.props.accessibilityLabel === etiqueta && !!n.props.onPress)[0]
+  arbol.root.findAll((n) => n.props.accessibilityLabel === etiqueta && !!n.props.onPress)[0] as Nodo
 
 describe('CalendarioMes', () => {
   it('nombra el mes arriba y numera cada día', async () => {

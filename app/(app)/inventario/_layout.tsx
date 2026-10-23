@@ -1,9 +1,9 @@
-import { Stack } from 'expo-router'
+import { Pila } from '../../../components/Pila'
 
 export default function InventarioLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="calzado/[id]" options={{ presentation: 'card' }} />
-    </Stack>
+    <Pila>
+      <Pila.Screen name="calzado/[id]" />
+    </Pila>
   )
 }

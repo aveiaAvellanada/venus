@@ -43,6 +43,14 @@ const mockRouter = {
   back: jest.fn(),
 }
 
+// Los layouts usan Pila (pila con swipe atrás); en el test basta con sus hijos.
+jest.mock('../components/Pila', () => {
+  const React = require('react')
+  const Pila = (props: { children?: React.ReactNode }) => React.createElement('View', null, props.children)
+  Pila.Screen = (props: { name?: string }) => React.createElement('View', { testID: `stack-screen-${props.name}` })
+  return { Pila, OPCIONES_MODAL: {} }
+})
+
 jest.mock('expo-router', () => {
   const React = require('react')
   const StackScreen = (props: { name?: string; options?: unknown }) =>

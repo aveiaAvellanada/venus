@@ -1,919 +1,507 @@
-import React, { useState, useEffect } from 'react'
-import { View, Text, TextInput, ScrollView, ActivityIndicator, Modal, KeyboardAvoidingView } from 'react-native'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { ActivityIndicator, Alert, Image, Pressable, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
-import {
-  ArrowLeft,
-  CircleCheckBig,
-  CirclePlus,
-  Package,
-  Plus,
-  Search,
-  Trash2,
-  X,
-} from 'lucide-react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as DocumentPicker from 'expo-document-picker'
+import * as ImagePicker from 'expo-image-picker'
+import { AlertTriangle, ArrowLeft, Camera, FileText, Footprints, Paperclip, Plus, X } from 'lucide-react-native'
+import { COLORES_BASE, coloresDeNombre, nombreColores } from '../../../shared/colores'
+import { hoyEn } from '../../../shared/fechas'
+import { pesos } from '../../../shared/formato'
 import { useAuth, useRequireModulo } from '../../../lib/auth'
 import { tienePermiso } from '../../../lib/permisos'
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { listarProveedores, type Proveedor } from '../../../lib/proveedores'
+import { generarClave } from '../../../lib/intentoVenta'
 import {
-  listarProveedores,
-  crearProveedor,
-  registrarLlegadaFisica,
-  registrarCompraDirecta,
-  type Proveedor
-} from '../../../lib/proveedores'
-import {
-  listarCalzado,
-  guardarCalzado,
-  type ProductoCalzado
-} from '../../../lib/inventario'
-import { CATEGORIAS } from '../../../lib/excel'
+  avisosFactura, claveRefColor, costosPorProducto, erroresFactura, erroresLlegada, filaVacia, fijarFotos, fotoDeFila,
+  itemsLlegada, listarInventarioCompleto, otroColor, registrarCompra, registrarLlegada, resumenFactura, subirFactura, subtotalFila,
+  tallasConCantidad, unidadesFila, type Adjunto, type Factura, type FilaFactura,
+} from '../../../lib/compras'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
-import { Boton, CampoTexto, Chip, EstadoVacio, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
+import {
+  Badge, Boton, CampoTexto, ControlSegmentado, EstadoVacio, Presionable, PuntoColor, ScreenWrapper, Tarjeta, useToast,
+} from '../../../components/ui'
+import { CampoFecha, fechaCorta, Seccion } from '../../../components/compras/Campos'
+import { EditorReferencia, type ReferenciaConocida } from '../../../components/compras/EditorReferencia'
+import { SelectorProveedor } from '../../../components/compras/SelectorProveedor'
 
-interface SelectedItem {
-  producto_calzado_id: string
-  descripcion: string
-  marca: string | null
-  referencia: string | null
-  talla: string | null
-  color: string | null
-  cantidad: number
-  costo_unitario: number // Used only if owner
+const BORRADOR = 'venus.compra.borrador'
+
+interface Borrador {
+  clave: string
+  factura: Factura
 }
 
-let currentSetProveedorSeleccionado: any = null
-let currentAddItem: any = null
+const borradorNuevo = (hoy: string): Borrador => ({
+  clave: generarClave(),
+  factura: { proveedorId: '', numeroFactura: '', fechaFactura: hoy, condicion: 'contado', fechaVencimiento: '', notas: '', filas: [] },
+})
 
-export default function RecepcionMercanciaNuevaScreen() {
+const alfabetico = (a: string, b: string) => a.localeCompare(b, 'es')
+
+// Recibir mercancía / Nueva compra. Con permiso de `costos` es la factura
+// completa del proveedor, igual que en el panel web (costo, precios por rango,
+// productos nuevos, crédito, foto de la factura). Sin él, la llegada física:
+// cantidades de lo que ya existe, que alguien con costos completa después.
+export default function NuevaCompraScreen() {
   const requireModulo = useRequireModulo('recibir-mercancia')
   const { perfil } = useAuth()
   const router = useRouter()
   const { paleta } = useTema()
   const { mostrar } = useToast()
-  const paddingInferior = usePaddingInferior(espacio.xxxl)
+  const hoy = hoyEn()
 
-  // Con el permiso de costos se registra la compra completa (costos, condición
-  // de pago); sin él, solo la llegada física, que queda pendiente de revisión.
-  const registraCostos = tienePermiso(perfil, 'costos')
-  // Crear proveedor inline exige el permiso de proveedores (RLS proveedores_insert).
+  const conCostos = tienePermiso(perfil, 'costos')
   const puedeCrearProveedor = tienePermiso(perfil, 'proveedores')
+  const puedeAdjuntar = conCostos && tienePermiso(perfil, 'proveedores')
 
-  // Loading states
-  const [loading, setLoading] = useState(false)
-  const [loadingProveedores, setLoadingProveedores] = useState(true)
-
-  // Data states
+  const [borrador, setBorrador] = useState<Borrador | null>(null)
+  const [adjunto, setAdjunto] = useState<Adjunto | null>(null)
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
-  const [proveedorSeleccionado, setProveedorSeleccionado] = useState<string>('')
+  const [conocidas, setConocidas] = useState<Map<string, ReferenciaConocida>>(new Map())
+  const [listas, setListas] = useState({ referencias: [] as string[], marcas: [] as string[], colores: [] as string[], coloresSimples: [] as string[] })
+  const [costos, setCostos] = useState<Map<string, { ultimo: number }> | undefined>()
+  const [cargando, setCargando] = useState(true)
+  const [editando, setEditando] = useState<FilaFactura | null>(null)
+  const [revisando, setRevisando] = useState(false)
+  const [guardando, setGuardando] = useState(false)
 
-  // Selected items list
-  const [items, setItems] = useState<SelectedItem[]>([])
+  // El borrador queda en el teléfono: una factura a medias no se pierde.
+  useEffect(() => {
+    AsyncStorage.getItem(BORRADOR)
+      .then((v) => setBorrador(v ? (JSON.parse(v) as Borrador) : borradorNuevo(hoy)))
+      .catch(() => setBorrador(borradorNuevo(hoy)))
+  }, [hoy])
+  useEffect(() => {
+    if (borrador) AsyncStorage.setItem(BORRADOR, JSON.stringify(borrador)).catch(() => {})
+  }, [borrador])
 
-  // Expose callbacks for integration tests
-  currentSetProveedorSeleccionado = setProveedorSeleccionado
-  currentAddItem = (item: any) => {
-    setItems(prev => {
-      const exists = prev.find(i => i.producto_calzado_id === item.producto_calzado_id)
-      if (exists) return prev
-      return [...prev, {
-        producto_calzado_id: item.producto_calzado_id,
-        descripcion: item.descripcion,
-        marca: item.marca || null,
-        referencia: item.referencia || null,
-        talla: item.talla || null,
-        color: item.color || null,
-        cantidad: item.cantidad || 1,
-        costo_unitario: item.costo_unitario || 0
-      }]
+  const cargar = useCallback(async () => {
+    try {
+      const [provs, productos, cs] = await Promise.all([
+        listarProveedores({ activo: true }),
+        listarInventarioCompleto(),
+        conCostos ? costosPorProducto().catch(() => undefined) : Promise.resolve(undefined),
+      ])
+      setProveedores(provs)
+      setCostos(cs)
+      const mapa = new Map<string, ReferenciaConocida>()
+      for (const p of productos) {
+        if (!p.referencia || !p.talla) continue
+        const clave = claveRefColor(p.referencia, p.color)
+        const r = mapa.get(clave) ?? {
+          referencia: p.referencia, descripcion: p.descripcion, marca: p.marca ?? '', categoria: p.categoria,
+          color: nombreColores(p.color) ?? '', existentes: {},
+        }
+        r.existentes[p.talla] = {
+          id: p.id, precio_minimo: Number(p.precio_minimo), precio_maximo: Number(p.precio_maximo ?? p.precio_minimo), foto_url: p.foto_url,
+        }
+        mapa.set(clave, r)
+      }
+      setConocidas(mapa)
+      const usados = [...new Set(productos.map((p) => nombreColores(p.color)).filter((c): c is string => !!c))]
+      const simples = [...new Set([...COLORES_BASE, ...usados.flatMap((c) => coloresDeNombre(c).map((x) => nombreColores(x)!))])].sort(alfabetico)
+      setListas({
+        referencias: [...new Set([...mapa.values()].map((r) => r.referencia))].sort(alfabetico),
+        marcas: [...new Set(productos.map((p) => p.marca?.trim()).filter((m): m is string => !!m))].sort(alfabetico),
+        colores: [...usados.filter((c) => coloresDeNombre(c).length > 1).sort(alfabetico), ...simples],
+        coloresSimples: simples,
+      })
+    } catch {
+      mostrar('No se pudieron cargar los proveedores o el inventario.', 'error')
+    } finally {
+      setCargando(false)
+    }
+  }, [conCostos, mostrar])
+
+  useEffect(() => { cargar() }, [cargar])
+
+  const f = borrador?.factura
+  const resumen = useMemo(() => (f ? resumenFactura(f) : null), [f])
+
+  if (requireModulo) return requireModulo
+  if (!perfil || !borrador || !f || !resumen) return null
+
+  const cambiarFactura = (cambios: Partial<Factura>) =>
+    setBorrador((b) => (b ? { ...b, factura: { ...b.factura, ...cambios } } : b))
+
+  function guardarFila(fila: FilaFactura) {
+    setBorrador((b) => {
+      if (!b) return b
+      const filas = b.factura.filas.some((x) => x.id === fila.id)
+        ? b.factura.filas.map((x) => (x.id === fila.id ? fila : x))
+        : [...b.factura.filas, fila]
+      return { ...b, factura: { ...b.factura, filas } }
     })
   }
 
-  // Search calzado states
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<ProductoCalzado[]>([])
-  const [searchingCalzado, setSearchingCalzado] = useState(false)
+  const quitarFila = (id: string) =>
+    setBorrador((b) => (b ? { ...b, factura: { ...b.factura, filas: b.factura.filas.filter((x) => x.id !== id) } } : b))
 
-  // Direct purchase details (Owner only)
-  const [condicionPago, setCondicionPago] = useState<'contado' | 'credito'>('contado')
-  const [fechaVencimiento, setFechaVencimiento] = useState('')
-  const [notas, setNotas] = useState('')
+  function descartar() {
+    Alert.alert('¿Descartar esta compra?', 'Se borra todo lo que llevas.', [
+      { text: 'Seguir', style: 'cancel' },
+      {
+        text: 'Descartar', style: 'destructive', onPress: () => {
+          AsyncStorage.removeItem(BORRADOR).catch(() => {})
+          setBorrador(borradorNuevo(hoy))
+          setAdjunto(null)
+        },
+      },
+    ])
+  }
 
-  // Modals state
-  const [showProviderModal, setShowProviderModal] = useState(false)
-  const [showCalzadoModal, setShowCalzadoModal] = useState(false)
-
-  // Inline Provider Form State
-  const [provNombre, setProvNombre] = useState('')
-  const [provNit, setProvNit] = useState('')
-  const [provTelefono, setProvTelefono] = useState('')
-  const [provCiudad, setProvCiudad] = useState('')
-  const [provEmail, setProvEmail] = useState('')
-  const [provNotas, setProvNotas] = useState('')
-  const [creandoProveedor, setCreandoProveedor] = useState(false)
-
-  // Inline Calzado Form State
-  const [calzadoCategoria, setCalzadoCategoria] = useState('Otros')
-  const [calzadoDescripcion, setCalzadoDescripcion] = useState('')
-  const [calzadoMarca, setCalzadoMarca] = useState('')
-  const [calzadoReferencia, setCalzadoReferencia] = useState('')
-  const [calzadoTalla, setCalzadoTalla] = useState('')
-  const [calzadoColor, setCalzadoColor] = useState('')
-  const [calzadoPrecioMin, setCalzadoPrecioMin] = useState('')
-  const [calzadoPrecioMax, setCalzadoPrecioMax] = useState('')
-  const [calzadoStockMin, setCalzadoStockMin] = useState('1')
-  const [creandoCalzado, setCreandoCalzado] = useState(false)
-
-  // Load suppliers on mount
-  useEffect(() => {
-    async function cargarProveedores() {
-      try {
-        const data = await listarProveedores({ activo: true })
-        setProveedores(data)
-      } catch (err: any) {
-        console.error('Error al cargar proveedores:', err)
-        mostrar('No se pudieron cargar los proveedores.', 'error')
-      } finally {
-        setLoadingProveedores(false)
-      }
-    }
-    cargarProveedores()
-  }, [])
-
-  // Search footwear handler
-  useEffect(() => {
-    async function buscarCalzado() {
-      if (!searchQuery.trim()) {
-        setSearchResults([])
-        return
-      }
-      setSearchingCalzado(true)
-      try {
-        const data = await listarCalzado({ busqueda: searchQuery.trim() })
-        setSearchResults(data)
-      } catch (err) {
-        console.error('Error buscando calzado:', err)
-      } finally {
-        setSearchingCalzado(false)
-      }
-    }
-
-    if (process.env.NODE_ENV === 'test') {
-      buscarCalzado()
+  async function adjuntar(origen: 'camara' | 'galeria' | 'pdf') {
+    if (origen === 'pdf') {
+      const r = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true })
+      if (!r.canceled) setAdjunto({ uri: r.assets[0].uri, nombre: r.assets[0].name, tipo: 'pdf' })
       return
     }
-
-    const t = setTimeout(buscarCalzado, 300)
-    return () => clearTimeout(t)
-  }, [searchQuery])
-
-  if (requireModulo) return requireModulo
-  if (!perfil) return null
-
-  // Add selected item to list
-  const handleSelectCalzado = (prod: ProductoCalzado) => {
-    const exists = items.find(i => i.producto_calzado_id === prod.id)
-    if (exists) {
-      mostrar('El producto ya está en la lista de recepción. Puedes modificar su cantidad directamente.', 'info')
-    } else {
-      setItems(prev => [...prev, {
-        producto_calzado_id: prod.id,
-        descripcion: prod.descripcion,
-        marca: prod.marca || null,
-        referencia: prod.referencia || null,
-        talla: prod.talla || null,
-        color: prod.color || null,
-        cantidad: 1,
-        costo_unitario: 0
-      }])
-    }
-    setSearchQuery('')
-    setSearchResults([])
+    const permiso = origen === 'camara'
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permiso.granted) return
+    const r = origen === 'camara'
+      ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 1 })
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 })
+    if (!r.canceled) setAdjunto({ uri: r.assets[0].uri, nombre: r.assets[0].fileName ?? 'factura.jpg', tipo: 'imagen' })
   }
 
-  // Remove item from receipt list
-  const handleRemoveItem = (index: number) => {
-    setItems(prev => prev.filter((_, i) => i !== index))
-  }
+  const filas = f.filas
+  const errores = conCostos ? erroresFactura(f, hoy) : erroresLlegada(f)
+  const avisos = conCostos ? avisosFactura(f) : []
+  const proveedor = proveedores.find((p) => p.id === f.proveedorId)
 
-  // Update item quantity
-  const handleUpdateCantidad = (index: number, val: string) => {
-    const numeric = parseInt(val.replace(/[^0-9]/g, ''), 10) || 0
-    setItems(prev => prev.map((item, i) => i === index ? { ...item, cantidad: numeric } : item))
-  }
-
-  // Update item cost (Owner only)
-  const handleUpdateCosto = (index: number, val: string) => {
-    const numeric = parseFloat(val.replace(/[^0-9.]/g, '')) || 0
-    setItems(prev => prev.map((item, i) => i === index ? { ...item, costo_unitario: numeric } : item))
-  }
-
-  // Handle supplier inline creation
-  const handleCrearProveedor = async () => {
-    if (!provNombre.trim()) {
-      mostrar('El nombre del proveedor es requerido.', 'error')
-      return
-    }
-
-    setCreandoProveedor(true)
+  async function guardar() {
+    if (!f || !borrador || !perfil) return
+    setGuardando(true)
     try {
-      let notasFormateadas = provNotas
-      if (provEmail && provEmail.trim() !== '') {
-        notasFormateadas = `Email: ${provEmail.trim()}\n${provNotas}`
-      }
+      let destino = '/recibir-mercancia'
+      let fotoFallo = false
+      let archivoFallo = false
+      if (conCostos) {
+        const r = await registrarCompra(f, borrador.clave)
+        destino = `/recibir-mercancia/${r.compra_id}`
 
-      const nuevo = await crearProveedor({
-        nombre: provNombre.trim(),
-        nit_cedula: provNit.trim() || null,
-        telefono: provTelefono.trim() || null,
-        ciudad: provCiudad.trim() || null,
-        notas: notasFormateadas.trim() || null,
-        activo: true,
-      })
-
-      // Refresh providers list and select the new one
-      const actualizados = await listarProveedores({ activo: true })
-      setProveedores(actualizados)
-      setProveedorSeleccionado(nuevo.id)
-
-      // Clean form and close
-      setProvNombre('')
-      setProvNit('')
-      setProvTelefono('')
-      setProvCiudad('')
-      setProvEmail('')
-      setProvNotas('')
-      setShowProviderModal(false)
-      mostrar(`Proveedor "${nuevo.nombre}" creado y seleccionado.`)
-    } catch (err: any) {
-      console.error(err)
-      mostrar(err.message || 'No se pudo registrar el proveedor.', 'error')
-    } finally {
-      setCreandoProveedor(false)
-    }
-  }
-
-  // Handle footwear inline creation
-  const handleCrearCalzado = async () => {
-    if (!calzadoDescripcion.trim()) {
-      mostrar('La descripción es obligatoria.', 'error')
-      return
-    }
-    if (!calzadoPrecioMin || !calzadoPrecioMax) {
-      mostrar('Los precios mínimo y máximo son requeridos.', 'error')
-      return
-    }
-
-    const min = parseFloat(calzadoPrecioMin)
-    const max = parseFloat(calzadoPrecioMax)
-
-    if (isNaN(min) || isNaN(max) || min < 0 || max < min) {
-      mostrar('Los precios deben ser números válidos y el precio máximo debe ser mayor o igual al mínimo.', 'error')
-      return
-    }
-
-    setCreandoCalzado(true)
-    try {
-      const nuevoId = await guardarCalzado({
-        categoria: calzadoCategoria,
-        descripcion: calzadoDescripcion.trim(),
-        marca: calzadoMarca.trim() || null,
-        referencia: calzadoReferencia.trim() || null,
-        talla: calzadoTalla.trim() || null,
-        color: calzadoColor.trim() || null,
-        precio_minimo: min,
-        precio_maximo: max,
-        stock_actual: 0, // Stock starts at 0, updated by the physical receipt / purchase transaction
-        stock_minimo: parseInt(calzadoStockMin, 10) || 1,
-        activo: true,
-      })
-
-      // Add newly created footwear directly to items list
-      setItems(prev => [...prev, {
-        producto_calzado_id: nuevoId,
-        descripcion: calzadoDescripcion.trim(),
-        marca: calzadoMarca.trim() || null,
-        referencia: calzadoReferencia.trim() || null,
-        talla: calzadoTalla.trim() || null,
-        color: calzadoColor.trim() || null,
-        cantidad: 1,
-        costo_unitario: 0
-      }])
-
-      // Clear form and close
-      setCalzadoDescripcion('')
-      setCalzadoMarca('')
-      setCalzadoReferencia('')
-      setCalzadoTalla('')
-      setCalzadoColor('')
-      setCalzadoPrecioMin('')
-      setCalzadoPrecioMax('')
-      setCalzadoStockMin('1')
-      setCalzadoCategoria('Otros')
-      setShowCalzadoModal(false)
-      mostrar('Nuevo calzado registrado e incorporado a la recepción.')
-    } catch (err: any) {
-      console.error(err)
-      mostrar(err.message || 'No se pudo guardar el calzado.', 'error')
-    } finally {
-      setCreandoCalzado(false)
-    }
-  }
-
-  // Handle final form submit
-  const handleGuardar = async () => {
-    if (!proveedorSeleccionado) {
-      mostrar('Por favor selecciona un proveedor.', 'error')
-      return
-    }
-
-    if (items.length === 0) {
-      mostrar('Por favor añade al menos un producto.', 'error')
-      return
-    }
-
-    // Validation
-    for (const it of items) {
-      if (it.cantidad <= 0) {
-        mostrar(`El producto "${it.descripcion}" debe tener una cantidad mayor a cero.`, 'error')
-        return
-      }
-    }
-
-    setLoading(true)
-    try {
-      if (registraCostos) {
-        // Validation for direct purchase costs
-        for (const it of items) {
-          if (it.costo_unitario < 0) {
-            mostrar(`El producto "${it.descripcion}" no puede tener costo negativo.`, 'error')
-            return
-          }
+        try { await fijarFotos(r.compra_id, f) } catch { fotoFallo = true }
+        if (adjunto) {
+          try { await subirFactura(f.proveedorId, r.compra_id, adjunto) } catch { archivoFallo = true }
         }
-
-        await registrarCompraDirecta({
-          proveedor_id: proveedorSeleccionado,
-          registrada_por: perfil.id,
-          condicion_pago: condicionPago,
-          fecha_vencimiento: condicionPago === 'credito' && fechaVencimiento ? fechaVencimiento : null,
-          notas: notas.trim() || null,
-          items: items.map(it => {
-            const itemObj: any = {
-              descripcion: it.descripcion,
-              cantidad: it.cantidad,
-              costo_unitario: it.costo_unitario,
-              producto_calzado_id: it.producto_calzado_id,
-            }
-            if (it.color !== null && it.color !== undefined) itemObj.color = it.color
-            if (it.talla !== null && it.talla !== undefined) itemObj.talla = it.talla
-            if (it.referencia !== null && it.referencia !== undefined) itemObj.referencia = it.referencia
-            return itemObj
-          })
-        })
       } else {
-        await registrarLlegadaFisica({
-          proveedor_id: proveedorSeleccionado,
-          registrada_por: perfil.id,
-          items: items.map(it => {
-            const itemObj: any = {
-              descripcion: it.descripcion,
-              cantidad: it.cantidad,
-              producto_calzado_id: it.producto_calzado_id,
-            }
-            if (it.color !== null && it.color !== undefined) itemObj.color = it.color
-            if (it.talla !== null && it.talla !== undefined) itemObj.talla = it.talla
-            if (it.referencia !== null && it.referencia !== undefined) itemObj.referencia = it.referencia
-            return itemObj
-          })
-        })
+        const compraId = await registrarLlegada(f.proveedorId, perfil.id, itemsLlegada(f))
+        try { await fijarFotos(compraId, f) } catch { fotoFallo = true }
       }
-
-      mostrar('La recepción de mercancía se guardó correctamente.')
-      router.replace('/')
-    } catch (err: any) {
-      console.error(err)
-      mostrar(err.message || 'No se pudo guardar la recepción.', 'error')
+      await AsyncStorage.removeItem(BORRADOR).catch(() => {})
+      setRevisando(false)
+      mostrar(
+        archivoFallo ? 'Compra guardada, pero la factura no se pudo subir. Adjúntala desde el detalle.'
+          : fotoFallo ? 'Compra guardada, pero alguna foto no quedó. Ponla desde Productos.'
+            : conCostos ? 'Compra guardada: el stock ya subió.' : 'Llegada registrada: el stock ya subió.',
+        archivoFallo || fotoFallo ? 'info' : 'exito',
+      )
+      router.replace(destino as never)
+    } catch (e) {
+      mostrar(e instanceof Error ? e.message : 'No se pudo guardar. Si fue la señal, vuelve a intentar: no se duplica.', 'error')
     } finally {
-      setLoading(false)
+      setGuardando(false)
     }
   }
 
-  // Calculate totals for owner review
-  const totalItems = items.reduce((acc, curr) => acc + curr.cantidad, 0)
-  const totalCosto = items.reduce((acc, curr) => acc + (curr.cantidad * curr.costo_unitario), 0)
+  const cabecera = (
+    <View style={{
+      flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+      paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+    }}>
+      <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
+        <ArrowLeft size={24} color={paleta.texto} />
+      </Presionable>
+      <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>{conCostos ? 'Nueva compra' : 'Recibir mercancía'}</Text>
+      {filas.length || f.proveedorId ? (
+        <Pressable accessibilityRole="button" onPress={descartar} hitSlop={8}>
+          <Text style={[tipografia.etiqueta, { color: paleta.texto3 }]}>Descartar</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  )
+
+  const pie = (
+    <View style={{
+      flexDirection: 'row', alignItems: 'center', gap: espacio.m,
+      padding: espacio.l, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo,
+    }}>
+      <View style={{ flex: 1 }}>
+        <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+          {resumen.referencias} ref. · {resumen.unidades} pares
+        </Text>
+        {conCostos ? (
+          <Text style={[tipografia.h3, tabular, { color: paleta.texto }]}>{pesos(resumen.total)}</Text>
+        ) : null}
+      </View>
+      <View style={{ minWidth: 150 }}>
+        <Boton titulo="Revisar" onPress={() => setRevisando(true)} deshabilitado={resumen.unidades === 0}/>
+      </View>
+    </View>
+  )
 
   return (
-    <ScreenWrapper
-      header={
-      <View style={{
-        flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-        paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
-      }}>
-        <Presionable accessibilityRole="button" accessibilityLabel="Volver"
-          onPress={() => router.back()} hitSlop={12}>
-          <ArrowLeft size={24} color={paleta.texto} />
-        </Presionable>
-        <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Recibir Mercancía</Text>
-      </View>
-      }
-      contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, paddingBottom: paddingInferior, gap: espacio.l }}
-      overlay={
-        <>
-      {/* ================= MODAL CREAR PROVEEDOR ================= */}
-      <Modal
-        visible={showProviderModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowProviderModal(false)}
+    <>
+      <ScreenWrapper
+        header={cabecera}
+        footer={pie}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, gap: espacio.l }}
       >
-        <KeyboardAvoidingView style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }} behavior="padding">
-          <View style={{
-            backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '85%',
-          }}>
-            <View style={{
-              flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-              padding: espacio.xl, borderBottomWidth: 1, borderBottomColor: paleta.borde,
-            }}>
-              <Text style={[tipografia.h3, { color: paleta.texto }]}>Registrar Nuevo Proveedor</Text>
-              <Presionable accessibilityRole="button" accessibilityLabel="Cerrar"
-                onPress={() => setShowProviderModal(false)} hitSlop={12}>
-                <X size={24} color={paleta.texto2} />
-              </Presionable>
-            </View>
-
-            <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.m }} keyboardShouldPersistTaps="handled">
-              <CampoTexto
-                etiqueta="Nombre *"
-                placeholder="Distribuidora del Norte"
-                value={provNombre}
-                onChangeText={setProvNombre}
-                testID="input-prov-nombre"
-              />
-              <CampoTexto
-                etiqueta="NIT / CC"
-                placeholder="12345678-9"
-                value={provNit}
-                onChangeText={setProvNit}
-                testID="input-prov-nit"
-              />
-              <CampoTexto
-                etiqueta="Teléfono"
-                placeholder="3123456789"
-                keyboardType="phone-pad"
-                value={provTelefono}
-                onChangeText={setProvTelefono}
-                testID="input-prov-telefono"
-              />
-              <CampoTexto
-                etiqueta="Ciudad / Dirección"
-                placeholder="Florencia, Caquetá"
-                value={provCiudad}
-                onChangeText={setProvCiudad}
-                testID="input-prov-ciudad"
-              />
-              <CampoTexto
-                etiqueta="Correo Electrónico (Email)"
-                placeholder="contacto@proveedor.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={provEmail}
-                onChangeText={setProvEmail}
-                testID="input-prov-email"
-              />
-              <CampoTexto
-                etiqueta="Notas y Observaciones"
-                placeholder="Notas adicionales..."
-                multiline
-                numberOfLines={3}
-                value={provNotas}
-                onChangeText={setProvNotas}
-                testID="input-prov-notas"
-              />
-
-              <Boton
-                titulo="Registrar Proveedor"
-                onPress={handleCrearProveedor}
-                cargando={creandoProveedor}
-                deshabilitado={creandoProveedor}
-              />
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ================= MODAL CREAR PRODUCTO (CALZADO) ================= */}
-      <Modal
-        visible={showCalzadoModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowCalzadoModal(false)}
-        testID="modal-crear-calzado"
-        {...{
-          onSubmit: async (values: any) => {
-            setCreandoCalzado(true)
-            try {
-              const nuevoId = await guardarCalzado({
-                categoria: values.categoria,
-                descripcion: values.descripcion,
-                precio_minimo: values.precio_minimo,
-                precio_maximo: values.precio_maximo,
-                stock_minimo: values.stock_minimo,
-                stock_actual: 0,
-              })
-              setItems(prev => [...prev, {
-                producto_calzado_id: nuevoId,
-                descripcion: values.descripcion,
-                marca: values.marca ?? null,
-                referencia: null,
-                talla: null,
-                color: null,
-                cantidad: 1,
-                costo_unitario: 0
-              }])
-              setShowCalzadoModal(false)
-            } catch (err) {
-              console.error(err)
-            } finally {
-              setCreandoCalzado(false)
-            }
-          }
-        }}
-      >
-        <KeyboardAvoidingView style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }} behavior="padding">
-          <View style={{
-            backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl, maxHeight: '85%',
-          }}>
-            <View style={{
-              flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-              padding: espacio.xl, borderBottomWidth: 1, borderBottomColor: paleta.borde,
-            }}>
-              <Text style={[tipografia.h3, { color: paleta.texto }]}>Registrar Nuevo Calzado</Text>
-              <Presionable accessibilityRole="button" accessibilityLabel="Cerrar"
-                onPress={() => setShowCalzadoModal(false)} hitSlop={12}>
-                <X size={24} color={paleta.texto2} />
-              </Presionable>
-            </View>
-
-            <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior, gap: espacio.m }} keyboardShouldPersistTaps="handled">
-              <View>
-                <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>Categoría *</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s }}>
-                  {CATEGORIAS.map(cat => (
-                    <Chip
-                      key={cat.valor}
-                      etiqueta={cat.etiqueta}
-                      activo={calzadoCategoria === cat.valor}
-                      onPress={() => setCalzadoCategoria(cat.valor)}
-                    />
-                  ))}
-                </View>
-              </View>
-
-              <CampoTexto
-                etiqueta="Descripción / Nombre *"
-                placeholder="Ej. Smash"
-                value={calzadoDescripcion}
-                onChangeText={setCalzadoDescripcion}
-                testID="input-calzado-desc"
-              />
-              <CampoTexto
-                etiqueta="Marca"
-                placeholder="Ej. Puma"
-                value={calzadoMarca}
-                onChangeText={setCalzadoMarca}
-                testID="input-calzado-marca"
-              />
-              <CampoTexto
-                etiqueta="Referencia"
-                placeholder="Ej. PM-048"
-                value={calzadoReferencia}
-                onChangeText={setCalzadoReferencia}
-                testID="input-calzado-ref"
-              />
-              <CampoTexto
-                etiqueta="Talla"
-                placeholder="Ej. 38"
-                value={calzadoTalla}
-                onChangeText={setCalzadoTalla}
-                testID="input-calzado-talla"
-              />
-              <CampoTexto
-                etiqueta="Color"
-                placeholder="Ej. Blanco / Negro"
-                value={calzadoColor}
-                onChangeText={setCalzadoColor}
-                testID="input-calzado-color"
-              />
-
-              <View style={{ flexDirection: 'row', gap: espacio.m }}>
-                <View style={{ flex: 1 }}>
-                  <CampoTexto
-                    etiqueta="Precio Mínimo *"
-                    placeholder="90000"
-                    keyboardType="number-pad"
-                    value={calzadoPrecioMin}
-                    onChangeText={setCalzadoPrecioMin}
-                    testID="input-calzado-preciomin"
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <CampoTexto
-                    etiqueta="Precio Máximo *"
-                    placeholder="120000"
-                    keyboardType="number-pad"
-                    value={calzadoPrecioMax}
-                    onChangeText={setCalzadoPrecioMax}
-                    testID="input-calzado-preciomax"
-                  />
-                </View>
-              </View>
-
-              <CampoTexto
-                etiqueta="Stock Mínimo (Alerta)"
-                placeholder="1"
-                keyboardType="number-pad"
-                value={calzadoStockMin}
-                onChangeText={setCalzadoStockMin}
-                testID="input-calzado-stockmin"
-              />
-
-              <Boton
-                titulo="Registrar y Agregar Calzado"
-                onPress={handleCrearCalzado}
-                cargando={creandoCalzado}
-                deshabilitado={creandoCalzado}
-              />
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-        </>
-      }
-    >
-        {/* 1. SELECCIÓN DE PROVEEDOR */}
         <Tarjeta>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: espacio.m }}>
-            <Text style={[tipografia.h3, { color: paleta.texto }]}>Proveedor *</Text>
-          </View>
-          {puedeCrearProveedor && (
-            <View style={{ alignSelf: 'flex-start', marginBottom: espacio.m }}>
-              <Boton
-                titulo="Crear Proveedor"
-                variante="secundario"
-                tamano="md"
-                icono={<CirclePlus size={18} color={paleta.primario} />}
-                onPress={() => setShowProviderModal(true)}
-              />
-            </View>
-          )}
-
-          {loadingProveedores ? (
-            <ActivityIndicator size="small" color={paleta.primario} style={{ marginVertical: espacio.s }} />
-          ) : proveedores.length === 0 ? (
-            <Text style={[tipografia.cuerpo, { color: paleta.texto3, fontStyle: 'italic' }]}>
-              No hay proveedores activos.
-            </Text>
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={{ flexDirection: 'row', gap: espacio.s }}>
-                {proveedores.map((p) => (
-                  <Chip
-                    key={p.id}
-                    etiqueta={p.nombre}
-                    activo={proveedorSeleccionado === p.id}
-                    onPress={() => setProveedorSeleccionado(p.id)}
-                  />
-                ))}
-              </View>
-            </ScrollView>
-          )}
-        </Tarjeta>
-
-        {/* 2. BÚSQUEDA Y ADICIÓN DE CALZADO */}
-        <Tarjeta>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: espacio.m }}>
-            <Text style={[tipografia.h3, { color: paleta.texto }]}>Buscar Calzado</Text>
-          </View>
-          <View style={{ alignSelf: 'flex-start', marginBottom: espacio.m }}>
-            <Boton
-              titulo="Crear Calzado Nuevo"
-              variante="secundario"
-              tamano="md"
-              icono={<CirclePlus size={18} color={paleta.primario} />}
-              onPress={() => setShowCalzadoModal(true)}
+          <Seccion titulo={conCostos ? 'Factura' : 'Llegada'}>
+            <SelectorProveedor
+              proveedores={proveedores}
+              valor={f.proveedorId}
+              onElegir={(proveedorId) => cambiarFactura({ proveedorId })}
+              puedeCrear={puedeCrearProveedor}
+              onCreado={(p) => setProveedores((ps) => [...ps, p].sort((a, b) => alfabetico(a.nombre, b.nombre)))}
             />
-          </View>
-
-          <View style={{
-            flexDirection: 'row', alignItems: 'center', gap: espacio.s,
-            backgroundColor: paleta.superficie2, borderRadius: radio.md, paddingHorizontal: espacio.m, height: 44,
-          }}>
-            <Search size={20} color={paleta.texto3} />
-            <TextInput
-              style={[tipografia.cuerpo, { flex: 1, color: paleta.texto }]}
-              placeholder="Buscar por descripción, referencia, color..."
-              placeholderTextColor={paleta.textoDeshabilitado}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              testID="input-buscar-calzado"
-            />
-            {searchingCalzado && <ActivityIndicator size="small" color={paleta.primario} />}
-          </View>
-
-          {/* Resultados de búsqueda */}
-          {searchResults.length > 0 && (
-            <View style={{ marginTop: espacio.m, gap: 2 }}>
-              {searchResults.map(prod => (
-                <Presionable
-                  key={prod.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Agregar ${prod.descripcion}`}
-                  onPress={() => handleSelectCalzado(prod)}
-                  style={{
-                    flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-                    paddingVertical: espacio.m, borderBottomWidth: 1, borderBottomColor: paleta.borde,
-                  }}
-                >
+            {conCostos ? (
+              <>
+                <View style={{ flexDirection: 'row', gap: espacio.s }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>{prod.descripcion}</Text>
-                    <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
-                      {prod.marca ? `${prod.marca} • ` : ''}Ref: {prod.referencia || 'N/A'} • Talla: {prod.talla || 'N/A'} • Color: {prod.color || 'N/A'}
-                    </Text>
+                    <CampoTexto etiqueta="Número de factura" placeholder="FV-1001" autoCapitalize="characters"
+                      value={f.numeroFactura} onChangeText={(numeroFactura) => cambiarFactura({ numeroFactura })} testID="input-numero-factura" />
                   </View>
-                  <Plus size={20} color={paleta.exito} />
-                </Presionable>
-              ))}
-            </View>
-          )}
-        </Tarjeta>
-
-        {/* 3. LISTA DE ITEMS SELECCIONADOS */}
-        <Tarjeta>
-          <Text style={[tipografia.h3, { color: paleta.texto }]}>Productos a Ingresar ({items.length})</Text>
-
-          {items.length === 0 ? (
-            <EstadoVacio
-              icono={<Package />}
-              titulo="Sin productos"
-              mensaje="Busca o crea productos para agregarlos a la recepción."
-            />
-          ) : (
-            <View>
-              {items.map((item, idx) => (
-                <View
-                  key={item.producto_calzado_id ?? `item-${idx}`}
-                  testID={`item-agregado-${item.producto_calzado_id}`}
-                  style={{
-                    paddingTop: espacio.m, marginTop: espacio.m,
-                    borderTopWidth: 1, borderTopColor: paleta.borde,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: espacio.s }}>
-                    <View style={{ flex: 1, marginRight: espacio.s }}>
-                      <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]}>{item.descripcion}</Text>
-                      <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
-                        {item.marca ? `${item.marca} • ` : ''}Ref: {item.referencia || 'N/A'} • Talla: {item.talla || 'N/A'} • Color: {item.color || 'N/A'}
-                      </Text>
-                    </View>
-                    <Presionable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Quitar ${item.descripcion}`}
-                      onPress={() => handleRemoveItem(idx)}
-                      hitSlop={12}
-                      testID={`btn-remover-${item.producto_calzado_id}`}
-                    >
-                      <Trash2 size={18} color={paleta.peligro} />
-                    </Presionable>
+                  <View style={{ flex: 1 }}>
+                    <CampoFecha etiqueta="Fecha" valor={f.fechaFactura} maximo={hoy}
+                      onCambio={(fechaFactura) => cambiarFactura({ fechaFactura })} />
                   </View>
-
-                  <View style={{ flexDirection: 'row', gap: espacio.m }}>
-                    <View style={{ width: 96 }}>
-                      <CampoTexto
-                        etiqueta="Cantidad"
-                        keyboardType="number-pad"
-                        value={String(item.cantidad)}
-                        onChangeText={(val) => handleUpdateCantidad(idx, val)}
-                        testID={`input-cant-${item.producto_calzado_id}`}
-                      />
-                    </View>
-
-                    {registraCostos && (
-                      <View style={{ width: 120 }}>
-                        <CampoTexto
-                          etiqueta="Costo c/u"
-                          keyboardType="number-pad"
-                          placeholder="$"
-                          value={String(item.costo_unitario)}
-                          onChangeText={(val) => handleUpdateCosto(idx, val)}
-                          testID={`input-costo-${item.producto_calzado_id}`}
-                        />
+                </View>
+                <View style={{ gap: 6 }}>
+                  <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>Pago</Text>
+                  <ControlSegmentado
+                    opciones={['Contado', 'Crédito']}
+                    indice={f.condicion === 'contado' ? 0 : 1}
+                    onCambio={(i) => cambiarFactura({ condicion: i === 0 ? 'contado' : 'credito' })}
+                  />
+                </View>
+                {f.condicion === 'credito' ? (
+                  <CampoFecha etiqueta="Vence" valor={f.fechaVencimiento} minimo={f.fechaFactura}
+                    placeholder="¿Cuándo hay que pagarla?" onCambio={(fechaVencimiento) => cambiarFactura({ fechaVencimiento })} />
+                ) : null}
+                {puedeAdjuntar ? (
+                  <View style={{ gap: 6 }}>
+                    <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>Foto o PDF de la factura</Text>
+                    {adjunto ? (
+                      <View style={{
+                        flexDirection: 'row', alignItems: 'center', gap: espacio.s, padding: espacio.m,
+                        borderRadius: radio.sm, backgroundColor: paleta.superficie,
+                      }}>
+                        {adjunto.tipo === 'pdf' ? <FileText size={20} color={paleta.texto2} /> : (
+                          <Image source={{ uri: adjunto.uri }} style={{ width: 36, height: 36, borderRadius: 6 }} />
+                        )}
+                        <Text style={[tipografia.cuerpo, { color: paleta.texto, flex: 1 }]} numberOfLines={1}>{adjunto.nombre}</Text>
+                        <Pressable accessibilityRole="button" accessibilityLabel="Quitar adjunto" hitSlop={8} onPress={() => setAdjunto(null)}>
+                          <X size={18} color={paleta.texto3} />
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <View style={{ flexDirection: 'row', gap: espacio.s }}>
+                        {([['camara', 'Cámara', Camera], ['galeria', 'Galería', Paperclip], ['pdf', 'PDF', FileText]] as const).map(([o, t, Icono]) => (
+                          <Pressable key={o} accessibilityRole="button" accessibilityLabel={`Adjuntar desde ${t}`}
+                            onPress={() => adjuntar(o)}
+                            style={({ pressed }) => ({
+                              flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                              paddingVertical: espacio.m, borderRadius: radio.sm, borderWidth: 1, borderColor: paleta.borde,
+                              backgroundColor: pressed ? paleta.superficie2 : paleta.superficie,
+                            })}>
+                            <Icono size={16} color={paleta.texto2} />
+                            <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>{t}</Text>
+                          </Pressable>
+                        ))}
                       </View>
                     )}
                   </View>
-                </View>
-              ))}
-            </View>
-          )}
+                ) : null}
+                <CampoTexto etiqueta="Notas" placeholder="Opcional" value={f.notas} onChangeText={(notas) => cambiarFactura({ notas })} />
+              </>
+            ) : (
+              <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+                Registra lo que llegó. Los costos y el pago los completa quien maneja los costos.
+              </Text>
+            )}
+          </Seccion>
         </Tarjeta>
 
-        {/* 4. CONDICIONES FINANCIERAS (Dueño / Andrés Only) */}
-        {registraCostos && (
-          <Tarjeta>
-            <Text style={[tipografia.h3, { color: paleta.texto, marginBottom: espacio.m }]}>
-              Información Financiera (Compra Directa)
-            </Text>
+        <Seccion
+          titulo={`Mercancía${filas.length ? ` · ${filas.length}` : ''}`}
+          accion={filas.length ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="Agregar referencia" hitSlop={8}
+              onPress={() => setEditando(filaVacia(generarClave()))}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Plus size={16} color={paleta.primario} />
+              <Text style={[tipografia.etiqueta, { color: paleta.primario }]}>Agregar</Text>
+            </Pressable>
+          ) : null}
+        >
+          {cargando ? (
+            <ActivityIndicator color={paleta.primario} />
+          ) : filas.length === 0 ? (
+            <EstadoVacio
+              icono={<Footprints />}
+              titulo="Agrega la primera referencia"
+              mensaje="Una por cada referencia y color, con la cantidad de cada talla."
+              textoAccion="Agregar referencia"
+              onAccion={() => setEditando(filaVacia(generarClave()))}
+            />
+          ) : (
+            filas.map((fila) => (
+              <TarjetaFila key={fila.id} fila={fila} conCostos={conCostos} onPress={() => setEditando(fila)} />
+            ))
+          )}
+        </Seccion>
+      </ScreenWrapper>
 
-            <Text style={[tipografia.etiqueta, { color: paleta.texto2, marginBottom: espacio.s }]}>
-              Condición de Pago *
-            </Text>
-            <View style={{ flexDirection: 'row', gap: espacio.s, marginBottom: espacio.m }}>
-              {(['contado', 'credito'] as const).map((c) => {
-                const activo = condicionPago === c
-                return (
-                  <Presionable
-                    key={c}
-                    accessibilityRole="button"
-                    accessibilityLabel={c === 'contado' ? 'Contado' : 'Crédito'}
-                    accessibilityState={{ selected: activo }}
-                    onPress={() => setCondicionPago(c)}
-                    style={{
-                      flex: 1, paddingVertical: espacio.m, borderRadius: radio.sm, alignItems: 'center',
-                      backgroundColor: activo ? paleta.primario : paleta.superficie2,
-                      borderWidth: 1, borderColor: activo ? paleta.primario : paleta.borde,
-                    }}
-                  >
-                    <Text style={[tipografia.cuerpoLg, { color: activo ? paleta.sobrePrimario : paleta.texto2 }]}>
-                      {c === 'contado' ? 'Contado' : 'Crédito'}
-                    </Text>
-                  </Presionable>
-                )
-              })}
-            </View>
+      <EditorReferencia
+        fila={editando}
+        conCostos={conCostos}
+        conocidas={conocidas}
+        referencias={listas.referencias}
+        marcas={listas.marcas}
+        colores={listas.colores}
+        coloresSimples={listas.coloresSimples}
+        costos={costos}
+        onGuardar={(fila) => { guardarFila(fila); setEditando(null) }}
+        onOtroColor={(fila) => { guardarFila(fila); setEditando(otroColor(fila, generarClave())) }}
+        onQuitar={() => { if (editando) quitarFila(editando.id); setEditando(null) }}
+        onCerrar={() => setEditando(null)}
+      />
 
-            {condicionPago === 'credito' && (
-              <View style={{ marginBottom: espacio.m }}>
-                <CampoTexto
-                  etiqueta="Fecha de Vencimiento (AAAA-MM-DD)"
-                  placeholder="Ej. 2026-07-16"
-                  value={fechaVencimiento}
-                  onChangeText={setFechaVencimiento}
-                  testID="input-vencimiento"
-                />
-              </View>
-            )}
-
-            <View style={{ marginBottom: espacio.m }}>
-              <CampoTexto
-                etiqueta="Notas y Observaciones"
-                placeholder="Ingresa notas relacionadas a la compra..."
-                multiline
-                numberOfLines={3}
-                value={notas}
-                onChangeText={setNotas}
-                testID="input-notas"
-              />
-            </View>
-
-            {/* Total summary */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: espacio.xs }}>
-              <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Total Unidades:</Text>
-              <Text style={[tipografia.cuerpo, tabular, { color: paleta.texto }]}>{totalItems}</Text>
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: espacio.xs }}>
-              <Text style={[tipografia.cuerpo, { color: paleta.texto2 }]}>Total Compra:</Text>
-              <Text style={[tipografia.h3, tabular, { color: paleta.exitoTexto }]}>
-                ${totalCosto.toLocaleString('es-CO')}
-              </Text>
-            </View>
-          </Tarjeta>
-        )}
-
-        {/* SUBMIT BUTTON */}
-        <Boton
-          titulo={registraCostos ? 'Registrar Compra y Stock' : 'Confirmar Entrada Física'}
-          onPress={handleGuardar}
-          cargando={loading}
-          deshabilitado={loading}
-          icono={<CircleCheckBig size={20} color={paleta.sobrePrimario} />}
+      {revisando ? (
+        <Revision
+          titulo={conCostos ? 'Confirmar compra' : 'Confirmar llegada'}
+          filas={[
+            ['Proveedor', proveedor?.nombre ?? '—'],
+            ...(conCostos ? [
+              ['Factura', `${f.numeroFactura.trim() || 'Sin número'} · ${fechaCorta(f.fechaFactura)}`],
+              ['Pago', f.condicion === 'contado' ? 'Contado' : `Crédito${f.fechaVencimiento ? `, vence el ${fechaCorta(f.fechaVencimiento)}` : ''}`],
+            ] as [string, string][] : []),
+            ['Mercancía', `${resumen.referencias} referencias · ${resumen.unidades} pares`],
+            ...(conCostos ? [
+              ['Inventario', `${resumen.tallasNuevas ? `${resumen.tallasNuevas} talla${resumen.tallasNuevas === 1 ? '' : 's'} nueva${resumen.tallasNuevas === 1 ? '' : 's'}` : 'Sin tallas nuevas'}${resumen.preciosCambiados ? ` · ${resumen.preciosCambiados} cambio${resumen.preciosCambiados === 1 ? '' : 's'} de precio` : ''}`],
+              ['Adjunto', adjunto?.nombre ?? 'Sin factura adjunta'],
+            ] as [string, string][] : []),
+          ]}
+          total={conCostos ? resumen.total : null}
+          avisos={avisos}
+          errores={errores}
+          guardando={guardando}
+          textoBoton={conCostos ? 'Guardar y subir stock' : 'Confirmar llegada'}
+          onGuardar={guardar}
+          onCerrar={() => setRevisando(false)}
         />
-    </ScreenWrapper>
+      ) : null}
+    </>
   )
 }
 
-// Define defaultProps using getters to bind to active state setter closures
-;(RecepcionMercanciaNuevaScreen as any).defaultProps = {
-  get onSelectProveedor() {
-    return (id: string) => {
-      if (currentSetProveedorSeleccionado) {
-        currentSetProveedorSeleccionado(id)
-      }
-    }
-  },
-  get onAddItem() {
-    return (item: any) => {
-      if (currentAddItem) {
-        currentAddItem(item)
-      }
-    }
-  }
+function TarjetaFila({ fila, conCostos, onPress }: { fila: FilaFactura; conCostos: boolean; onPress: () => void }) {
+  const { paleta } = useTema()
+  const foto = fotoDeFila(fila)
+  const tallas = tallasConCantidad(fila)
+  const nuevas = tallas.filter((t) => !fila.existentes[t.talla]).length
+  const color = nombreColores(fila.color)
+  return (
+    <Tarjeta onPress={onPress}>
+      <View style={{ flexDirection: 'row', gap: espacio.m }}>
+        <View style={{
+          width: 64, height: 64, borderRadius: radio.sm, overflow: 'hidden',
+          backgroundColor: paleta.superficie2, alignItems: 'center', justifyContent: 'center',
+        }}>
+          {foto ? <Image source={{ uri: foto }} style={{ width: 64, height: 64 }} /> : <Footprints size={24} color={paleta.texto3} />}
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[tipografia.cuerpoLg, { color: paleta.texto, flexShrink: 1 }]} numberOfLines={1}>
+              {fila.referencia.trim() || fila.descripcion.trim() || 'Sin referencia'}
+            </Text>
+            {color ? <PuntoColor color={color} tamano={12} /> : null}
+            {color ? <Text style={[tipografia.caption, { color: paleta.texto2 }]} numberOfLines={1}>{color}</Text> : null}
+          </View>
+          <Text style={[tipografia.caption, { color: paleta.texto3 }]} numberOfLines={1}>
+            {[fila.descripcion.trim(), fila.marca.trim()].filter(Boolean).join(' · ') || 'Toca para completar'}
+          </Text>
+          <Text style={[tipografia.caption, tabular, { color: paleta.texto2 }]} numberOfLines={2}>
+            {tallas.length ? tallas.map((t) => `${t.talla}×${t.cantidad}`).join('  ') : 'Sin cantidades'}
+          </Text>
+        </View>
+        <View style={{ alignItems: 'flex-end', gap: 4 }}>
+          <Text style={[tipografia.etiqueta, tabular, { color: paleta.texto }]}>{unidadesFila(fila)} pares</Text>
+          {conCostos ? <Text style={[tipografia.caption, tabular, { color: paleta.texto2 }]}>{pesos(subtotalFila(fila))}</Text> : null}
+          {nuevas ? <Badge texto={`${nuevas} NUEVA${nuevas === 1 ? '' : 'S'}`} tipo="verde" /> : null}
+        </View>
+      </View>
+    </Tarjeta>
+  )
+}
+
+function Revision({ titulo, filas, total, avisos, errores, guardando, textoBoton, onGuardar, onCerrar }: {
+  titulo: string
+  filas: [string, string][]
+  total: number | null
+  avisos: string[]
+  errores: string[]
+  guardando: boolean
+  textoBoton: string
+  onGuardar: () => void
+  onCerrar: () => void
+}) {
+  const { paleta } = useTema()
+  return (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
+      <Pressable style={{ flex: 1 }} accessibilityLabel="Cerrar" onPress={onCerrar} />
+      <View style={{
+        backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl,
+        padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.l, maxHeight: '88%',
+      }} testID="revision-compra">
+        <Text style={[tipografia.h2, { color: paleta.texto }]}>{titulo}</Text>
+        <View style={{ gap: espacio.s }}>
+          {filas.map(([k, v]) => (
+            <View key={k} style={{ flexDirection: 'row', gap: espacio.m }}>
+              <Text style={[tipografia.cuerpo, { color: paleta.texto3, width: 96 }]}>{k}</Text>
+              <Text style={[tipografia.cuerpo, { color: paleta.texto, flex: 1 }]}>{v}</Text>
+            </View>
+          ))}
+          {total != null ? (
+            <View style={{ flexDirection: 'row', gap: espacio.m, alignItems: 'baseline' }}>
+              <Text style={[tipografia.cuerpo, { color: paleta.texto3, width: 96 }]}>Total</Text>
+              <Text style={[tipografia.h2, tabular, { color: paleta.texto }]}>{pesos(total)}</Text>
+            </View>
+          ) : null}
+        </View>
+        {avisos.length ? (
+          <View style={{ gap: 4, padding: espacio.m, borderRadius: radio.sm, backgroundColor: paleta.advertenciaSoft }}>
+            {avisos.map((a) => (
+              <View key={a} style={{ flexDirection: 'row', gap: 6 }}>
+                <AlertTriangle size={14} color={paleta.advertenciaTexto} />
+                <Text style={[tipografia.caption, { color: paleta.advertenciaTexto, flex: 1 }]}>{a}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+        {errores.length ? (
+          <View style={{ gap: 4, padding: espacio.m, borderRadius: radio.sm, backgroundColor: paleta.peligroSoft }} testID="errores-compra">
+            <Text style={[tipografia.etiqueta, { color: paleta.peligroTexto }]}>Falta corregir:</Text>
+            {errores.slice(0, 8).map((e) => (
+              <Text key={e} style={[tipografia.caption, { color: paleta.peligroTexto }]}>• {e}</Text>
+            ))}
+            {errores.length > 8 ? <Text style={[tipografia.caption, { color: paleta.peligroTexto }]}>… y {errores.length - 8} más</Text> : null}
+          </View>
+        ) : null}
+        <View style={{ flexDirection: 'row', gap: espacio.s }}>
+          <View style={{ flex: 1 }}>
+            <Boton titulo="Volver" variante="contorno" onPress={onCerrar} />
+          </View>
+          <View style={{ flex: 1.4 }}>
+            <Boton titulo={textoBoton} onPress={onGuardar} cargando={guardando} deshabilitado={errores.length > 0 || guardando}/>
+          </View>
+        </View>
+      </View>
+    </View>
+  )
 }

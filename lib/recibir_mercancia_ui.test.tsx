@@ -4,535 +4,272 @@ process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://dummy-url.supabase.co'
 process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'dummy-key'
 // @ts-ignore
 import renderer, { act } from 'react-test-renderer'
-import { Redirect } from 'expo-router'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
-// Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
-jest.useFakeTimers()
-
-// El Toast usa los insets de safe-area al mostrarse (Regla global de pantallas con useToast)
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }))
+jest.mock('@react-native-community/datetimepicker', () => () => null)
+jest.mock('expo-image-picker', () => ({}))
+jest.mock('expo-document-picker', () => ({}))
+jest.mock('./supabase', () => ({ supabase: { from: jest.fn(), rpc: jest.fn() } }))
+jest.mock('./imagenes', () => ({ comprimirBajoLimite: jest.fn(), comprimirYSubirImagen: jest.fn() }))
+jest.mock('./storage', () => ({ bytesDesdeUriLocal: jest.fn() }))
 
-// Mock Supabase
-jest.mock('./supabase', () => ({
-  supabase: {
-    from: jest.fn(() => ({
-      select: jest.fn().mockResolvedValue({ data: [], error: null })
-    }))
-  }
+const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() }
+const mockParams = jest.fn(() => ({ id: 'c1' }))
+jest.mock('expo-router', () => ({
+  useRouter: () => mockRouter,
+  useLocalSearchParams: () => mockParams(),
+  useFocusEffect: (cb: () => void) => {
+    const React = require('react')
+    React.useEffect(() => { cb() }, [cb])
+  },
+  Redirect: (props: { href: string }) => {
+    const React = require('react')
+    return React.createElement('Text', null, `Redirect:${props.href}`)
+  },
 }))
-jest.mock('../lib/supabase', () => ({
-  supabase: {
-    from: jest.fn(() => ({
-      select: jest.fn().mockResolvedValue({ data: [], error: null })
-    }))
-  }
+jest.mock('./auth', () => ({ useAuth: jest.fn(), useRequireModulo: jest.fn(() => null) }))
+jest.mock('./proveedores', () => ({
+  listarProveedores: jest.fn(),
+  crearProveedor: jest.fn(),
+  obtenerCompraPorId: jest.fn(() => Promise.resolve(null)),
+  completarInformacionFinanciera: jest.fn(),
 }))
-
-// Mock de pantallas
-import RecibirMercanciaIndexRaw from '../app/(app)/recibir-mercancia/index'
-import RecibirMercanciaNuevaRaw from '../app/(app)/recibir-mercancia/nueva'
-import RecepcionDetalleFinancieroScreenRaw from '../app/(app)/recibir-mercancia/[id]'
-import { TemaProvider } from './tema'
-import { ToastProvider } from '../components/ui'
-
-// Las 3 pantallas ahora usan useTema() (y nueva/[id] usan useToast()); se envuelven
-// con los mismos nombres que ya usa toda la suite para no tocar cada call-site.
-function RecibirMercanciaIndex(props: any) {
-  return (
-    <TemaProvider>
-      <RecibirMercanciaIndexRaw {...props} />
-    </TemaProvider>
-  )
-}
-
-function RecibirMercanciaNueva(props: any) {
-  return (
-    <TemaProvider>
-      <ToastProvider>
-        <RecibirMercanciaNuevaRaw {...props} />
-      </ToastProvider>
-    </TemaProvider>
-  )
-}
-// El hook de pruebas de nueva.tsx cuelga defaultProps (getters) del componente real;
-// se reexpone en el mismo objeto para que el override de renderer.create() más abajo
-// (que referencia RecibirMercanciaNueva.defaultProps) siga funcionando igual.
-;(RecibirMercanciaNueva as any).defaultProps = (RecibirMercanciaNuevaRaw as any).defaultProps
-
-function RecepcionDetalleFinancieroScreen(props: any) {
-  return (
-    <TemaProvider>
-      <ToastProvider>
-        <RecepcionDetalleFinancieroScreenRaw {...props} />
-      </ToastProvider>
-    </TemaProvider>
-  )
-}
-
-let testTree: any = null
-
-// Override react-test-renderer to inject props callbacks on RecibirMercanciaNueva component
-const originalCreate = renderer.create
-;(renderer as any).create = (element: any, options: any) => {
-  const tree = originalCreate(element, options)
-  testTree = tree
-  if (element && element.type === RecibirMercanciaNueva) {
-    let proto = tree
-    let descriptor: any = null
-    while (proto && !descriptor) {
-      descriptor = Object.getOwnPropertyDescriptor(proto, 'root')
-      proto = Object.getPrototypeOf(proto)
-    }
-
-    Object.defineProperty(tree, 'root', {
-      get() {
-        const root = descriptor && descriptor.get ? descriptor.get.call(tree) : (tree as any)._root
-        if (root) {
-          Object.defineProperty(root, 'props', {
-            get() {
-              return {
-                onSelectProveedor: (id: string) => {
-                  ;(RecibirMercanciaNueva as any).defaultProps?.onSelectProveedor(id)
-                },
-                onAddItem: (item: any) => {
-                  ;(RecibirMercanciaNueva as any).defaultProps?.onAddItem(item)
-                }
-              }
-            },
-            configurable: true
-          })
-        }
-        return root
-      },
-      configurable: true
-    })
-  }
-  return tree
-}
+jest.mock('./compras', () => ({
+  ...jest.requireActual('./compras'),
+  listarCompras: jest.fn(),
+  obtenerCompra: jest.fn(),
+  pagosDeCompra: jest.fn(),
+  documentosDeCompra: jest.fn(),
+  registrarCompra: jest.fn(),
+  registrarLlegada: jest.fn(),
+  registrarPago: jest.fn(),
+  fijarFotos: jest.fn(),
+  subirFactura: jest.fn(),
+  costosPorProducto: jest.fn(),
+  listarInventarioCompleto: jest.fn(),
+}))
+jest.mock('./intentoVenta', () => ({ generarClave: () => 'clave-x' }))
 
 import { useAuth } from './auth'
-import * as apiProveedores from './proveedores'
-import * as apiInventario from './inventario'
+import { listarProveedores } from './proveedores'
+import {
+  costosPorProducto, documentosDeCompra, listarCompras, listarInventarioCompleto, obtenerCompra, pagosDeCompra, registrarCompra, registrarLlegada,
+  type CompraDetalle, type CompraListado, type Factura,
+} from './compras'
+import { TemaProvider } from './tema'
+import { ToastProvider } from '../components/ui'
+import Lista from '../app/(app)/recibir-mercancia/index'
+import Nueva from '../app/(app)/recibir-mercancia/nueva'
+import Detalle from '../app/(app)/recibir-mercancia/[id]'
+import Completar from '../app/(app)/recibir-mercancia/completar/[id]'
 
-// Mocks de navegación de expo-router
-const mockUseLocalSearchParams = jest.fn(() => ({ id: 'test-compra-id' } as any))
-const mockRouter = {
-  push: jest.fn(),
-  replace: jest.fn(),
-  back: jest.fn(),
+jest.useFakeTimers()
+
+const DUENO = { id: 'dueno-1', nombre: 'Andrés', rol: 'dueno', permisos: [], activo: true }
+const EMPLEADO = { id: 'emp-1', nombre: 'Camilo', rol: 'empleado', permisos: PLANTILLAS.operativo.permisos, activo: true }
+const comoDe = (perfil: object) => (useAuth as jest.Mock).mockReturnValue({ session: {}, perfil, cargando: false })
+
+type Nodo = renderer.ReactTestInstance
+let arbol: renderer.ReactTestRenderer | null = null
+
+async function pintar(ui: React.ReactElement) {
+  await act(async () => {
+    arbol = renderer.create(<TemaProvider><ToastProvider>{ui}</ToastProvider></TemaProvider>)
+  })
+  await act(async () => { await Promise.resolve() })
+  return arbol!
 }
 
-jest.mock('expo-router', () => ({
-  useLocalSearchParams: () => mockUseLocalSearchParams(),
-  useRouter: () => mockRouter,
-  useFocusEffect: (cb: any) => {
-    const React = require('react')
-    React.useEffect(() => {
-      cb()
-    }, [cb])
+const textos = (): string[] =>
+  arbol!.root.findAll((n: Nodo) => (n.type as unknown) === 'Text').map((n: Nodo) =>
+    [n.props.children].flat(5).filter((c: unknown) => typeof c === 'string' || typeof c === 'number').join(''))
+const hay = (t: string) => textos().some((x) => x.includes(t))
+const boton = (etiqueta: string): Nodo => {
+  const nodos = arbol!.root.findAll((n: Nodo) => n.props.accessibilityLabel === etiqueta && n.props.accessibilityRole === 'button')
+  if (!nodos.length) throw new Error(`No hay botón "${etiqueta}"`)
+  return nodos[0]
+}
+const tocar = async (etiqueta: string) => {
+  await act(async () => { boton(etiqueta).props.onPress() })
+  await act(async () => { await Promise.resolve() })
+}
+
+const compra = (o: Partial<CompraListado>): CompraListado => ({
+  id: 'c1', proveedor_id: 'p1', proveedor: 'Calzado Andino', estado: 'completada', condicion_pago: 'contado', total: 500000,
+  saldo_pendiente: 0, fecha_vencimiento: null, numero_factura: 'FV-77', fecha_factura: '2026-10-20', registrada_por: 'dueno-1',
+  created_at: '2026-10-20T15:00:00Z', pares: 10, ...o,
+})
+
+const EXISTENTES = {
+  '38': { id: 'a38', precio_minimo: 80000, precio_maximo: 100000 },
+  '39': { id: 'a39', precio_minimo: 80000, precio_maximo: 100000 },
+}
+const borrador = (filaExtra: object = {}): { clave: string; factura: Factura } => ({
+  clave: 'clave-guardada',
+  factura: {
+    proveedorId: 'p1', numeroFactura: 'FV-1', fechaFactura: '2026-10-20', condicion: 'contado', fechaVencimiento: '', notas: '',
+    filas: [{
+      id: 'f1', referencia: 'TA-1', descripcion: 'Tennis A', marca: 'Bosi', categoria: 'Tennis', color: 'Negro',
+      existentes: EXISTENTES, cantidades: { '38': '2', '39': '1' }, foto: '',
+      rangos: [{ desde: '20', hasta: '45', costo: '50.000', minimo: '80.000', maximo: '100.000' }],
+      ...filaExtra,
+    }],
   },
-  Redirect: jest.fn((props) => {
-    console.log('Redirect called with:', props)
-    return `Redirected to ${props?.href}`
-  }),
-}))
+})
 
-// Mock de autenticación
-const mockUseAuth = useAuth as jest.Mock
-jest.mock('../lib/auth', () => ({
-  useAuth: jest.fn(),
-  useRequireModulo: jest.fn(() => null),
-}))
+beforeEach(async () => {
+  jest.clearAllMocks()
+  await AsyncStorage.clear()
+  mockParams.mockReturnValue({ id: 'c1' })
+  ;(listarProveedores as jest.Mock).mockResolvedValue([{ id: 'p1', nombre: 'Calzado Andino', activo: true }])
+  ;(listarInventarioCompleto as jest.Mock).mockResolvedValue([])
+  ;(costosPorProducto as jest.Mock).mockResolvedValue(new Map())
+  ;(registrarCompra as jest.Mock).mockResolvedValue({ compra_id: 'c9', repetida: false })
+  ;(registrarLlegada as jest.Mock).mockResolvedValue('c10')
+  ;(pagosDeCompra as jest.Mock).mockResolvedValue([])
+  ;(documentosDeCompra as jest.Mock).mockResolvedValue([])
+})
 
-// Mock de APIs
-jest.mock('./proveedores', () => ({
-  listarProveedores: jest.fn(() => Promise.resolve([])),
-  crearProveedor: jest.fn(),
-  registrarLlegadaFisica: jest.fn(),
-  completarInformacionFinanciera: jest.fn(),
-  registrarCompraDirecta: jest.fn(),
-  listarCompras: jest.fn(() => Promise.resolve([])),
-  obtenerCompraPorId: jest.fn(() => Promise.resolve(null)),
-}))
-jest.mock('../lib/proveedores', () => ({
-  listarProveedores: jest.fn(() => Promise.resolve([])),
-  crearProveedor: jest.fn(),
-  registrarLlegadaFisica: jest.fn(),
-  completarInformacionFinanciera: jest.fn(),
-  registrarCompraDirecta: jest.fn(),
-  listarCompras: jest.fn(() => Promise.resolve([])),
-  obtenerCompraPorId: jest.fn(() => Promise.resolve(null)),
-}))
+afterEach(async () => {
+  if (arbol) await act(async () => { arbol!.unmount() })
+  arbol = null
+})
 
-jest.mock('./inventario', () => ({
-  listarCalzado: jest.fn(() => Promise.resolve([])),
-  guardarCalzado: jest.fn(),
-}))
-jest.mock('../lib/inventario', () => ({
-  listarCalzado: jest.fn(() => Promise.resolve([])),
-  guardarCalzado: jest.fn(),
-}))
-
-describe('Recibir Mercancía UI - Tests de Integración y Gating de Roles', () => {
-  const matchText = (children: any, text: string): boolean => {
-    if (typeof children === 'string') return children.trim() === text.trim()
-    if (typeof children === 'number') return String(children) === text.trim()
-    if (Array.isArray(children)) {
-      if (children.every(c => typeof c === 'string' || typeof c === 'number')) {
-        return children.join('').trim() === text.trim()
-      }
-      return children.some(c => matchText(c, text))
-    }
-    return false
-  }
-
-  const getButtonsByText = (root: any, text: string) => {
-    const textNodes = root.findAll((el: any) => matchText(el.props.children, text))
-    return textNodes.map((node: any) => {
-      let current = node
-      while (current && (!current.props || !current.props.onPress)) {
-        current = current.parent
-      }
-      return current
-    }).filter(Boolean)
-  }
-
-  const getButtonByText = (root: any, text: string) => {
-    const buttons = getButtonsByText(root, text)
-    if (buttons.length === 0) throw new Error(`Button with text "${text}" not found`)
-    return buttons[0]
-  }
-
-  beforeEach(() => {
-    jest.clearAllMocks()
-    mockUseLocalSearchParams.mockReturnValue({ id: 'test-compra-id' })
-    testTree = null
+describe('Lista de compras', () => {
+  it('el dueño ve todas, con lo que debe y su estado, y filtra las por pagar', async () => {
+    comoDe(DUENO)
+    ;(listarCompras as jest.Mock).mockResolvedValue([
+      compra({}),
+      compra({ id: 'c2', proveedor: 'Botas del Sur', condicion_pago: 'credito', total: 300000, saldo_pendiente: 300000, fecha_vencimiento: '2099-01-01' }),
+    ])
+    await pintar(<Lista />)
+    expect(hay('Compras')).toBe(true)
+    expect(hay('Calzado Andino')).toBe(true)
+    expect(hay('$500.000')).toBe(true)
+    expect(hay('CONTADO')).toBe(true)
+    expect(hay('Por pagar')).toBe(true)
+    expect(hay('$300.000')).toBe(true)
+    await act(async () => {
+      arbol!.root.findAll((n: Nodo) => n.props.children === 'Por pagar' && (n.type as unknown) === 'Text')
+        .map((n: Nodo) => { let p: Nodo | null = n; while (p && !p.props.onPress) p = p.parent; return p })
+        .filter(Boolean).pop()!.props.onPress()
+    })
+    expect(hay('Calzado Andino')).toBe(false)
+    expect(hay('Botas del Sur')).toBe(true)
   })
 
-  afterEach(async () => {
-    if (testTree) {
-      try {
-        await act(async () => {
-          testTree.unmount()
-        })
-      } catch (err) {
-        // Ignore unmount errors if already unmounted
-      }
-      testTree = null
-    }
+  it('un empleado sin costos ve solo sus llegadas pendientes y sin montos', async () => {
+    comoDe(EMPLEADO)
+    ;(listarCompras as jest.Mock).mockResolvedValue([
+      compra({ estado: 'pendiente_revision', total: null, condicion_pago: null, registrada_por: 'emp-1' }),
+    ])
+    await pintar(<Lista />)
+    expect(hay('Mercancía recibida')).toBe(true)
+    expect(hay('PENDIENTE DE COSTOS')).toBe(true)
+    expect(hay('$')).toBe(false)
+    expect(boton('Recibir mercancía')).toBeTruthy()
+  })
+})
+
+describe('Nueva compra', () => {
+  it('con costos: revisar y guardar manda la factura con la clave del borrador', async () => {
+    comoDe(DUENO)
+    await AsyncStorage.setItem('venus.compra.borrador', JSON.stringify(borrador()))
+    await pintar(<Nueva />)
+    expect(hay('Nueva compra')).toBe(true)
+    expect(hay('TA-1')).toBe(true)
+    expect(hay('38×2  39×1')).toBe(true)
+    expect(hay('$150.000')).toBe(true)
+    await tocar('Revisar')
+    expect(hay('Confirmar compra')).toBe(true)
+    expect(hay('FV-1')).toBe(true)
+    await tocar('Guardar y subir stock')
+    expect(registrarCompra).toHaveBeenCalledWith(expect.objectContaining({ proveedorId: 'p1', numeroFactura: 'FV-1' }), 'clave-guardada')
+    expect(mockRouter.replace).toHaveBeenCalledWith('/recibir-mercancia/c9')
+    expect(await AsyncStorage.getItem('venus.compra.borrador')).toBeNull()
   })
 
-  // 3.1 Gating de seguridad y visibilidad de lista de pendientes
-  describe('Control de Accesos por Rol en Index y Detalle', () => {
-    test('Empleado no visualiza la sección de "Pendientes de Revisión" ni montos financieros', async () => {
-      mockUseAuth.mockReturnValue({
-        session: { user: { id: 'emp-1' } },
-        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', permisos: PLANTILLAS.operativo.permisos, activo: true },
-        cargando: false,
-      });
-      (apiProveedores.listarCompras as jest.Mock).mockResolvedValue([
-        { id: 'c-1', proveedor_id: 'p-1', estado: 'pendiente_revision', total: null, created_at: '2026-06-16' },
-      ])
-
-      let tree: any
-      await act(async () => {
-        tree = renderer.create(<RecibirMercanciaIndex />)
-      })
-
-      const root = tree.root
-      const pendingHeading = root.findAll((el: any) => String(el.type) === 'Text' && matchText(el.props.children, 'Pendientes de Revisión'))
-      expect(pendingHeading.length).toBe(0)
-    })
-
-    test('Dueño sí visualiza la sección de "Pendientes de Revisión" y puede ver montos', async () => {
-      mockUseAuth.mockReturnValue({
-        session: { user: { id: 'owner-1' } },
-        perfil: { id: 'owner-1', nombre: 'Andrés Dueño', rol: 'dueno', permisos: [], activo: true },
-        cargando: false,
-      });
-      (apiProveedores.listarCompras as jest.Mock).mockResolvedValue([
-        { id: 'c-1', proveedor_id: 'p-1', estado: 'pendiente_revision', total: null, created_at: '2026-06-16' },
-      ])
-
-      let tree: any
-      await act(async () => {
-        tree = renderer.create(<RecibirMercanciaIndex />)
-      })
-
-      const root = tree.root
-      const pendingHeading = root.findAll((el: any) => String(el.type) === 'Text' && matchText(el.props.children, 'Pendientes de Revisión'))
-      expect(pendingHeading.length).toBeGreaterThan(0)
-    })
-
-    test('Redirecciona a administradores y empleados al intentar acceder al detalle financiero [id]', async () => {
-      // Caso 1: Sandra (admin) -> Redirigida
-      mockUseAuth.mockReturnValue({
-        session: { user: { id: 'admin-1' } },
-        perfil: { id: 'admin-1', nombre: 'Sandra Admin', rol: 'empleado', permisos: PLANTILLAS.administrativo.permisos, activo: true },
-        cargando: false,
-      })
-
-      await act(async () => {
-        renderer.create(<RecepcionDetalleFinancieroScreen />)
-      })
-      expect((Redirect as any).mock.calls[0][0]).toEqual({ href: '/' })
-
-      ;(Redirect as jest.Mock).mockClear()
-
-      // Caso 2: Camilo (empleado) -> Redirigido
-      mockUseAuth.mockReturnValue({
-        session: { user: { id: 'emp-1' } },
-        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', permisos: PLANTILLAS.operativo.permisos, activo: true },
-        cargando: false,
-      })
-
-      await act(async () => {
-        renderer.create(<RecepcionDetalleFinancieroScreen />)
-      })
-      expect((Redirect as any).mock.calls[0][0]).toEqual({ href: '/' })
-    })
-
-    test('Permite acceso a la pantalla de detalle financiero [id] al dueño (Andrés)', async () => {
-      mockUseAuth.mockReturnValue({
-        session: { user: { id: 'owner-1' } },
-        perfil: { id: 'owner-1', nombre: 'Andrés Dueño', rol: 'dueno', permisos: [], activo: true },
-        cargando: false,
-      });
-      (apiProveedores.obtenerCompraPorId as jest.Mock).mockResolvedValue({
-        id: 'test-compra-id',
-        proveedor_id: 'p-1',
-        proveedor_nombre: 'Distribuidor A',
-        estado: 'pendiente_revision',
-        created_at: '2026-06-16T12:00:00Z',
-        items: [{ id: 'item-1', descripcion: 'Zapato A', cantidad: 12, costo_unitario: null }]
-      })
-
-      let tree: any
-      await act(async () => {
-        tree = renderer.create(<RecepcionDetalleFinancieroScreen />)
-      })
-
-      expect(Redirect).not.toHaveBeenCalled()
-      const root = tree.root
-      const title = root.findAll((el: any) => matchText(el.props.children, 'Detalles de Recepción'))
-      expect(title.length).toBeGreaterThan(0)
-    })
+  it('con costos: lo que falta impide guardar y se explica', async () => {
+    comoDe(DUENO)
+    await AsyncStorage.setItem('venus.compra.borrador', JSON.stringify(borrador({
+      referencia: 'NV-9', existentes: {}, descripcion: '', categoria: '', rangos: [{ desde: '20', hasta: '45', costo: '', minimo: '', maximo: '' }],
+    })))
+    await pintar(<Nueva />)
+    await tocar('Revisar')
+    expect(hay('Falta la descripción de NV-9.')).toBe(true)
+    expect(boton('Guardar y subir stock').props.accessibilityState.disabled).toBe(true)
   })
 
-  // 3.2 Botón "Crear Proveedor" en la pantalla de Nueva Recepción
-  describe('Acciones inline de Proveedores', () => {
-    test('"Crear Proveedor" se oculta a empleados (RLS staff-admin) y se muestra al dueño', async () => {
-      (apiProveedores.listarProveedores as jest.Mock).mockResolvedValue([])
-
-      // Empleado: NO debe ver el botón (proveedores_insert exige is_staff_admin)
-      mockUseAuth.mockReturnValue({
-        session: { user: { id: 'emp-1' } },
-        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', permisos: PLANTILLAS.operativo.permisos, activo: true },
-        cargando: false,
-      })
-      let treeEmp: any
-      await act(async () => {
-        treeEmp = renderer.create(<RecibirMercanciaNueva />)
-      })
-      const btnEmp = treeEmp.root.findAll((el: any) => String(el.type) === 'Text' && matchText(el.props.children, 'Crear Proveedor'))
-      expect(btnEmp.length).toBe(0)
-
-      // Dueño: SÍ debe verlo
-      mockUseAuth.mockReturnValue({
-        session: { user: { id: 'owner-1' } },
-        perfil: { id: 'owner-1', nombre: 'Andrés Dueño', rol: 'dueno', permisos: [], activo: true },
-        cargando: false,
-      })
-      let treeOwner: any
-      await act(async () => {
-        treeOwner = renderer.create(<RecibirMercanciaNueva />)
-      })
-      const btnOwner = treeOwner.root.findAll((el: any) => String(el.type) === 'Text' && matchText(el.props.children, 'Crear Proveedor'))
-      expect(btnOwner.length).toBeGreaterThan(0)
-    })
+  it('sin costos: es la llegada física, sin precios, de lo que ya existe', async () => {
+    comoDe(EMPLEADO)
+    await AsyncStorage.setItem('venus.compra.borrador', JSON.stringify(borrador()))
+    await pintar(<Nueva />)
+    expect(hay('Recibir mercancía')).toBe(true)
+    expect(hay('$')).toBe(false)
+    await tocar('Revisar')
+    await tocar('Confirmar llegada')
+    expect(registrarLlegada).toHaveBeenCalledWith('p1', 'emp-1', [
+      { producto_calzado_id: 'a38', descripcion: 'Tennis A', referencia: 'TA-1', color: 'Negro', talla: '38', cantidad: 2 },
+      { producto_calzado_id: 'a39', descripcion: 'Tennis A', referencia: 'TA-1', color: 'Negro', talla: '39', cantidad: 1 },
+    ])
+    expect(registrarCompra).not.toHaveBeenCalled()
   })
 
-  // 3.3 Creación rápida de producto en catálogo inline inicializa stock en 0
-  describe('Acciones inline de Calzado', () => {
-    test('La creación rápida de producto calzado inicializa stock_actual en 0 al llamar a guardarCalzado', async () => {
-      mockUseAuth.mockReturnValue({
-        session: { user: { id: 'emp-1' } },
-        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', permisos: PLANTILLAS.operativo.permisos, activo: true },
-        cargando: false,
-      })
+  it('sin costos: una talla que no está en el inventario no se puede registrar', async () => {
+    comoDe(EMPLEADO)
+    await AsyncStorage.setItem('venus.compra.borrador', JSON.stringify(borrador({ cantidades: { '40': '1' } })))
+    await pintar(<Nueva />)
+    await tocar('Revisar')
+    expect(hay('TA-1 Negro: la talla 40 no existe en el inventario.')).toBe(true)
+    expect(boton('Confirmar llegada').props.accessibilityState.disabled).toBe(true)
+  })
+})
 
-      let tree: any
-      await act(async () => {
-        tree = renderer.create(<RecibirMercanciaNueva />)
-      })
-
-      const root = tree.root
-      const openModalBtn = getButtonByText(root, 'Crear Calzado Nuevo')
-      
-      await act(async () => {
-        openModalBtn.props.onPress()
-      })
-
-      const calzadoModal = root.findByProps({ testID: 'modal-crear-calzado' })
-      await act(async () => {
-        calzadoModal.props.onSubmit({
-          categoria: 'Deportivo',
-          descripcion: 'Nike Pro',
-          precio_minimo: 150000,
-          precio_maximo: 220000,
-          stock_minimo: 2,
-        })
-      })
-
-      expect(apiInventario.guardarCalzado).toHaveBeenCalledWith({
-        categoria: 'Deportivo',
-        descripcion: 'Nike Pro',
-        precio_minimo: 150000,
-        precio_maximo: 220000,
-        stock_minimo: 2,
-        stock_actual: 0, // Regla crítica: inicializado en 0
-      })
-    })
+describe('Detalle de compra', () => {
+  const detalle = (o: Partial<CompraDetalle>): CompraDetalle => ({
+    ...compra({}), monto_pagado: 0, notas: null,
+    items: [
+      { id: 'i1', producto_calzado_id: 'a38', referencia: 'TA-1', descripcion: 'Tennis A', color: 'Negro', talla: '38', cantidad: 2, costo_unitario: 50000, subtotal: 100000 },
+      { id: 'i2', producto_calzado_id: 'a39', referencia: 'TA-1', descripcion: 'Tennis A', color: 'Negro', talla: '39', cantidad: 1, costo_unitario: 50000, subtotal: 50000 },
+    ],
+    ...o,
   })
 
-  // 3.4 Simulación de callbacks correctos en submit
-  describe('Validación de Callbacks en Formularios', () => {
-    test('Confirmar Entrada Física por empleado llama a registrarLlegadaFisica', async () => {
-      mockUseAuth.mockReturnValue({
-        session: { user: { id: 'emp-1' } },
-        perfil: { id: 'emp-1', nombre: 'Camilo Empleado', rol: 'empleado', permisos: PLANTILLAS.operativo.permisos, activo: true },
-        cargando: false,
-      })
-
-      let tree: any
-      await act(async () => {
-        tree = renderer.create(<RecibirMercanciaNueva />)
-      })
-
-      const root = tree.root
-      await act(async () => {
-        root.props.onSelectProveedor('prov-123')
-        root.props.onAddItem({ descripcion: 'Tenis Adidas', cantidad: 3, producto_calzado_id: 'pc-12' })
-      })
-
-      const submitBtn = getButtonByText(root, 'Confirmar Entrada Física')
-      await act(async () => {
-        submitBtn.props.onPress()
-      })
-
-      expect(apiProveedores.registrarLlegadaFisica).toHaveBeenCalledWith({
-        proveedor_id: 'prov-123',
-        registrada_por: 'emp-1',
-        items: [
-          { descripcion: 'Tenis Adidas', cantidad: 3, producto_calzado_id: 'pc-12' }
-        ]
-      })
-    })
-
-    test('Completar Información Financiera por dueño llama a completarInformacionFinanciera', async () => {
-      mockUseAuth.mockReturnValue({
-        session: { user: { id: 'owner-1' } },
-        perfil: { id: 'owner-1', nombre: 'Andrés Dueño', rol: 'dueno', permisos: [], activo: true },
-        cargando: false,
-      });
-
-      (apiProveedores.obtenerCompraPorId as jest.Mock).mockResolvedValue({
-        id: 'test-compra-id',
-        proveedor_id: 'p-1',
-        proveedor_nombre: 'Proveedor A',
-        estado: 'pendiente_revision',
-        created_at: '2026-06-16T12:00:00Z',
-        items: [{ id: 'item-1', descripcion: 'Zapato A', cantidad: 10, producto_calzado_id: 'pc-1' }]
-      })
-
-      let tree: any
-      await act(async () => {
-        tree = renderer.create(<RecepcionDetalleFinancieroScreen />)
-      })
-
-      const root = tree.root
-
-      const costInput = root.findByProps({ testID: 'cost-input-item-1' })
-      await act(async () => {
-        costInput.props.onChangeText('45000')
-      })
-
-      const contadoBtn = getButtonByText(root, 'Contado')
-      await act(async () => {
-        contadoBtn.props.onPress()
-      })
-
-      const notesInput = root.findByProps({ testID: 'notes-input' })
-      await act(async () => {
-        notesInput.props.onChangeText('Nota de prueba')
-      })
-
-      const submitBtn = getButtonByText(root, 'Guardar y Completar Recepción')
-      await act(async () => {
-        submitBtn.props.onPress?.()
-      })
-
-      expect(apiProveedores.completarInformacionFinanciera).toHaveBeenCalledWith({
-        compra_id: 'test-compra-id',
-        revisada_por: 'owner-1',
-        condicion_pago: 'contado',
-        fecha_vencimiento: null,
-        notas: 'Nota de prueba',
-        itemsCostos: [
-          { item_id: 'item-1', costo_unitario: 45000 }
-        ]
-      })
-    })
+  it('una llegada pendiente lleva al dueño a completar costos', async () => {
+    comoDe(DUENO)
+    ;(obtenerCompra as jest.Mock).mockResolvedValue(detalle({ estado: 'pendiente_revision', total: null, condicion_pago: null }))
+    ;(documentosDeCompra as jest.Mock).mockResolvedValue([])
+    await pintar(<Detalle />)
+    expect(hay('PENDIENTE DE COSTOS')).toBe(true)
+    expect(hay('38×2 · 39×1')).toBe(true)
+    await tocar('Completar costos y pago')
+    expect(mockRouter.push).toHaveBeenCalledWith('/recibir-mercancia/completar/c1')
   })
 
-  // 3.5 Simulación de comportamiento de base de datos para triggers de stock
-  describe('Simulación Conceptual de Triggers SQL de Stock', () => {
-    test('Simula trigger: compra_items_stock_increment() incrementa stock al registrar llegada física', () => {
-      const pc = { id: 'pc-1', stock_actual: 0 }
-      const newItem = { producto_calzado_id: 'pc-1', cantidad: 10 }
-      const compraEstado: string = 'pendiente_revision'
+  it('una compra a crédito muestra lo que se debe y sus pagos', async () => {
+    comoDe(DUENO)
+    ;(obtenerCompra as jest.Mock).mockResolvedValue(detalle({
+      condicion_pago: 'credito', total: 150000, monto_pagado: 50000, saldo_pendiente: 100000, fecha_vencimiento: '2099-01-01',
+    }))
+    ;(pagosDeCompra as jest.Mock).mockResolvedValue([{ id: 'pg1', monto: 50000, fecha: '2026-10-21', notas: 'Nequi' }])
+    ;(documentosDeCompra as jest.Mock).mockResolvedValue([])
+    await pintar(<Detalle />)
+    expect(hay('$100.000')).toBe(true)
+    expect(hay('Nequi')).toBe(true)
+    expect(boton('Registrar pago')).toBeTruthy()
+  })
+})
 
-      if (compraEstado !== 'cancelada' && newItem.producto_calzado_id === pc.id) {
-        pc.stock_actual += newItem.cantidad
-      }
-      expect(pc.stock_actual).toBe(10)
-    })
-
-    test('Simula trigger: transition a completada no altera el stock incrementado previamente', () => {
-      const pc = { id: 'pc-1', stock_actual: 10 }
-      const oldEstado: string = 'pendiente_revision'
-      const newEstado: string = 'completada'
-
-      let stockDelta = 0
-      if (oldEstado === 'cancelada' && newEstado !== 'cancelada') {
-        stockDelta = 10
-      } else if (oldEstado !== 'cancelada' && newEstado === 'cancelada') {
-        stockDelta = -10
-      }
-
-      pc.stock_actual += stockDelta
-      expect(pc.stock_actual).toBe(10)
-    })
-
-    test('Simula trigger: transition a cancelada decrementa el stock', () => {
-      const pc = { id: 'pc-1', stock_actual: 10 }
-      const oldEstado: string = 'completada'
-      const newEstado: string = 'cancelada'
-
-      let stockDelta = 0
-      if (oldEstado === 'cancelada' && newEstado !== 'cancelada') {
-        stockDelta = 10
-      } else if (oldEstado !== 'cancelada' && newEstado === 'cancelada') {
-        stockDelta = -10
-      }
-
-      pc.stock_actual += stockDelta
-      expect(pc.stock_actual).toBe(0)
-    })
+describe('Completar costos', () => {
+  it('sin permiso de costos redirige', async () => {
+    comoDe(EMPLEADO)
+    await pintar(<Completar />)
+    expect(hay('Redirect:/')).toBe(true)
   })
 })

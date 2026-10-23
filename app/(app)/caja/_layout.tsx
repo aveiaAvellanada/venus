@@ -1,12 +1,12 @@
-import { Stack } from 'expo-router'
+import { Pila, OPCIONES_MODAL } from '../../../components/Pila'
 
 export default function CajaLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="cierre" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="historial" />
-      <Stack.Screen name="config" />
-    </Stack>
+    <Pila>
+      <Pila.Screen name="index" />
+      <Pila.Screen name="cierre" options={OPCIONES_MODAL} />
+      <Pila.Screen name="historial" />
+      <Pila.Screen name="config" />
+    </Pila>
   )
 }

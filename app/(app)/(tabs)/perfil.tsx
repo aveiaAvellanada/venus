@@ -3,7 +3,7 @@ import { Alert, ScrollView, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { CalendarClock, Camera, ChartColumn, KeyRound, LogOut, PackagePlus, ReceiptText, Scale, Sparkles, SunMoon, Truck, Users, Wallet } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
-import { esDueno as esDuenoPerfil, puedeAcceder, resumenPermisos } from '../../../lib/permisos'
+import { esDueno as esDuenoPerfil, puedeAcceder, resumenPermisos, tienePermiso } from '../../../lib/permisos'
 import { useTema } from '../../../lib/tema'
 import type { ModoTema } from '../../../lib/theme'
 import { espacio, radio, tipografia } from '../../../lib/theme'
@@ -12,7 +12,7 @@ import { Badge, CirculoIcono, ControlSegmentado, FilaLista, Presionable, Tarjeta
 const MODOS: ModoTema[] = ['claro', 'oscuro', 'sistema']
 
 const NEGOCIO = [
-  { id: 'recibir-mercancia', titulo: 'Recibir mercancía', sub: 'Entrada de mercancía nueva', ruta: '/recibir-mercancia', Icono: PackagePlus },
+  { id: 'recibir-mercancia', titulo: 'Compras y mercancía', sub: 'Facturas, llegadas y pagos a proveedores', ruta: '/recibir-mercancia', Icono: PackagePlus },
   { id: 'proveedores', titulo: 'Proveedores', sub: 'Datos, cuentas y deudas', ruta: '/proveedores', Icono: Truck },
   { id: 'gastos-variables', titulo: 'Gastos', sub: 'Imprevistos por categoría', ruta: '/gastos', Icono: ReceiptText },
   { id: 'gastos-fijos', titulo: 'Gastos fijos', sub: 'Recurrentes y vencimientos', ruta: '/gastos/fijos', Icono: CalendarClock },
@@ -28,6 +28,8 @@ export default function Perfil() {
   const espacioTabBar = useEspacioTabBar()
   const router = useRouter()
   const { mostrar } = useToast()
+  // Con costos o deudas es el módulo de compras completo; sin ellos, solo recibir lo que llega.
+  const verCompras = tienePermiso(perfil, 'costos') || tienePermiso(perfil, 'deudas')
 
   if (!perfil) return null
   const esDueno = esDuenoPerfil(perfil)
@@ -130,8 +132,8 @@ export default function Perfil() {
                         <a.Icono />
                       </CirculoIcono>
                     }
-                    titulo={a.titulo}
-                    subtitulo={a.sub}
+                    titulo={a.id === 'recibir-mercancia' && !verCompras ? 'Recibir mercancía' : a.titulo}
+                    subtitulo={a.id === 'recibir-mercancia' && !verCompras ? 'Lo que llega del proveedor' : a.sub}
                     chevron
                     onPress={() => (a.ruta ? router.push(a.ruta) : mostrar('Análisis IA estará disponible pronto', 'info'))}
                   />

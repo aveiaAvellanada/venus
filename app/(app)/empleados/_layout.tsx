@@ -1,14 +1,14 @@
-import { Stack } from 'expo-router'
 import { useRequireModulo } from '../../../lib/auth'
+import { Pila } from '../../../components/Pila'
 
 export default function EmpleadosLayout() {
   const requireModulo = useRequireModulo('gestion-empleado')
   if (requireModulo) return requireModulo
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="nuevo" />
-      <Stack.Screen name="[id]" />
-    </Stack>
+    <Pila>
+      <Pila.Screen name="index" />
+      <Pila.Screen name="nuevo" />
+      <Pila.Screen name="[id]" />
+    </Pila>
   )
 }

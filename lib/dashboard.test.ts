@@ -10,6 +10,10 @@ import {
   obtenerGastosPeriodo,
   etiquetaBucket,
   granularidadParaRango,
+  rangoDeMes,
+  tituloMes,
+  etiquetaDia,
+  celdasDelMes,
 } from './dashboard'
 
 const rpc = supabase.rpc as jest.Mock
@@ -115,5 +119,30 @@ describe('wrappers RPC', () => {
     await expect(obtenerVentasPorSubperiodo('2026-07-01', '2026-07-15', 'dia')).rejects.toThrow(
       'No autorizado para ver reportes'
     )
+  })
+})
+
+describe('mes calendario del Menú', () => {
+  it('este mes va del día 1 hasta hoy; los anteriores, completos', () => {
+    expect(rangoDeMes(0, AHORA)).toEqual({ desde: '2026-07-01', hasta: '2026-07-15', granularidad: 'dia' })
+    expect(rangoDeMes(1, AHORA)).toEqual({ desde: '2026-06-01', hasta: '2026-06-30', granularidad: 'dia' })
+    expect(rangoDeMes(7, AHORA)).toEqual({ desde: '2025-12-01', hasta: '2025-12-31', granularidad: 'dia' })
+    expect(rangoDeMes(5, AHORA).hasta).toBe('2026-02-28')
+  })
+
+  it('nombre del mes y del día', () => {
+    expect(tituloMes('2026-10-01')).toBe('Octubre 2026')
+    expect(etiquetaDia('2026-10-14')).toBe('mié 14 oct')
+  })
+
+  it('casillas de lunes a domingo, completando semanas', () => {
+    // octubre de 2026 empieza en jueves: 3 vacías antes, 31 días, 1 vacía al final
+    const celdas = celdasDelMes('2026-10-01')
+    expect(celdas.length).toBe(35)
+    expect(celdas.slice(0, 4)).toEqual([null, null, null, '2026-10-01'])
+    expect(celdas[33]).toBe('2026-10-31')
+    expect(celdas[34]).toBeNull()
+    // febrero de 2027 empieza en lunes y cabe justo en 4 semanas
+    expect(celdasDelMes('2027-02-01')).toHaveLength(28)
   })
 })

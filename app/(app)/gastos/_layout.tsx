@@ -1,6 +1,7 @@
-import { Stack, Redirect, useSegments } from 'expo-router';
+import { Redirect, useSegments } from 'expo-router';
 import { useAuth } from '../../../lib/auth';
 import { tienePermiso } from '../../../lib/permisos';
+import { Pila, OPCIONES_MODAL } from '../../../components/Pila';
 
 // Pantallas de gastos fijos (arriendo, servicios...): requieren ese permiso.
 const PANTALLAS_FIJOS = ['fijos', 'fijos-editor', 'pagar'];
@@ -19,11 +20,11 @@ export default function GastosLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="fijos" />
-      <Stack.Screen name="fijos-editor" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="pagar" options={{ presentation: 'modal' }} />
-    </Stack>
+    <Pila>
+      <Pila.Screen name="index" />
+      <Pila.Screen name="fijos" />
+      <Pila.Screen name="fijos-editor" options={OPCIONES_MODAL} />
+      <Pila.Screen name="pagar" options={OPCIONES_MODAL} />
+    </Pila>
   );
 }

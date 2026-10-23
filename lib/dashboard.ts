@@ -62,6 +62,51 @@ export function rangoParaPeriodo(periodo: Periodo, ahora: Date = new Date()): Ra
   }
 }
 
+// Mes calendario del Menú: del día 1 al último (o hasta hoy en el mes en
+// curso). `atras` = cuántos meses antes del actual (0 = este mes).
+export function rangoDeMes(atras: number, ahora: Date = new Date()): RangoPeriodo {
+  const hoy = fechaBogota(ahora)
+  const desde = inicioDeMesHaceMeses(hoy, atras)
+  const d = new Date(`${desde}T12:00:00Z`)
+  d.setUTCMonth(d.getUTCMonth() + 1)
+  d.setUTCDate(0)
+  const ultimo = d.toISOString().slice(0, 10)
+  return { desde, hasta: ultimo < hoy ? ultimo : hoy, granularidad: 'dia' }
+}
+
+// "2026-10-01" → "Octubre 2026"
+export function tituloMes(fecha: string): string {
+  const t = new Date(`${fecha}T12:00:00Z`)
+    .toLocaleDateString('es-CO', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+    .replace(' de ', ' ')
+  return t.charAt(0).toUpperCase() + t.slice(1)
+}
+
+// "2026-10-14" → "mar 14 oct": para el detalle de un día tocado.
+export function etiquetaDia(fecha: string): string {
+  return new Date(`${fecha}T12:00:00Z`)
+    .toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
+    .replace(/\./g, '')
+    .replace(/,/g, '')
+    .replace(' de ', ' ')
+    .toLowerCase()
+}
+
+// Casillas del calendario de un mes, de lunes a domingo: null = casilla vacía
+// antes del día 1 o después del último, hasta completar la semana.
+export function celdasDelMes(primerDia: string): (string | null)[] {
+  const d = new Date(`${primerDia}T12:00:00Z`)
+  const vacias = (d.getUTCDay() + 6) % 7
+  const celdas: (string | null)[] = Array(vacias).fill(null)
+  const mes = d.getUTCMonth()
+  while (d.getUTCMonth() === mes) {
+    celdas.push(d.toISOString().slice(0, 10))
+    d.setUTCDate(d.getUTCDate() + 1)
+  }
+  while (celdas.length % 7) celdas.push(null)
+  return celdas
+}
+
 // Granularidad para un rango elegido a mano: hasta 31 días → barras por día;
 // más largo → barras por mes.
 export function granularidadParaRango(desde: string, hasta: string): Granularidad {

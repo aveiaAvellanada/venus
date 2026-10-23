@@ -1,5 +1,5 @@
-import { Stack } from 'expo-router'
 import { useRequireModulo } from '../../../lib/auth'
+import { Pila, OPCIONES_MODAL } from '../../../components/Pila'
 
 export default function ProveedoresLayout() {
   // Enforce access control at the layout level
@@ -7,10 +7,10 @@ export default function ProveedoresLayout() {
   if (requireModulo) return requireModulo
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="editor" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="[id]" />
-    </Stack>
+    <Pila>
+      <Pila.Screen name="index" />
+      <Pila.Screen name="editor" options={OPCIONES_MODAL} />
+      <Pila.Screen name="[id]" />
+    </Pila>
   )
 }

@@ -15,6 +15,7 @@ import {
   granularidadParaRango,
   obtenerGastosPeriodo,
   obtenerVentasPorSubperiodo,
+  rangoDeMes,
   rangoParaPeriodo,
 } from '../../../lib/dashboard'
 import type { GastosPeriodo, Granularidad, Periodo, VentasBucket } from '../../../lib/dashboard'
@@ -30,6 +31,7 @@ import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
 import {
   Badge,
+  CalendarioMes,
   Chip,
   ContadorDinero,
   Esqueleto,
@@ -51,11 +53,11 @@ const BADGE_CAJA: Record<EstadoCaja, { texto: string; tipo: TipoBadge; punto: bo
   cerrada: { texto: 'CERRADA', tipo: 'salmon', punto: false },
 }
 
+// Hoy, Semana y Mes (mes calendario, con flechas para ver los anteriores) + Rango.
 const PERIODOS: { clave: Periodo; etiqueta: string }[] = [
   { clave: 'hoy', etiqueta: 'Hoy' },
   { clave: 'semana', etiqueta: 'Semana' },
   { clave: 'mes', etiqueta: 'Mes' },
-  { clave: 'anio', etiqueta: 'Año' },
 ]
 
 const formatear = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
@@ -90,6 +92,8 @@ export default function Menu() {
   const [estadoCaja, setEstadoCaja] = useState<EstadoCaja>('cargando')
   const [periodo, setPeriodo] = useState<Periodo | 'rango'>('hoy')
   const [rangoCustom, setRangoCustom] = useState<{ desde: string; hasta: string } | null>(null)
+  // En "Mes": cuántos meses atrás se está viendo (0 = el mes en curso).
+  const [mesAtras, setMesAtras] = useState(0)
   const [granularidad, setGranularidad] = useState<Granularidad>('dia')
   const [cargando, setCargando] = useState(true)
   const [refrescando, setRefrescando] = useState(false)
@@ -117,7 +121,9 @@ export default function Menu() {
         const rango =
           periodo === 'rango' && rangoCustom
             ? { ...rangoCustom, granularidad: granularidadParaRango(rangoCustom.desde, rangoCustom.hasta) }
-            : rangoParaPeriodo(periodo === 'rango' ? 'hoy' : periodo)
+            : periodo === 'mes'
+              ? rangoDeMes(mesAtras)
+              : rangoParaPeriodo(periodo === 'rango' ? 'hoy' : periodo)
         setGranularidad(rango.granularidad)
         const [rep, vb, g] = await Promise.all([
           obtenerReportePeriodo(rango.desde, rango.hasta),
@@ -139,7 +145,7 @@ export default function Menu() {
     } finally {
       setCargando(false)
     }
-  }, [perfil, esStaff, verGastos, periodo, rangoCustom])
+  }, [perfil, esStaff, verGastos, periodo, rangoCustom, mesAtras])
 
   useFocusEffect(
     useCallback(() => {
@@ -213,6 +219,7 @@ export default function Menu() {
                     if (periodo !== p.clave) {
                       setCargando(true)
                       setPeriodo(p.clave)
+                      setMesAtras(0)
                     }
                   }}
                 />
@@ -299,7 +306,23 @@ export default function Menu() {
               ))}
             </View>
 
-            {esStaff && periodo !== 'hoy' ? (
+            {esStaff && periodo === 'mes' ? (
+              <Tarjeta>
+                <CalendarioMes
+                  primerDia={rangoDeMes(mesAtras).desde}
+                  datos={buckets}
+                  hoy={rangoParaPeriodo('hoy').hasta}
+                  onAnterior={() => {
+                    setCargando(true)
+                    setMesAtras((m) => m + 1)
+                  }}
+                  onSiguiente={mesAtras > 0 ? () => {
+                    setCargando(true)
+                    setMesAtras((m) => m - 1)
+                  } : undefined}
+                />
+              </Tarjeta>
+            ) : esStaff && periodo !== 'hoy' ? (
               <Tarjeta>
                 <View style={{ gap: espacio.m }}>
                   <Text style={[tipografia.micro, { color: paleta.texto3 }]}>Ventas por período</Text>

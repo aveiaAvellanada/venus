@@ -35,6 +35,7 @@ import {
   Tarjeta,
   useEspacioTabBar,
 } from '../../../components/ui'
+import { MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 
 const formatear = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
@@ -245,7 +246,7 @@ export default function Movimientos() {
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 56, gap: espacio.l, paddingBottom: espacioTabBar }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: MARGEN_SUPERIOR, gap: espacio.l, paddingBottom: espacioTabBar }}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={refrescando} onRefresh={refrescar} tintColor={paleta.primario} />

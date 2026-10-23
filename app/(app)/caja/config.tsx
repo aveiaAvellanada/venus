@@ -6,7 +6,7 @@ import { useAuth } from '../../../lib/auth'
 import { esDueno } from '../../../lib/permisos'
 import { supabase } from '../../../lib/supabase'
 import { DIAS_SEMANA, type DiaSemana, type HorarioSemanal } from '../../../lib/cajaScheduler'
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tipografia } from '../../../lib/theme'
@@ -29,7 +29,7 @@ function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void
         alignItems: 'center',
         gap: espacio.m,
         paddingHorizontal: espacio.xl,
-        paddingTop: 56,
+        paddingTop: MARGEN_SUPERIOR,
         paddingBottom: espacio.m,
       }}
     >

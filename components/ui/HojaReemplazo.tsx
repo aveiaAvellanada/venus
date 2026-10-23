@@ -20,6 +20,9 @@ import { PanelFiltrosProductos } from './PanelFiltrosProductos'
 import { Presionable } from './Presionable'
 import { ScreenWrapper } from './ScreenWrapper'
 import { SliderPrecio } from './SliderPrecio'
+import { MARGEN_SUPERIOR } from '../../hooks/usePaddingInferior'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { BarrasSistema } from '../BarrasSistema'
 
 const pesos = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 const soloEntero = (t: string) => t.replace(/[^0-9]/g, '')
@@ -42,6 +45,7 @@ interface Props {
 // activo sirve; la diferencia con lo pagado la calcula la pantalla de devolución.
 export function HojaReemplazo({ visible, onCerrar, onElegir }: Props) {
   const { paleta } = useTema()
+  const insets = useSafeAreaInsets()
   const { width: anchoVentana } = useWindowDimensions()
   const [catalogo, setCatalogo] = useState<ModeloCalzado[]>([])
   const [cargando, setCargando] = useState(true)
@@ -104,7 +108,7 @@ export function HojaReemplazo({ visible, onCerrar, onElegir }: Props) {
     <View
       style={{
         flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-        paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+        paddingHorizontal: espacio.xl, paddingTop: MARGEN_SUPERIOR, paddingBottom: espacio.m,
       }}
     >
       <Presionable
@@ -126,10 +130,10 @@ export function HojaReemplazo({ visible, onCerrar, onElegir }: Props) {
       testID="modal-buscar-reemplazo">
       <ScreenWrapper
         header={cabecera}
-        contentContainerStyle={{ paddingHorizontal: RELLENO, paddingBottom: espacio.xxl, gap: modelo ? espacio.m : espacio.l }}
+        contentContainerStyle={{ paddingHorizontal: RELLENO, paddingBottom: espacio.xxl + (modelo ? 0 : insets.bottom), gap: modelo ? espacio.m : espacio.l }}
         footer={
           modelo ? (
-            <View style={{ padding: espacio.l, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
+            <View style={{ padding: espacio.l, paddingBottom: espacio.l + insets.bottom, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo }}>
               <Boton
                 titulo={variante && precio > 0 ? 'Usar este reemplazo' : 'Elige color, talla y precio'}
                 deshabilitado={!variante || precio <= 0}
@@ -282,6 +286,7 @@ export function HojaReemplazo({ visible, onCerrar, onElegir }: Props) {
         }}
         onCerrar={() => setFiltrosVisibles(false)}
       />
+      <BarrasSistema navegacion={false} />
     </Modal>
   )
 }

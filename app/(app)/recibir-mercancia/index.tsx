@@ -6,7 +6,7 @@ import { hoyEn } from '../../../shared/fechas'
 import { pesos } from '../../../shared/formato'
 import { useAuth, useRequireModulo } from '../../../lib/auth'
 import { tienePermiso } from '../../../lib/permisos'
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import {
   diasHasta, esPorPagar, estadoCompra, fechaDelNegocio, filtrarCompras, listarCompras, type CompraListado, type FiltroCompras,
 } from '../../../lib/compras'
@@ -108,7 +108,7 @@ export default function ComprasScreen() {
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-        paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+        paddingHorizontal: espacio.xl, paddingTop: MARGEN_SUPERIOR, paddingBottom: espacio.m,
       }}>
         <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
           <ArrowLeft size={24} color={paleta.texto} />

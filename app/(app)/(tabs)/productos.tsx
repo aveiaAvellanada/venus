@@ -32,6 +32,7 @@ import {
   useEspacioTabBar,
 } from '../../../components/ui'
 import type { ProductoAnadido } from '../../../components/ui'
+import { MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 
 // Grid (rediseño §2): el espacio entre columnas es el mismo margen lateral.
 const GAP_GRID = espacio.s
@@ -113,7 +114,7 @@ export default function Productos() {
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
       <ScrollView
-        contentContainerStyle={{ padding: RELLENO_PANTALLA, paddingTop: 56, gap: espacio.l , paddingBottom: espacioTabBar }}
+        contentContainerStyle={{ padding: RELLENO_PANTALLA, paddingTop: MARGEN_SUPERIOR, gap: espacio.l , paddingBottom: espacioTabBar }}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={refrescando} onRefresh={refrescar} tintColor={paleta.primario} />

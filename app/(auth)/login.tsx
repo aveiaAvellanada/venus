@@ -9,6 +9,7 @@ import {
 import { useTema } from '../../lib/tema'
 import { espacio, motion, radio, tipografia } from '../../lib/theme'
 import { Boton, CampoTexto, TecladoPin, ScreenWrapper } from '../../components/ui'
+import { MARGEN_SUPERIOR } from '../../hooks/usePaddingInferior'
 
 const LONGITUD_PIN = 6
 // Mientras quede alguna cuenta con el PIN viejo de 4 dígitos (debe cambiarlo al entrar).
@@ -176,7 +177,7 @@ export default function Login() {
   const pinAnterior = pin.length === LONGITUD_PIN_ANTERIOR && !cargando
 
   return (
-    <View style={{ flex: 1, backgroundColor: paleta.fondo, padding: espacio.xxl, paddingTop: 56 }}>
+    <View style={{ flex: 1, backgroundColor: paleta.fondo, padding: espacio.xxl, paddingTop: MARGEN_SUPERIOR }}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Cambiar usuario"

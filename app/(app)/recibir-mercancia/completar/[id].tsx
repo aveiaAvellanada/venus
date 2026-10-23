@@ -5,7 +5,7 @@ import { ArrowLeft, CircleCheckBig, Wallet } from 'lucide-react-native'
 import { useAuth } from '../../../../lib/auth'
 import { tienePermiso } from '../../../../lib/permisos'
 import { obtenerCompraPorId, completarInformacionFinanciera } from '../../../../lib/proveedores'
-import { usePaddingInferior } from '../../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../../hooks/usePaddingInferior'
 import { useTema } from '../../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../../lib/theme'
 import { Boton, CampoTexto, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../../components/ui'
@@ -34,7 +34,7 @@ export default function RecepcionDetalleFinancieroScreen() {
   const Encabezado = () => (
     <View style={{
       flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-      paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+      paddingHorizontal: espacio.xl, paddingTop: MARGEN_SUPERIOR, paddingBottom: espacio.m,
     }}>
       <Presionable accessibilityRole="button" accessibilityLabel="Volver"
         onPress={() => router.back()} hitSlop={12}>

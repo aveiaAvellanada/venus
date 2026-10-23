@@ -16,7 +16,7 @@ import {
   Wallet,
 } from 'lucide-react-native'
 import { useRequireModulo } from '../../../lib/auth'
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import {
   listarEmpleados,
   diasTrabajadosMes,
@@ -58,7 +58,7 @@ function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void
         alignItems: 'center',
         gap: espacio.m,
         paddingHorizontal: espacio.xl,
-        paddingTop: 56,
+        paddingTop: MARGEN_SUPERIOR,
         paddingBottom: espacio.m,
       }}
     >

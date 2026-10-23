@@ -1,10 +1,13 @@
 import React, { useState } from 'react'
 import { FlatList, Modal, Pressable, Text, View } from 'react-native'
 import { Building2, Check, ChevronRight, CirclePlus, Search, X } from 'lucide-react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { crearProveedor, type Proveedor } from '../../lib/proveedores'
 import { useTema } from '../../lib/tema'
 import { espacio, radio, tipografia } from '../../lib/theme'
 import { Boton, CampoTexto, ScreenWrapper, useToast } from '../ui'
+import { BarrasSistema } from '../BarrasSistema'
+import { MARGEN_SUPERIOR } from '../../hooks/usePaddingInferior'
 
 const plano = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 
@@ -19,6 +22,7 @@ export function SelectorProveedor({ proveedores, valor, onElegir, puedeCrear, on
 }) {
   const { paleta } = useTema()
   const { mostrar } = useToast()
+  const insets = useSafeAreaInsets()
   const [abierto, setAbierto] = useState(false)
   const [creando, setCreando] = useState(false)
   const [busqueda, setBusqueda] = useState('')
@@ -67,7 +71,7 @@ export function SelectorProveedor({ proveedores, valor, onElegir, puedeCrear, on
   const cabecera = (
     <View style={{
       flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-      paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+      paddingHorizontal: espacio.xl, paddingTop: MARGEN_SUPERIOR, paddingBottom: espacio.m,
     }}>
       <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" hitSlop={12}
         onPress={creando ? () => setCreando(false) : cerrar}>
@@ -107,7 +111,7 @@ export function SelectorProveedor({ proveedores, valor, onElegir, puedeCrear, on
             header={cabecera}
             contentContainerStyle={{ paddingHorizontal: espacio.xl, paddingBottom: espacio.xxl, gap: espacio.m }}
             footer={
-              <View style={{ padding: espacio.l, borderTopWidth: 1, borderTopColor: paleta.borde }}>
+              <View style={{ padding: espacio.l, paddingBottom: espacio.l + insets.bottom, borderTopWidth: 1, borderTopColor: paleta.borde }}>
                 <Boton titulo="Crear y elegir" onPress={guardarNuevo} cargando={guardando} />
               </View>
             }
@@ -144,7 +148,7 @@ export function SelectorProveedor({ proveedores, valor, onElegir, puedeCrear, on
               data={visibles}
               keyExtractor={(p) => p.id}
               keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingHorizontal: espacio.xl, paddingBottom: espacio.xxxl }}
+              contentContainerStyle={{ paddingHorizontal: espacio.xl, paddingBottom: espacio.xxxl + insets.bottom }}
               ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: paleta.borde }} />}
               ListEmptyComponent={
                 <Text style={[tipografia.cuerpo, { color: paleta.texto3, paddingVertical: espacio.l }]}>
@@ -175,6 +179,7 @@ export function SelectorProveedor({ proveedores, valor, onElegir, puedeCrear, on
             />
           </View>
         )}
+        <BarrasSistema navegacion={false} />
       </Modal>
     </>
   )

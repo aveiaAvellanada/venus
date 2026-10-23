@@ -12,7 +12,7 @@ import { PreciosPorTalla } from '../../../../components/PreciosPorTalla'
 import { comprimirYSubirImagen } from '../../../../lib/imagenes'
 import { CATEGORIAS } from '../../../../lib/excel'
 import { coloresDeNombre, MAX_COLORES, MENSAJE_MAX_COLORES } from '../../../../lib/productos'
-import { usePaddingInferior } from '../../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../../hooks/usePaddingInferior'
 import { useTema } from '../../../../lib/tema'
 import { espacio, radio, tipografia } from '../../../../lib/theme'
 import { Boton, CampoTexto, Chip, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../../components/ui'
@@ -125,7 +125,7 @@ export default function CalzadoEditorScreen() {
     <View
       style={{
         flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-        paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+        paddingHorizontal: espacio.xl, paddingTop: MARGEN_SUPERIOR, paddingBottom: espacio.m,
       }}
     >
       <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>

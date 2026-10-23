@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Modal, Pressable, Text, View } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { CalendarDays } from 'lucide-react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTema } from '../../lib/tema'
 import { espacio, radio, tipografia } from '../../lib/theme'
 import { Boton } from './Boton'
@@ -20,6 +21,7 @@ const aTexto = (d: Date) =>
 // un período a la medida (redisign.md Parte B/C).
 export function SelectorRango({ activo, onAplicar }: Props) {
   const { paleta } = useTema()
+  const insets = useSafeAreaInsets()
   const [abierto, setAbierto] = useState(false)
   const [desde, setDesde] = useState<Date>(() => {
     const d = new Date()
@@ -70,6 +72,7 @@ export function SelectorRango({ activo, onAplicar }: Props) {
               borderTopLeftRadius: radio.xl,
               borderTopRightRadius: radio.xl,
               padding: espacio.xxl,
+              paddingBottom: espacio.xxl + insets.bottom,
               gap: espacio.m,
             }}
           >

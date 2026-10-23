@@ -7,7 +7,7 @@ import { useAuth } from '../../../lib/auth';
 import { tienePermiso } from '../../../lib/permisos';
 import { leerExcel, validarFilas } from '../../../lib/excel';
 import { guardarCalzado } from '../../../lib/inventario';
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior';
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior';
 import { useTema } from '../../../lib/tema';
 import { espacio, radio, tipografia } from '../../../lib/theme';
 import { Boton, Presionable, Tarjeta, useToast } from '../../../components/ui';
@@ -105,7 +105,7 @@ export default function CargaMasivaInventario() {
       <View
         style={{
           flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-          paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+          paddingHorizontal: espacio.xl, paddingTop: MARGEN_SUPERIOR, paddingBottom: espacio.m,
         }}
       >
         <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>

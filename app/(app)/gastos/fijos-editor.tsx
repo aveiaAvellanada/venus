@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { ArrowLeft, Camera } from 'lucide-react-native'
 import { guardarGastoFijo } from '../../../lib/gastos'
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, radio, tipografia } from '../../../lib/theme'
@@ -19,7 +19,7 @@ function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void
         alignItems: 'center',
         gap: espacio.m,
         paddingHorizontal: espacio.xl,
-        paddingTop: 56,
+        paddingTop: MARGEN_SUPERIOR,
         paddingBottom: espacio.m,
       }}
     >

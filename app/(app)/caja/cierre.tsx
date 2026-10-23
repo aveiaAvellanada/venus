@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { obtenerArqueoCaja, cerrarCaja, type ArqueoCaja } from '../../../lib/caja'
 import { dispararReporteCorreo, obtenerReporteDiario, construirLinkWhatsapp } from '../../../lib/reporteDiario'
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tabular, tipografia } from '../../../lib/theme'
@@ -21,7 +21,7 @@ function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void
         alignItems: 'center',
         gap: espacio.m,
         paddingHorizontal: espacio.xl,
-        paddingTop: 56,
+        paddingTop: MARGEN_SUPERIOR,
         paddingBottom: espacio.m,
       }}
     >

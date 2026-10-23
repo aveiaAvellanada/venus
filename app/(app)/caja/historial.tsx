@@ -5,7 +5,7 @@ import { ArrowLeft, Clock } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
 import { tienePermiso } from '../../../lib/permisos'
 import { supabase } from '../../../lib/supabase'
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
@@ -22,7 +22,7 @@ function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void
         alignItems: 'center',
         gap: espacio.m,
         paddingHorizontal: espacio.xl,
-        paddingTop: 56,
+        paddingTop: MARGEN_SUPERIOR,
         paddingBottom: espacio.m,
       }}
     >

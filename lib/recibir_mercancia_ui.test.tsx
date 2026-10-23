@@ -9,8 +9,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
+// Alto de las barras del sistema: 0 por defecto; 48 abajo = navegación de 3 botones.
+let mockInsets = { top: 0, bottom: 0, left: 0, right: 0 }
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+  useSafeAreaInsets: () => mockInsets,
 }))
 jest.mock('@react-native-community/datetimepicker', () => () => null)
 jest.mock('expo-image-picker', () => ({}))
@@ -132,6 +134,7 @@ const borrador = (filaExtra: object = {}): { factura: Factura; intento?: { clave
 
 beforeEach(async () => {
   jest.clearAllMocks()
+  mockInsets = { top: 0, bottom: 0, left: 0, right: 0 }
   await AsyncStorage.clear()
   mockParams.mockReturnValue({ id: 'c1' })
   ;(listarProveedores as jest.Mock).mockResolvedValue([{ id: 'p1', nombre: 'Calzado Andino', activo: true }])
@@ -327,3 +330,24 @@ describe('Completar costos', () => {
     expect(hay('Redirect:/')).toBe(true)
   })
 })
+
+describe('Barras del sistema', () => {
+  // El estilo aplanado de los nodos que dibujan algo.
+  const estilos = () => arbol!.root
+    .findAll((n: Nodo) => typeof n.type === 'string' && n.props.style != null)
+    .map((n: Nodo) => Object.assign({}, ...[n.props.style].flat(5).filter(Boolean)))
+
+  it('con 3 botones (barra de 48) el pie y la hoja de revisión quedan encima de la barra', async () => {
+    mockInsets = { top: 32, bottom: 48, left: 0, right: 0 }
+    comoDe(DUENO)
+    await guardarBorrador(DUENO, borrador())
+    await pintar(<Nueva />)
+    // pie con "Revisar": su espacio de abajo incluye los 48 de la barra
+    expect(estilos().some((e) => e.borderTopWidth === 1 && e.paddingBottom === 16 + 48)).toBe(true)
+    await tocar('Revisar')
+    const hoja = arbol!.root.findAll((n: Nodo) => n.props.contentContainerStyle != null)
+      .map((n: Nodo) => Object.assign({}, ...[n.props.contentContainerStyle].flat(5).filter(Boolean)))
+    expect(hoja.some((e) => e.paddingBottom === 20 + 48 && e.gap === 16)).toBe(true)
+  })
+})
+

@@ -43,6 +43,7 @@ import {
   useToast,
 } from '../../../components/ui'
 import type { TipoBadge } from '../../../components/ui'
+import { MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 
 type EstadoCaja = 'cargando' | 'sin-abrir' | 'abierta' | 'cerrada'
 
@@ -194,7 +195,7 @@ export default function Menu() {
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
       <ScrollView
-        contentContainerStyle={{ padding: espacio.xl, paddingTop: 56, gap: espacio.l , paddingBottom: espacioTabBar }}
+        contentContainerStyle={{ padding: espacio.xl, paddingTop: MARGEN_SUPERIOR, gap: espacio.l , paddingBottom: espacioTabBar }}
         refreshControl={
           <RefreshControl refreshing={refrescando} onRefresh={refrescar} tintColor={paleta.primario} />
         }

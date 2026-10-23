@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as DocumentPicker from 'expo-document-picker'
 import * as ImagePicker from 'expo-image-picker'
 import { AlertTriangle, ArrowLeft, Camera, FileText, Footprints, Paperclip, Plus, X } from 'lucide-react-native'
@@ -25,6 +26,7 @@ import {
 import { CampoFecha, fechaCorta, Seccion } from '../../../components/compras/Campos'
 import { EditorReferencia, type ReferenciaConocida } from '../../../components/compras/EditorReferencia'
 import { SelectorProveedor } from '../../../components/compras/SelectorProveedor'
+import { MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 
 // Un borrador por persona: el teléfono lo comparte la tienda y no debe pasar
 // la factura de uno (con sus costos) a otro.
@@ -54,6 +56,7 @@ export default function NuevaCompraScreen() {
   const router = useRouter()
   const { paleta } = useTema()
   const { mostrar } = useToast()
+  const insets = useSafeAreaInsets()
   const hoy = hoyEn()
 
   const conCostos = tienePermiso(perfil, 'costos')
@@ -249,7 +252,7 @@ export default function NuevaCompraScreen() {
   const cabecera = (
     <View style={{
       flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-      paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+      paddingHorizontal: espacio.xl, paddingTop: MARGEN_SUPERIOR, paddingBottom: espacio.m,
     }}>
       <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
         <ArrowLeft size={24} color={paleta.texto} />
@@ -266,7 +269,8 @@ export default function NuevaCompraScreen() {
   const pie = (
     <View style={{
       flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-      padding: espacio.l, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo,
+      padding: espacio.l, paddingBottom: espacio.l + insets.bottom,
+      borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo,
     }}>
       <View style={{ flex: 1 }}>
         <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
@@ -491,6 +495,7 @@ function Revision({ titulo, filas, total, avisos, errores, guardando, textoBoton
   onCerrar: () => void
 }) {
   const { paleta } = useTema()
+  const insets = useSafeAreaInsets()
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onCerrar} statusBarTranslucent>
     <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
@@ -499,7 +504,7 @@ function Revision({ titulo, filas, total, avisos, errores, guardando, textoBoton
         backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl,
         maxHeight: '88%',
       }} testID="revision-compra">
-      <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.l }}>
+      <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xl + insets.bottom, gap: espacio.l }}>
         <Text style={[tipografia.h2, { color: paleta.texto }]}>{titulo}</Text>
         <View style={{ gap: espacio.s }}>
           {filas.map(([k, v]) => (

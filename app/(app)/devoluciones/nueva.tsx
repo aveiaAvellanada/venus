@@ -15,7 +15,7 @@ import {
   TrendingUp,
 } from 'lucide-react-native'
 import { useRequireModulo } from '../../../lib/auth'
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import {
   buscarVentaParaDevolucion,
   registrarDevolucion,
@@ -414,7 +414,7 @@ export default function NuevaDevolucionScreen() {
       header={
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-        paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+        paddingHorizontal: espacio.xl, paddingTop: MARGEN_SUPERIOR, paddingBottom: espacio.m,
       }}>
         <Presionable accessibilityRole="button" accessibilityLabel="Volver"
           onPress={() => router.back()} hitSlop={12}>

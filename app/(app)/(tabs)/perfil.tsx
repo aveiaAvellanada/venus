@@ -8,6 +8,7 @@ import { useTema } from '../../../lib/tema'
 import type { ModoTema } from '../../../lib/theme'
 import { espacio, radio, tipografia } from '../../../lib/theme'
 import { Badge, CirculoIcono, ControlSegmentado, FilaLista, Presionable, Tarjeta, useEspacioTabBar, useToast } from '../../../components/ui'
+import { MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 
 const MODOS: ModoTema[] = ['claro', 'oscuro', 'sistema']
 
@@ -52,7 +53,7 @@ export default function Perfil() {
 
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingTop: 56, gap: espacio.l , paddingBottom: espacioTabBar }}>
+      <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingTop: MARGEN_SUPERIOR, gap: espacio.l , paddingBottom: espacioTabBar }}>
         <View style={{ alignItems: 'center', gap: espacio.s }}>
           <View
             style={{

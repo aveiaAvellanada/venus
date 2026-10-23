@@ -31,6 +31,7 @@ import {
   RayaDiagonal,
 } from '../../../components/ui'
 import type { ProductoAnadido } from '../../../components/ui'
+import { usePantallaInmersiva } from '../../../components/BarrasSistema'
 
 const formatear = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
@@ -45,6 +46,8 @@ export default function ProductoDetalleScreen() {
   const { dispatch } = useCarrito()
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  // La foto va a sangre bajo la barra de estado: sin franja arriba.
+  usePantallaInmersiva()
 
   const [cargando, setCargando] = useState(true)
   const [modelo, setModelo] = useState<ModeloCalzado | null>(null)
@@ -300,7 +303,8 @@ export default function ProductoDetalleScreen() {
         onPress={() => router.back()}
         style={{
           position: 'absolute',
-          top: 44,
+          // Debajo de la barra de estado, sea cual sea su alto.
+          top: Math.max(44, insets.top + 8),
           left: espacio.xl,
           width: 40,
           height: 40,

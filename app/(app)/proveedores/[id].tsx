@@ -15,7 +15,7 @@ import {
 } from 'lucide-react-native'
 import { useAuth, useRequireModulo } from '../../../lib/auth'
 import { tienePermiso } from '../../../lib/permisos'
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import {
   obtenerProveedorPorId,
   listarCuentasBancarias,
@@ -271,7 +271,7 @@ export default function ProveedorDetailScreen() {
         alignItems: 'center',
         gap: espacio.m,
         paddingHorizontal: espacio.xl,
-        paddingTop: 56,
+        paddingTop: MARGEN_SUPERIOR,
         paddingBottom: espacio.m,
       }}
     >

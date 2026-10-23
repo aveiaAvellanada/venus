@@ -7,6 +7,7 @@ import type { DevolucionDetalle } from '../../../lib/movimientos'
 import { useTema } from '../../../lib/tema'
 import { espacio, tabular, tipografia } from '../../../lib/theme'
 import { Badge, CirculoIcono, Esqueleto, EstadoVacio, FilaLista, Tarjeta } from '../../../components/ui'
+import { MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 
 const formatear = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
@@ -38,7 +39,7 @@ export default function DevolucionDetalleScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingTop: 56, gap: espacio.l }}>
+      <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingTop: MARGEN_SUPERIOR, gap: espacio.l }}>
         <Pressable accessibilityRole="button" accessibilityLabel="Volver" hitSlop={12} onPress={() => router.back()}>
           <ArrowLeft size={24} color={paleta.texto2} />
         </Pressable>

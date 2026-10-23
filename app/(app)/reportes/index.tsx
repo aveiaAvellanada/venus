@@ -17,7 +17,7 @@ import {
 } from 'lucide-react-native'
 import { useRequireModulo, useAuth } from '../../../lib/auth'
 import { esDueno as esDuenoPerfil } from '../../../lib/permisos'
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import {
   obtenerResumenDia,
   listarStockBajo,
@@ -50,7 +50,7 @@ function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void
         alignItems: 'center',
         gap: espacio.m,
         paddingHorizontal: espacio.xl,
-        paddingTop: 56,
+        paddingTop: MARGEN_SUPERIOR,
         paddingBottom: espacio.m,
       }}
     >

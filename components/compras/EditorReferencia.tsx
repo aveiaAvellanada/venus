@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Alert, Image, Modal, Pressable, Text, TextInput, View } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Camera, CopyPlus, Scissors, Trash2, X } from 'lucide-react-native'
 import { CATEGORIAS } from '../../shared/excel'
 import { leerPesos, pesos } from '../../shared/formato'
@@ -12,6 +13,8 @@ import { useTema } from '../../lib/tema'
 import { espacio, fuentes, radio, tabular, tipografia } from '../../lib/theme'
 import { Badge, Boton, CampoTexto, Chip, PuntoColor, ScreenWrapper } from '../ui'
 import { Seccion, Sugerencias } from './Campos'
+import { BarrasSistema } from '../BarrasSistema'
+import { MARGEN_SUPERIOR } from '../../hooks/usePaddingInferior'
 
 export interface ReferenciaConocida {
   referencia: string
@@ -53,6 +56,7 @@ export function EditorReferencia({
   onGuardar, onOtroColor, onQuitar, onCerrar,
 }: Props) {
   const { paleta } = useTema()
+  const insets = useSafeAreaInsets()
   const [fila, setFila] = useState<FilaFactura | null>(inicial)
   const [color1, setColor1] = useState('')
   const [color2, setColor2] = useState('')
@@ -171,7 +175,7 @@ export function EditorReferencia({
   const cabecera = (
     <View style={{
       flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-      paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+      paddingHorizontal: espacio.xl, paddingTop: MARGEN_SUPERIOR, paddingBottom: espacio.m,
     }}>
       <Pressable accessibilityRole="button" accessibilityLabel="Cerrar sin guardar" hitSlop={12} onPress={onCerrar}>
         <X size={24} color={paleta.texto} />
@@ -187,7 +191,8 @@ export function EditorReferencia({
 
   const pie = (
     <View style={{
-      padding: espacio.l, gap: espacio.m, borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo,
+      padding: espacio.l, paddingBottom: espacio.l + insets.bottom, gap: espacio.m,
+      borderTopWidth: 1, borderTopColor: paleta.borde, backgroundColor: paleta.fondo,
     }}>
       <Text style={[tipografia.etiqueta, tabular, { color: paleta.texto2 }]}>
         {unidadesFila(f)} pares{conCostos ? ` · subtotal ${pesos(subtotalFila(f))}` : ''}
@@ -469,6 +474,7 @@ export function EditorReferencia({
           </Seccion>
         ) : null}
       </ScreenWrapper>
+      <BarrasSistema navegacion={false} />
     </Modal>
   )
 }

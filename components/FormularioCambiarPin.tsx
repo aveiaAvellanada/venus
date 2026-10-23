@@ -4,6 +4,7 @@ import { MENSAJE_PIN_DEBIL, cambiarMiPin, pinDebil, pinValido } from '../lib/usu
 import { useTema } from '../lib/tema'
 import { espacio, tipografia } from '../lib/theme'
 import { Boton, TecladoPin } from './ui'
+import { MARGEN_SUPERIOR } from '../hooks/usePaddingInferior'
 
 type Paso = 'actual' | 'nuevo' | 'confirmar'
 
@@ -79,7 +80,7 @@ export function FormularioCambiarPin({ obligatorio = false, onListo, onCancelar 
   }, [valor])
 
   return (
-    <View style={{ flex: 1, backgroundColor: paleta.fondo, padding: espacio.xxl, paddingTop: 56, gap: espacio.l }}>
+    <View style={{ flex: 1, backgroundColor: paleta.fondo, padding: espacio.xxl, paddingTop: MARGEN_SUPERIOR, gap: espacio.l }}>
       {onCancelar && !obligatorio ? (
         <Boton titulo="Cancelar" variante="fantasma" onPress={onCancelar} />
       ) : null}

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react-native'
 import { listarProveedores, type Proveedor } from '../../../lib/proveedores'
 import { useRequireModulo } from '../../../lib/auth'
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tipografia } from '../../../lib/theme'
 import { Boton, CirculoIcono, ControlSegmentado, EstadoVacio, Presionable, Tarjeta } from '../../../components/ui'
@@ -133,7 +133,7 @@ export default function ProveedoresIndex() {
           alignItems: 'center',
           gap: espacio.m,
           paddingHorizontal: espacio.xl,
-          paddingTop: 56,
+          paddingTop: MARGEN_SUPERIOR,
           paddingBottom: espacio.m,
         }}
       >

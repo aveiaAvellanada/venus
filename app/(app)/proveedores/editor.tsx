@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, Save } from 'lucide-react-native'
 import { obtenerProveedorPorId, crearProveedor, actualizarProveedor } from '../../../lib/proveedores'
 import { useRequireModulo } from '../../../lib/auth'
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tipografia } from '../../../lib/theme'
 import { CampoTexto, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
@@ -116,7 +116,7 @@ export default function ProveedorEditorScreen() {
         alignItems: 'center',
         gap: espacio.m,
         paddingHorizontal: espacio.xl,
-        paddingTop: 56,
+        paddingTop: MARGEN_SUPERIOR,
         paddingBottom: espacio.m,
       }}
     >

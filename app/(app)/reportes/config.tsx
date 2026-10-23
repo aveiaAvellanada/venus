@@ -9,6 +9,7 @@ import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tipografia } from '../../../lib/theme'
 import { Boton, CampoTexto, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
+import { MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 
 // Encabezado a nivel de módulo: no se remonta en cada render (Regla 2).
 function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void }) {
@@ -19,7 +20,7 @@ function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void
         alignItems: 'center',
         gap: espacio.m,
         paddingHorizontal: espacio.xl,
-        paddingTop: 56,
+        paddingTop: MARGEN_SUPERIOR,
         paddingBottom: espacio.m,
       }}
     >

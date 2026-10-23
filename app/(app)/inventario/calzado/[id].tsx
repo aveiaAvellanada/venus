@@ -6,7 +6,7 @@ import { useAuth, useRequireModulo } from '../../../../lib/auth'
 import { tienePermiso } from '../../../../lib/permisos'
 import { supabase } from '../../../../lib/supabase'
 import type { ProductoCalzado } from '../../../../lib/inventario'
-import { usePaddingInferior } from '../../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../../hooks/usePaddingInferior'
 import { useTema } from '../../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../../lib/theme'
 import { Badge, Boton, EstadoVacio, Presionable, Tarjeta } from '../../../../components/ui'
@@ -35,7 +35,7 @@ export default function CalzadoDetailScreen() {
     <View
       style={{
         flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-        paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+        paddingHorizontal: espacio.xl, paddingTop: MARGEN_SUPERIOR, paddingBottom: espacio.m,
       }}
     >
       <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>

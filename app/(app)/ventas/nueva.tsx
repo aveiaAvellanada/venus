@@ -18,6 +18,7 @@ import { espacio, radio, tabular, tipografiaCompacta as tc } from '../../../lib/
 import {
   BarraAccionInferior, Boton, CampoTexto, Chip, OverlayExito, Presionable, ScreenWrapper, SliderPrecio,
 } from '../../../components/ui'
+import { MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 
 type Etapa = 'carrito' | 'ajustarPrecio' | 'cobrar' | 'confirmacion'
 const METODOS: MetodoPago[] = ['efectivo', 'nequi', 'bre_b', 'otro']
@@ -55,7 +56,7 @@ function BotonCabecera({ etiqueta, onPress, children }: { etiqueta: string; onPr
 function Cabecera({ titulo, derecha, boton }: { titulo: string; derecha?: string; boton: ReactNode }) {
   const { paleta } = useTema()
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.m, paddingHorizontal: espacio.xl, paddingTop: 52, paddingBottom: espacio.m }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.m, paddingHorizontal: espacio.xl, paddingTop: MARGEN_SUPERIOR - 4, paddingBottom: espacio.m }}>
       {boton}
       <Text style={[tc.titulo, { color: paleta.texto, flex: 1 }]}>{titulo}</Text>
       {derecha ? <Text style={[tc.etiqueta, { color: paleta.texto3, fontSize: 13 }]}>{derecha}</Text> : null}

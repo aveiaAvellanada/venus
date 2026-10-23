@@ -9,6 +9,9 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 )
 
 jest.mock('@react-native-community/datetimepicker', () => () => null)
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 24, bottom: 48, left: 0, right: 0 }),
+}))
 
 jest.useFakeTimers()
 

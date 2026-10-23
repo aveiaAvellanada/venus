@@ -17,6 +17,7 @@ import { TemaProvider, useTema } from '../lib/tema'
 import { espacio, tipografia } from '../lib/theme'
 import { Boton } from '../components/ui'
 import { FormularioCambiarPin } from '../components/FormularioCambiarPin'
+import { BarrasSistema } from '../components/BarrasSistema'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
@@ -99,6 +100,7 @@ export default function RootLayout() {
         <AuthProvider>
           <Navegacion />
         </AuthProvider>
+        <BarrasSistema />
       </TemaProvider>
     </GestureHandlerRootView>
   )

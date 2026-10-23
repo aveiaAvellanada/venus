@@ -4,7 +4,7 @@ import { useRouter, useFocusEffect } from 'expo-router'
 import { ArrowLeft, FileText, Plus } from 'lucide-react-native'
 import { supabase } from '../../../lib/supabase'
 import { Database } from '../../../lib/database.types'
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
@@ -27,7 +27,7 @@ function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void
         alignItems: 'center',
         gap: espacio.m,
         paddingHorizontal: espacio.xl,
-        paddingTop: 56,
+        paddingTop: MARGEN_SUPERIOR,
         paddingBottom: espacio.m,
       }}
     >

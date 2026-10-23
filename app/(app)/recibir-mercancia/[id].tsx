@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Modal, Pressab
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import * as DocumentPicker from 'expo-document-picker'
 import * as ImagePicker from 'expo-image-picker'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft, FileText, Image as IconoImagen, Paperclip, Wallet } from 'lucide-react-native'
 import { hoyEn } from '../../../shared/fechas'
 import { leerPesos, pesos } from '../../../shared/formato'
@@ -16,6 +17,7 @@ import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
 import { Badge, Boton, CampoTexto, EstadoVacio, Presionable, PuntoColor, ScreenWrapper, Tarjeta, useToast } from '../../../components/ui'
 import { CampoFecha, fechaCorta, Seccion } from '../../../components/compras/Campos'
+import { MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 
 // Detalle de una compra o llegada: datos de la factura, lo que se debe, la
 // mercancía por referencia y color, los pagos y la foto o PDF de la factura.
@@ -25,6 +27,7 @@ export default function DetalleCompraScreen() {
   const { perfil } = useAuth()
   const { paleta } = useTema()
   const { mostrar } = useToast()
+  const insets = useSafeAreaInsets()
   const hoy = hoyEn()
 
   const conCostos = tienePermiso(perfil, 'costos')
@@ -90,7 +93,7 @@ export default function DetalleCompraScreen() {
   const cabecera = (
     <View style={{
       flexDirection: 'row', alignItems: 'center', gap: espacio.m,
-      paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
+      paddingHorizontal: espacio.xl, paddingTop: MARGEN_SUPERIOR, paddingBottom: espacio.m,
     }}>
       <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
         <ArrowLeft size={24} color={paleta.texto} />
@@ -130,7 +133,7 @@ export default function DetalleCompraScreen() {
 
   return (
     <>
-      <ScreenWrapper header={cabecera} contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, gap: espacio.l, paddingBottom: espacio.xxxl * 2 }}>
+      <ScreenWrapper header={cabecera} contentContainerStyle={{ padding: espacio.xl, paddingTop: 0, gap: espacio.l, paddingBottom: espacio.xxxl + insets.bottom }}>
         <View style={{ flexDirection: 'row' }}>
           <Badge texto={estado.texto} tipo={estado.tipo} />
         </View>
@@ -286,6 +289,7 @@ function HojaPago({ saldo, hoy, onPagar, onCerrar }: {
   onCerrar: () => void
 }) {
   const { paleta } = useTema()
+  const insets = useSafeAreaInsets()
   const [monto, setMonto] = useState(miles(saldo))
   const [fecha, setFecha] = useState(hoy)
   const [notas, setNotas] = useState('')
@@ -313,7 +317,7 @@ function HojaPago({ saldo, hoy, onPagar, onCerrar }: {
       <Pressable style={{ flex: 1 }} accessibilityLabel="Cerrar" onPress={onCerrar} />
       <View style={{
         backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl,
-        padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.l,
+        padding: espacio.xl, paddingBottom: espacio.xl + insets.bottom, gap: espacio.l,
       }}>
         <Text style={[tipografia.h2, { color: paleta.texto }]}>Registrar pago</Text>
         <Text style={[tipografia.caption, { color: paleta.texto3 }]}>Saldo de esta compra: {pesos(saldo)}</Text>

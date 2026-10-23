@@ -9,12 +9,13 @@ import {
 } from '../../../lib/gastos'
 import { useAuth } from '../../../lib/auth'
 import { tienePermiso } from '../../../lib/permisos'
-import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
+import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import { Database } from '../../../lib/database.types'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
 import { Badge, Boton, CampoTexto, Chip, ControlSegmentado, EstadoVacio, Presionable, Tarjeta, useToast } from '../../../components/ui'
+import { BarrasSistema } from '../../../components/BarrasSistema'
 
 type GastoVariableRow = Database['public']['Tables']['gastos_variables']['Row']
 
@@ -27,7 +28,7 @@ function Encabezado({ paleta, onVolver }: { paleta: Paleta; onVolver: () => void
         alignItems: 'center',
         gap: espacio.m,
         paddingHorizontal: espacio.xl,
-        paddingTop: 56,
+        paddingTop: MARGEN_SUPERIOR,
         paddingBottom: espacio.m,
       }}
     >
@@ -215,7 +216,8 @@ export default function GastosVariablesScreen() {
         <KeyboardAvoidingView style={{ flex: 1, backgroundColor: paleta.fondo }} behavior="padding">
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferiorXxxl }}
+          // En Android la ventana va detrás de la barra de estado: el título baja lo necesario.
+          contentContainerStyle={{ padding: espacio.xl, paddingTop: MARGEN_SUPERIOR - espacio.xl, paddingBottom: paddingInferiorXxxl }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -321,6 +323,7 @@ export default function GastosVariablesScreen() {
           </View>
         </ScrollView>
         </KeyboardAvoidingView>
+        <BarrasSistema navegacion={false} />
       </Modal>
     </View>
   )

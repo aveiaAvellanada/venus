@@ -110,8 +110,15 @@ const EXISTENTES = {
   '38': { id: 'a38', precio_minimo: 80000, precio_maximo: 100000 },
   '39': { id: 'a39', precio_minimo: 80000, precio_maximo: 100000 },
 }
-const borrador = (filaExtra: object = {}): { clave: string; factura: Factura } => ({
-  clave: 'clave-guardada',
+// Lo que hay en el inventario: TA-1 Negro tallas 38 y 39 (las de EXISTENTES).
+const INVENTARIO = ['38', '39'].map((talla) => ({
+  id: `a${talla}`, referencia: 'TA-1', descripcion: 'Tennis A', marca: 'Bosi', color: 'Negro', categoria: 'Tennis', talla,
+  precio_minimo: 80000, precio_maximo: 100000, foto_url: null,
+}))
+const guardarBorrador = (perfil: { id: string }, b: object) =>
+  AsyncStorage.setItem(`venus.compra.borrador.${perfil.id}`, JSON.stringify(b))
+
+const borrador = (filaExtra: object = {}): { factura: Factura; intento?: { clave: string; firma: string } } => ({
   factura: {
     proveedorId: 'p1', numeroFactura: 'FV-1', fechaFactura: '2026-10-20', condicion: 'contado', fechaVencimiento: '', notas: '',
     filas: [{
@@ -128,10 +135,10 @@ beforeEach(async () => {
   await AsyncStorage.clear()
   mockParams.mockReturnValue({ id: 'c1' })
   ;(listarProveedores as jest.Mock).mockResolvedValue([{ id: 'p1', nombre: 'Calzado Andino', activo: true }])
-  ;(listarInventarioCompleto as jest.Mock).mockResolvedValue([])
+  ;(listarInventarioCompleto as jest.Mock).mockResolvedValue(INVENTARIO)
   ;(costosPorProducto as jest.Mock).mockResolvedValue(new Map())
   ;(registrarCompra as jest.Mock).mockResolvedValue({ compra_id: 'c9', repetida: false })
-  ;(registrarLlegada as jest.Mock).mockResolvedValue('c10')
+  ;(registrarLlegada as jest.Mock).mockResolvedValue({ compra_id: 'c10', repetida: false })
   ;(pagosDeCompra as jest.Mock).mockResolvedValue([])
   ;(documentosDeCompra as jest.Mock).mockResolvedValue([])
 })
@@ -180,7 +187,7 @@ describe('Lista de compras', () => {
 describe('Nueva compra', () => {
   it('con costos: revisar y guardar manda la factura con la clave del borrador', async () => {
     comoDe(DUENO)
-    await AsyncStorage.setItem('venus.compra.borrador', JSON.stringify(borrador()))
+    await guardarBorrador(DUENO, borrador())
     await pintar(<Nueva />)
     expect(hay('Nueva compra')).toBe(true)
     expect(hay('TA-1')).toBe(true)
@@ -190,25 +197,72 @@ describe('Nueva compra', () => {
     expect(hay('Confirmar compra')).toBe(true)
     expect(hay('FV-1')).toBe(true)
     await tocar('Guardar y subir stock')
-    expect(registrarCompra).toHaveBeenCalledWith(expect.objectContaining({ proveedorId: 'p1', numeroFactura: 'FV-1' }), 'clave-guardada')
+    expect(registrarCompra).toHaveBeenCalledWith(expect.objectContaining({ proveedorId: 'p1', numeroFactura: 'FV-1' }), 'clave-x')
     expect(mockRouter.replace).toHaveBeenCalledWith('/recibir-mercancia/c9')
-    expect(await AsyncStorage.getItem('venus.compra.borrador')).toBeNull()
+    expect(await AsyncStorage.getItem('venus.compra.borrador.dueno-1')).toBeNull()
+  })
+
+  it('reintentar la misma factura reusa la clave; si cambió, usa una nueva y avisa si ya estaba guardada', async () => {
+    comoDe(DUENO)
+    const { payloadFactura } = jest.requireActual('./compras')
+    const b = borrador()
+    await guardarBorrador(DUENO, { ...b, intento: { clave: 'clave-vieja', firma: JSON.stringify(payloadFactura(b.factura)) } })
+    ;(registrarCompra as jest.Mock).mockResolvedValue({ compra_id: 'c9', repetida: true })
+    await pintar(<Nueva />)
+    await tocar('Revisar')
+    await tocar('Guardar y subir stock')
+    expect(registrarCompra).toHaveBeenLastCalledWith(expect.anything(), 'clave-vieja')
+    expect(hay('Esta compra ya estaba guardada')).toBe(true)
+  })
+
+  it('el borrador es de cada persona: otra cuenta no ve la factura a medias', async () => {
+    await guardarBorrador(DUENO, borrador())
+    comoDe(EMPLEADO)
+    await pintar(<Nueva />)
+    expect(hay('TA-1')).toBe(false)
+    expect(hay('Agrega la primera referencia')).toBe(true)
+  })
+
+  it('un borrador viejo toma los precios de ahora: la revisión muestra el cambio', async () => {
+    comoDe(DUENO)
+    // En el inventario el precio subió a 90.000–110.000; el borrador trae 80.000–100.000.
+    ;(listarInventarioCompleto as jest.Mock).mockResolvedValue(INVENTARIO.map((p) => ({ ...p, precio_minimo: 90000, precio_maximo: 110000 })))
+    await guardarBorrador(DUENO, borrador())
+    await pintar(<Nueva />)
+    await tocar('Revisar')
+    expect(hay('2 cambios de precio')).toBe(true)
+  })
+
+  it('un zapato sin precio máximo sigue sin máximo', async () => {
+    comoDe(DUENO)
+    ;(listarInventarioCompleto as jest.Mock).mockResolvedValue(INVENTARIO.map((p) => ({ ...p, precio_maximo: null })))
+    await guardarBorrador(DUENO, borrador({
+      existentes: { '38': { id: 'a38', precio_minimo: 80000, precio_maximo: null }, '39': { id: 'a39', precio_minimo: 80000, precio_maximo: null } },
+      rangos: [{ desde: '20', hasta: '45', costo: '50.000', minimo: '80.000', maximo: '' }],
+    }))
+    await pintar(<Nueva />)
+    await tocar('Revisar')
+    expect(hay('Sin tallas nuevas')).toBe(true)
+    expect(hay('cambio')).toBe(false)
+    await tocar('Guardar y subir stock')
+    const [factura] = (registrarCompra as jest.Mock).mock.lastCall
+    expect(jest.requireActual('./compras').payloadFactura(factura).items[0]).toMatchObject({ producto_id: 'a38', precio_maximo: null })
   })
 
   it('con costos: lo que falta impide guardar y se explica', async () => {
     comoDe(DUENO)
-    await AsyncStorage.setItem('venus.compra.borrador', JSON.stringify(borrador({
+    await guardarBorrador(DUENO, borrador({
       referencia: 'NV-9', existentes: {}, descripcion: '', categoria: '', rangos: [{ desde: '20', hasta: '45', costo: '', minimo: '', maximo: '' }],
-    })))
+    }))
     await pintar(<Nueva />)
     await tocar('Revisar')
-    expect(hay('Falta la descripción de NV-9.')).toBe(true)
+    expect(hay('Falta la descripción de NV-9 Negro.')).toBe(true)
     expect(boton('Guardar y subir stock').props.accessibilityState.disabled).toBe(true)
   })
 
   it('sin costos: es la llegada física, sin precios, de lo que ya existe', async () => {
     comoDe(EMPLEADO)
-    await AsyncStorage.setItem('venus.compra.borrador', JSON.stringify(borrador()))
+    await guardarBorrador(EMPLEADO, borrador())
     await pintar(<Nueva />)
     expect(hay('Recibir mercancía')).toBe(true)
     expect(hay('$')).toBe(false)
@@ -217,13 +271,13 @@ describe('Nueva compra', () => {
     expect(registrarLlegada).toHaveBeenCalledWith('p1', 'emp-1', [
       { producto_calzado_id: 'a38', descripcion: 'Tennis A', referencia: 'TA-1', color: 'Negro', talla: '38', cantidad: 2 },
       { producto_calzado_id: 'a39', descripcion: 'Tennis A', referencia: 'TA-1', color: 'Negro', talla: '39', cantidad: 1 },
-    ])
+    ], 'clave-x')
     expect(registrarCompra).not.toHaveBeenCalled()
   })
 
   it('sin costos: una talla que no está en el inventario no se puede registrar', async () => {
     comoDe(EMPLEADO)
-    await AsyncStorage.setItem('venus.compra.borrador', JSON.stringify(borrador({ cantidades: { '40': '1' } })))
+    await guardarBorrador(EMPLEADO, borrador({ cantidades: { '40': '1' } }))
     await pintar(<Nueva />)
     await tocar('Revisar')
     expect(hay('TA-1 Negro: la talla 40 no existe en el inventario.')).toBe(true)

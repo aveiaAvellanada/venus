@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, Alert, Image, Pressable, Text, View } from 'react-native'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as DocumentPicker from 'expo-document-picker'
@@ -13,7 +13,7 @@ import { tienePermiso } from '../../../lib/permisos'
 import { listarProveedores, type Proveedor } from '../../../lib/proveedores'
 import { generarClave } from '../../../lib/intentoVenta'
 import {
-  avisosFactura, claveRefColor, costosPorProducto, erroresFactura, erroresLlegada, filaVacia, fijarFotos, fotoDeFila,
+  avisosFactura, claveRefColor, claveSinReferencia, costosPorProducto, payloadFactura, erroresFactura, erroresLlegada, filaVacia, fijarFotos, fotoDeFila,
   itemsLlegada, listarInventarioCompleto, otroColor, registrarCompra, registrarLlegada, resumenFactura, subirFactura, subtotalFila,
   tallasConCantidad, unidadesFila, type Adjunto, type Factura, type FilaFactura,
 } from '../../../lib/compras'
@@ -26,15 +26,19 @@ import { CampoFecha, fechaCorta, Seccion } from '../../../components/compras/Cam
 import { EditorReferencia, type ReferenciaConocida } from '../../../components/compras/EditorReferencia'
 import { SelectorProveedor } from '../../../components/compras/SelectorProveedor'
 
-const BORRADOR = 'venus.compra.borrador'
+// Un borrador por persona: el teléfono lo comparte la tienda y no debe pasar
+// la factura de uno (con sus costos) a otro.
+const claveBorrador = (usuarioId: string) => `venus.compra.borrador.${usuarioId}`
 
 interface Borrador {
-  clave: string
   factura: Factura
+  // Último intento de guardar: la misma factura reusa la clave (si se cayó la
+  // señal no se duplica); una factura cambiada lleva clave nueva, para no
+  // recibir de vuelta la compra anterior sin guardar lo nuevo.
+  intento?: { clave: string; firma: string }
 }
 
 const borradorNuevo = (hoy: string): Borrador => ({
-  clave: generarClave(),
   factura: { proveedorId: '', numeroFactura: '', fechaFactura: hoy, condicion: 'contado', fechaVencimiento: '', notas: '', filas: [] },
 })
 
@@ -66,16 +70,38 @@ export default function NuevaCompraScreen() {
   const [editando, setEditando] = useState<FilaFactura | null>(null)
   const [revisando, setRevisando] = useState(false)
   const [guardando, setGuardando] = useState(false)
+  const [inventarioListo, setInventarioListo] = useState(false)
+  const refrescado = useRef(false)
+  const BORRADOR = claveBorrador(perfil?.id ?? 'sin-sesion')
 
   // El borrador queda en el teléfono: una factura a medias no se pierde.
   useEffect(() => {
     AsyncStorage.getItem(BORRADOR)
       .then((v) => setBorrador(v ? (JSON.parse(v) as Borrador) : borradorNuevo(hoy)))
       .catch(() => setBorrador(borradorNuevo(hoy)))
-  }, [hoy])
+  }, [hoy, BORRADOR])
   useEffect(() => {
     if (borrador) AsyncStorage.setItem(BORRADOR, JSON.stringify(borrador)).catch(() => {})
-  }, [borrador])
+  }, [borrador, BORRADOR])
+
+  // Un borrador de otro día trae los precios y tallas de ese momento: al cargar
+  // el inventario se reemplazan por los de ahora, para que la revisión diga
+  // de verdad qué precios cambian.
+  useEffect(() => {
+    if (!inventarioListo || !borrador || refrescado.current) return
+    refrescado.current = true
+    setBorrador((b) => b && {
+      ...b,
+      factura: {
+        ...b.factura,
+        filas: b.factura.filas.map((fila) => {
+          const r = conocidas.get(claveRefColor(fila.referencia, fila.color))
+            ?? conocidas.get(claveSinReferencia(fila.descripcion, fila.color))
+          return r ? { ...fila, existentes: r.existentes } : { ...fila, existentes: {} }
+        }),
+      },
+    })
+  }, [inventarioListo, borrador, conocidas])
 
   const cargar = useCallback(async () => {
     try {
@@ -88,22 +114,24 @@ export default function NuevaCompraScreen() {
       setCostos(cs)
       const mapa = new Map<string, ReferenciaConocida>()
       for (const p of productos) {
-        if (!p.referencia || !p.talla) continue
-        const clave = claveRefColor(p.referencia, p.color)
+        if (!p.talla) continue
+        // Sin referencia se reconoce por la descripción (como en la base).
+        const clave = p.referencia?.trim() ? claveRefColor(p.referencia, p.color) : claveSinReferencia(p.descripcion, p.color)
         const r = mapa.get(clave) ?? {
-          referencia: p.referencia, descripcion: p.descripcion, marca: p.marca ?? '', categoria: p.categoria,
+          referencia: p.referencia?.trim() ?? '', descripcion: p.descripcion, marca: p.marca ?? '', categoria: p.categoria,
           color: nombreColores(p.color) ?? '', existentes: {},
         }
         r.existentes[p.talla] = {
-          id: p.id, precio_minimo: Number(p.precio_minimo), precio_maximo: Number(p.precio_maximo ?? p.precio_minimo), foto_url: p.foto_url,
+          id: p.id, precio_minimo: Number(p.precio_minimo), precio_maximo: p.precio_maximo == null ? null : Number(p.precio_maximo), foto_url: p.foto_url,
         }
         mapa.set(clave, r)
       }
       setConocidas(mapa)
+      setInventarioListo(true)
       const usados = [...new Set(productos.map((p) => nombreColores(p.color)).filter((c): c is string => !!c))]
       const simples = [...new Set([...COLORES_BASE, ...usados.flatMap((c) => coloresDeNombre(c).map((x) => nombreColores(x)!))])].sort(alfabetico)
       setListas({
-        referencias: [...new Set([...mapa.values()].map((r) => r.referencia))].sort(alfabetico),
+        referencias: [...new Set([...mapa.values()].map((r) => r.referencia).filter(Boolean))].sort(alfabetico),
         marcas: [...new Set(productos.map((p) => p.marca?.trim()).filter((m): m is string => !!m))].sort(alfabetico),
         colores: [...usados.filter((c) => coloresDeNombre(c).length > 1).sort(alfabetico), ...simples],
         coloresSimples: simples,
@@ -177,28 +205,38 @@ export default function NuevaCompraScreen() {
     if (!f || !borrador || !perfil) return
     setGuardando(true)
     try {
+      // La misma factura reusa la clave del intento anterior; si cambió, una nueva.
+      const firma = JSON.stringify(conCostos ? payloadFactura(f) : { proveedor: f.proveedorId, items: itemsLlegada(f) })
+      const clave = borrador.intento?.firma === firma ? borrador.intento.clave : generarClave()
+      const conIntento = { ...borrador, intento: { clave, firma } }
+      setBorrador(conIntento)
+      await AsyncStorage.setItem(BORRADOR, JSON.stringify(conIntento)).catch(() => {})
+
       let destino = '/recibir-mercancia'
       let fotoFallo = false
       let archivoFallo = false
+      let repetida = false
       if (conCostos) {
-        const r = await registrarCompra(f, borrador.clave)
+        const r = await registrarCompra(f, clave)
+        repetida = r.repetida
         destino = `/recibir-mercancia/${r.compra_id}`
-
         try { await fijarFotos(r.compra_id, f) } catch { fotoFallo = true }
-        if (adjunto) {
+        if (adjunto && !repetida) {
           try { await subirFactura(f.proveedorId, r.compra_id, adjunto) } catch { archivoFallo = true }
         }
       } else {
-        const compraId = await registrarLlegada(f.proveedorId, perfil.id, itemsLlegada(f))
-        try { await fijarFotos(compraId, f) } catch { fotoFallo = true }
+        const r = await registrarLlegada(f.proveedorId, perfil.id, itemsLlegada(f), clave)
+        repetida = r.repetida
+        try { await fijarFotos(r.compra_id, f) } catch { fotoFallo = true }
       }
       await AsyncStorage.removeItem(BORRADOR).catch(() => {})
       setRevisando(false)
       mostrar(
-        archivoFallo ? 'Compra guardada, pero la factura no se pudo subir. Adjúntala desde el detalle.'
-          : fotoFallo ? 'Compra guardada, pero alguna foto no quedó. Ponla desde Productos.'
-            : conCostos ? 'Compra guardada: el stock ya subió.' : 'Llegada registrada: el stock ya subió.',
-        archivoFallo || fotoFallo ? 'info' : 'exito',
+        repetida ? 'Esta compra ya estaba guardada (se había cortado la señal). No se duplicó.'
+          : archivoFallo ? 'Compra guardada, pero la factura no se pudo subir. Adjúntala desde el detalle.'
+            : fotoFallo ? 'Compra guardada, pero alguna foto no quedó. Ponla desde Productos.'
+              : conCostos ? 'Compra guardada: el stock ya subió.' : 'Llegada registrada: el stock ya subió.',
+        archivoFallo || fotoFallo || repetida ? 'info' : 'exito',
       )
       router.replace(destino as never)
     } catch (e) {
@@ -366,6 +404,7 @@ export default function NuevaCompraScreen() {
         colores={listas.colores}
         coloresSimples={listas.coloresSimples}
         costos={costos}
+        inventarioListo={inventarioListo}
         onGuardar={(fila) => { guardarFila(fila); setEditando(null) }}
         onOtroColor={(fila) => { guardarFila(fila); setEditando(otroColor(fila, generarClave())) }}
         onQuitar={() => { if (editando) quitarFila(editando.id); setEditando(null) }}
@@ -453,12 +492,14 @@ function Revision({ titulo, filas, total, avisos, errores, guardando, textoBoton
 }) {
   const { paleta } = useTema()
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
+    <Modal visible transparent animationType="slide" onRequestClose={onCerrar} statusBarTranslucent>
+    <View style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
       <Pressable style={{ flex: 1 }} accessibilityLabel="Cerrar" onPress={onCerrar} />
       <View style={{
         backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl,
-        padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.l, maxHeight: '88%',
+        maxHeight: '88%',
       }} testID="revision-compra">
+      <ScrollView contentContainerStyle={{ padding: espacio.xl, paddingBottom: espacio.xxxl, gap: espacio.l }}>
         <Text style={[tipografia.h2, { color: paleta.texto }]}>{titulo}</Text>
         <View style={{ gap: espacio.s }}>
           {filas.map(([k, v]) => (
@@ -476,8 +517,8 @@ function Revision({ titulo, filas, total, avisos, errores, guardando, textoBoton
         </View>
         {avisos.length ? (
           <View style={{ gap: 4, padding: espacio.m, borderRadius: radio.sm, backgroundColor: paleta.advertenciaSoft }}>
-            {avisos.map((a) => (
-              <View key={a} style={{ flexDirection: 'row', gap: 6 }}>
+            {avisos.map((a, i) => (
+              <View key={`${i}-${a}`} style={{ flexDirection: 'row', gap: 6 }}>
                 <AlertTriangle size={14} color={paleta.advertenciaTexto} />
                 <Text style={[tipografia.caption, { color: paleta.advertenciaTexto, flex: 1 }]}>{a}</Text>
               </View>
@@ -487,8 +528,8 @@ function Revision({ titulo, filas, total, avisos, errores, guardando, textoBoton
         {errores.length ? (
           <View style={{ gap: 4, padding: espacio.m, borderRadius: radio.sm, backgroundColor: paleta.peligroSoft }} testID="errores-compra">
             <Text style={[tipografia.etiqueta, { color: paleta.peligroTexto }]}>Falta corregir:</Text>
-            {errores.slice(0, 8).map((e) => (
-              <Text key={e} style={[tipografia.caption, { color: paleta.peligroTexto }]}>• {e}</Text>
+            {errores.slice(0, 8).map((e, i) => (
+              <Text key={`${i}-${e}`} style={[tipografia.caption, { color: paleta.peligroTexto }]}>• {e}</Text>
             ))}
             {errores.length > 8 ? <Text style={[tipografia.caption, { color: paleta.peligroTexto }]}>… y {errores.length - 8} más</Text> : null}
           </View>
@@ -498,10 +539,12 @@ function Revision({ titulo, filas, total, avisos, errores, guardando, textoBoton
             <Boton titulo="Volver" variante="contorno" onPress={onCerrar} />
           </View>
           <View style={{ flex: 1.4 }}>
-            <Boton titulo={textoBoton} onPress={onGuardar} cargando={guardando} deshabilitado={errores.length > 0 || guardando}/>
+            <Boton titulo={textoBoton} onPress={onGuardar} cargando={guardando} deshabilitado={errores.length > 0 || guardando} />
           </View>
         </View>
+      </ScrollView>
       </View>
     </View>
+    </Modal>
   )
 }

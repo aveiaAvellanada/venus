@@ -1,5 +1,6 @@
 import type { Json } from '../shared/database.types'
 import { nombreColores } from '../shared/colores'
+import { hoyEn } from '../shared/fechas'
 import {
   payloadFactura, tallasConCantidad, TALLAS, type Factura, type FilaFactura,
 } from '../shared/compras'
@@ -17,6 +18,14 @@ export * from '../shared/compras'
 const plano = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 export const claveRefColor = (referencia: string | null, color: string | null) =>
   `${plano(referencia ?? '')}|${plano(nombreColores(color) ?? '')}`
+// Zapatos sin referencia: se reconocen por la descripción (como en la base).
+export const claveSinReferencia = (descripcion: string | null, color: string | null) =>
+  `d:${claveRefColor(descripcion, color)}`
+const claveDeFila = (referencia: string | null, descripcion: string | null, color: string | null) =>
+  referencia?.trim() ? claveRefColor(referencia, color) : claveSinReferencia(descripcion, color)
+
+// Fecha del negocio (Bogotá) de un momento guardado en UTC.
+export const fechaDelNegocio = (momento: string) => hoyEn(new Date(momento))
 
 // ===== Registrar =====
 
@@ -87,29 +96,40 @@ export function erroresLlegada(f: Factura): string[] {
   return errores
 }
 
-export async function registrarLlegada(proveedorId: string, registradaPor: string, items: ItemLlegada[]): Promise<string> {
-  const { data: compra, error } = await supabase
-    .from('compras')
-    .insert({
-      proveedor_id: proveedorId,
-      estado: 'pendiente_revision',
-      registrada_por: registradaPor,
-      total: null,
-      monto_pagado: 0,
-      saldo_pendiente: 0,
-      condicion_pago: null,
-    })
-    .select('id')
-    .single()
-  if (error) throw new Error(error.message)
+// `clave` es el id de la compra: si la señal se cae después de guardar,
+// reintentar con la misma clave no crea otra llegada ni sube el stock dos veces.
+export async function registrarLlegada(
+  proveedorId: string, registradaPor: string, items: ItemLlegada[], clave: string,
+): Promise<{ compra_id: string; repetida: boolean }> {
+  const { error } = await supabase.from('compras').insert({
+    id: clave,
+    proveedor_id: proveedorId,
+    estado: 'pendiente_revision',
+    registrada_por: registradaPor,
+    total: null,
+    monto_pagado: 0,
+    saldo_pendiente: 0,
+    condicion_pago: null,
+  })
+  // 23505 = ya existe: un intento anterior guardó la llegada (y quizá sus ítems).
+  const repetida = error?.code === '23505'
+  if (error && !repetida) throw new Error(error.message)
+  if (repetida) {
+    const { count, error: errorConteo } = await supabase
+      .from('compra_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('compra_id', clave)
+    if (errorConteo) throw new Error(errorConteo.message)
+    if (count) return { compra_id: clave, repetida: true }
+  }
   const { error: errorItems } = await supabase.from('compra_items').insert(
-    items.map((it) => ({ ...it, compra_id: compra.id, costo_unitario: null, subtotal: null })),
+    items.map((it) => ({ ...it, compra_id: clave, costo_unitario: null, subtotal: null })),
   )
   if (errorItems) {
-    await supabase.from('compras').delete().eq('id', compra.id)
+    await supabase.from('compras').delete().eq('id', clave)
     throw new Error(errorItems.message)
   }
-  return compra.id
+  return { compra_id: clave, repetida }
 }
 
 // ===== Fotos y factura =====
@@ -124,18 +144,22 @@ export async function fijarFotos(compraId: string, factura: Factura): Promise<vo
   if (!conFoto.length) return
   const { data, error } = await supabase
     .from('compra_items')
-    .select('producto_calzado_id, referencia, color')
+    .select('producto_calzado_id, referencia, descripcion, color')
     .eq('compra_id', compraId)
   if (error) throw new Error(error.message)
   for (const fila of conFoto) {
-    const clave = claveRefColor(fila.referencia, fila.color)
+    const clave = claveDeFila(fila.referencia, fila.descripcion, fila.color)
     const ids = new Set(Object.values(fila.existentes).map((e) => e.id))
     for (const item of data ?? []) {
-      if (item.producto_calzado_id && claveRefColor(item.referencia, item.color) === clave) ids.add(item.producto_calzado_id)
+      if (item.producto_calzado_id && claveDeFila(item.referencia, item.descripcion, item.color) === clave) ids.add(item.producto_calzado_id)
     }
     if (!ids.size) continue
-    const { error: e } = await supabase.from('productos_calzado').update({ foto_url: fila.foto }).in('id', [...ids])
+    // Sin permiso de inventario la RLS no deja cambiar nada y no da error:
+    // se cuentan las filas cambiadas para avisar que la foto no quedó.
+    const { data: cambiados, error: e } = await supabase
+      .from('productos_calzado').update({ foto_url: fila.foto }).in('id', [...ids]).select('id')
     if (e) throw new Error(e.message)
+    if (!cambiados?.length) throw new Error('No tienes permiso para cambiar las fotos del inventario.')
   }
 }
 
@@ -255,14 +279,19 @@ const aListado = (c: FilaCompra): CompraListado => ({
 
 // La RLS decide qué ve cada quien: con `costos` o `deudas`, todas; si no, solo
 // las llegadas pendientes propias (o de todos con `proveedores`).
+// Todas, por páginas: lo que se debe se suma sobre la lista completa.
 export async function listarCompras(): Promise<CompraListado[]> {
-  const { data, error } = await supabase
-    .from('compras')
-    .select(COLUMNAS)
-    .order('created_at', { ascending: false })
-    .limit(500)
-  if (error) throw new Error(error.message)
-  return (data as unknown as FilaCompra[]).map(aListado)
+  const todas: CompraListado[] = []
+  for (let desde = 0; ; desde += PAGINA) {
+    const { data, error } = await supabase
+      .from('compras')
+      .select(COLUMNAS)
+      .order('created_at', { ascending: false })
+      .range(desde, desde + PAGINA - 1)
+    if (error) throw new Error(error.message)
+    todas.push(...(data as unknown as FilaCompra[]).map(aListado))
+    if (!data || data.length < PAGINA) return todas
+  }
 }
 
 export interface ItemDeCompra {

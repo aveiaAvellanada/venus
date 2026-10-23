@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { ActivityIndicator, Alert, Linking, Pressable, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Modal, Pressable, Text, View } from 'react-native'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import * as DocumentPicker from 'expo-document-picker'
 import * as ImagePicker from 'expo-image-picker'
@@ -9,7 +9,7 @@ import { leerPesos, pesos } from '../../../shared/formato'
 import { useAuth } from '../../../lib/auth'
 import { tienePermiso } from '../../../lib/permisos'
 import {
-  agruparItems, documentosDeCompra, enlaceDocumento, esPorPagar, estadoCompra, miles, obtenerCompra, pagosDeCompra, registrarPago,
+  agruparItems, documentosDeCompra, enlaceDocumento, esPorPagar, estadoCompra, fechaDelNegocio, miles, obtenerCompra, pagosDeCompra, registrarPago,
   subirFactura, textoTallas, type Adjunto, type CompraDetalle, type DocumentoCompra, type PagoCompra,
 } from '../../../lib/compras'
 import { useTema } from '../../../lib/tema'
@@ -154,10 +154,10 @@ export default function DetalleCompraScreen() {
             <View style={{ gap: espacio.s }}>
               {compra.numero_factura || compra.fecha_factura
                 ? dato('Factura', [compra.numero_factura, compra.fecha_factura ? fechaCorta(compra.fecha_factura) : null].filter(Boolean).join(' · '))
-                : dato('Registrada', fechaCorta(compra.created_at.slice(0, 10)))}
+                : dato('Registrada', fechaCorta(fechaDelNegocio(compra.created_at)))}
               {compra.condicion_pago ? dato('Pago', compra.condicion_pago === 'credito' ? 'Crédito' : 'Contado') : null}
               {compra.fecha_vencimiento ? dato('Vence', fechaCorta(compra.fecha_vencimiento)) : null}
-              {dato('Mercancía', `${grupos.length} referencia${grupos.length === 1 ? '' : 's'} · ${compra.pares} pares`)}
+              {grupos.length ? dato('Mercancía', `${grupos.length} referencia${grupos.length === 1 ? '' : 's'} · ${compra.pares} pares`) : null}
               {compra.notas ? dato('Notas', compra.notas) : null}
             </View>
           </Seccion>
@@ -169,6 +169,11 @@ export default function DetalleCompraScreen() {
         </Tarjeta>
 
         <Seccion titulo="Mercancía">
+          {grupos.length === 0 ? (
+            <Text style={[tipografia.cuerpo, { color: paleta.texto3 }]}>
+              {conCostos ? 'Esta compra no tiene mercancía.' : 'El detalle de la mercancía lo ve quien tiene el permiso de costos.'}
+            </Text>
+          ) : null}
           {grupos.map((g) => (
             <Tarjeta key={g.clave}>
               <View style={{ flexDirection: 'row', gap: espacio.m }}>
@@ -303,7 +308,8 @@ function HojaPago({ saldo, hoy, onPagar, onCerrar }: {
   }
 
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
+    <Modal visible transparent animationType="slide" onRequestClose={onCerrar} statusBarTranslucent>
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: paleta.overlay, justifyContent: 'flex-end' }}>
       <Pressable style={{ flex: 1 }} accessibilityLabel="Cerrar" onPress={onCerrar} />
       <View style={{
         backgroundColor: paleta.fondo, borderTopLeftRadius: radio.xl, borderTopRightRadius: radio.xl,
@@ -321,6 +327,7 @@ function HojaPago({ saldo, hoy, onPagar, onCerrar }: {
           <View style={{ flex: 1.3 }}><Boton titulo="Registrar pago" onPress={pagar} cargando={guardando} /></View>
         </View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
+    </Modal>
   )
 }

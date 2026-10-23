@@ -24,6 +24,8 @@ export function SelectorProveedor({ proveedores, valor, onElegir, puedeCrear, on
   const [busqueda, setBusqueda] = useState('')
   const [nuevo, setNuevo] = useState({ nombre: '', nit: '', telefono: '', ciudad: '' })
   const [guardando, setGuardando] = useState(false)
+  // Dentro de la ventana el aviso (toast) queda detrás: el error se muestra aquí.
+  const [error, setError] = useState<string | null>(null)
 
   const elegido = proveedores.find((p) => p.id === valor)
   const visibles = proveedores.filter((p) => p.activo !== false && plano(p.nombre).includes(plano(busqueda)))
@@ -32,13 +34,15 @@ export function SelectorProveedor({ proveedores, valor, onElegir, puedeCrear, on
     setAbierto(false)
     setCreando(false)
     setBusqueda('')
+    setError(null)
   }
 
   async function guardarNuevo() {
     if (!nuevo.nombre.trim()) {
-      mostrar('Escribe el nombre del proveedor.', 'error')
+      setError('Escribe el nombre del proveedor.')
       return
     }
+    setError(null)
     setGuardando(true)
     try {
       const p = await crearProveedor({
@@ -54,7 +58,7 @@ export function SelectorProveedor({ proveedores, valor, onElegir, puedeCrear, on
       mostrar(`Proveedor "${p.nombre}" creado.`)
       cerrar()
     } catch (e) {
-      mostrar(e instanceof Error ? e.message : 'No se pudo crear el proveedor.', 'error')
+      setError(e instanceof Error ? e.message : 'No se pudo crear el proveedor.')
     } finally {
       setGuardando(false)
     }
@@ -114,6 +118,7 @@ export function SelectorProveedor({ proveedores, valor, onElegir, puedeCrear, on
             <CampoTexto etiqueta="Teléfono (WhatsApp)" keyboardType="phone-pad" value={nuevo.telefono}
               onChangeText={(telefono) => setNuevo((x) => ({ ...x, telefono }))} />
             <CampoTexto etiqueta="Ciudad" value={nuevo.ciudad} onChangeText={(ciudad) => setNuevo((x) => ({ ...x, ciudad }))} />
+            {error ? <Text style={[tipografia.caption, { color: paleta.peligroTexto }]}>{error}</Text> : null}
           </ScreenWrapper>
         ) : (
           <View style={{ flex: 1, backgroundColor: paleta.fondo }}>

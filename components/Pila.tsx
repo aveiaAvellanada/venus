@@ -9,9 +9,10 @@ import { useTema } from '../lib/tema'
 const OPCIONES: StackNavigationOptions = {
   headerShown: false,
   gestureEnabled: true,
-  // Zona del borde izquierdo donde empieza el gesto (para no chocar con
-  // deslizadores o listas horizontales dentro de la pantalla).
-  gestureResponseDistance: 40,
+  // Zona del borde izquierdo donde empieza el gesto: 30 px, menos que el
+  // margen de las pantallas (20) + el de las tarjetas, para no chocar con el
+  // deslizador de precio del carrito ni con listas horizontales.
+  gestureResponseDistance: 30,
   ...TransitionPresets.SlideFromRightIOS,
 }
 

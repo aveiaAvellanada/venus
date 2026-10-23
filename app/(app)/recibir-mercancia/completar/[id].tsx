@@ -26,10 +26,9 @@ export default function RecepcionDetalleFinancieroScreen() {
   const [notas, setNotas] = useState('')
   const [guardando, setGuardando] = useState(false)
 
-  // Completar costos y condición de pago requiere el permiso de costos.
-  if (!cargando && !tienePermiso(perfil, 'costos')) {
-    return <Redirect href="/" />
-  }
+  // Completar costos y condición de pago requiere el permiso de costos. Se
+  // decide después de los hooks (un return antes cambiaría su número).
+  const sinPermiso = !cargando && !tienePermiso(perfil, 'costos')
 
   // Header component used in all render branches
   const Encabezado = () => (
@@ -47,7 +46,7 @@ export default function RecepcionDetalleFinancieroScreen() {
 
   useEffect(() => {
     async function cargarCompra() {
-      if (!id) return
+      if (!id || sinPermiso) return
       try {
         setCargandoCompra(true)
         const data = await obtenerCompraPorId(id)
@@ -76,6 +75,8 @@ export default function RecepcionDetalleFinancieroScreen() {
     }
     cargarCompra()
   }, [id])
+
+  if (sinPermiso) return <Redirect href="/" />
 
   const handleCostoChange = (itemId: string, text: string) => {
     const val = text.replace(/[^0-9]/g, '')

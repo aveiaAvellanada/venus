@@ -82,7 +82,7 @@ export function NuevaCompra() {
         color: p.color ?? '', existentes: {},
       }
       r.existentes[p.talla] = {
-        id: p.id, precio_minimo: Number(p.precio_minimo), precio_maximo: Number(p.precio_maximo ?? p.precio_minimo), foto_url: p.foto_url ?? null,
+        id: p.id, precio_minimo: Number(p.precio_minimo), precio_maximo: p.precio_maximo == null ? null : Number(p.precio_maximo), foto_url: p.foto_url ?? null,
       }
       mapa.set(clave, r)
     }

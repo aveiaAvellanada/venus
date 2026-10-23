@@ -8,7 +8,7 @@ import { useAuth, useRequireModulo } from '../../../lib/auth'
 import { tienePermiso } from '../../../lib/permisos'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import {
-  diasHasta, esPorPagar, estadoCompra, filtrarCompras, listarCompras, type CompraListado, type FiltroCompras,
+  diasHasta, esPorPagar, estadoCompra, fechaDelNegocio, filtrarCompras, listarCompras, type CompraListado, type FiltroCompras,
 } from '../../../lib/compras'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
@@ -165,7 +165,7 @@ export default function ComprasScreen() {
 function FilaCompra({ compra: c, hoy, verMontos, onPress }: { compra: CompraListado; hoy: string; verMontos: boolean; onPress: () => void }) {
   const { paleta } = useTema()
   const estado = estadoCompra(c, hoy)
-  const fecha = c.fecha_factura ? fechaCorta(c.fecha_factura) : fechaCorta(c.created_at.slice(0, 10))
+  const fecha = fechaCorta(c.fecha_factura ?? fechaDelNegocio(c.created_at))
   return (
     <Tarjeta onPress={onPress}>
       <View style={{ gap: espacio.s }}>
@@ -173,7 +173,7 @@ function FilaCompra({ compra: c, hoy, verMontos, onPress }: { compra: CompraList
           <View style={{ flex: 1 }}>
             <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]} numberOfLines={1}>{c.proveedor}</Text>
             <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
-              {[fecha, c.numero_factura, `${c.pares} pares`].filter(Boolean).join(' · ')}
+              {[fecha, c.numero_factura, c.pares ? `${c.pares} pares` : null].filter(Boolean).join(' · ')}
             </Text>
           </View>
           {verMontos && c.total != null ? (

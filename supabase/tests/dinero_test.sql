@@ -3,8 +3,9 @@
 --      reportes), no en el día de la venta original.
 --   8. Reintentar registrar_venta con la misma clave no duplica la venta ni
 --      descuenta stock dos veces.
---   9. Vender o devolver exige la caja del día abierta, y el precio del
---      calzado debe estar dentro de su rango mínimo–máximo (PRD §3.1.1).
+--   9. Vender o devolver exige la caja del día abierta. El precio de venta es
+--      libre (20261017043632: el mínimo y el máximo son recomendados), pero
+--      tiene que ser mayor que cero.
 --
 -- Corre en una transacción. Éxito = termina con el error DINERO_OK_ROLLBACK.
 -- Local:  supabase/tests/local/run.sh supabase/tests/dinero_test.sql
@@ -93,18 +94,18 @@ begin
   end if;
   perform public.abrir_caja();
 
-  -- ===== 9. Precio del calzado dentro del rango =====
-  v_err := pg_temp.error_de(pg_temp.sql_venta('calzado', v_zapato, 1, 79999));
-  if v_err not like '%entre%' then
-    raise exception 'FALLO 9: se vendió calzado por debajo del mínimo (%)', v_err;
-  end if;
-  v_err := pg_temp.error_de(pg_temp.sql_venta('calzado', v_zapato, 1, 100001));
-  if v_err not like '%entre%' then
-    raise exception 'FALLO 9: se vendió calzado por encima del máximo (%)', v_err;
+  -- ===== 9. Precio libre: fuera del rango recomendado se vende; cero no =====
+  if pg_temp.error_de(pg_temp.sql_venta('calzado', v_zapato, 1, 79999)) <> ''
+     or pg_temp.error_de(pg_temp.sql_venta('calzado', v_zapato, 1, 100001)) <> '' then
+    raise exception 'FALLO 9: el precio es libre; por debajo del mínimo o encima del máximo también se vende';
   end if;
   if pg_temp.error_de(pg_temp.sql_venta('calzado', v_zapato, 1, 80000)) <> ''
      or pg_temp.error_de(pg_temp.sql_venta('calzado', v_zapato, 1, 100000)) <> '' then
     raise exception 'FALLO 9: los extremos del rango deben ser vendibles';
+  end if;
+  v_err := pg_temp.error_de(pg_temp.sql_venta('calzado', v_zapato, 1, 0));
+  if v_err not like '%Precio inválido%' then
+    raise exception 'FALLO 9: un precio de cero no debe venderse (%)', v_err;
   end if;
   if pg_temp.error_de(pg_temp.sql_venta('varios', v_huevos, 0.5, 1234)) <> '' then
     raise exception 'FALLO 9: Granja no tiene rango; cualquier precio positivo vale';

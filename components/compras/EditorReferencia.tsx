@@ -5,7 +5,7 @@ import { Camera, CopyPlus, Scissors, Trash2, X } from 'lucide-react-native'
 import { CATEGORIAS } from '../../shared/excel'
 import { leerPesos, pesos } from '../../shared/formato'
 import {
-  claveRefColor, dividirRango, enRango, fotoDeFila, miles, partesColor, rangosDesdeExistentes, subirFotoColor,
+  claveRefColor, claveSinReferencia, dividirRango, enRango, fotoDeFila, miles, partesColor, rangosDesdeExistentes, subirFotoColor,
   subtotalFila, TALLAS, unidadesFila, unirColores, unirRango, type FilaFactura, type TallaExistente,
 } from '../../lib/compras'
 import { useTema } from '../../lib/tema'
@@ -34,6 +34,8 @@ interface Props {
   colores: string[]
   coloresSimples: string[]
   costos?: Map<string, { ultimo: number }>
+  // Si el inventario no cargó no se reconoce nada (y no se borra lo que la fila ya sabía).
+  inventarioListo: boolean
   onGuardar: (fila: FilaFactura) => void
   onOtroColor: (fila: FilaFactura) => void
   onQuitar: () => void
@@ -47,7 +49,7 @@ const conMiles = (t: string) => (soloDigitos(t) ? miles(Number(soloDigitos(t))) 
 // Una referencia y color de la factura en pantalla completa: foto, datos,
 // cantidad por talla (20–45) y costo/precios por rango de tallas.
 export function EditorReferencia({
-  fila: inicial, conCostos, conocidas, referencias, marcas, colores, coloresSimples, costos,
+  fila: inicial, conCostos, conocidas, referencias, marcas, colores, coloresSimples, costos, inventarioListo,
   onGuardar, onOtroColor, onQuitar, onCerrar,
 }: Props) {
   const { paleta } = useTema()
@@ -76,25 +78,40 @@ export function EditorReferencia({
   // Al escribir referencia y color de algo que ya existe: trae descripción,
   // marca, categoría, sus tallas y precios (y el último costo).
   function reconocer(base: FilaFactura) {
-    const r = conocidas.get(claveRefColor(base.referencia, base.color))
-    if (!r) {
-      if (Object.keys(base.existentes).length) setFila({ ...base, existentes: {} })
-      else setFila(base)
+    if (!inventarioListo) {
+      setFila(base)
       return
     }
+    // Sin referencia se busca por la descripción, como hace la base.
+    const r = conocidas.get(claveRefColor(base.referencia, base.color))
+      ?? (base.referencia.trim() ? undefined : conocidas.get(claveSinReferencia(base.descripcion, base.color)))
+    if (!r) {
+      // Sin costos solo se cuentan tallas existentes: lo escrito para algo que
+      // no está en el inventario no se podría guardar, así que no se esconde.
+      setFila({ ...base, existentes: {}, cantidades: conCostos ? base.cantidades : {} })
+      return
+    }
+    // ¿Es el mismo zapato que la fila ya tenía? Si cambió a otro que existe
+    // (otra referencia u otro color), se traen sus propios datos y precios.
+    const ids = new Set(Object.values(r.existentes).map((e) => e.id))
+    const mismo = Object.values(base.existentes).some((e) => ids.has(e.id))
     const sinPrecios = base.rangos.every((x) => !x.costo && !x.minimo && !x.maximo)
+    const cantidades = conCostos
+      ? base.cantidades
+      : Object.fromEntries(Object.entries(base.cantidades).filter(([t]) => r.existentes[t]))
     const [a, b] = partesColor(r.color)
     setColor1(a)
     setColor2(b)
     setFila({
       ...base,
-      referencia: r.referencia,
+      referencia: r.referencia || base.referencia,
       color: r.color,
-      descripcion: base.descripcion || r.descripcion,
-      marca: base.marca || r.marca,
-      categoria: base.categoria || r.categoria,
+      descripcion: mismo ? base.descripcion || r.descripcion : r.descripcion,
+      marca: mismo ? base.marca || r.marca : r.marca,
+      categoria: mismo ? base.categoria || r.categoria : r.categoria,
       existentes: r.existentes,
-      rangos: sinPrecios ? rangosDesdeExistentes(r.existentes, costos) : base.rangos,
+      cantidades,
+      rangos: sinPrecios || !mismo ? rangosDesdeExistentes(r.existentes, costos) : base.rangos,
     })
   }
 
@@ -303,6 +320,8 @@ export function EditorReferencia({
             placeholder="Ej. Tennis running"
             value={f.descripcion}
             onChangeText={(descripcion) => cambiar({ descripcion })}
+            // Un zapato sin referencia se reconoce por su descripción.
+            onBlur={() => { if (!f.referencia.trim()) reconocer(f) }}
             testID="input-descripcion"
           />
 

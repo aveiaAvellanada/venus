@@ -7,8 +7,8 @@ jest.mock('./storage', () => ({ bytesDesdeUriLocal: jest.fn() }))
 
 import { supabase } from './supabase'
 import {
-  agruparItems, claveRefColor, erroresLlegada, estadoCompra, filaVacia, filtrarCompras, itemsLlegada, registrarCompra,
-  textoTallas, type CompraListado, type Factura, type FilaFactura,
+  agruparItems, claveRefColor, erroresLlegada, estadoCompra, fechaDelNegocio, fijarFotos, filaVacia, filtrarCompras,
+  itemsLlegada, registrarCompra, registrarLlegada, textoTallas, type CompraListado, type Factura, type FilaFactura,
 } from './compras'
 
 const fila = (o: Partial<FilaFactura>): FilaFactura => ({ ...filaVacia('f1'), ...o })
@@ -107,5 +107,49 @@ describe('listas y detalle', () => {
     expect(estadoCompra(c({ condicion_pago: 'credito', saldo_pendiente: 1, fecha_vencimiento: '2026-10-25' }), hoy).texto).toBe('VENCE EN 3 D')
     expect(estadoCompra(c({ condicion_pago: 'credito', saldo_pendiente: 0 }), hoy).texto).toBe('PAGADA')
     expect(estadoCompra(c({}), hoy).texto).toBe('CONTADO')
+  })
+})
+
+// Cadena de llamadas de supabase-js que termina en una promesa con `resultado`.
+function cadena(resultado: unknown) {
+  const c: Record<string, unknown> = {}
+  for (const m of ['insert', 'select', 'eq', 'in', 'update', 'delete']) c[m] = jest.fn(() => c)
+  c.then = (ok: (v: unknown) => unknown, mal?: (e: unknown) => unknown) => Promise.resolve(resultado).then(ok, mal)
+  return c
+}
+
+describe('reintentos y fotos', () => {
+  const items = [{ producto_calzado_id: 'a38', descripcion: 'Tennis', referencia: 'TA-1', color: 'Negro', talla: '38', cantidad: 2 }]
+
+  it('la llegada usa la clave como id: un reintento de algo ya guardado no inserta otra vez', async () => {
+    const compras = cadena({ error: { code: '23505', message: 'duplicate key' } })
+    const conteo = cadena({ count: 1, error: null })
+    ;(supabase.from as jest.Mock).mockImplementation((t: string) => (t === 'compras' ? compras : conteo))
+    expect(await registrarLlegada('p1', 'u1', items, 'clave-1')).toEqual({ compra_id: 'clave-1', repetida: true })
+    expect((compras.insert as jest.Mock).mock.calls[0][0]).toMatchObject({ id: 'clave-1', estado: 'pendiente_revision' })
+    expect(conteo.insert).not.toHaveBeenCalled()
+  })
+
+  it('si el intento anterior guardó la compra pero no sus ítems, el reintento los agrega', async () => {
+    const compras = cadena({ error: { code: '23505', message: 'duplicate key' } })
+    const itemsTabla = cadena({ count: 0, error: null })
+    ;(supabase.from as jest.Mock).mockImplementation((t: string) => (t === 'compras' ? compras : itemsTabla))
+    expect(await registrarLlegada('p1', 'u1', items, 'clave-1')).toEqual({ compra_id: 'clave-1', repetida: true })
+    expect((itemsTabla.insert as jest.Mock).mock.calls[0][0]).toEqual([
+      expect.objectContaining({ compra_id: 'clave-1', producto_calzado_id: 'a38', costo_unitario: null }),
+    ])
+  })
+
+  it('una foto que la base no dejó guardar (sin permiso de inventario) es un error, no un éxito callado', async () => {
+    const itemsTabla = cadena({ data: [{ producto_calzado_id: 'a39', referencia: 'TA-1', descripcion: 'Tennis', color: 'Negro' }], error: null })
+    const productos = cadena({ data: [], error: null })
+    ;(supabase.from as jest.Mock).mockImplementation((t: string) => (t === 'compra_items' ? itemsTabla : productos))
+    const f = factura([fila({ referencia: 'TA-1', color: 'Negro', foto: 'https://f/1.jpg', existentes: { '38': { id: 'a38', precio_minimo: 1, precio_maximo: null } } })])
+    await expect(fijarFotos('c1', f)).rejects.toThrow('No tienes permiso')
+    expect((productos.in as jest.Mock).mock.calls[0][1].sort()).toEqual(['a38', 'a39'])
+  })
+
+  it('la fecha de algo guardado de noche en Colombia es la de ese día, no la de UTC', () => {
+    expect(fechaDelNegocio('2026-10-23T01:00:00Z')).toBe('2026-10-22')
   })
 })

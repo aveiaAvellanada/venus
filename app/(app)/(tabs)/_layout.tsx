@@ -14,6 +14,8 @@ export default function TabsLayout() {
       screenOptions={{
         swipeEnabled: true,
         lazy: true,
+        // La pestaña vecina se prepara antes: al deslizar no se ve en blanco.
+        lazyPreloadDistance: 1,
         sceneStyle: { backgroundColor: paleta.fondo },
       }}
     >

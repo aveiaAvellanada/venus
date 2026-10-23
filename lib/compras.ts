@@ -172,6 +172,38 @@ export async function enlaceDocumento(ruta: string): Promise<string> {
   return data.signedUrl
 }
 
+// ===== Inventario para reconocer referencias =====
+
+// Todo el calzado (una fila por talla), por páginas: la API entrega máximo
+// 1000 filas por consulta y el inventario puede pasar de eso.
+const PAGINA = 1000
+export async function listarInventarioCompleto(): Promise<ProductoParaCompra[]> {
+  const todos: ProductoParaCompra[] = []
+  for (let desde = 0; ; desde += PAGINA) {
+    const { data, error } = await supabase
+      .from('productos_calzado')
+      .select('id, referencia, descripcion, marca, color, categoria, talla, precio_minimo, precio_maximo, foto_url')
+      .order('id')
+      .range(desde, desde + PAGINA - 1)
+    if (error) throw new Error(error.message)
+    todos.push(...((data ?? []) as ProductoParaCompra[]))
+    if (!data || data.length < PAGINA) return todos
+  }
+}
+
+export interface ProductoParaCompra {
+  id: string
+  referencia: string | null
+  descripcion: string
+  marca: string | null
+  color: string | null
+  categoria: string
+  talla: string | null
+  precio_minimo: number
+  precio_maximo: number | null
+  foto_url: string | null
+}
+
 // ===== Costos (solo con permiso `costos`) =====
 
 export async function costosPorProducto(): Promise<Map<string, { ultimo: number }>> {

@@ -40,7 +40,6 @@ jest.mock('./proveedores', () => ({
   obtenerCompraPorId: jest.fn(() => Promise.resolve(null)),
   completarInformacionFinanciera: jest.fn(),
 }))
-jest.mock('./inventario', () => ({ listarCalzado: jest.fn() }))
 jest.mock('./compras', () => ({
   ...jest.requireActual('./compras'),
   listarCompras: jest.fn(),
@@ -53,14 +52,14 @@ jest.mock('./compras', () => ({
   fijarFotos: jest.fn(),
   subirFactura: jest.fn(),
   costosPorProducto: jest.fn(),
+  listarInventarioCompleto: jest.fn(),
 }))
 jest.mock('./intentoVenta', () => ({ generarClave: () => 'clave-x' }))
 
 import { useAuth } from './auth'
 import { listarProveedores } from './proveedores'
-import { listarCalzado } from './inventario'
 import {
-  costosPorProducto, documentosDeCompra, listarCompras, obtenerCompra, pagosDeCompra, registrarCompra, registrarLlegada,
+  costosPorProducto, documentosDeCompra, listarCompras, listarInventarioCompleto, obtenerCompra, pagosDeCompra, registrarCompra, registrarLlegada,
   type CompraDetalle, type CompraListado, type Factura,
 } from './compras'
 import { TemaProvider } from './tema'
@@ -129,7 +128,7 @@ beforeEach(async () => {
   await AsyncStorage.clear()
   mockParams.mockReturnValue({ id: 'c1' })
   ;(listarProveedores as jest.Mock).mockResolvedValue([{ id: 'p1', nombre: 'Calzado Andino', activo: true }])
-  ;(listarCalzado as jest.Mock).mockResolvedValue([])
+  ;(listarInventarioCompleto as jest.Mock).mockResolvedValue([])
   ;(costosPorProducto as jest.Mock).mockResolvedValue(new Map())
   ;(registrarCompra as jest.Mock).mockResolvedValue({ compra_id: 'c9', repetida: false })
   ;(registrarLlegada as jest.Mock).mockResolvedValue('c10')

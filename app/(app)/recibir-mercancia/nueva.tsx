@@ -11,11 +11,10 @@ import { pesos } from '../../../shared/formato'
 import { useAuth, useRequireModulo } from '../../../lib/auth'
 import { tienePermiso } from '../../../lib/permisos'
 import { listarProveedores, type Proveedor } from '../../../lib/proveedores'
-import { listarCalzado } from '../../../lib/inventario'
 import { generarClave } from '../../../lib/intentoVenta'
 import {
   avisosFactura, claveRefColor, costosPorProducto, erroresFactura, erroresLlegada, filaVacia, fijarFotos, fotoDeFila,
-  itemsLlegada, otroColor, registrarCompra, registrarLlegada, resumenFactura, subirFactura, subtotalFila,
+  itemsLlegada, listarInventarioCompleto, otroColor, registrarCompra, registrarLlegada, resumenFactura, subirFactura, subtotalFila,
   tallasConCantidad, unidadesFila, type Adjunto, type Factura, type FilaFactura,
 } from '../../../lib/compras'
 import { useTema } from '../../../lib/tema'
@@ -82,7 +81,7 @@ export default function NuevaCompraScreen() {
     try {
       const [provs, productos, cs] = await Promise.all([
         listarProveedores({ activo: true }),
-        listarCalzado(),
+        listarInventarioCompleto(),
         conCostos ? costosPorProducto().catch(() => undefined) : Promise.resolve(undefined),
       ])
       setProveedores(provs)

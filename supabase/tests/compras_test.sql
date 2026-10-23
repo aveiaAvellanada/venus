@@ -158,6 +158,35 @@ begin
                                                   'precio_minimo', 1000, 'precio_maximo', 2000, 'talla', '40')))));
   if v_err not like '%Falta la descripción%' then raise exception 'FALLO: producto nuevo sin descripción (%)', v_err; end if;
 
+  -- ===== Máximo opcional: un zapato sin máximo sigue sin máximo =====
+  execute 'reset role';
+  insert into public.productos_calzado (descripcion, referencia, categoria, talla, color, precio_minimo, precio_maximo, stock_actual, stock_minimo)
+    values ('Sin Maximo', 'SM-1', 'Tennis', '40', 'Gris', 70000, null, 1, 1) returning id into v_t38;
+  insert into public.productos_calzado (descripcion, referencia, categoria, talla, color, precio_minimo, precio_maximo, stock_actual, stock_minimo)
+    values ('Chancla Playa', null, 'Chanclas', '38', 'Azul', 20000, 25000, 1, 1);
+  perform pg_temp.como(v_dueno);
+  r := public.registrar_compra(jsonb_build_object(
+    'proveedor_id', v_prov, 'condicion_pago', 'contado',
+    'items', jsonb_build_array(
+      jsonb_build_object('producto_id', v_t38, 'cantidad', 2, 'costo_unitario', 40000, 'precio_minimo', 70000, 'precio_maximo', null),
+      -- sin referencia: se reconoce por descripción + color + talla
+      jsonb_build_object('descripcion', 'chancla playa', 'color', 'azul', 'talla', '38', 'categoria', 'Chanclas',
+                         'cantidad', 3, 'costo_unitario', 10000, 'precio_minimo', 20000, 'precio_maximo', 25000)
+    )), gen_random_uuid());
+  if (r ->> 'precios_cambiados')::int <> 0 or (r ->> 'productos_nuevos')::int <> 0 then
+    raise exception 'FALLO: máximo vacío o zapato sin referencia no deben cambiar precios ni crear productos (%)', r;
+  end if;
+  execute 'reset role';
+  select precio_maximo, stock_actual into v_max, v_stock from public.productos_calzado where id = v_t38;
+  if v_max is not null or v_stock <> 3 then raise exception 'FALLO: el máximo debía seguir vacío (%) y el stock en 3 (%)', v_max, v_stock; end if;
+  select count(*), max(stock_actual) into v_n, v_stock from public.productos_calzado where descripcion = 'Chancla Playa';
+  if v_n <> 1 or v_stock <> 4 then raise exception 'FALLO: la chancla sin referencia se duplicó (% filas) o no subió (%)', v_n, v_stock; end if;
+  perform pg_temp.como(v_dueno);
+  v_err := pg_temp.error_de(format('select public.registrar_compra(%L)', jsonb_build_object(
+    'proveedor_id', v_prov, 'condicion_pago', 'contado',
+    'items', jsonb_build_array(jsonb_build_object('producto_id', v_t38, 'cantidad', 1, 'costo_unitario', 1, 'precio_minimo', 90000, 'precio_maximo', 80000)))));
+  if v_err not like '%no pasar del máximo%' then raise exception 'FALLO: mínimo mayor que el máximo (%)', v_err; end if;
+
   -- ===== Sin `costos` no registra facturas =====
   perform pg_temp.como(v_ana);
   v_err := pg_temp.error_de(format('select public.registrar_compra(%L)', v_factura));

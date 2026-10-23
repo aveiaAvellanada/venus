@@ -25,7 +25,8 @@ export interface RangoPrecio {
 export interface TallaExistente {
   id: string
   precio_minimo: number
-  precio_maximo: number
+  // El máximo es opcional (null = sin máximo).
+  precio_maximo: number | null
   foto_url?: string | null
 }
 
@@ -60,6 +61,11 @@ export interface Factura {
 const n = (talla: string) => Number(talla)
 // Como se escribe un monto en pantalla: "60.000".
 export const miles = (v: number): string => Math.round(v).toLocaleString('es-CO')
+// Máximo de un rango: vacío = sin máximo (null).
+export const maximoDe = (r: RangoPrecio): number | null => {
+  const v = leerPesos(r.maximo)
+  return Number.isNaN(v) ? null : v
+}
 export const enRango = (r: RangoPrecio, talla: string) => n(talla) >= n(r.desde) && n(talla) <= n(r.hasta)
 
 export function rangoDeTalla(fila: FilaFactura, talla: string): RangoPrecio | undefined {
@@ -142,7 +148,7 @@ export function rangosDesdeExistentes(
     return {
       costo: costo == null ? '' : miles(costo),
       minimo: miles(Number(e.precio_minimo)),
-      maximo: miles(Number(e.precio_maximo)),
+      maximo: e.precio_maximo == null ? '' : miles(Number(e.precio_maximo)),
     }
   }
   const rangos: RangoPrecio[] = []
@@ -199,7 +205,7 @@ export function resumenFactura(f: Factura): ResumenFactura {
       const e = fila.existentes[talla]
       const r = rangoDeTalla(fila, talla)
       if (!e) tallasNuevas++
-      else if (r && (leerPesos(r.minimo) !== Number(e.precio_minimo) || leerPesos(r.maximo) !== Number(e.precio_maximo))) preciosCambiados++
+      else if (r && (leerPesos(r.minimo) !== Number(e.precio_minimo) || maximoDe(r) !== (e.precio_maximo == null ? null : Number(e.precio_maximo)))) preciosCambiados++
     }
   }
   return {
@@ -211,7 +217,13 @@ export function resumenFactura(f: Factura): ResumenFactura {
   }
 }
 
-const nombreFila = (fila: FilaFactura, i: number) => fila.referencia.trim() || fila.descripcion.trim() || `la fila ${i + 1}`
+// "TA-1 Negro": con el color, para distinguir dos colores de la misma referencia.
+const nombreFila = (fila: FilaFactura, i: number) => {
+  const nombre = fila.referencia.trim() || fila.descripcion.trim()
+  if (!nombre) return `la fila ${i + 1}`
+  const color = nombreColores(fila.color)
+  return color ? `${nombre} ${color}` : nombre
+}
 
 // Errores que impiden guardar (la base vuelve a validar todo).
 export function erroresFactura(f: Factura, hoy: string): string[] {
@@ -229,7 +241,9 @@ export function erroresFactura(f: Factura, hoy: string): string[] {
     const textoMalo = Object.entries(fila.cantidades).some(([, v]) => v.trim() !== '' && cantidad(v) === 0)
     if (textoMalo) errores.push(`En ${nombreFila(fila, i)} hay cantidades que no son números enteros.`)
     if (!tallas.length) return
-    if (coloresDeNombre(fila.color).length > MAX_COLORES) errores.push(`En ${nombreFila(fila, i)}: ${MENSAJE_MAX_COLORES}`)
+    if (coloresDeNombre(fila.color).length > MAX_COLORES) {
+      errores.push(`En ${fila.referencia.trim() || fila.descripcion.trim() || `la fila ${i + 1}`}: ${MENSAJE_MAX_COLORES}`)
+    }
     const hayNuevas = tallas.some((x) => !fila.existentes[x.talla])
     if (hayNuevas && !fila.descripcion.trim()) errores.push(`Falta la descripción de ${nombreFila(fila, i)}.`)
     if (hayNuevas && !fila.categoria) errores.push(`Falta la categoría de ${nombreFila(fila, i)}.`)
@@ -240,9 +254,10 @@ export function erroresFactura(f: Factura, hoy: string): string[] {
       const maximo = leerPesos(r.maximo)
       const tramo = r.desde === r.hasta ? `talla ${r.desde}` : `tallas ${r.desde}–${r.hasta}`
       if (Number.isNaN(costo) || costo < 0) errores.push(`Falta el costo de ${nombreFila(fila, i)} (${tramo}).`)
-      if (Number.isNaN(minimo) || Number.isNaN(maximo) || minimo <= 0) {
-        errores.push(`Faltan los precios de ${nombreFila(fila, i)} (${tramo}).`)
-      } else if (minimo > maximo) {
+      // El máximo es opcional; si está, no puede ser menor que el mínimo.
+      if (Number.isNaN(minimo) || minimo <= 0) {
+        errores.push(`Falta el precio mínimo de ${nombreFila(fila, i)} (${tramo}).`)
+      } else if (!Number.isNaN(maximo) && minimo > maximo) {
         errores.push(`En ${nombreFila(fila, i)} (${tramo}) el precio mínimo pasa del máximo.`)
       }
     }
@@ -279,7 +294,7 @@ export interface ItemCompra {
   cantidad: number
   costo_unitario: number
   precio_minimo: number
-  precio_maximo: number
+  precio_maximo: number | null
 }
 
 // Lo que recibe registrar_compra: una entrada por talla con cantidad.
@@ -292,7 +307,7 @@ export function itemsDeFactura(f: Factura): ItemCompra[] {
         cantidad: c,
         costo_unitario: leerPesos(r.costo),
         precio_minimo: leerPesos(r.minimo),
-        precio_maximo: leerPesos(r.maximo),
+        precio_maximo: maximoDe(r),
       }
       const e = fila.existentes[talla]
       if (e) return { producto_id: e.id, ...precios }

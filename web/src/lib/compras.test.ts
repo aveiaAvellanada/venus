@@ -158,3 +158,23 @@ describe('otro color, foto y dos colores', () => {
     expect(partesColor(unirColores('Verde', 'neón '))).toEqual(['Verde', 'neón '])
   })
 })
+
+describe('precio máximo opcional', () => {
+  const sinMax = [{ desde: '20', hasta: '45', costo: '50.000', minimo: '80.000', maximo: '' }]
+  const existentes = { '38': { id: 'a38', precio_minimo: 80000, precio_maximo: null } }
+
+  it('sin máximo no es un error ni un cambio de precio, y va como null', () => {
+    const f = factura([{ ...filaVacia('a'), referencia: 'SM-1', descripcion: 'Sin máximo', categoria: 'Tennis', color: 'Gris',
+      existentes, cantidades: { '38': '1' }, rangos: sinMax }])
+    expect(erroresFactura(f, HOY)).toEqual([])
+    expect(resumenFactura(f).preciosCambiados).toBe(0)
+    expect(payloadFactura(f).items[0]).toMatchObject({ producto_id: 'a38', precio_maximo: null })
+    expect(rangosDesdeExistentes(existentes)[0].maximo).toBe('')
+  })
+
+  it('si hay máximo no puede ser menor que el mínimo', () => {
+    const f = factura([{ ...filaVacia('a'), referencia: 'SM-1', descripcion: 'X', categoria: 'Tennis', color: 'Gris',
+      cantidades: { '38': '1' }, rangos: [{ ...sinMax[0], maximo: '70.000' }] }])
+    expect(erroresFactura(f, HOY)).toEqual(['En SM-1 Gris (tallas 20–45) el precio mínimo pasa del máximo.'])
+  })
+})

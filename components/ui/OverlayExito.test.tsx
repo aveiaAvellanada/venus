@@ -1,3 +1,4 @@
+import { paletaClara } from '../../lib/theme'
 import React from 'react'
 // @ts-ignore
 import renderer, { act } from 'react-test-renderer'
@@ -50,5 +51,13 @@ describe('OverlayExito', () => {
     expect(arbol!.toJSON()).toBeNull()
     act(() => { jest.advanceTimersByTime(2000) })
     expect(onFin).not.toHaveBeenCalled()
+  })
+
+  test('el sello y el mensaje son del verde de caja abierta', async () => {
+    const arbol = await montar(true, 'Venta exitosa', jest.fn())
+    const sello = arbol!.root.findAll((n) => n.props.testID === 'sello-exito')[0]
+    expect(Object.assign({}, ...[sello.props.style].flat()).backgroundColor).toBe(paletaClara.verdeSoft)
+    const texto = arbol!.root.findAll((n) => n.props.children === 'Venta exitosa' && n.props.style)[0]
+    expect(Object.assign({}, ...[texto.props.style].flat(3).filter(Boolean)).color).toBe(paletaClara.verdeTexto)
   })
 })

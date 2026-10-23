@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { View, Text, ActivityIndicator, Linking } from 'react-native'
 import { useRouter } from 'expo-router'
-import { ArrowLeft, Check } from 'lucide-react-native'
+import { ArrowLeft } from 'lucide-react-native'
 import { obtenerArqueoCaja, cerrarCaja, type ArqueoCaja } from '../../../lib/caja'
 import { dispararReporteCorreo, obtenerReporteDiario, construirLinkWhatsapp } from '../../../lib/reporteDiario'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
 import { useTema } from '../../../lib/tema'
 import type { Paleta } from '../../../lib/theme'
 import { espacio, tabular, tipografia } from '../../../lib/theme'
-import { Boton, CampoTexto, OverlayExito, Presionable, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
+import { Boton, CampoTexto, OverlayExito, Presionable, SelloExito, Tarjeta, useToast, ScreenWrapper } from '../../../components/ui'
 
 const pesos = (n: number) => '$' + n.toLocaleString('es-CO')
 
@@ -132,7 +132,7 @@ export default function CierreCaja() {
       <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
         <Encabezado paleta={paleta} onVolver={() => router.replace('/caja')} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: espacio.xl, gap: espacio.l }}>
-          <Check size={64} color={paleta.exito} strokeWidth={2.5} />
+          <SelloExito tamano={96} />
           <Text style={[tipografia.h1, { color: paleta.texto, textAlign: 'center' }]}>Caja cerrada</Text>
           <Text style={[tipografia.cuerpo, { color: paleta.texto2, textAlign: 'center' }]}>
             La caja se cerró exitosamente.

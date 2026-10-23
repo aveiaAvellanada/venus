@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { Text } from 'react-native'
+import { Text, View } from 'react-native'
 import { CircleAlert, CircleCheck, Info } from 'lucide-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Animated, { FadeIn, FadeInDown, FadeOut, useReducedMotion } from 'react-native-reanimated'
@@ -47,7 +47,8 @@ function VistaToast({ mensaje, tipo }: { mensaje: string; tipo: TipoToast }) {
 
   const Icono = { exito: CircleCheck, error: CircleAlert, info: Info }[tipo]
   const color = {
-    exito: paleta.exitoTexto,
+    // Éxito con el verde de "caja abierta", igual que la animación de venta exitosa.
+    exito: paleta.verdeTexto,
     error: paleta.peligroTexto,
     info: paleta.texto2,
   }[tipo]
@@ -80,7 +81,13 @@ function VistaToast({ mensaje, tipo }: { mensaje: string; tipo: TipoToast }) {
         elevation: 6,
       }}
     >
-      <Icono size={20} color={color} />
+      {tipo === 'exito' ? (
+        <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: paleta.verdeSoft, alignItems: 'center', justifyContent: 'center' }}>
+          <Icono size={18} color={color} />
+        </View>
+      ) : (
+        <Icono size={20} color={color} />
+      )}
       <Text style={[tipografia.cuerpo, { color: paleta.texto, flex: 1 }]} numberOfLines={2}>
         {mensaje}
       </Text>

@@ -178,11 +178,12 @@ export default function NuevaCompraScreen() {
     if (!f || !borrador || !perfil) return
     setGuardando(true)
     try {
-      const destino = '/recibir-mercancia'
+      let destino = '/recibir-mercancia'
       let fotoFallo = false
       let archivoFallo = false
       if (conCostos) {
         const r = await registrarCompra(f, borrador.clave)
+        destino = `/recibir-mercancia/${r.compra_id}`
 
         try { await fijarFotos(r.compra_id, f) } catch { fotoFallo = true }
         if (adjunto) {

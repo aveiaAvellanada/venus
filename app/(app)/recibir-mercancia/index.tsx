@@ -1,295 +1,194 @@
-import React, { useState, useCallback } from 'react'
-import { View, Text, FlatList, ActivityIndicator, RefreshControl } from 'react-native'
-import { useRouter, useFocusEffect } from 'expo-router'
-import {
-  ArrowLeft,
-  Building2,
-  CalendarDays,
-  ChevronRight,
-  CircleAlert,
-  FileText,
-  Hash,
-  Info,
-  Plus,
-  ShieldCheck,
-  User,
-} from 'lucide-react-native'
+import React, { useCallback, useMemo, useState } from 'react'
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
+import { useFocusEffect, useRouter } from 'expo-router'
+import { ArrowLeft, CircleAlert, FileText, Plus, Search } from 'lucide-react-native'
+import { hoyEn } from '../../../shared/fechas'
+import { pesos } from '../../../shared/formato'
 import { useAuth, useRequireModulo } from '../../../lib/auth'
 import { tienePermiso } from '../../../lib/permisos'
 import { usePaddingInferior } from '../../../hooks/usePaddingInferior'
-import { listarCompras, listarProveedores, type Compra } from '../../../lib/proveedores'
-import { supabase } from '../../../lib/supabase'
+import {
+  diasHasta, esPorPagar, estadoCompra, filtrarCompras, listarCompras, type CompraListado, type FiltroCompras,
+} from '../../../lib/compras'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../../lib/theme'
-import { Badge, Boton, CirculoIcono, EstadoVacio, Presionable, Tarjeta } from '../../../components/ui'
+import { Badge, Boton, CampoTexto, Chip, EstadoVacio, Presionable, Tarjeta } from '../../../components/ui'
+import { fechaCorta } from '../../../components/compras/Campos'
 
-export default function RecibirMercanciaIndex() {
+const FILTROS: { clave: FiltroCompras; etiqueta: string }[] = [
+  { clave: 'todas', etiqueta: 'Todas' },
+  { clave: 'por_pagar', etiqueta: 'Por pagar' },
+  { clave: 'pendientes', etiqueta: 'Pendientes de costos' },
+]
+
+// Compras (con `costos` o `deudas`: todas, con lo que se debe) y llegadas de
+// mercancía pendientes (sin esos permisos: solo las propias por completar).
+export default function ComprasScreen() {
   const requireModulo = useRequireModulo('recibir-mercancia')
   const { perfil } = useAuth()
-  // costos: completar la llegada (y ver totales); proveedores: ver las de todo el equipo.
-  const verCostos = tienePermiso(perfil, 'costos')
-  const verTodas = verCostos || tienePermiso(perfil, 'proveedores')
   const router = useRouter()
   const { paleta } = useTema()
-  const paddingInferior = usePaddingInferior(100)
+  const paddingInferior = usePaddingInferior(110)
   const bottomFab = usePaddingInferior(espacio.xl)
+  const hoy = hoyEn()
 
-  const [compras, setCompras] = useState<Compra[]>([])
-  const [proveedoresMap, setProveedoresMap] = useState<Record<string, string>>({})
-  const [usuariosMap, setUsuariosMap] = useState<Record<string, string>>({})
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const verTodo = tienePermiso(perfil, 'costos') || tienePermiso(perfil, 'deudas')
+  const conCostos = tienePermiso(perfil, 'costos')
 
-  const cargarDatos = useCallback(async (isRefresh = false) => {
-    if (!perfil) return
-    if (!isRefresh) setLoading(true)
-    setError(null)
+  const [compras, setCompras] = useState<CompraListado[]>([])
+  const [cargando, setCargando] = useState(true)
+  const [refrescando, setRefrescando] = useState(false)
+  const [error, setError] = useState(false)
+  const [filtro, setFiltro] = useState<FiltroCompras>('todas')
+  const [texto, setTexto] = useState('')
+
+  const cargar = useCallback(async () => {
+    setError(false)
     try {
-      // 1. Fetch active/inactive providers for name mapping
-      const provList = await listarProveedores()
-      const provMap: Record<string, string> = {}
-      provList.forEach((p) => {
-        provMap[p.id] = p.nombre
-      })
-      setProveedoresMap(provMap)
-
-      // 2. Nombres de quién registró cada llegada (solo si ve las de todos)
-      if (verTodas) {
-        const { data: userList, error: userError } = await supabase
-          .from('users')
-          .select('id, nombre')
-
-        if (userError) {
-          console.error('Error al cargar nombres de usuarios:', userError.message)
-        } else if (userList) {
-          const userMap: Record<string, string> = {}
-          userList.forEach((u) => {
-            userMap[u.id] = u.nombre
-          })
-          setUsuariosMap(userMap)
-        }
-      }
-
-      // 3. Fetch pending arrivals
-      const comprasList = await listarCompras({ estado: 'pendiente_revision' })
-
-      // RLS already filters at the DB level, but we add client-side check for redundancy and safety
-      if (!verTodas) {
-        setCompras(comprasList.filter((c) => c.registrada_por === perfil.id))
-      } else {
-        setCompras(comprasList)
-      }
-    } catch (err: any) {
-      console.error('Error al cargar entradas de mercancía:', err)
-      setError('No se pudieron cargar las entradas de mercancía. Intenta de nuevo.')
+      setCompras(await listarCompras())
+    } catch {
+      setError(true)
     } finally {
-      setLoading(false)
-      setRefreshing(false)
+      setCargando(false)
+      setRefrescando(false)
     }
-  }, [perfil])
+  }, [])
 
-  // Trigger reloading on focus to ensure dynamic list updates
-  useFocusEffect(
-    useCallback(() => {
-      cargarDatos()
-    }, [cargarDatos])
+  useFocusEffect(useCallback(() => { cargar() }, [cargar]))
+
+  const visibles = useMemo(
+    () => filtrarCompras(compras, verTodo ? filtro : 'pendientes', texto),
+    [compras, filtro, texto, verTodo],
   )
+  const porPagar = compras.filter(esPorPagar)
+  const deuda = porPagar.reduce((s, c) => s + c.saldo_pendiente, 0)
+  const vencido = porPagar
+    .filter((c) => c.fecha_vencimiento && diasHasta(c.fecha_vencimiento, hoy) < 0)
+    .reduce((s, c) => s + c.saldo_pendiente, 0)
 
-  const onRefresh = () => {
-    setRefreshing(true)
-    cargarDatos(true)
-  }
-
-  // Early redirect if permissions check fails
   if (requireModulo) return requireModulo
 
-  const renderCompra = ({ item }: { item: Compra }) => {
-    const providerName = proveedoresMap[item.proveedor_id] || 'Proveedor desconocido'
-    const dateFormatted = new Date(item.created_at).toLocaleDateString('es-CO', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-
-    // Resolve registrar name
-    let registeredByText = 'Cargando...'
-    if (item.registrada_por === perfil?.id) {
-      registeredByText = 'Registrado por ti'
-    } else if (item.registrada_por) {
-      registeredByText = usuariosMap[item.registrada_por] || 'Otro empleado'
-    }
-
-    const contenido = (
-      <Tarjeta>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.m }}>
-          <CirculoIcono tono="primario">
-            <Building2 />
-          </CirculoIcono>
-          <View style={{ flex: 1 }}>
-            <Text style={[tipografia.h3, { color: paleta.texto }]} numberOfLines={1}>
-              {providerName}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.xs, marginTop: 2 }}>
-              <CalendarDays size={13} color={paleta.texto3} />
-              <Text style={[tipografia.caption, { color: paleta.texto3 }]}>{dateFormatted}</Text>
+  const cabecera = (
+    <View style={{ gap: espacio.l, paddingBottom: espacio.m }}>
+      {verTodo && tienePermiso(perfil, 'deudas') ? (
+        <View style={{ flexDirection: 'row', gap: espacio.s }}>
+          <Tarjeta estilo={{ flex: 1 }}>
+            <Text style={[tipografia.micro, { color: paleta.texto3 }]}>Por pagar</Text>
+            <Text style={[tipografia.h3, tabular, { color: paleta.texto }]}>{pesos(deuda)}</Text>
+          </Tarjeta>
+          <Tarjeta estilo={{ flex: 1, ...(vencido ? { borderColor: paleta.salmonBorde, backgroundColor: paleta.salmonSoft } : {}) }}>
+            <Text style={[tipografia.micro, { color: vencido ? paleta.salmonTexto : paleta.texto3 }]}>Vencido</Text>
+            <Text style={[tipografia.h3, tabular, { color: vencido ? paleta.salmonTexto : paleta.texto }]}>{pesos(vencido)}</Text>
+          </Tarjeta>
+        </View>
+      ) : null}
+      {verTodo ? (
+        <>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.s }}>
+            <Search size={18} color={paleta.texto3} />
+            <View style={{ flex: 1 }}>
+              <CampoTexto placeholder="Proveedor o número de factura" value={texto} onChangeText={setTexto} autoCorrect={false} />
             </View>
           </View>
-          {verCostos && <ChevronRight size={20} color={paleta.texto3} />}
-        </View>
-
-        <View style={{
-          gap: espacio.xs, borderTopWidth: 1, borderTopColor: paleta.borde,
-          paddingTop: espacio.m, marginTop: espacio.m,
-        }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.xs }}>
-            <Hash size={13} color={paleta.texto3} />
-            <Text style={[tipografia.caption, { color: paleta.texto2 }]}>
-              ID: {item.id.substring(0, 8).toUpperCase()}
-            </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s }}>
+            {FILTROS.map((x) => (
+              <Chip key={x.clave} etiqueta={x.etiqueta} activo={filtro === x.clave} onPress={() => setFiltro(x.clave)} />
+            ))}
           </View>
-
-          {verTodas && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: espacio.xs }}>
-              <User size={13} color={paleta.texto3} />
-              <Text style={[tipografia.caption, { color: paleta.texto2 }]}>{registeredByText}</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={{
-          flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-          borderTopWidth: 1, borderTopColor: paleta.borde, paddingTop: espacio.m, marginTop: espacio.m,
-        }}>
-          <Badge texto="Pendiente revisión" tipo="advertencia" punto />
-          {/* Solo quien tiene el permiso de costos ve valores en las tarjetas. */}
-          {verCostos && item.total !== null && (
-            <Text style={[tipografia.h3, tabular, { color: paleta.exitoTexto }]}>
-              Total: ${item.total.toLocaleString()}
-            </Text>
-          )}
-        </View>
-      </Tarjeta>
-    )
-
-    return (
-      <View style={{ marginBottom: espacio.m }}>
-        {verCostos ? (
-          <Presionable
-            accessibilityRole="button"
-            accessibilityLabel={`Ver recepción de ${providerName}`}
-            onPress={() => router.push(`/recibir-mercancia/completar/${item.id}`)}
-          >
-            {contenido}
-          </Presionable>
-        ) : (
-          contenido
-        )}
-      </View>
-    )
-  }
+        </>
+      ) : (
+        <Text style={[tipografia.caption, { color: paleta.texto2 }]}>
+          Tus llegadas de mercancía que esperan que se completen los costos.
+        </Text>
+      )}
+    </View>
+  )
 
   return (
     <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-      {/* Header */}
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: espacio.m,
         paddingHorizontal: espacio.xl, paddingTop: 56, paddingBottom: espacio.m,
       }}>
-        <Presionable accessibilityRole="button" accessibilityLabel="Volver"
-          onPress={() => router.back()} hitSlop={12}>
+        <Presionable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} hitSlop={12}>
           <ArrowLeft size={24} color={paleta.texto} />
         </Presionable>
-        <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>Entradas de Mercancía</Text>
+        <Text style={[tipografia.h2, { color: paleta.texto, flex: 1 }]}>{verTodo ? 'Compras' : 'Mercancía recibida'}</Text>
       </View>
 
-      {/* Banner message based on user role */}
-      <View style={{
-        flexDirection: 'row', alignItems: 'center', gap: espacio.s,
-        backgroundColor: paleta.primarioSoft, marginHorizontal: espacio.xl,
-        padding: espacio.m, borderRadius: radio.md,
-      }}>
-        {!verTodas ? (
-          <Info size={20} color={paleta.primario} />
-        ) : (
-          <ShieldCheck size={20} color={paleta.primario} />
-        )}
-        <Text style={[tipografia.caption, { color: paleta.texto2, flex: 1 }]}>
-          {verCostos
-            ? 'Revisa y completa los costos unitarios y plazos de pago para ingresar stock.'
-            : verTodas
-              ? 'Llegadas de mercancía pendientes de que se completen sus costos.'
-              : 'Lista de tus recepciones de calzado enviadas a revisión.'}
-        </Text>
-      </View>
-
-      {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl }}>
-          <ActivityIndicator size="large" color={paleta.primario} />
-        </View>
+      {cargando ? (
+        <ActivityIndicator style={{ marginTop: espacio.xxxl }} color={paleta.primario} />
       ) : error ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, gap: espacio.l }}>
-          <EstadoVacio icono={<CircleAlert />} titulo={error} />
-          <Boton titulo="Reintentar" variante="secundario" tamano="md" onPress={() => cargarDatos()} />
+        <View style={{ padding: espacio.xl, gap: espacio.l }}>
+          <EstadoVacio icono={<CircleAlert />} titulo="No se pudieron cargar las compras" />
+          <Boton titulo="Reintentar" variante="secundario" onPress={() => { setCargando(true); cargar() }} />
         </View>
       ) : (
-        <>
-          {verTodas && (
-            <View style={{ paddingHorizontal: espacio.xl, marginTop: espacio.l }}>
-              <Text style={[tipografia.h3, { color: paleta.texto }]}>Pendientes de Revisión</Text>
-            </View>
-          )}
-          <FlatList
-            data={compras}
-            keyExtractor={(item) => item.id}
-            renderItem={renderCompra}
-            contentContainerStyle={{ padding: espacio.xl, paddingBottom: paddingInferior }}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[paleta.primario]} />
-            }
-            ListEmptyComponent={
-              <EstadoVacio
-                icono={<FileText />}
-                titulo={
-                  !verTodas
-                    ? 'No has registrado entradas pendientes.'
-                    : 'No hay entradas de mercancía pendientes de revisión.'
-                }
-              />
-            }
-          />
-        </>
+        <FlatList
+          data={visibles}
+          keyExtractor={(c) => c.id}
+          ListHeaderComponent={cabecera}
+          contentContainerStyle={{ paddingHorizontal: espacio.xl, paddingBottom: paddingInferior, gap: espacio.m }}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={<RefreshControl refreshing={refrescando} onRefresh={() => { setRefrescando(true); cargar() }} colors={[paleta.primario]} />}
+          ListEmptyComponent={
+            <EstadoVacio
+              icono={<FileText />}
+              titulo={compras.length ? 'Ninguna compra coincide' : verTodo ? 'Todavía no hay compras' : 'No tienes llegadas pendientes'}
+              mensaje={compras.length ? undefined : 'Registra la primera con el botón +.'}
+            />
+          }
+          renderItem={({ item }) => <FilaCompra compra={item} hoy={hoy} verMontos={verTodo} onPress={() => router.push(`/recibir-mercancia/${item.id}`)} />}
+        />
       )}
 
-      {/* Floating Action Button (FAB) para registrar una nueva llegada */}
-      <Presionable
+      <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Registrar entrada de mercancía"
-        onPress={() => router.push('/recibir-mercancia/nueva')}
-        hitSlop={8}
+        accessibilityLabel={conCostos ? 'Nueva compra' : 'Recibir mercancía'}
         testID="registrar-entrada-fab"
-        style={{
-          position: 'absolute',
-          bottom: bottomFab,
-          right: espacio.xl,
-          width: 56,
-          height: 56,
-          borderRadius: radio.full,
-          backgroundColor: paleta.primario,
-          justifyContent: 'center',
-          alignItems: 'center',
-          shadowColor: paleta.sombraFab,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 1,
-          shadowRadius: 10,
-          elevation: 6,
-        }}
+        onPress={() => router.push('/recibir-mercancia/nueva')}
+        style={({ pressed }) => ({
+          position: 'absolute', right: espacio.xl, bottom: bottomFab,
+          flexDirection: 'row', alignItems: 'center', gap: espacio.s,
+          height: 56, paddingHorizontal: espacio.xl, borderRadius: radio.full,
+          backgroundColor: paleta.primario, opacity: pressed ? 0.85 : 1,
+          shadowColor: paleta.sombraFab, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 1, shadowRadius: 10, elevation: 6,
+        })}
       >
-        <Plus size={28} color={paleta.sobrePrimario} />
-      </Presionable>
+        <Plus size={22} color={paleta.sobrePrimario} />
+        <Text style={[tipografia.cuerpoLg, { color: paleta.sobrePrimario }]}>{conCostos ? 'Nueva compra' : 'Recibir'}</Text>
+      </Pressable>
     </View>
+  )
+}
+
+function FilaCompra({ compra: c, hoy, verMontos, onPress }: { compra: CompraListado; hoy: string; verMontos: boolean; onPress: () => void }) {
+  const { paleta } = useTema()
+  const estado = estadoCompra(c, hoy)
+  const fecha = c.fecha_factura ? fechaCorta(c.fecha_factura) : fechaCorta(c.created_at.slice(0, 10))
+  return (
+    <Tarjeta onPress={onPress}>
+      <View style={{ gap: espacio.s }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: espacio.m }}>
+          <View style={{ flex: 1 }}>
+            <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]} numberOfLines={1}>{c.proveedor}</Text>
+            <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+              {[fecha, c.numero_factura, `${c.pares} pares`].filter(Boolean).join(' · ')}
+            </Text>
+          </View>
+          {verMontos && c.total != null ? (
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={[tipografia.h3, tabular, { color: paleta.texto }]}>{pesos(c.total)}</Text>
+              {esPorPagar(c) && c.saldo_pendiente < (c.total ?? 0) ? (
+                <Text style={[tipografia.caption, tabular, { color: paleta.texto3 }]}>debe {pesos(c.saldo_pendiente)}</Text>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+        <View style={{ flexDirection: 'row' }}>
+          <Badge texto={estado.texto} tipo={estado.tipo} />
+        </View>
+      </View>
+    </Tarjeta>
   )
 }

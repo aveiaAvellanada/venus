@@ -23,10 +23,10 @@ declare
   rpc_app text[] := array[
     'abrir_caja', 'actualizar_empleado', 'cambiar_estado_empleado', 'cambiar_mi_pin', 'cerrar_caja',
     'crear_empleado', 'fijar_garantia_referencia', 'guardar_producto_calzado', 'guardar_tramos_precio', 'obtener_arqueo_caja', 'obtener_balance',
-    'obtener_base_predeterminada', 'obtener_dashboard_dueno', 'obtener_deuda_proveedor',
+    'obtener_base_predeterminada', 'obtener_costos_productos', 'obtener_dashboard_dueno', 'obtener_deuda_proveedor',
     'obtener_dias_trabajados', 'obtener_gastos_periodo', 'obtener_reporte_diario',
     'obtener_reporte_periodo', 'obtener_resumen_dia', 'obtener_ventas_por_subperiodo', 'reabrir_caja',
-    'registrar_devolucion', 'registrar_venta', 'restablecer_pin_empleado'
+    'registrar_compra', 'registrar_devolucion', 'registrar_pago_proveedor', 'registrar_venta', 'restablecer_pin_empleado'
   ];
 begin
   -- 1. RLS activado en todas las tablas de public.

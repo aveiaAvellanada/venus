@@ -373,3 +373,20 @@ export function filtrarCompras(compras: CompraListado[], filtro: FiltroCompras, 
 // Días hasta el vencimiento (negativo = vencida). Fechas YYYY-MM-DD.
 export const diasHasta = (fecha: string, hoy: string) =>
   Math.round((Date.parse(`${fecha}T12:00:00Z`) - Date.parse(`${hoy}T12:00:00Z`)) / 86_400_000)
+
+// Estado de una compra para su insignia: pendiente de costos, vencida, por
+// vencer, a crédito con saldo o pagada.
+export function estadoCompra(
+  c: Pick<CompraListado, 'estado' | 'condicion_pago' | 'saldo_pendiente' | 'fecha_vencimiento'>, hoy: string,
+): { texto: string; tipo: 'advertencia' | 'neutro' | 'salmon' | 'peligro' | 'verde' } {
+  if (c.estado === 'pendiente_revision') return { texto: 'PENDIENTE DE COSTOS', tipo: 'advertencia' }
+  if (c.estado === 'cancelada') return { texto: 'CANCELADA', tipo: 'neutro' }
+  if (esPorPagar(c)) {
+    if (!c.fecha_vencimiento) return { texto: 'POR PAGAR', tipo: 'salmon' }
+    const d = diasHasta(c.fecha_vencimiento, hoy)
+    if (d < 0) return { texto: `VENCIDA HACE ${-d} D`, tipo: 'peligro' }
+    if (d === 0) return { texto: 'VENCE HOY', tipo: 'salmon' }
+    return { texto: `VENCE EN ${d} D`, tipo: d <= 7 ? 'salmon' : 'neutro' }
+  }
+  return { texto: c.condicion_pago === 'credito' ? 'PAGADA' : 'CONTADO', tipo: 'verde' }
+}

@@ -9,9 +9,10 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
 
+let mockParams: { id?: string } = { id: 'c1' }
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
-  useLocalSearchParams: () => ({ id: 'c1' }),
+  useLocalSearchParams: () => mockParams,
 }))
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -48,14 +49,18 @@ jest.mock('./auth', () => ({
   useRequireModulo: () => null,
 }))
 
-jest.mock('./inventario', () => ({ guardarCalzado: jest.fn() }))
+jest.mock('./inventario', () => ({
+  guardarCalzado: jest.fn(async () => undefined),
+  referenciaParaModelo: jest.fn(async () => 'TEN-VENU-007'),
+}))
 jest.mock('./tramos', () => ({ claveReferencia: (r: string) => r.trim().toLowerCase() || null, fijarGarantiaReferencia: jest.fn() }))
 jest.mock('../components/PreciosPorTalla', () => ({ PreciosPorTalla: () => null }))
 
-const URL_SUBIDA = 'https://dummy-url.supabase.co/storage/v1/object/public/productos/azul.jpg'
-jest.mock('./imagenes', () => ({ comprimirYSubirImagen: jest.fn(async () => URL_SUBIDA) }))
+const FOTO_ELEGIDA = 'file:///azul.jpg'
+const URL_SUBIDA = 'https://dummy-url.supabase.co/storage/v1/object/public/productos/catalogo/demo-zeus-alto-azul.webp?v=1'
+jest.mock('./imagenes', () => ({ subirFotoCalzado: jest.fn(async () => URL_SUBIDA) }))
 jest.mock('expo-image-picker', () => ({
-  launchImageLibraryAsync: jest.fn(async () => ({ canceled: false, assets: [{ uri: 'file:///azul.jpg' }] })),
+  launchImageLibraryAsync: jest.fn(async () => ({ canceled: false, assets: [{ uri: FOTO_ELEGIDA }] })),
   launchCameraAsync: jest.fn(),
 }))
 
@@ -63,9 +68,23 @@ import { TemaProvider } from './tema'
 import { ToastProvider } from '../components/ui'
 import CalzadoEditorScreen from '../app/(app)/inventario/calzado/editor'
 import { perfilPrueba } from './perfilPrueba'
+import { guardarCalzado, referenciaParaModelo } from './inventario'
+import { subirFotoCalzado } from './imagenes'
 
 // Cada llamada arma un objeto nuevo, como hace recargarPerfil al volver a la app.
 const conPerfilNuevo = () => mockUseAuth.mockReturnValue({ perfil: perfilPrueba('dueno') })
+
+// Se desmontan al terminar: el toast deja un temporizador vivo.
+let montados: ReturnType<typeof renderer.create>[] = []
+afterEach(() => {
+  act(() => montados.forEach((a) => a.unmount()))
+  montados = []
+})
+const crear = (elemento: React.ReactElement) => {
+  const arbol = renderer.create(elemento)
+  montados.push(arbol)
+  return arbol
+}
 
 const arbolEditor = () => (
   <TemaProvider>
@@ -75,12 +94,24 @@ const arbolEditor = () => (
   </TemaProvider>
 )
 
+// Elegir "Galería" en el diálogo de la foto.
+async function elegirDeGaleria(arbol: ReturnType<typeof renderer.create>) {
+  jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, botones) => {
+    botones?.find((b) => b.text === 'Galería')?.onPress?.()
+  })
+  const botonFoto = arbol.root.findAllByProps({ accessibilityLabel: 'Añadir foto' }).find((n: { props: { onPress?: () => void } }) => n.props.onPress)!
+  await act(async () => {
+    botonFoto.props.onPress()
+  })
+}
+
 const fotosMostradas = (arbol: ReturnType<typeof renderer.create>) =>
   arbol.root.findAllByType(Image).map((n: { props: { source?: { uri?: string } } }) => n.props.source?.uri)
 
 describe('Editor de calzado: volver de la cámara o la galería', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockParams = { id: 'c1' }
     mockLecturasProducto = 0
     conPerfilNuevo()
   })
@@ -88,7 +119,7 @@ describe('Editor de calzado: volver de la cámara o la galería', () => {
   it('no vuelve a leer el producto cuando se relee el perfil', async () => {
     let arbol!: ReturnType<typeof renderer.create>
     await act(async () => {
-      arbol = renderer.create(arbolEditor())
+      arbol = crear(arbolEditor())
     })
     expect(mockLecturasProducto).toBe(1)
 
@@ -99,27 +130,96 @@ describe('Editor de calzado: volver de la cámara o la galería', () => {
     expect(mockLecturasProducto).toBe(1)
   })
 
-  it('conserva la foto recién subida aunque se relea el perfil', async () => {
+  it('conserva la foto recién elegida aunque se relea el perfil', async () => {
     let arbol!: ReturnType<typeof renderer.create>
     await act(async () => {
-      arbol = renderer.create(arbolEditor())
+      arbol = crear(arbolEditor())
     })
-
-    // Elegir "Galería" en el diálogo de la foto.
-    jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, botones) => {
-      botones?.find((b) => b.text === 'Galería')?.onPress?.()
-    })
-    const botonFoto = arbol.root.findAllByProps({ accessibilityLabel: 'Añadir foto' }).find((n: { props: { onPress?: () => void } }) => n.props.onPress)!
-    await act(async () => {
-      botonFoto.props.onPress()
-    })
-    expect(fotosMostradas(arbol)).toContain(URL_SUBIDA)
+    await elegirDeGaleria(arbol)
+    expect(fotosMostradas(arbol)).toContain(FOTO_ELEGIDA)
+    // Se sube al guardar, con el nombre que quede.
+    expect(subirFotoCalzado).not.toHaveBeenCalled()
 
     // Al volver de la galería la app relee el perfil (objeto nuevo).
     conPerfilNuevo()
     await act(async () => {
       arbol.update(arbolEditor())
     })
-    expect(fotosMostradas(arbol)).toContain(URL_SUBIDA)
+    expect(fotosMostradas(arbol)).toContain(FOTO_ELEGIDA)
+  })
+})
+
+describe('Editor de calzado: foto con nombre de referencia y color', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockParams = { id: 'c1' }
+    conPerfilNuevo()
+  })
+
+  it('al guardar sube la foto con el nombre de la referencia y el color, y guarda su URL', async () => {
+    let arbol!: ReturnType<typeof renderer.create>
+    await act(async () => {
+      arbol = crear(arbolEditor())
+    })
+    await elegirDeGaleria(arbol)
+
+    const guardar = arbol.root.findAll((n: { props: { titulo?: string; onPress?: () => void } }) => n.props.titulo === 'Actualizar producto' && !!n.props.onPress)[0]
+    await act(async () => {
+      await guardar.props.onPress()
+    })
+    expect(subirFotoCalzado).toHaveBeenCalledWith(FOTO_ELEGIDA, 'demo-zeus-alto-azul')
+    expect(guardarCalzado).toHaveBeenCalledWith(expect.objectContaining({ id: 'c1', foto_url: URL_SUBIDA, referencia: 'DEMO-ZEUS-ALTO' }))
+    // Un zapato que ya tiene referencia la conserva.
+    expect(referenciaParaModelo).not.toHaveBeenCalled()
+  })
+
+  it('si no se pudo subir la foto, no guarda el producto', async () => {
+    jest.mocked(subirFotoCalzado).mockRejectedValueOnce(new Error('sin señal'))
+    jest.spyOn(console, 'error').mockImplementation(() => undefined)
+    let arbol!: ReturnType<typeof renderer.create>
+    await act(async () => {
+      arbol = crear(arbolEditor())
+    })
+    await elegirDeGaleria(arbol)
+
+    const guardar = arbol.root.findAll((n: { props: { titulo?: string; onPress?: () => void } }) => n.props.titulo === 'Actualizar producto' && !!n.props.onPress)[0]
+    await act(async () => {
+      await guardar.props.onPress()
+    })
+    expect(guardarCalzado).not.toHaveBeenCalled()
+  })
+})
+
+describe('Editor de calzado: referencia automática', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockParams = {}
+    conPerfilNuevo()
+  })
+
+  it('un zapato nuevo no pide la referencia: la base la pone al guardar', async () => {
+    let arbol!: ReturnType<typeof renderer.create>
+    await act(async () => {
+      arbol = crear(arbolEditor())
+    })
+    expect(arbol.root.findAll((n: { props: { etiqueta?: string } }) => n.props.etiqueta === 'Referencia')).toHaveLength(0)
+
+    const campo = (etiqueta: string) => arbol.root.findAll((n: { props: { etiqueta?: string; onChangeText?: (t: string) => void } }) => n.props.etiqueta === etiqueta && !!n.props.onChangeText)[0]
+    await act(async () => {
+      arbol.root.findAll((n: { props: { etiqueta?: string; onPress?: () => void } }) => n.props.etiqueta === 'Tennis' && !!n.props.onPress)[0].props.onPress()
+      campo('Descripción *').props.onChangeText('Zeus alto')
+      campo('Marca').props.onChangeText('Venus')
+      campo('Precio mínimo *').props.onChangeText('50000')
+      campo('Stock actual *').props.onChangeText('3')
+    })
+    const guardar = arbol.root.findAll((n: { props: { titulo?: string; onPress?: () => void } }) => n.props.titulo === 'Guardar producto' && !!n.props.onPress)[0]
+    jest.spyOn(Alert, 'alert').mockImplementation(() => undefined)
+    await act(async () => {
+      await guardar.props.onPress()
+    })
+    expect(referenciaParaModelo).toHaveBeenCalledWith('Zeus alto', 'Venus', 'Tennis')
+    expect(guardarCalzado).toHaveBeenCalledWith(expect.objectContaining({ referencia: 'TEN-VENU-007', descripcion: 'Zeus alto' }))
+    const texto = (arbol.root.findAllByProps({ testID: 'referencia' })[0]?.props.children ?? '') as string
+    expect(texto).toBe('TEN-VENU-007')
   })
 })

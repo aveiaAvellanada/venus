@@ -6,8 +6,8 @@ import { Camera, CopyPlus, Scissors, Trash2, X } from 'lucide-react-native'
 import { CATEGORIAS } from '../../shared/excel'
 import { leerPesos, pesos } from '../../shared/formato'
 import {
-  claveRefColor, claveSinReferencia, dividirRango, enRango, fotoDeFila, miles, partesColor, rangosDesdeExistentes, subirFotoColor,
-  subtotalFila, TALLAS, unidadesFila, unirColores, unirRango, type FilaFactura, type TallaExistente,
+  claveRefColor, claveSinReferencia, dividirRango, enRango, fotoDeFila, fotoDesactualizada, miles, partesColor,
+  rangosDesdeExistentes, referenciaParaFila, subirFotoColor, subtotalFila, TALLAS, unidadesFila, unirColores, unirRango, type FilaFactura, type TallaExistente,
 } from '../../lib/compras'
 import { useTema } from '../../lib/tema'
 import { espacio, fuentes, radio, tabular, tipografia } from '../../lib/theme'
@@ -16,6 +16,9 @@ import { Seccion, Sugerencias } from './Campos'
 import { BarrasSistema } from '../BarrasSistema'
 import { MARGEN_SUPERIOR } from '../../hooks/usePaddingInferior'
 import { urlMiniatura } from '../../shared/fotos'
+import {
+  describirReferencia, descripcionesConocidas, referenciaPorDescripcion, type ModeloConocido,
+} from '../../shared/referencias'
 
 export interface ReferenciaConocida {
   referencia: string
@@ -33,7 +36,8 @@ interface Props {
   // cantidades de tallas que ya existen (llegada física).
   conCostos: boolean
   conocidas: Map<string, ReferenciaConocida>
-  referencias: string[]
+  // Los zapatos del inventario por descripción (shared/referencias.ts).
+  modelos: Map<string, ModeloConocido[]>
   marcas: string[]
   colores: string[]
   coloresSimples: string[]
@@ -53,7 +57,7 @@ const conMiles = (t: string) => (soloDigitos(t) ? miles(Number(soloDigitos(t))) 
 // Una referencia y color de la factura en pantalla completa: foto, datos,
 // cantidad por talla (20–45) y costo/precios por rango de tallas.
 export function EditorReferencia({
-  fila: inicial, conCostos, conocidas, referencias, marcas, colores, coloresSimples, costos, inventarioListo,
+  fila: inicial, conCostos, conocidas, modelos, marcas, colores, coloresSimples, costos, inventarioListo,
   onGuardar, onOtroColor, onQuitar, onCerrar,
 }: Props) {
   const { paleta } = useTema()
@@ -61,7 +65,7 @@ export function EditorReferencia({
   const [fila, setFila] = useState<FilaFactura | null>(inicial)
   const [color1, setColor1] = useState('')
   const [color2, setColor2] = useState('')
-  const [enfocado, setEnfocado] = useState<'referencia' | 'color1' | 'color2' | 'marca' | null>(null)
+  const [enfocado, setEnfocado] = useState<'descripcion' | 'color1' | 'color2' | 'marca' | null>(null)
   const [subiendoFoto, setSubiendoFoto] = useState(false)
   const [dividiendo, setDividiendo] = useState<number | null>(null)
   const [anchoTallas, setAnchoTallas] = useState(0)
@@ -120,6 +124,11 @@ export function EditorReferencia({
     })
   }
 
+  // La referencia no se escribe: sale de la descripción y la marca.
+  function reconocerPorDescripcion(base: FilaFactura) {
+    reconocer({ ...base, referencia: referenciaPorDescripcion(modelos, base) })
+  }
+
   function cambiarColor(primero: string, segundo: string) {
     setColor1(primero)
     setColor2(segundo)
@@ -150,8 +159,10 @@ export function EditorReferencia({
     if (resultado.canceled) return
     setSubiendoFoto(true)
     try {
-      const url = await subirFotoColor(resultado.assets[0].uri)
-      setFila((x) => (x ? { ...x, foto: url } : x))
+      // La foto se nombra con la referencia y el color: un zapato nuevo aparta la suya.
+      const referencia = f.referencia.trim() || await referenciaParaFila(f)
+      const url = await subirFotoColor(resultado.assets[0].uri, { ...f, referencia })
+      setFila((x) => (x ? { ...x, referencia, foto: url } : x))
     } catch (e) {
       Alert.alert('No se subió la foto', e instanceof Error ? e.message : 'Intenta de nuevo.')
     } finally {
@@ -225,11 +236,18 @@ export function EditorReferencia({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={foto ? 'Cambiar la foto de este color' : 'Agregar la foto de este color'}
-            onPress={() => Alert.alert('Foto de este color', 'Queda en todas sus tallas al guardar la compra.', [
-              { text: 'Cámara', onPress: () => elegirFoto('camara') },
-              { text: 'Galería', onPress: () => elegirFoto('galeria') },
-              { text: 'Cancelar', style: 'cancel' },
-            ])}
+            onPress={() => {
+              // La foto se nombra con la referencia, que sale de la descripción, la marca y la categoría.
+              if (!f.referencia.trim() && (!f.descripcion.trim() || !f.categoria)) {
+                Alert.alert('Falta la descripción', 'Escribe la descripción y elige la categoría para poner la foto.')
+                return
+              }
+              Alert.alert('Foto de este color', 'Queda en todas sus tallas al guardar la compra.', [
+                { text: 'Cámara', onPress: () => elegirFoto('camara') },
+                { text: 'Galería', onPress: () => elegirFoto('galeria') },
+                { text: 'Cancelar', style: 'cancel' },
+              ])
+            }}
             style={{
               width: 96, height: 96, borderRadius: radio.md, overflow: 'hidden',
               backgroundColor: paleta.superficie2, alignItems: 'center', justifyContent: 'center',
@@ -251,9 +269,16 @@ export function EditorReferencia({
             ) : null}
           </Pressable>
           <View style={{ flex: 1, gap: espacio.s }}>
-            {conocida ? <Badge texto="EN INVENTARIO" tipo="neutro" /> : f.referencia.trim() ? <Badge texto="NUEVA" tipo="verde" /> : null}
+            {conocida ? <Badge texto="EN INVENTARIO" tipo="neutro" /> : f.descripcion.trim() ? <Badge texto="NUEVA" tipo="verde" /> : null}
+            <Text style={[tipografia.caption, { color: paleta.texto2 }]} testID="referencia">
+              {f.referencia.trim()
+                ? `Ref. ${f.referencia.trim()}${describirReferencia(f.referencia) ? ` · ${describirReferencia(f.referencia)}` : ''}`
+                : 'Ref. nueva: se pone sola al guardar.'}
+            </Text>
             <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
-              {f.foto ? 'Foto nueva: queda en todas las tallas de este color.' : foto ? 'Foto actual de este color.' : 'Sin foto todavía.'}
+              {fotoDesactualizada(f)
+                ? 'Cambiaste la referencia o el color: vuelve a poner la foto.'
+                : f.foto ? 'Foto nueva: queda en todas las tallas de este color.' : foto ? 'Foto actual de este color.' : 'Sin foto todavía.'}
             </Text>
           </View>
         </View>
@@ -261,18 +286,20 @@ export function EditorReferencia({
         <Seccion titulo="Zapato">
           <View style={{ gap: espacio.s }}>
             <CampoTexto
-              etiqueta="Referencia"
-              placeholder="Ej. TR-1"
-              autoCapitalize="characters"
-              autoCorrect={false}
-              value={f.referencia}
-              onChangeText={(referencia) => cambiar({ referencia })}
-              onFocus={() => setEnfocado('referencia')}
-              onBlur={() => { setEnfocado(null); reconocer(f) }}
-              testID="input-referencia"
+              etiqueta="Descripción"
+              placeholder="Ej. Tennis running"
+              value={f.descripcion}
+              onChangeText={(descripcion) => cambiar({ descripcion })}
+              onFocus={() => setEnfocado('descripcion')}
+              onBlur={() => { setEnfocado(null); reconocerPorDescripcion(f) }}
+              testID="input-descripcion"
             />
-            {enfocado === 'referencia' ? (
-              <Sugerencias opciones={referencias} texto={f.referencia} onElegir={(referencia) => reconocer({ ...f, referencia })} />
+            {enfocado === 'descripcion' ? (
+              <Sugerencias
+                opciones={descripcionesConocidas(modelos)}
+                texto={f.descripcion}
+                onElegir={(descripcion) => reconocerPorDescripcion({ ...f, descripcion })}
+              />
             ) : null}
           </View>
 
@@ -321,16 +348,6 @@ export function EditorReferencia({
             </View>
           ) : null}
 
-          <CampoTexto
-            etiqueta="Descripción"
-            placeholder="Ej. Tennis running"
-            value={f.descripcion}
-            onChangeText={(descripcion) => cambiar({ descripcion })}
-            // Un zapato sin referencia se reconoce por su descripción.
-            onBlur={() => { if (!f.referencia.trim()) reconocer(f) }}
-            testID="input-descripcion"
-          />
-
           <View style={{ gap: espacio.s }}>
             <CampoTexto
               etiqueta="Marca"
@@ -338,11 +355,12 @@ export function EditorReferencia({
               value={f.marca}
               onChangeText={(marca) => cambiar({ marca })}
               onFocus={() => setEnfocado('marca')}
-              onBlur={() => setEnfocado(null)}
+              // Dos zapatos con la misma descripción se distinguen por la marca.
+              onBlur={() => { setEnfocado(null); reconocerPorDescripcion(f) }}
               testID="input-marca"
             />
             {enfocado === 'marca' ? (
-              <Sugerencias opciones={marcas} texto={f.marca} onElegir={(marca) => cambiar({ marca })} />
+              <Sugerencias opciones={marcas} texto={f.marca} onElegir={(marca) => reconocerPorDescripcion({ ...f, marca })} />
             ) : null}
           </View>
 
@@ -361,7 +379,7 @@ export function EditorReferencia({
         >
           {!conCostos && !conocida ? (
             <Text style={[tipografia.cuerpo, { color: paleta.texto3 }]}>
-              Escribe la referencia y el color de un zapato que ya esté en el inventario. Los productos nuevos los registra quien maneja los costos.
+              Escribe la descripción y el color de un zapato que ya esté en el inventario. Los productos nuevos los registra quien maneja los costos.
             </Text>
           ) : (
             <View

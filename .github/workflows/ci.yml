@@ -72,3 +72,9 @@ jobs:
           supabase/tests/local/run.sh
           supabase/tests/migracion_permisos/verificacion.sql
           supabase/tests/remoto/verificar_despliegue.sql
+      # Zapatos sin referencia y en "Deportivo" antes de la referencia automática.
+      - name: Referencia automática sobre el inventario existente
+        env:
+          SEMILLA: supabase/tests/migracion_referencias/semilla.sql
+          SEMILLA_ANTES_DE: "20261026120000"
+        run: supabase/tests/local/run.sh supabase/tests/migracion_referencias/verificacion.sql

@@ -43,13 +43,14 @@ export function CargaInicial() {
   }, [filas])
 
   const inventario = useQuery({ queryKey: ['inventario'], queryFn: listarCalzado })
-  const { conocidas, referencias, marcas, colores, coloresSimples } = useCatalogo(inventario.data)
+  const { conocidas, modelos, descripciones, marcas, colores, coloresSimples } = useCatalogo(inventario.data)
 
   const cambiarFila = (id: string, fila: FilaFactura) => setFilas((fs) => fs.map((x) => (x.id === id ? fila : x)))
   // La foto llega cuando termina de subir: se pone sobre la fila como esté en ese momento.
-  const fijarFoto = (id: string, foto: string) => setFilas((fs) => fs.map((x) => (x.id === id ? { ...x, foto } : x)))
+  const fijarFoto = (id: string, foto: string, referencia: string) =>
+    setFilas((fs) => fs.map((x) => (x.id === id ? { ...x, foto, referencia } : x)))
   function reconocer(fila: FilaFactura) {
-    const nueva = reconocerFila(fila, conocidas)
+    const nueva = reconocerFila(fila, conocidas, modelos)
     if (nueva !== fila) cambiarFila(fila.id, nueva)
   }
   // "Otro color": la misma referencia justo debajo, lista para escribir el color.
@@ -122,7 +123,7 @@ export function CargaInicial() {
 
       <Tarjeta titulo="Así funciona">
         <ul className="list-disc space-y-1 pl-5 text-sm text-texto2">
-          <li>Escribe la referencia (o la descripción si no tiene) y el color; las flechas y Enter mueven entre tallas y filas.</li>
+          <li>Escribe la descripción, la marca y el color: si el zapato ya existe se reconoce solo, y si es nuevo la referencia se pone sola. Las flechas y Enter mueven entre tallas y filas.</li>
           <li><strong>Foto:</strong> toca la cámara o arrastra la foto encima. La encuadras en cuadrado y se guarda liviana con el nombre de la referencia y el color, en todas sus tallas.</li>
           <li><strong>Otro color</strong> copia la referencia con sus precios para escribir solo el color, las cantidades y su foto.</li>
           <li>Lo que ya está cargado aparece en gris con su stock y no cambia aquí; para corregir un stock usa <Link to="/conteo" className="font-semibold underline">Conteo físico</Link>.</li>
@@ -130,8 +131,8 @@ export function CargaInicial() {
         </ul>
       </Tarjeta>
 
-      <datalist id="opciones-referencia">
-        {referencias.map((r) => <option key={r} value={r} />)}
+      <datalist id="opciones-descripcion">
+        {descripciones.map((d) => <option key={d} value={d} />)}
       </datalist>
       <datalist id="opciones-color">
         {colores.map((c) => <option key={c} value={c} />)}
@@ -150,13 +151,13 @@ export function CargaInicial() {
           indice={i}
           conCosto={false}
           bloquearExistentes
-          opcionesReferencia="opciones-referencia"
+          opcionesDescripcion="opciones-descripcion"
           opcionesMarca="opciones-marca"
           opcionesColor="opciones-color"
           opcionesColorSimple="opciones-color-simple"
           alCambiar={(nueva) => cambiarFila(fila.id, nueva)}
           alOtroColor={() => agregarOtroColor(fila)}
-          alFoto={(url) => fijarFoto(fila.id, url)}
+          alFoto={(url, referencia) => fijarFoto(fila.id, url, referencia)}
           alReconocer={() => reconocer(fila)}
           alQuitar={() => setFilas((fs) => (fs.length > 1 ? fs.filter((x) => x.id !== fila.id) : [filaVacia(nuevoId())]))}
           alSalirDeTalla={(talla, direccion) => moverEntreFilas(i, talla, direccion)}

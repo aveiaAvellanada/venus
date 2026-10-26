@@ -6,10 +6,12 @@ import * as ImagePicker from 'expo-image-picker'
 import { useAuth, useRequireModulo } from '../../../../lib/auth'
 import { tienePermiso } from '../../../../lib/permisos'
 import { supabase } from '../../../../lib/supabase'
-import { guardarCalzado } from '../../../../lib/inventario'
+import { guardarCalzado, referenciaParaModelo } from '../../../../lib/inventario'
 import { claveReferencia, fijarGarantiaReferencia } from '../../../../lib/tramos'
 import { PreciosPorTalla } from '../../../../components/PreciosPorTalla'
-import { comprimirYSubirImagen } from '../../../../lib/imagenes'
+import { subirFotoCalzado } from '../../../../lib/imagenes'
+import { nombreFoto, urlMiniatura } from '../../../../shared/fotos'
+import { describirReferencia } from '../../../../shared/referencias'
 import { CATEGORIAS } from '../../../../lib/excel'
 import { coloresDeNombre, MAX_COLORES, MENSAJE_MAX_COLORES } from '../../../../lib/productos'
 import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../../hooks/usePaddingInferior'
@@ -44,6 +46,9 @@ export default function CalzadoEditorScreen() {
   const [stockActual, setStockActual] = useState('')
   const [stockMinimo, setStockMinimo] = useState('1')
   const [fotoUrl, setFotoUrl] = useState<string | null>(null)
+  // Foto elegida que falta subir: se sube al guardar, con el nombre de la
+  // referencia y el color que queden.
+  const [fotoNueva, setFotoNueva] = useState<string | null>(null)
   const [activo, setActivo] = useState(true)
 
   const puedeEditar = tienePermiso(perfil, 'inventario')
@@ -138,6 +143,10 @@ export default function CalzadoEditorScreen() {
   )
 
   const handleSeleccionarImagen = async () => {
+    if (!descripcion.trim()) {
+      mostrar('Escribe la descripción para poner la foto.', 'error')
+      return
+    }
     Alert.alert(
       'Seleccionar Foto',
       '¿Desde dónde quieres obtener la foto?',
@@ -150,7 +159,7 @@ export default function CalzadoEditorScreen() {
               quality: 1,
             })
             if (!result.canceled) {
-              subirImagen(result.assets[0].uri)
+              setFotoNueva(result.assets[0].uri)
             }
           }
         },
@@ -162,26 +171,13 @@ export default function CalzadoEditorScreen() {
               quality: 1,
             })
             if (!result.canceled) {
-              subirImagen(result.assets[0].uri)
+              setFotoNueva(result.assets[0].uri)
             }
           }
         },
         { text: 'Cancelar', style: 'cancel' }
       ]
     )
-  }
-
-  const subirImagen = async (uri: string) => {
-    try {
-      setLoading(true)
-      const url = await comprimirYSubirImagen(uri)
-      setFotoUrl(url)
-    } catch (err: any) {
-      console.error(err)
-      mostrar('No se pudo subir la imagen: ' + err.message, 'error')
-    } finally {
-      setLoading(false)
-    }
   }
 
   const handleGuardar = async () => {
@@ -199,19 +195,45 @@ export default function CalzadoEditorScreen() {
       mostrar(MENSAJE_MAX_COLORES, 'error')
       return
     }
-    if (garantia.trim() && !claveReferencia(referencia)) {
-      mostrar('La garantía se fija por referencia: escribe la referencia.', 'error')
-      return
+
+    setLoading(true)
+    // La referencia la pone la base: la del modelo (misma descripción y marca)
+    // o una nueva. Un zapato nuevo la pide siempre, así "Agregar otro similar"
+    // con otra descripción no queda en el modelo anterior.
+    let ref = referencia.trim()
+    if (!id || !ref) {
+      try {
+        ref = await referenciaParaModelo(descripcion, marca || null, categoria)
+        setReferencia(ref)
+      } catch (err: any) {
+        console.error(err)
+        mostrar('No se pudo poner la referencia: ' + err.message, 'error')
+        setLoading(false)
+        return
+      }
+    }
+
+    let foto = fotoUrl
+    if (fotoNueva) {
+      try {
+        foto = await subirFotoCalzado(fotoNueva, nombreFoto(ref, descripcion, color))
+        setFotoUrl(foto)
+        setFotoNueva(null)
+      } catch (err: any) {
+        console.error(err)
+        mostrar('No se pudo subir la foto: ' + err.message, 'error')
+        setLoading(false)
+        return
+      }
     }
 
     try {
-      setLoading(true)
       await guardarCalzado({
         id: id || undefined,
         categoria,
         descripcion,
         marca: marca || null,
-        referencia: referencia || null,
+        referencia: ref,
         talla: talla || null,
         color: color || null,
         precio_minimo: min,
@@ -219,14 +241,14 @@ export default function CalzadoEditorScreen() {
         costo_compra: costoCompra ? parseFloat(costoCompra) : null,
         stock_actual: parseInt(stockActual, 10),
         stock_minimo: parseInt(stockMinimo, 10),
-        foto_url: fotoUrl || null,
+        foto_url: foto || null,
         activo,
       })
 
       // La garantía es de toda la referencia, no solo de esta talla y color.
       const cambioGarantia = garantia.trim() !== garantiaInicial.trim()
-      if (claveReferencia(referencia) && (cambioGarantia || (!id && garantia.trim()))) {
-        await fijarGarantiaReferencia(referencia.trim(), garantia.trim() ? parseInt(garantia, 10) : null)
+      if (cambioGarantia || (!id && garantia.trim())) {
+        await fijarGarantiaReferencia(ref, garantia.trim() ? parseInt(garantia, 10) : null)
       }
 
       if (!id) {
@@ -239,6 +261,8 @@ export default function CalzadoEditorScreen() {
               onPress: () => {
                 setTalla('')
                 setColor('')
+                // La foto es de ese color: la del siguiente se pone aparte.
+                setFotoUrl(null)
                 mostrar('Ingresa la nueva talla y color.')
               }
             },
@@ -296,8 +320,8 @@ export default function CalzadoEditorScreen() {
               backgroundColor: paleta.superficie2, alignItems: 'center', justifyContent: 'center',
             }}
           >
-            {fotoUrl ? (
-              <Image source={{ uri: fotoUrl }} style={{ width: 140, height: 140, borderRadius: radio.full }} />
+            {fotoNueva || fotoUrl ? (
+              <Image source={{ uri: fotoNueva ?? urlMiniatura(fotoUrl) ?? undefined }} style={{ width: 140, height: 140, borderRadius: radio.full }} />
             ) : (
               <View style={{ alignItems: 'center', gap: espacio.s }}>
                 <Camera size={40} color={paleta.texto3} />
@@ -348,8 +372,20 @@ export default function CalzadoEditorScreen() {
           <View style={{ marginTop: espacio.m }}>
             <CampoTexto etiqueta="Marca" value={marca} onChangeText={setMarca} placeholder="Ej. Nike" />
           </View>
-          <View style={{ marginTop: espacio.m }}>
-            <CampoTexto etiqueta="Referencia" value={referencia} onChangeText={setReferencia} placeholder="Ej. NK-001" />
+          <View style={{ marginTop: espacio.m, gap: 2 }}>
+            <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>Referencia</Text>
+            {referencia.trim() ? (
+              <>
+                <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]} testID="referencia">{referencia.trim()}</Text>
+                {describirReferencia(referencia) ? (
+                  <Text style={[tipografia.caption, { color: paleta.texto3 }]}>{describirReferencia(referencia)}</Text>
+                ) : null}
+              </>
+            ) : (
+              <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+                Se pone sola al guardar: la misma de las otras tallas y colores de este zapato, o una nueva.
+              </Text>
+            )}
           </View>
           <View style={{ marginTop: espacio.m }}>
             <CampoTexto
@@ -453,9 +489,7 @@ export default function CalzadoEditorScreen() {
           <Tarjeta>
             <Text style={[tipografia.h3, { color: paleta.texto }]}>Precios por talla</Text>
             <Text style={[tipografia.caption, { color: paleta.texto3, marginTop: 4 }]}>
-              {id
-                ? 'Para fijar precios distintos por talla, esta referencia necesita un nombre de referencia.'
-                : 'Guarda el producto con su referencia y luego podrás fijar precios distintos por rango de tallas.'}
+              Guarda el producto y luego podrás fijar precios distintos por rango de tallas.
             </Text>
           </Tarjeta>
         )}

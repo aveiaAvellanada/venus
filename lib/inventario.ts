@@ -74,6 +74,18 @@ export async function guardarCalzado(datos: {
   return data
 }
 
+// La referencia que tendrá un zapato antes de guardarlo: la de su modelo
+// (misma descripción y marca) si ya existe; si no, una nueva como TEN-NIKE-012.
+export async function referenciaParaModelo(descripcion: string, marca: string | null, categoria: string): Promise<string> {
+  const { data, error } = await supabase.rpc('referencia_para_modelo', {
+    p_descripcion: descripcion.trim(),
+    p_marca: (marca ?? '').trim(),
+    p_categoria: categoria,
+  })
+  if (error) throw new Error(error.message)
+  return data
+}
+
 export async function listarVarios(busqueda?: string): Promise<ProductoVarios[]> {
   let query = supabase.from('productos_varios').select('*').order('created_at', { ascending: false })
   

@@ -1,6 +1,6 @@
 import { nombreColores } from './colores'
 
-// Fotos del catálogo (panel web; la app las muestra). Cada referencia y color
+// Fotos del catálogo (las suben el panel web y la app; Granja no). Cada referencia y color
 // tiene una foto con nombre fijo en el bucket público `productos`:
 //   catalogo/<referencia>-<color>.webp       1080×1080, para el detalle
 //   catalogo/<referencia>-<color>-mini.webp  400×400, para las listas
@@ -39,7 +39,7 @@ export const rutaMiniatura = (nombre: string, extension: string) => `${CARPETA_C
 const FOTO_CATALOGO = /\/catalogo\/([^/?#]+?)\.(webp|jpg)(\?[^#]*)?$/
 
 // Nombre con que se subió una foto del catálogo (null si es de otro lado, p. ej.
-// las que sube la app con nombre al azar).
+// las que subía antes la app con nombre al azar).
 export function nombreDeUrlFoto(url: string | null | undefined): string | null {
   const m = url?.match(FOTO_CATALOGO)
   if (!m || m[1].endsWith('-mini')) return null

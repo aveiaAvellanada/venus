@@ -24,7 +24,7 @@ function fila(sobrescribir: Partial<ProductoCalzado>): ProductoCalzado {
     descripcion: 'Nike Air Max',
     marca: 'Nike',
     referencia: '4521',
-    categoria: 'Deportivo',
+    categoria: 'Futbol',
     talla: '40',
     color: 'Negro',
     precio_minimo: 150000,
@@ -186,7 +186,7 @@ describe('tarjetas por color', () => {
     expect(tarjetasFiltradas(modelos, '', FILTROS_VACIOS)).toHaveLength(3)
     expect(tarjetasFiltradas(modelos, '', { ...FILTROS_VACIOS, verDescontinuados: true })).toHaveLength(4)
     expect(
-      tarjetasFiltradas(modelos, '', { ...FILTROS_VACIOS, categorias: ['Deportivo', 'Clasico'] })
+      tarjetasFiltradas(modelos, '', { ...FILTROS_VACIOS, categorias: ['Futbol', 'Clasico'] })
     ).toHaveLength(3)
     expect(tarjetasFiltradas(modelos, '', { ...FILTROS_VACIOS, marcas: ['Croydon'] })).toHaveLength(1)
     // $145.000: pasa Blanco (mín 140.000) y Croydon; Negro (mín 150.000) no

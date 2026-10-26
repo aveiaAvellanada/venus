@@ -234,12 +234,12 @@ describe('Movimientos', () => {
 
 const CALZADO = [
   {
-    id: 'c1', descripcion: 'Nike Air Max', marca: 'Nike', referencia: '4521', categoria: 'Deportivo',
+    id: 'c1', descripcion: 'Nike Air Max', marca: 'Nike', referencia: '4521', categoria: 'Futbol',
     talla: '40', color: 'Negro', precio_minimo: 150000, precio_maximo: 220000, stock_actual: 5,
     stock_minimo: 1, foto_url: null, proveedor_id: null, activo: true,
   },
   {
-    id: 'c2', descripcion: 'Nike Air Max', marca: 'Nike', referencia: '4521', categoria: 'Deportivo',
+    id: 'c2', descripcion: 'Nike Air Max', marca: 'Nike', referencia: '4521', categoria: 'Futbol',
     talla: '39', color: 'Blanco', precio_minimo: 140000, precio_maximo: 200000, stock_actual: 2,
     stock_minimo: 1, foto_url: null, proveedor_id: null, activo: true,
   },
@@ -321,9 +321,9 @@ describe('Productos', () => {
     const icono = arbol.root.findAllByProps({ accessibilityLabel: 'Filtros' }).find((n: Nodo) => n.props.onPress)!
     await act(async () => icono.props.onPress!())
     await act(async () => arbol.root.findByProps({ accessibilityLabel: 'Tipo de zapato', accessibilityRole: 'button' }).props.onPress())
-    await act(async () => arbol.root.findByProps({ accessibilityLabel: 'Deportivo', accessibilityRole: 'checkbox' }).props.onPress())
+    await act(async () => arbol.root.findByProps({ accessibilityLabel: 'Fútbol', accessibilityRole: 'checkbox' }).props.onPress())
     await act(async () => arbol.root.findByProps({ accessibilityLabel: 'Clásico', accessibilityRole: 'checkbox' }).props.onPress())
-    expect(existeTexto(arbol, 'Deportivo, Clásico')).toBe(true)
+    expect(existeTexto(arbol, 'Fútbol, Clásico')).toBe(true)
     expect(existeTexto(arbol, '3 artículos encontrados')).toBe(true)
     await act(async () => arbol.root.findByProps({ accessibilityLabel: 'Cerrar filtros' }).props.onPress())
     expect(icono.props.accessibilityState).toMatchObject({ selected: false })

@@ -76,7 +76,7 @@ begin
   insert into public.proveedores (nombre) values ('Proveedor Test') returning id into v_prov;
   insert into public.productos_calzado
     (descripcion, categoria, talla, color, precio_minimo, precio_maximo, stock_actual, stock_minimo, proveedor_id)
-    values ('Zapato Test', 'Deportivo', '40', 'Negro', 80000, 100000, 10, 1, v_prov)
+    values ('Zapato Test', 'Tennis', '40', 'Negro', 80000, 100000, 10, 1, v_prov)
     returning id into v_zapato;
   insert into public.productos_varios (nombre, unidad_medida) values ('Huevos Test', 'Panel')
     returning id into v_huevos;

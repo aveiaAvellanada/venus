@@ -1,10 +1,12 @@
 import type { Json } from '../shared/database.types'
 import { nombreColores } from '../shared/colores'
 import { hoyEn } from '../shared/fechas'
+import { nombreFoto } from '../shared/fotos'
 import {
   payloadFactura, tallasConCantidad, TALLAS, type Factura, type FilaFactura,
 } from '../shared/compras'
-import { comprimirBajoLimite, comprimirYSubirImagen } from './imagenes'
+import { comprimirBajoLimite, subirFotoCalzado } from './imagenes'
+import { referenciaParaModelo } from './inventario'
 import { bytesDesdeUriLocal } from './storage'
 import { supabase } from './supabase'
 
@@ -134,8 +136,15 @@ export async function registrarLlegada(
 
 // ===== Fotos y factura =====
 
-// Foto de una referencia y color, comprimida a 500 KB en el bucket público `productos`.
-export const subirFotoColor = (uri: string): Promise<string> => comprimirYSubirImagen(uri)
+// Foto de una referencia y color, como en el panel: cuadrada, con miniatura y
+// con el nombre de la referencia (o la descripción) y el color. Sin ninguno de
+// los dos todavía no se puede poner.
+export const nombreFotoFila = (fila: FilaFactura): string | null => nombreFoto(fila.referencia, fila.descripcion, fila.color)
+// Un zapato nuevo aparta su referencia (la base la arma con la descripción,
+// la marca y la categoría) para nombrar la foto antes de guardar la compra.
+export const referenciaParaFila = (fila: FilaFactura): Promise<string> =>
+  referenciaParaModelo(fila.descripcion, fila.marca || null, fila.categoria)
+export const subirFotoColor = (uri: string, fila: FilaFactura): Promise<string> => subirFotoCalzado(uri, nombreFotoFila(fila))
 
 // Después de guardar: la foto nueva de cada referencia y color queda en todas
 // sus tallas (las que ya había y las que se acaban de crear).

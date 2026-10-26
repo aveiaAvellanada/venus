@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { hoyEn } from '@shared/fechas'
 import type { ProductoCalzado } from '../../lib/inventario'
-import { costosPorProducto, listarCalzado } from '../../lib/datos/inventario'
+import { costosPorProducto, listarCalzado, referenciaParaModelo } from '../../lib/datos/inventario'
 import { listarProveedores, subirDocumento } from '../../lib/datos/proveedores'
 import { fijarFotos, listarCompras, obtenerCompra, registrarCompra } from '../../lib/datos/compras'
 import { subirFotoCatalogo } from '../../lib/datos/fotos'
@@ -12,7 +12,7 @@ import { Compras } from './Compras'
 import { DetalleCompra } from './DetalleCompra'
 import { NuevaCompra } from './NuevaCompra'
 
-vi.mock('../../lib/datos/inventario', () => ({ listarCalzado: vi.fn(), costosPorProducto: vi.fn() }))
+vi.mock('../../lib/datos/inventario', () => ({ listarCalzado: vi.fn(), costosPorProducto: vi.fn(), referenciaParaModelo: vi.fn() }))
 vi.mock('../../lib/datos/proveedores', async (original) => ({
   ...(await original<typeof import('../../lib/datos/proveedores')>()),
   listarProveedores: vi.fn(),
@@ -46,6 +46,7 @@ beforeEach(() => {
   ])
   vi.mocked(subirFotoCatalogo).mockImplementation(async (nombre) => `https://fotos/catalogo/${nombre}.webp?v=1`)
   vi.mocked(fijarFotos).mockResolvedValue()
+  vi.mocked(referenciaParaModelo).mockResolvedValue('TEN-VERL-007')
   vi.mocked(costosPorProducto).mockResolvedValue(new Map([['a38', { ultimo: 60000, promedio: 60000 }]]))
   vi.mocked(registrarCompra).mockResolvedValue({ compra_id: 'c9', repetida: false })
   vi.mocked(obtenerCompra).mockResolvedValue(null)
@@ -84,14 +85,19 @@ describe('Lista de compras', () => {
 })
 
 describe('Nueva compra', () => {
-  it('reconoce una referencia existente: trae datos, precios y último costo', async () => {
+  it('reconoce un zapato existente por su descripción y marca: trae su referencia, precios y último costo', async () => {
     pintar('/compras/nueva')
-    const ref = await screen.findByLabelText('Referencia de la fila 1')
-    await userEvent.type(ref, 'tr-1')
+    // La referencia no se escribe.
+    expect(await screen.findByLabelText('Referencia de la fila 1')).toHaveTextContent('Se pone sola')
+    expect(screen.queryByRole('textbox', { name: 'Referencia de la fila 1' })).not.toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('Descripción de la fila 1'), 'tennis running')
+    await userEvent.tab()
+    // Hay dos "Tennis Running" (Kalzado y Verlon): sin la marca no se adivina.
+    expect(screen.getByLabelText('Referencia de la fila 1')).toHaveTextContent('Se pone sola')
+    await userEvent.type(screen.getByLabelText('Marca de la fila 1'), 'kalzado')
     await userEvent.type(screen.getByLabelText('Color de la fila 1'), 'negro')
     await userEvent.tab()
-    expect(screen.getByLabelText('Descripción de la fila 1')).toHaveValue('Tennis Running')
-    expect(screen.getByLabelText('Referencia de la fila 1')).toHaveValue('TR-1')
+    expect(screen.getByLabelText('Referencia de la fila 1')).toHaveTextContent('TR-1')
     expect(screen.getByLabelText('Precio mínimo tallas 20–45 de la fila 1')).toHaveValue('90.000')
     expect(screen.getByLabelText('Costo tallas 20–45 de la fila 1')).toHaveValue('60.000')
     expect(screen.getByText('En inventario')).toBeInTheDocument()
@@ -112,7 +118,6 @@ describe('Nueva compra', () => {
     pintar('/compras/nueva')
     await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Proveedor *' }), 'p1')
     await userEvent.type(screen.getByLabelText('Número de factura'), 'FV-1001')
-    await userEvent.type(screen.getByLabelText('Referencia de la fila 1'), 'ES-9')
     await userEvent.type(screen.getByLabelText('Descripción de la fila 1'), 'Escolar')
     await userEvent.selectOptions(screen.getByLabelText('Categoría de la fila 1'), 'Escolar')
     await userEvent.type(screen.getByLabelText('Costo tallas 20–45 de la fila 1'), '30.000')
@@ -141,10 +146,10 @@ describe('Nueva compra', () => {
 
   it('el borrador queda en el navegador y vuelve al abrir otra vez', async () => {
     const { unmount } = pintar('/compras/nueva')
-    await userEvent.type(await screen.findByLabelText('Referencia de la fila 1'), 'BORRADOR-1')
+    await userEvent.type(await screen.findByLabelText('Descripción de la fila 1'), 'BORRADOR-1')
     unmount()
     pintar('/compras/nueva')
-    expect(await screen.findByLabelText('Referencia de la fila 1')).toHaveValue('BORRADOR-1')
+    expect(await screen.findByLabelText('Descripción de la fila 1')).toHaveValue('BORRADOR-1')
   })
 
   it('marca y color: se eligen de lo ya creado o se escribe uno nuevo, hasta dos colores', async () => {
@@ -174,7 +179,6 @@ describe('Nueva compra', () => {
   it('"Otro color" copia la referencia con sus precios, sin color ni cantidades, y cada color guarda su foto', async () => {
     pintar('/compras/nueva')
     await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Proveedor *' }), 'p1')
-    await userEvent.type(screen.getByLabelText('Referencia de la fila 1'), 'NV-5')
     await userEvent.type(screen.getByLabelText('Color de la fila 1'), 'Negro')
     await userEvent.type(screen.getByLabelText('Descripción de la fila 1'), 'Tennis nuevo')
     await userEvent.type(screen.getByLabelText('Marca de la fila 1'), 'Verlon')
@@ -185,15 +189,18 @@ describe('Nueva compra', () => {
     await userEvent.type(screen.getByLabelText('Talla 38 de la fila 1'), '2')
     await userEvent.upload(screen.getByLabelText('Foto de la fila 1'), new File(['x'], 'negro.jpg', { type: 'image/jpeg' }))
     const encuadre = screen.getByRole('dialog', { name: 'Encuadrar foto' })
-    expect(within(encuadre).getByText('nv-5-negro.webp')).toBeInTheDocument()
+    expect(within(encuadre).getByText('la referencia nueva y el color')).toBeInTheDocument()
     await userEvent.click(within(encuadre).getByRole('button', { name: 'Usar foto' }))
     expect(await screen.findByText('Foto nueva')).toBeInTheDocument()
-    expect(subirFotoCatalogo).toHaveBeenCalledWith('nv-5-negro', expect.objectContaining({ extension: 'webp' }))
+    // Un zapato nuevo aparta su referencia para nombrar la foto.
+    expect(referenciaParaModelo).toHaveBeenCalledWith('Tennis nuevo', 'Verlon', 'Tennis')
+    expect(subirFotoCatalogo).toHaveBeenCalledWith('ten-verl-007-negro', expect.objectContaining({ extension: 'webp' }))
+    expect(screen.getByLabelText('Referencia de la fila 1')).toHaveTextContent('TEN-VERL-007')
 
     await userEvent.click(screen.getByRole('button', { name: 'Otro color' }))
     expect(screen.getByLabelText('Color de la fila 2')).toHaveFocus()
     expect(screen.getByLabelText('Color de la fila 2')).toHaveValue('')
-    expect(screen.getByLabelText('Referencia de la fila 2')).toHaveValue('NV-5')
+    expect(screen.getByLabelText('Referencia de la fila 2')).toHaveTextContent('TEN-VERL-007')
     expect(screen.getByLabelText('Descripción de la fila 2')).toHaveValue('Tennis nuevo')
     expect(screen.getByLabelText('Marca de la fila 2')).toHaveValue('Verlon')
     expect(screen.getByLabelText('Categoría de la fila 2')).toHaveValue('Tennis')
@@ -207,8 +214,8 @@ describe('Nueva compra', () => {
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Guardar y subir stock' }))
     const [factura] = vi.mocked(registrarCompra).mock.lastCall!
     expect(factura.filas.map((f) => [f.referencia, f.color, f.foto])).toEqual([
-      ['NV-5', 'Negro', 'https://fotos/catalogo/nv-5-negro.webp?v=1'],
-      ['NV-5', 'Azul', ''],
+      ['TEN-VERL-007', 'Negro', 'https://fotos/catalogo/ten-verl-007-negro.webp?v=1'],
+      ['TEN-VERL-007', 'Azul', ''],
     ])
     expect(fijarFotos).toHaveBeenCalledWith('c9', factura)
   })

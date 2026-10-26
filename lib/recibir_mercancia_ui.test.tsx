@@ -18,7 +18,7 @@ jest.mock('@react-native-community/datetimepicker', () => () => null)
 jest.mock('expo-image-picker', () => ({}))
 jest.mock('expo-document-picker', () => ({}))
 jest.mock('./supabase', () => ({ supabase: { from: jest.fn(), rpc: jest.fn() } }))
-jest.mock('./imagenes', () => ({ comprimirBajoLimite: jest.fn(), comprimirYSubirImagen: jest.fn() }))
+jest.mock('./imagenes', () => ({ comprimirBajoLimite: jest.fn(), subirFotoCalzado: jest.fn(async () => 'url') }))
 jest.mock('./storage', () => ({ bytesDesdeUriLocal: jest.fn() }))
 
 const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() }

@@ -56,7 +56,7 @@ begin
   insert into public.proveedores (nombre) values ('Proveedor Test') returning id into v_prov;
   insert into public.productos_calzado
     (descripcion, categoria, talla, color, precio_minimo, precio_maximo, stock_actual, stock_minimo, proveedor_id)
-    values ('Zapato Test', 'Deportivo', '40', 'Negro', 80000, 100000, 10, 1, v_prov)
+    values ('Zapato Test', 'Tennis', '40', 'Negro', 80000, 100000, 10, 1, v_prov)
     returning id into v_zapato;
   v_hoy := private.hoy_bogota();
   delete from public.cierres_caja_reaperturas where fecha = v_hoy;
@@ -132,7 +132,7 @@ begin
   end if;
   if pg_temp.error_de(format(
       'select public.guardar_producto_calzado(%L, %L, %L, null, null, null, 1, 2, null, 1, 1, null, null, true)',
-      v_zapato, 'Deportivo', 'Zapato Test')) not like '%permiso%' then
+      v_zapato, 'Tennis', 'Zapato Test')) not like '%permiso%' then
     raise exception 'FALLO: sin permiso de inventario guardó un producto por RPC';
   end if;
   if not pg_temp.sin_efecto($q$insert into public.gastos_variables (descripcion, monto, categoria) values ('x', 1, 'otros')$q$) then

@@ -28,6 +28,7 @@ import { EditorReferencia, type ReferenciaConocida } from '../../../components/c
 import { SelectorProveedor } from '../../../components/compras/SelectorProveedor'
 import { MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import { urlMiniatura } from '../../../shared/fotos'
+import { indiceModelos } from '../../../shared/referencias'
 
 // Un borrador por persona: el teléfono lo comparte la tienda y no debe pasar
 // la factura de uno (con sus costos) a otro.
@@ -68,7 +69,9 @@ export default function NuevaCompraScreen() {
   const [adjunto, setAdjunto] = useState<Adjunto | null>(null)
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [conocidas, setConocidas] = useState<Map<string, ReferenciaConocida>>(new Map())
-  const [listas, setListas] = useState({ referencias: [] as string[], marcas: [] as string[], colores: [] as string[], coloresSimples: [] as string[] })
+  const [listas, setListas] = useState({ marcas: [] as string[], colores: [] as string[], coloresSimples: [] as string[] })
+  // Para reconocer un zapato por su descripción (nadie escribe la referencia).
+  const modelos = useMemo(() => indiceModelos(conocidas.values()), [conocidas])
   const [costos, setCostos] = useState<Map<string, { ultimo: number }> | undefined>()
   const [cargando, setCargando] = useState(true)
   const [editando, setEditando] = useState<FilaFactura | null>(null)
@@ -135,7 +138,6 @@ export default function NuevaCompraScreen() {
       const usados = [...new Set(productos.map((p) => nombreColores(p.color)).filter((c): c is string => !!c))]
       const simples = [...new Set([...COLORES_BASE, ...usados.flatMap((c) => coloresDeNombre(c).map((x) => nombreColores(x)!))])].sort(alfabetico)
       setListas({
-        referencias: [...new Set([...mapa.values()].map((r) => r.referencia).filter(Boolean))].sort(alfabetico),
         marcas: [...new Set(productos.map((p) => p.marca?.trim()).filter((m): m is string => !!m))].sort(alfabetico),
         colores: [...usados.filter((c) => coloresDeNombre(c).length > 1).sort(alfabetico), ...simples],
         coloresSimples: simples,
@@ -404,7 +406,7 @@ export default function NuevaCompraScreen() {
         fila={editando}
         conCostos={conCostos}
         conocidas={conocidas}
-        referencias={listas.referencias}
+        modelos={modelos}
         marcas={listas.marcas}
         colores={listas.colores}
         coloresSimples={listas.coloresSimples}
@@ -462,13 +464,13 @@ function TarjetaFila({ fila, conCostos, onPress }: { fila: FilaFactura; conCosto
         <View style={{ flex: 1, gap: 2 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={[tipografia.cuerpoLg, { color: paleta.texto, flexShrink: 1 }]} numberOfLines={1}>
-              {fila.referencia.trim() || fila.descripcion.trim() || 'Sin referencia'}
+              {fila.descripcion.trim() || 'Zapato nuevo'}
             </Text>
             {color ? <PuntoColor color={color} tamano={12} /> : null}
             {color ? <Text style={[tipografia.caption, { color: paleta.texto2 }]} numberOfLines={1}>{color}</Text> : null}
           </View>
           <Text style={[tipografia.caption, { color: paleta.texto3 }]} numberOfLines={1}>
-            {[fila.descripcion.trim(), fila.marca.trim()].filter(Boolean).join(' · ') || 'Toca para completar'}
+            {[fila.marca.trim(), fila.referencia.trim()].filter(Boolean).join(' · ') || 'Toca para completar'}
           </Text>
           <Text style={[tipografia.caption, tabular, { color: paleta.texto2 }]} numberOfLines={2}>
             {tallas.length ? tallas.map((t) => `${t.talla}×${t.cantidad}`).join('  ') : 'Sin cantidades'}

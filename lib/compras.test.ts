@@ -2,13 +2,14 @@ process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://dummy-url.supabase.co'
 process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'dummy-key'
 
 jest.mock('./supabase', () => ({ supabase: { rpc: jest.fn(), from: jest.fn() } }))
-jest.mock('./imagenes', () => ({ comprimirBajoLimite: jest.fn(), comprimirYSubirImagen: jest.fn() }))
+jest.mock('./imagenes', () => ({ comprimirBajoLimite: jest.fn(), subirFotoCalzado: jest.fn(async () => 'url') }))
 jest.mock('./storage', () => ({ bytesDesdeUriLocal: jest.fn() }))
 
 import { supabase } from './supabase'
+import { subirFotoCalzado } from './imagenes'
 import {
   agruparItems, claveRefColor, erroresLlegada, estadoCompra, fechaDelNegocio, fijarFotos, filaVacia, filtrarCompras,
-  itemsLlegada, registrarCompra, registrarLlegada, textoTallas, type CompraListado, type Factura, type FilaFactura,
+  itemsLlegada, nombreFotoFila, registrarCompra, registrarLlegada, subirFotoColor, textoTallas, type CompraListado, type Factura, type FilaFactura,
 } from './compras'
 
 const fila = (o: Partial<FilaFactura>): FilaFactura => ({ ...filaVacia('f1'), ...o })
@@ -151,5 +152,18 @@ describe('reintentos y fotos', () => {
 
   it('la fecha de algo guardado de noche en Colombia es la de ese día, no la de UTC', () => {
     expect(fechaDelNegocio('2026-10-23T01:00:00Z')).toBe('2026-10-22')
+  })
+})
+
+describe('foto de una referencia y color', () => {
+  it('se nombra con la referencia (o la descripción) y el color, como en el panel', async () => {
+    expect(nombreFotoFila(fila({ referencia: 'TA-1', descripcion: 'Tennis', color: 'Rojo y blanco' }))).toBe('ta-1-rojo-y-blanco')
+    expect(nombreFotoFila(fila({ descripcion: 'Tennis Ñandú', color: 'Negro' }))).toBe('tennis-nandu-negro')
+    await subirFotoColor('file:///f.jpg', fila({ referencia: 'TA-1', color: 'negro' }))
+    expect(subirFotoCalzado).toHaveBeenCalledWith('file:///f.jpg', 'ta-1-negro')
+  })
+
+  it('sin referencia ni descripción no hay nombre', () => {
+    expect(nombreFotoFila(fila({ color: 'Negro' }))).toBeNull()
   })
 })

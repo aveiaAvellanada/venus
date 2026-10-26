@@ -9,7 +9,8 @@ import { supabase } from '../../../../lib/supabase'
 import { guardarCalzado } from '../../../../lib/inventario'
 import { claveReferencia, fijarGarantiaReferencia } from '../../../../lib/tramos'
 import { PreciosPorTalla } from '../../../../components/PreciosPorTalla'
-import { comprimirYSubirImagen } from '../../../../lib/imagenes'
+import { subirFotoCalzado } from '../../../../lib/imagenes'
+import { nombreFoto, urlMiniatura } from '../../../../shared/fotos'
 import { CATEGORIAS } from '../../../../lib/excel'
 import { coloresDeNombre, MAX_COLORES, MENSAJE_MAX_COLORES } from '../../../../lib/productos'
 import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../../hooks/usePaddingInferior'
@@ -44,6 +45,9 @@ export default function CalzadoEditorScreen() {
   const [stockActual, setStockActual] = useState('')
   const [stockMinimo, setStockMinimo] = useState('1')
   const [fotoUrl, setFotoUrl] = useState<string | null>(null)
+  // Foto elegida que falta subir: se sube al guardar, con el nombre de la
+  // referencia (o la descripción) y el color que queden.
+  const [fotoNueva, setFotoNueva] = useState<string | null>(null)
   const [activo, setActivo] = useState(true)
 
   const puedeEditar = tienePermiso(perfil, 'inventario')
@@ -138,6 +142,10 @@ export default function CalzadoEditorScreen() {
   )
 
   const handleSeleccionarImagen = async () => {
+    if (!nombreFoto(referencia, descripcion, color)) {
+      mostrar('Escribe la referencia (o la descripción) para poner la foto.', 'error')
+      return
+    }
     Alert.alert(
       'Seleccionar Foto',
       '¿Desde dónde quieres obtener la foto?',
@@ -150,7 +158,7 @@ export default function CalzadoEditorScreen() {
               quality: 1,
             })
             if (!result.canceled) {
-              subirImagen(result.assets[0].uri)
+              setFotoNueva(result.assets[0].uri)
             }
           }
         },
@@ -162,26 +170,13 @@ export default function CalzadoEditorScreen() {
               quality: 1,
             })
             if (!result.canceled) {
-              subirImagen(result.assets[0].uri)
+              setFotoNueva(result.assets[0].uri)
             }
           }
         },
         { text: 'Cancelar', style: 'cancel' }
       ]
     )
-  }
-
-  const subirImagen = async (uri: string) => {
-    try {
-      setLoading(true)
-      const url = await comprimirYSubirImagen(uri)
-      setFotoUrl(url)
-    } catch (err: any) {
-      console.error(err)
-      mostrar('No se pudo subir la imagen: ' + err.message, 'error')
-    } finally {
-      setLoading(false)
-    }
   }
 
   const handleGuardar = async () => {
@@ -204,8 +199,22 @@ export default function CalzadoEditorScreen() {
       return
     }
 
+    setLoading(true)
+    let foto = fotoUrl
+    if (fotoNueva) {
+      try {
+        foto = await subirFotoCalzado(fotoNueva, nombreFoto(referencia, descripcion, color))
+        setFotoUrl(foto)
+        setFotoNueva(null)
+      } catch (err: any) {
+        console.error(err)
+        mostrar('No se pudo subir la foto: ' + err.message, 'error')
+        setLoading(false)
+        return
+      }
+    }
+
     try {
-      setLoading(true)
       await guardarCalzado({
         id: id || undefined,
         categoria,
@@ -219,7 +228,7 @@ export default function CalzadoEditorScreen() {
         costo_compra: costoCompra ? parseFloat(costoCompra) : null,
         stock_actual: parseInt(stockActual, 10),
         stock_minimo: parseInt(stockMinimo, 10),
-        foto_url: fotoUrl || null,
+        foto_url: foto || null,
         activo,
       })
 
@@ -239,6 +248,8 @@ export default function CalzadoEditorScreen() {
               onPress: () => {
                 setTalla('')
                 setColor('')
+                // La foto es de ese color: la del siguiente se pone aparte.
+                setFotoUrl(null)
                 mostrar('Ingresa la nueva talla y color.')
               }
             },
@@ -296,8 +307,8 @@ export default function CalzadoEditorScreen() {
               backgroundColor: paleta.superficie2, alignItems: 'center', justifyContent: 'center',
             }}
           >
-            {fotoUrl ? (
-              <Image source={{ uri: fotoUrl }} style={{ width: 140, height: 140, borderRadius: radio.full }} />
+            {fotoNueva || fotoUrl ? (
+              <Image source={{ uri: fotoNueva ?? urlMiniatura(fotoUrl) ?? undefined }} style={{ width: 140, height: 140, borderRadius: radio.full }} />
             ) : (
               <View style={{ alignItems: 'center', gap: espacio.s }}>
                 <Camera size={40} color={paleta.texto3} />

@@ -6,8 +6,8 @@ import { Camera, CopyPlus, Scissors, Trash2, X } from 'lucide-react-native'
 import { CATEGORIAS } from '../../shared/excel'
 import { leerPesos, pesos } from '../../shared/formato'
 import {
-  claveRefColor, claveSinReferencia, dividirRango, enRango, fotoDeFila, miles, partesColor, rangosDesdeExistentes, subirFotoColor,
-  subtotalFila, TALLAS, unidadesFila, unirColores, unirRango, type FilaFactura, type TallaExistente,
+  claveRefColor, claveSinReferencia, dividirRango, enRango, fotoDeFila, fotoDesactualizada, miles, nombreFotoFila, partesColor,
+  rangosDesdeExistentes, subirFotoColor, subtotalFila, TALLAS, unidadesFila, unirColores, unirRango, type FilaFactura, type TallaExistente,
 } from '../../lib/compras'
 import { useTema } from '../../lib/tema'
 import { espacio, fuentes, radio, tabular, tipografia } from '../../lib/theme'
@@ -150,7 +150,7 @@ export function EditorReferencia({
     if (resultado.canceled) return
     setSubiendoFoto(true)
     try {
-      const url = await subirFotoColor(resultado.assets[0].uri)
+      const url = await subirFotoColor(resultado.assets[0].uri, f)
       setFila((x) => (x ? { ...x, foto: url } : x))
     } catch (e) {
       Alert.alert('No se subió la foto', e instanceof Error ? e.message : 'Intenta de nuevo.')
@@ -225,11 +225,18 @@ export function EditorReferencia({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={foto ? 'Cambiar la foto de este color' : 'Agregar la foto de este color'}
-            onPress={() => Alert.alert('Foto de este color', 'Queda en todas sus tallas al guardar la compra.', [
-              { text: 'Cámara', onPress: () => elegirFoto('camara') },
-              { text: 'Galería', onPress: () => elegirFoto('galeria') },
-              { text: 'Cancelar', style: 'cancel' },
-            ])}
+            onPress={() => {
+              // La foto se nombra con la referencia (o la descripción) y el color.
+              if (!nombreFotoFila(f)) {
+                Alert.alert('Falta la referencia', 'Escribe la referencia (o la descripción) para poner la foto.')
+                return
+              }
+              Alert.alert('Foto de este color', 'Queda en todas sus tallas al guardar la compra.', [
+                { text: 'Cámara', onPress: () => elegirFoto('camara') },
+                { text: 'Galería', onPress: () => elegirFoto('galeria') },
+                { text: 'Cancelar', style: 'cancel' },
+              ])
+            }}
             style={{
               width: 96, height: 96, borderRadius: radio.md, overflow: 'hidden',
               backgroundColor: paleta.superficie2, alignItems: 'center', justifyContent: 'center',
@@ -253,7 +260,9 @@ export function EditorReferencia({
           <View style={{ flex: 1, gap: espacio.s }}>
             {conocida ? <Badge texto="EN INVENTARIO" tipo="neutro" /> : f.referencia.trim() ? <Badge texto="NUEVA" tipo="verde" /> : null}
             <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
-              {f.foto ? 'Foto nueva: queda en todas las tallas de este color.' : foto ? 'Foto actual de este color.' : 'Sin foto todavía.'}
+              {fotoDesactualizada(f)
+                ? 'Cambiaste la referencia o el color: vuelve a poner la foto.'
+                : f.foto ? 'Foto nueva: queda en todas las tallas de este color.' : foto ? 'Foto actual de este color.' : 'Sin foto todavía.'}
             </Text>
           </View>
         </View>

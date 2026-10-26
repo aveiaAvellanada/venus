@@ -17,7 +17,7 @@ import { BarrasSistema } from '../BarrasSistema'
 import { MARGEN_SUPERIOR } from '../../hooks/usePaddingInferior'
 import { urlMiniatura } from '../../shared/fotos'
 import {
-  describirReferencia, descripcionesConocidas, referenciaPorDescripcion, type ModeloConocido,
+  describirReferencia, descripcionesConocidas, referenciaDeHermana, referenciaPorDescripcion, type ModeloConocido,
 } from '../../shared/referencias'
 
 export interface ReferenciaConocida {
@@ -38,6 +38,9 @@ interface Props {
   conocidas: Map<string, ReferenciaConocida>
   // Los zapatos del inventario por descripción (shared/referencias.ts).
   modelos: Map<string, ModeloConocido[]>
+  // Las otras filas de la factura: otro color del mismo zapato escrito aparte
+  // lleva la misma referencia.
+  hermanas: FilaFactura[]
   marcas: string[]
   colores: string[]
   coloresSimples: string[]
@@ -57,7 +60,7 @@ const conMiles = (t: string) => (soloDigitos(t) ? miles(Number(soloDigitos(t))) 
 // Una referencia y color de la factura en pantalla completa: foto, datos,
 // cantidad por talla (20–45) y costo/precios por rango de tallas.
 export function EditorReferencia({
-  fila: inicial, conCostos, conocidas, modelos, marcas, colores, coloresSimples, costos, inventarioListo,
+  fila: inicial, conCostos, conocidas, modelos, hermanas, marcas, colores, coloresSimples, costos, inventarioListo,
   onGuardar, onOtroColor, onQuitar, onCerrar,
 }: Props) {
   const { paleta } = useTema()
@@ -126,7 +129,7 @@ export function EditorReferencia({
 
   // La referencia no se escribe: sale de la descripción y la marca.
   function reconocerPorDescripcion(base: FilaFactura) {
-    reconocer({ ...base, referencia: referenciaPorDescripcion(modelos, base) })
+    reconocer({ ...base, referencia: referenciaPorDescripcion(modelos, base, hermanas) })
   }
 
   function cambiarColor(primero: string, segundo: string) {
@@ -160,7 +163,7 @@ export function EditorReferencia({
     setSubiendoFoto(true)
     try {
       // La foto se nombra con la referencia y el color: un zapato nuevo aparta la suya.
-      const referencia = f.referencia.trim() || await referenciaParaFila(f)
+      const referencia = f.referencia.trim() || referenciaDeHermana(hermanas, f) || await referenciaParaFila(f)
       const url = await subirFotoColor(resultado.assets[0].uri, { ...f, referencia })
       setFila((x) => (x ? { ...x, referencia, foto: url } : x))
     } catch (e) {

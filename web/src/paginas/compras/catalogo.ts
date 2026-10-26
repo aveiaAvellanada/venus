@@ -74,8 +74,10 @@ export function reconocerFila(
   conocidas: Map<string, ReferenciaConocida>,
   modelos: Map<string, ModeloConocido[]>,
   costos?: Map<string, { ultimo: number }>,
+  // Las otras filas: otro color del mismo zapato escrito aparte lleva su referencia.
+  hermanas: FilaFactura[] = [],
 ): FilaFactura {
-  const referencia = referenciaPorDescripcion(modelos, fila)
+  const referencia = referenciaPorDescripcion(modelos, fila, hermanas)
   if (referencia !== fila.referencia) fila = { ...fila, referencia }
   const r = conocidas.get(claveRef(fila.referencia, fila.color))
   if (!r) return Object.keys(fila.existentes).length ? { ...fila, existentes: {} } : fila

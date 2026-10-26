@@ -10,6 +10,7 @@ import { cargarInventario, type ResultadoCarga } from '../../lib/datos/carga'
 import { listarCalzado } from '../../lib/datos/inventario'
 import { nuevoId } from '../../lib/id'
 import { AvisoError, Boton, Cargando, Dialogo, Tarjeta } from '../../componentes/ui'
+import { referenciaDeHermana } from '@shared/referencias'
 import { reconocerFila, useCatalogo } from '../compras/catalogo'
 import { FilaReferencia } from '../compras/FilaReferencia'
 
@@ -50,7 +51,7 @@ export function CargaInicial() {
   const fijarFoto = (id: string, foto: string, referencia: string) =>
     setFilas((fs) => fs.map((x) => (x.id === id ? { ...x, foto, referencia } : x)))
   function reconocer(fila: FilaFactura) {
-    const nueva = reconocerFila(fila, conocidas, modelos)
+    const nueva = reconocerFila(fila, conocidas, modelos, undefined, filas)
     if (nueva !== fila) cambiarFila(fila.id, nueva)
   }
   // "Otro color": la misma referencia justo debajo, lista para escribir el color.
@@ -157,6 +158,7 @@ export function CargaInicial() {
           opcionesColorSimple="opciones-color-simple"
           alCambiar={(nueva) => cambiarFila(fila.id, nueva)}
           alOtroColor={() => agregarOtroColor(fila)}
+          referenciaHermana={referenciaDeHermana(filas, fila)}
           alFoto={(url, referencia) => fijarFoto(fila.id, url, referencia)}
           alReconocer={() => reconocer(fila)}
           alQuitar={() => setFilas((fs) => (fs.length > 1 ? fs.filter((x) => x.id !== fila.id) : [filaVacia(nuevoId())]))}

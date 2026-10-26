@@ -177,7 +177,39 @@ begin
   v_err := pg_temp.error_de(format('select public.cargar_inventario(%L)', jsonb_build_array(
     jsonb_build_object('categoria', 'Deportivo', 'descripcion', 'x', 'precio_minimo', 1, 'stock', 0))));
   if v_err not like '%categoría inválida%' then raise exception 'FALLO: la carga aceptó Deportivo (%)', v_err; end if;
+
+  -- ===== Dos filas del mismo zapato con códigos apartados distintos (20261026150000) =====
+  -- Dos colores escritos aparte en la carga inicial: cada foto apartó su código.
+  v_txt := public.referencia_para_modelo('Ilario V', 'Verlon', 'Escolar');
+  v_err := public.referencia_para_modelo('Ilario V', 'Verlon', 'Escolar');
+  if v_txt = v_err then raise exception 'FALLO: la prueba necesita dos códigos apartados distintos'; end if;
+  -- Llegan en cualquier orden: el segundo color toma el código del primero.
+  r := public.cargar_inventario(jsonb_build_array(
+    jsonb_build_object('fila', 2, 'categoria', 'Escolar', 'descripcion', 'Ilario V', 'marca', 'Verlon', 'referencia', v_err,
+                       'color', 'Azul', 'talla', '34', 'precio_minimo', 90000, 'stock', 1),
+    jsonb_build_object('fila', 3, 'categoria', 'Escolar', 'descripcion', 'Ilario V', 'marca', 'Verlon', 'referencia', v_txt,
+                       'color', 'Negro', 'talla', '34', 'precio_minimo', 90000, 'stock', 1),
+    jsonb_build_object('fila', 4, 'categoria', 'Escolar', 'descripcion', 'ilario v ', 'marca', 'VERLON', 'referencia', v_txt,
+                       'color', 'Negro', 'talla', '35', 'precio_minimo', 90000, 'stock', 1)
+  ));
+  if (r ->> 'creados')::int <> 3 then raise exception 'FALLO: debía crear las 3 tallas del Ilario: %', r; end if;
   execute 'reset role';
+  select string_agg(distinct referencia, ',') into v_txt from public.productos_calzado where lower(btrim(descripcion)) = 'ilario v';
+  if v_txt is distinct from v_err then raise exception 'FALLO: el mismo zapato quedó con códigos %', v_txt; end if;
+  -- Un código que ya usa otro zapato se respeta (es "Otro color" de ese zapato).
+  v_d := pg_temp.nuevo('Ilario V azulito', 'Verlon', 'Escolar', '36', 'Celeste', v_err);
+  if pg_temp.ref(v_d) <> v_err then raise exception 'FALLO: no respetó la referencia de un zapato existente'; end if;
+
+  -- ===== La talla nueva toma la foto de su color =====
+  update public.productos_calzado set foto_url = 'https://x/catalogo/ten-nike-001-negro.webp?v=1' where id = v_a;
+  v_d := pg_temp.nuevo('Tennis Zeus', 'Nike', 'Tennis', '44', 'Negro');
+  if (select foto_url from public.productos_calzado where id = v_d) is distinct from 'https://x/catalogo/ten-nike-001-negro.webp?v=1' then
+    raise exception 'FALLO: la talla nueva del color no tomó su foto';
+  end if;
+  v_d := pg_temp.nuevo('Tennis Zeus', 'Nike', 'Tennis', '44', 'Rojo');
+  if (select foto_url from public.productos_calzado where id = v_d) is not null then
+    raise exception 'FALLO: otro color no debe tomar la foto del negro';
+  end if;
 
   raise exception 'REFERENCIAS_OK_ROLLBACK';
 end $$;

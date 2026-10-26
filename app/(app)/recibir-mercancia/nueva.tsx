@@ -407,6 +407,7 @@ export default function NuevaCompraScreen() {
         conCostos={conCostos}
         conocidas={conocidas}
         modelos={modelos}
+        hermanas={filas.filter((x) => x.id !== editando?.id)}
         marcas={listas.marcas}
         colores={listas.colores}
         coloresSimples={listas.coloresSimples}

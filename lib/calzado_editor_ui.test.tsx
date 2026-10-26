@@ -52,6 +52,7 @@ jest.mock('./auth', () => ({
 jest.mock('./inventario', () => ({
   guardarCalzado: jest.fn(async () => undefined),
   referenciaParaModelo: jest.fn(async () => 'TEN-VENU-007'),
+  fotoDeModeloColor: jest.fn(async () => null),
 }))
 jest.mock('./tramos', () => ({ claveReferencia: (r: string) => r.trim().toLowerCase() || null, fijarGarantiaReferencia: jest.fn() }))
 jest.mock('../components/PreciosPorTalla', () => ({ PreciosPorTalla: () => null }))
@@ -68,7 +69,7 @@ import { TemaProvider } from './tema'
 import { ToastProvider } from '../components/ui'
 import CalzadoEditorScreen from '../app/(app)/inventario/calzado/editor'
 import { perfilPrueba } from './perfilPrueba'
-import { guardarCalzado, referenciaParaModelo } from './inventario'
+import { fotoDeModeloColor, guardarCalzado, referenciaParaModelo } from './inventario'
 import { subirFotoCalzado } from './imagenes'
 
 // Cada llamada arma un objeto nuevo, como hace recargarPerfil al volver a la app.
@@ -212,14 +213,45 @@ describe('Editor de calzado: referencia automática', () => {
       campo('Precio mínimo *').props.onChangeText('50000')
       campo('Stock actual *').props.onChangeText('3')
     })
-    const guardar = arbol.root.findAll((n: { props: { titulo?: string; onPress?: () => void } }) => n.props.titulo === 'Guardar producto' && !!n.props.onPress)[0]
+    const guardar = () => arbol.root.findAll((n: { props: { titulo?: string; onPress?: () => void } }) => n.props.titulo === 'Guardar producto' && !!n.props.onPress)[0]
+    // Sin foto no se crea.
+    await act(async () => {
+      await guardar().props.onPress()
+    })
+    expect(fotoDeModeloColor).toHaveBeenCalledWith('Zeus alto', 'Venus', null)
+    expect(guardarCalzado).not.toHaveBeenCalled()
+    expect(referenciaParaModelo).not.toHaveBeenCalled()
+
+    await elegirDeGaleria(arbol)
     jest.spyOn(Alert, 'alert').mockImplementation(() => undefined)
     await act(async () => {
-      await guardar.props.onPress()
+      await guardar().props.onPress()
     })
     expect(referenciaParaModelo).toHaveBeenCalledWith('Zeus alto', 'Venus', 'Tennis')
+    expect(subirFotoCalzado).toHaveBeenCalledWith(FOTO_ELEGIDA, 'ten-venu-007')
     expect(guardarCalzado).toHaveBeenCalledWith(expect.objectContaining({ referencia: 'TEN-VENU-007', descripcion: 'Zeus alto' }))
     const texto = (arbol.root.findAllByProps({ testID: 'referencia' })[0]?.props.children ?? '') as string
     expect(texto).toBe('TEN-VENU-007')
+  })
+
+  it('una talla nueva de un color que ya tiene foto se crea sin pedirla', async () => {
+    jest.mocked(fotoDeModeloColor).mockResolvedValueOnce('https://x/catalogo/ten-venu-007-negro.webp?v=1')
+    let arbol!: ReturnType<typeof renderer.create>
+    await act(async () => {
+      arbol = crear(arbolEditor())
+    })
+    const campo = (etiqueta: string) => arbol.root.findAll((n: { props: { etiqueta?: string; onChangeText?: (t: string) => void } }) => n.props.etiqueta === etiqueta && !!n.props.onChangeText)[0]
+    await act(async () => {
+      arbol.root.findAll((n: { props: { etiqueta?: string; onPress?: () => void } }) => n.props.etiqueta === 'Tennis' && !!n.props.onPress)[0].props.onPress()
+      campo('Descripción *').props.onChangeText('Zeus alto')
+      campo('Color').props.onChangeText('Negro')
+      campo('Precio mínimo *').props.onChangeText('50000')
+      campo('Stock actual *').props.onChangeText('3')
+    })
+    jest.spyOn(Alert, 'alert').mockImplementation(() => undefined)
+    await act(async () => {
+      await arbol.root.findAll((n: { props: { titulo?: string; onPress?: () => void } }) => n.props.titulo === 'Guardar producto' && !!n.props.onPress)[0].props.onPress()
+    })
+    expect(guardarCalzado).toHaveBeenCalledWith(expect.objectContaining({ referencia: 'TEN-VENU-007', foto_url: null }))
   })
 })

@@ -9,6 +9,8 @@ const factura = (filas: FilaFactura[], o: Partial<Factura> = {}): Factura => ({
   proveedorId: 'p1', numeroFactura: 'FV-1', fechaFactura: HOY, condicion: 'contado', fechaVencimiento: '', notas: '', filas, ...o,
 })
 const fila = (o: Partial<FilaFactura>): FilaFactura => ({ ...filaVacia('f1'), ...o })
+// Un zapato nuevo no se guarda sin foto.
+const FOTO = 'https://x/fotos/zapato.jpg'
 
 describe('tallas y redondeo', () => {
   it('de la 20 a la 45; precios a $1.000', () => {
@@ -87,7 +89,7 @@ describe('validación', () => {
     expect(erroresFactura(factura([filaVacia('x')], { proveedorId: '' }), HOY)).toEqual([
       'Elige el proveedor.', 'Escribe la cantidad de al menos una talla.',
     ])
-    const f = fila({ referencia: 'A', descripcion: 'A', categoria: 'Otros', cantidades: { '40': '1' },
+    const f = fila({ referencia: 'A', descripcion: 'A', categoria: 'Otros', cantidades: { '40': '1' }, foto: FOTO,
       rangos: [{ desde: '20', hasta: '45', costo: '1000', minimo: '2000', maximo: '3000' }] })
     expect(erroresFactura(factura([f], { condicion: 'credito' }), HOY)).toEqual(['Una compra a crédito necesita la fecha de vencimiento.'])
     expect(erroresFactura(factura([f], { fechaFactura: '2026-10-13' }), HOY)).toContain('La fecha de la factura no puede faltar ni ser futura.')
@@ -101,9 +103,21 @@ describe('validación', () => {
       'En NV-1 hay cantidades que no son números enteros.',
       'Falta la descripción de NV-1.',
       'Falta la categoría de NV-1.',
+      'Falta la foto de NV-1: es obligatoria para crear un zapato.',
       'Falta el costo de NV-1 (tallas 20–45).',
       'En NV-1 (tallas 20–45) el precio mínimo pasa del máximo.',
     ])
+  })
+
+  it('un zapato nuevo no se guarda sin foto; la talla nueva de un color con foto en el inventario, sí', () => {
+    const base = { referencia: 'C', descripcion: 'C', categoria: 'Otros', cantidades: { '40': '1' },
+      rangos: [{ desde: '20', hasta: '45', costo: '1000', minimo: '2000', maximo: '' }] }
+    expect(erroresFactura(factura([fila(base)]), HOY)).toEqual(['Falta la foto de C: es obligatoria para crear un zapato.'])
+    expect(erroresFactura(factura([fila({ ...base, foto: FOTO })]), HOY)).toEqual([])
+    const existentes = { '38': { id: 'c38', precio_minimo: 2000, precio_maximo: null, foto_url: FOTO } }
+    expect(erroresFactura(factura([fila({ ...base, existentes })]), HOY)).toEqual([])
+    // Solo cantidades de tallas que ya existen: no crea nada, no pide foto.
+    expect(erroresFactura(factura([fila({ ...base, existentes: { '40': { id: 'c40', precio_minimo: 2000, precio_maximo: null } } })]), HOY)).toEqual([])
   })
 
   it('avisa sin número de factura o con el mínimo por debajo del costo, sin bloquear', () => {
@@ -124,7 +138,7 @@ describe('dos colores', () => {
   })
 
   it('más de dos colores no se puede guardar', () => {
-    const f = fila({ referencia: 'Z', descripcion: 'Z', categoria: 'Otros', color: 'rojo, blanco, azul', cantidades: { '40': '1' }, rangos: rango })
+    const f = fila({ referencia: 'Z', descripcion: 'Z', categoria: 'Otros', color: 'rojo, blanco, azul', cantidades: { '40': '1' }, rangos: rango, foto: FOTO })
     expect(erroresFactura(factura([f]), HOY)).toEqual(['En Z: Un zapato tiene máximo dos colores (ej. "Rojo y blanco").'])
   })
 })
@@ -174,7 +188,7 @@ describe('precio máximo opcional', () => {
 
   it('si hay máximo no puede ser menor que el mínimo', () => {
     const f = factura([{ ...filaVacia('a'), referencia: 'SM-1', descripcion: 'X', categoria: 'Tennis', color: 'Gris',
-      cantidades: { '38': '1' }, rangos: [{ ...sinMax[0], maximo: '70.000' }] }])
+      cantidades: { '38': '1' }, rangos: [{ ...sinMax[0], maximo: '70.000' }], foto: FOTO }])
     expect(erroresFactura(f, HOY)).toEqual(['En SM-1 Gris (tallas 20–45) el precio mínimo pasa del máximo.'])
   })
 })

@@ -6,7 +6,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { useAuth, useRequireModulo } from '../../../../lib/auth'
 import { tienePermiso } from '../../../../lib/permisos'
 import { supabase } from '../../../../lib/supabase'
-import { guardarCalzado, referenciaParaModelo } from '../../../../lib/inventario'
+import { fotoDeModeloColor, guardarCalzado, referenciaParaModelo } from '../../../../lib/inventario'
 import { claveReferencia, fijarGarantiaReferencia } from '../../../../lib/tramos'
 import { PreciosPorTalla } from '../../../../components/PreciosPorTalla'
 import { subirFotoCalzado } from '../../../../lib/imagenes'
@@ -197,6 +197,22 @@ export default function CalzadoEditorScreen() {
     }
 
     setLoading(true)
+    // Un zapato no se crea sin foto (decisión del dueño, 2026-10-26); una talla
+    // nueva de un color que ya tiene foto la toma de él.
+    if (!id && !fotoNueva && !fotoUrl) {
+      let existente: string | null = null
+      try {
+        existente = await fotoDeModeloColor(descripcion, marca || null, color || null)
+      } catch (err) {
+        console.error(err)
+      }
+      if (!existente) {
+        mostrar('Pon la foto del zapato: es obligatoria para crearlo.', 'error')
+        setLoading(false)
+        return
+      }
+    }
+
     // La referencia la pone la base: la del modelo (misma descripción y marca)
     // o una nueva. Un zapato nuevo la pide siempre, así "Agregar otro similar"
     // con otra descripción no queda en el modelo anterior.

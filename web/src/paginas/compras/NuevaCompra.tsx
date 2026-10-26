@@ -15,6 +15,7 @@ import { comprimirFoto, MAX_PDF } from '../../lib/imagen'
 import { nuevoId } from '../../lib/id'
 import { NEGOCIO } from '../../lib/negocio'
 import { AvisoError, Boton, Cargando, CampoTexto, Dialogo, Tarjeta } from '../../componentes/ui'
+import { referenciaDeHermana } from '@shared/referencias'
 import { reconocerFila, useCatalogo } from './catalogo'
 import { FilaReferencia } from './FilaReferencia'
 
@@ -82,7 +83,7 @@ export function NuevaCompra() {
   // Al escribir la descripción y el color de algo que ya existe: toma su
   // referencia y trae categoría, las tallas existentes y sus precios (y el último costo).
   function reconocer(fila: FilaFactura) {
-    const nueva = reconocerFila(fila, conocidas, modelos, costos.data)
+    const nueva = reconocerFila(fila, conocidas, modelos, costos.data, f.filas)
     if (nueva !== fila) cambiarFila(fila.id, nueva)
   }
 
@@ -239,6 +240,7 @@ export function NuevaCompra() {
           opcionesColorSimple="opciones-color-simple"
           alCambiar={(nueva) => cambiarFila(fila.id, nueva)}
           alOtroColor={() => agregarOtroColor(fila)}
+          referenciaHermana={referenciaDeHermana(f.filas, fila)}
           alFoto={(url, referencia) => fijarFoto(fila.id, url, referencia)}
           alReconocer={() => reconocer(fila)}
           alQuitar={() => cambiarFactura({ filas: f.filas.length > 1 ? f.filas.filter((x) => x.id !== fila.id) : [filaVacia(nuevoId())] })}

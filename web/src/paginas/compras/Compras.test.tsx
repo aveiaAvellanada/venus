@@ -58,6 +58,12 @@ beforeEach(() => {
   ])
 })
 
+async function ponerFoto(fila: number) {
+  await userEvent.upload(screen.getByLabelText(`Foto de la fila ${fila}`), new File(['x'], 'foto.jpg', { type: 'image/jpeg' }))
+  await userEvent.click(within(screen.getByRole('dialog', { name: 'Encuadrar foto' })).getByRole('button', { name: 'Usar foto' }))
+  await screen.findAllByText('Foto nueva')
+}
+
 function pintar(ruta: string) {
   const cliente = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -128,6 +134,8 @@ describe('Nueva compra', () => {
     await userEvent.clear(costoGrandes)
     await userEvent.type(costoGrandes, '38000')
     await userEvent.type(screen.getByLabelText('Talla 24 de la fila 1'), '4')
+    // Un zapato nuevo no se guarda sin foto.
+    await ponerFoto(1)
     await userEvent.type(screen.getByLabelText('Talla 36 de la fila 1'), '2{Enter}')
     // Enter en la última fila agrega otra y se para en la misma talla
     expect(screen.getByLabelText('Talla 36 de la fila 2')).toHaveFocus()
@@ -177,6 +185,7 @@ describe('Nueva compra', () => {
   })
 
   it('"Otro color" copia la referencia con sus precios, sin color ni cantidades, y cada color guarda su foto', async () => {
+    vi.mocked(referenciaParaModelo).mockClear()
     pintar('/compras/nueva')
     await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Proveedor *' }), 'p1')
     await userEvent.type(screen.getByLabelText('Color de la fila 1'), 'Negro')
@@ -210,13 +219,37 @@ describe('Nueva compra', () => {
 
     await userEvent.keyboard('Azul')
     await userEvent.type(screen.getByLabelText('Talla 39 de la fila 2'), '3')
+    // Sin la foto del azul no deja guardar.
+    await userEvent.click(screen.getByRole('button', { name: 'Revisar y guardar' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Falta la foto de TEN-VERL-007 Azul: es obligatoria para crear un zapato.')
+    await ponerFoto(2)
+    // Es el mismo zapato: no aparta otra referencia.
+    expect(referenciaParaModelo).toHaveBeenCalledTimes(1)
     await userEvent.click(screen.getByRole('button', { name: 'Revisar y guardar' }))
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Guardar y subir stock' }))
     const [factura] = vi.mocked(registrarCompra).mock.lastCall!
     expect(factura.filas.map((f) => [f.referencia, f.color, f.foto])).toEqual([
       ['TEN-VERL-007', 'Negro', 'https://fotos/catalogo/ten-verl-007-negro.webp?v=1'],
-      ['TEN-VERL-007', 'Azul', ''],
+      ['TEN-VERL-007', 'Azul', 'https://fotos/catalogo/ten-verl-007-azul.webp?v=1'],
     ])
     expect(fijarFotos).toHaveBeenCalledWith('c9', factura)
+  })
+
+  it('otro color del mismo zapato escrito en otra fila (sin "Otro color") queda con la misma referencia', async () => {
+    vi.mocked(referenciaParaModelo).mockClear()
+    pintar('/compras/nueva')
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Proveedor *' }), 'p1')
+    for (const [n, color] of [[1, 'Negro'], [2, 'Azul']] as const) {
+      if (n === 2) await userEvent.click(screen.getByRole('button', { name: 'Agregar referencia' }))
+      await userEvent.type(screen.getByLabelText(`Color de la fila ${n}`), color)
+      await userEvent.type(screen.getByLabelText(`Descripción de la fila ${n}`), 'Ilario V')
+      await userEvent.type(screen.getByLabelText(`Marca de la fila ${n}`), 'Verlon')
+      await userEvent.selectOptions(screen.getByLabelText(`Categoría de la fila ${n}`), 'Escolar')
+      await userEvent.tab()
+      await ponerFoto(n)
+    }
+    expect(referenciaParaModelo).toHaveBeenCalledTimes(1)
+    expect(screen.getByLabelText('Referencia de la fila 2')).toHaveTextContent('TEN-VERL-007')
+    expect(subirFotoCatalogo).toHaveBeenLastCalledWith('ten-verl-007-azul', expect.anything())
   })
 })

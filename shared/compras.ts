@@ -259,6 +259,9 @@ export function erroresFactura(f: Factura, hoy: string): string[] {
     const hayNuevas = tallas.some((x) => !fila.existentes[x.talla])
     if (hayNuevas && !fila.descripcion.trim()) errores.push(`Falta la descripción de ${nombreFila(fila, i)}.`)
     if (hayNuevas && !fila.categoria) errores.push(`Falta la categoría de ${nombreFila(fila, i)}.`)
+    // Un zapato no se crea sin foto (decisión del dueño, 2026-10-26). La talla
+    // nueva de un color que ya tiene foto la toma de él.
+    if (hayNuevas && !fotoDeFila(fila)) errores.push(`Falta la foto de ${nombreFila(fila, i)}: es obligatoria para crear un zapato.`)
     const rangosUsados = fila.rangos.filter((r) => tallas.some((x) => enRango(r, x.talla)))
     for (const r of rangosUsados) {
       const costo = leerPesos(r.costo)

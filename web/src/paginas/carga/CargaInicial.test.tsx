@@ -25,7 +25,8 @@ const p = (o: Partial<ProductoCalzado>): ProductoCalzado => ({
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
-  vi.mocked(listarCalzado).mockResolvedValue([p({ id: 'a38' })])
+  // El negro ya tiene foto: sus tallas nuevas la toman sin pedirla otra vez.
+  vi.mocked(listarCalzado).mockResolvedValue([p({ id: 'a38', foto_url: 'https://fotos/catalogo/tr-1-negro.webp?v=1' })])
   vi.mocked(cargarInventario).mockResolvedValue({ creados: 5, actualizados: 0, sin_cambios: 0 })
   vi.mocked(referenciaParaModelo).mockResolvedValue('CHA-MANI-001')
   vi.mocked(subirFotoCatalogo).mockImplementation(async (nombre) => `https://fotos/catalogo/${nombre}.webp?v=1`)

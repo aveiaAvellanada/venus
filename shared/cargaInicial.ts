@@ -52,6 +52,8 @@ export function erroresCargaInicial(filas: FilaFactura[]): string[] {
     if (!fila.descripcion.trim()) errores.push(`Falta la descripción de ${nombre}.`)
     if (!fila.categoria) errores.push(`Falta la categoría de ${nombre}.`)
     const nuevas = tallasNuevas(fila)
+    // Un zapato no se crea sin foto (decisión del dueño, 2026-10-26).
+    if (nuevas.length && !fotoDeFila(fila)) errores.push(`Falta la foto de ${nombre}: es obligatoria para crear un zapato.`)
     for (const r of fila.rangos.filter((r) => nuevas.some((x) => enRango(r, x.talla)))) {
       const minimo = leerPesos(r.minimo)
       const maximo = leerPesos(r.maximo)
@@ -75,8 +77,6 @@ export function avisosCargaInicial(filas: FilaFactura[]): string[] {
       avisos.push(`En ${nombreFila(fila, i)}, ${lista(ya)} ya ${ya.length === 1 ? 'estaba cargada' : 'estaban cargadas'}: su stock no cambia aquí (para corregirlo usa Conteo físico).`)
     }
   })
-  const sinFoto = filas.filter((f) => tallasNuevas(f).length > 0 && !fotoDeFila(f)).length
-  if (sinFoto) avisos.push(`${sinFoto} referencia${sinFoto === 1 ? '' : 's'} sin foto: la puedes poner después.`)
   return avisos
 }
 

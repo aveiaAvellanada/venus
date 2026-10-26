@@ -74,6 +74,25 @@ export async function guardarCalzado(datos: {
   return data
 }
 
+// La foto que ya tiene ese zapato (misma descripción y marca) en ese color:
+// una talla nueva de un color con foto la toma (trg_calzado_heredar_referencia).
+export async function fotoDeModeloColor(descripcion: string, marca: string | null, color: string | null): Promise<string | null> {
+  // ilike sin comodines: igual sin importar mayúsculas.
+  const exacto = (t: string) => t.trim().replace(/[\\%_]/g, (c) => `\\${c}`)
+  let consulta = supabase
+    .from('productos_calzado')
+    .select('foto_url')
+    .ilike('descripcion', exacto(descripcion))
+    .not('foto_url', 'is', null)
+    .limit(1)
+  consulta = marca?.trim() ? consulta.ilike('marca', exacto(marca)) : consulta.is('marca', null)
+  const tono = nombreColores(color)
+  consulta = tono ? consulta.ilike('color', exacto(tono)) : consulta.is('color', null)
+  const { data, error } = await consulta
+  if (error) throw error
+  return data?.[0]?.foto_url ?? null
+}
+
 // La referencia que tendrá un zapato antes de guardarlo: la de su modelo
 // (misma descripción y marca) si ya existe; si no, una nueva como TEN-NIKE-012.
 export async function referenciaParaModelo(descripcion: string, marca: string | null, categoria: string): Promise<string> {

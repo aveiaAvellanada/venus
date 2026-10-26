@@ -56,7 +56,13 @@ describe('carga inicial: lo que se guarda', () => {
 
 describe('carga inicial: errores y avisos', () => {
   it('una fila completa no tiene errores (no pide costo)', () => {
-    expect(erroresCargaInicial([diana(), filaVacia('vacia')])).toEqual([])
+    expect(erroresCargaInicial([diana({ foto: FOTO }), filaVacia('vacia')])).toEqual([])
+  })
+
+  it('un zapato nuevo no se crea sin foto; la talla nueva de un color que ya tiene foto, sí', () => {
+    expect(erroresCargaInicial([diana()])).toEqual(['Falta la foto de 52452601 Rojo: es obligatoria para crear un zapato.'])
+    const conFotoEnInventario = { '34': { id: 'e', precio_minimo: 1, precio_maximo: null, foto_url: FOTO } }
+    expect(erroresCargaInicial([diana({ existentes: conFotoEnInventario })])).toEqual([])
   })
 
   it('sin nada que guardar', () => {
@@ -64,12 +70,12 @@ describe('carga inicial: errores y avisos', () => {
   })
 
   it('pide descripción, categoría y precio mínimo; el máximo no puede ser menor', () => {
-    expect(erroresCargaInicial([diana({ descripcion: '', categoria: '', rangos: [rangoCompleto()] })])).toEqual([
+    expect(erroresCargaInicial([diana({ descripcion: '', categoria: '', rangos: [rangoCompleto()], foto: FOTO })])).toEqual([
       'Falta la descripción de 52452601 Rojo.',
       'Falta la categoría de 52452601 Rojo.',
       'Falta el precio mínimo de 52452601 Rojo (tallas 20–45).',
     ])
-    expect(erroresCargaInicial([diana({ rangos: [rangoCompleto({ minimo: '40000', maximo: '30000' })] })]))
+    expect(erroresCargaInicial([diana({ rangos: [rangoCompleto({ minimo: '40000', maximo: '30000' })], foto: FOTO })]))
       .toEqual(['En 52452601 Rojo (tallas 20–45) el precio mínimo pasa del máximo.'])
   })
 
@@ -83,11 +89,10 @@ describe('carga inicial: errores y avisos', () => {
       .toContain('La foto de 52452601 Negro quedó con el nombre de antes: vuelve a ponerla.')
   })
 
-  it('avisa las tallas ya cargadas y las referencias sin foto', () => {
+  it('avisa las tallas ya cargadas', () => {
     const existentes = { '37': { id: 'e', precio_minimo: 1, precio_maximo: null }, '38': { id: 'f', precio_minimo: 1, precio_maximo: null } }
     expect(avisosCargaInicial([diana({ existentes })])).toEqual([
       'En 52452601 Rojo, las tallas 37 y 38 ya estaban cargadas: su stock no cambia aquí (para corregirlo usa Conteo físico).',
-      '1 referencia sin foto: la puedes poner después.',
     ])
   })
 })

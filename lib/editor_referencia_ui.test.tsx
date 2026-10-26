@@ -46,13 +46,14 @@ const CONOCIDAS = new Map([[claveRefColor(TA.referencia, TA.color), TA], [claveR
 const MODELOS = indiceModelos(CONOCIDAS.values())
 
 const onGuardar = jest.fn()
-const arbolCon = (fila: FilaFactura) => (
+const arbolCon = (fila: FilaFactura, hermanas: FilaFactura[] = []) => (
   <TemaProvider>
     <EditorReferencia
       fila={fila}
       conCostos
       conocidas={CONOCIDAS}
       modelos={MODELOS}
+      hermanas={hermanas}
       marcas={['Bosi', 'Verlon']}
       colores={['Negro', 'Blanco']}
       coloresSimples={['Negro', 'Blanco']}
@@ -79,9 +80,9 @@ const listo = async (arbol: ReturnType<typeof renderer.create>) => {
 }
 
 let montados: ReturnType<typeof renderer.create>[] = []
-const crear = async (fila: FilaFactura) => {
+const crear = async (fila: FilaFactura, hermanas: FilaFactura[] = []) => {
   let arbol!: ReturnType<typeof renderer.create>
-  await act(async () => { arbol = renderer.create(arbolCon(fila)) })
+  await act(async () => { arbol = renderer.create(arbolCon(fila, hermanas)) })
   montados.push(arbol)
   return arbol
 }
@@ -162,5 +163,22 @@ describe('Editor de una referencia: foto de un zapato nuevo', () => {
     const guardada = onGuardar.mock.calls[0][0] as FilaFactura
     expect(guardada.referencia).toBe('CHA-RIDE-004')
     expect(guardada.foto).toContain('cha-ride-004-azul')
+  })
+
+  it('otro color del mismo zapato escrito en otra fila usa su referencia, no aparta otra', async () => {
+    const negro = { ...filaVacia('f1'), referencia: 'ESC-VERL-004', descripcion: 'Ilario V', marca: 'Verlon', categoria: 'Escolar', color: 'Negro' }
+    const azul = { ...filaVacia('f2'), descripcion: 'ilario v', marca: 'VERLON', categoria: 'Escolar', color: 'Azul' }
+    const arbol = await crear(azul, [negro])
+    await pedirFoto(arbol)
+    expect(referenciaParaFila).not.toHaveBeenCalled()
+    expect(subirFotoColor).toHaveBeenCalledWith('file:///zapato.jpg', expect.objectContaining({ referencia: 'ESC-VERL-004' }))
+  })
+
+  it('al escribir la descripción toma la referencia de la otra fila del mismo zapato', async () => {
+    const negro = { ...filaVacia('f1'), referencia: 'ESC-VERL-004', descripcion: 'Ilario V', marca: 'Verlon', categoria: 'Escolar', color: 'Negro' }
+    const arbol = await crear(filaVacia('f2'), [negro])
+    await escribir(arbol, 'input-marca', 'Verlon')
+    await escribir(arbol, 'input-descripcion', 'Ilario V')
+    expect(textoReferencia(arbol)).toBe('Ref. ESC-VERL-004 · Escolar · VERL · n.º 4')
   })
 })

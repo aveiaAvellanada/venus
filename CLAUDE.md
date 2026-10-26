@@ -96,6 +96,8 @@ Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app c
 
 - Panel → Inventario y precios (2026-10-26): miniatura de la foto en cada fila, vista Lista / Tarjetas (tarjetas de a 48, lista de a 100 con "Mostrar más"), orden por Referencia, Más recientes, Stock, Precio y, con `costos`, Costo y Margen (menú y encabezados; sin costo va al final), chip "Sin foto"; la vista y el orden se recuerdan en el navegador (`panel-inventario-vista`). Lógica en `web/src/lib/inventario.ts` (`ordenar`, `resumenTallas`).
 
+- Un zapato, una referencia y foto obligatoria (2026-10-26, migración `20261026150000_referencia_unica_y_foto_heredada` aplicada al remoto con el conector y registrada con esa versión, probada con rollback): en la carga inicial dos colores del mismo zapato escritos en filas aparte apartaron cada uno su código (Ilario V quedó como `ESC-VERL-004` y `-005`; corregido en el remoto: el azul pasó a `ESC-VERL-004`, era el único caso). Ahora la app y el panel usan la referencia de la otra fila con la misma descripción y marca (`referenciaDeHermana`), y la base, al crear una talla con un código que nadie usa para un zapato que ya existe, le pone el del zapato. Una talla nueva sin foto toma la de su color. Un zapato nuevo no se crea sin foto (`erroresFactura`, `erroresCargaInicial`, editor de calzado con `fotoDeModeloColor`); la carga masiva por Excel no lleva fotos y no la pide.
+
 ## No construir en esta versión
 - Facturación electrónica DIAN
 - E-commerce o catálogo por WhatsApp

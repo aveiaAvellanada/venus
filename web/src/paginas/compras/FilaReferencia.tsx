@@ -25,7 +25,7 @@ const soloDigitos = (t: string) => t.replace(/[^\d.]/g, '')
 // talla (20–45) y costo/precios por rango de tallas. La Carga inicial la usa
 // sin costo y con las tallas que ya existen bloqueadas (su stock no cambia ahí).
 export function FilaReferencia({
-  fila, indice, opcionesDescripcion, opcionesMarca, opcionesColor, opcionesColorSimple,
+  fila, indice, opcionesDescripcion, opcionesMarca, referenciaHermana = '', opcionesColor, opcionesColorSimple,
   alCambiar, alReconocer, alQuitar, alOtroColor, alFoto, alSalirDeTalla,
   conCosto = true, bloquearExistentes = false,
 }: {
@@ -33,6 +33,8 @@ export function FilaReferencia({
   indice: number
   // Descripciones del inventario: escribir una reconoce el zapato y su referencia.
   opcionesDescripcion: string
+  // La referencia de otra fila del mismo zapato (otro color escrito aparte).
+  referenciaHermana?: string
   opcionesMarca: string
   // Colores ya usados (también los de dos, "Rojo y blanco") y los básicos.
   opcionesColor: string
@@ -98,7 +100,7 @@ export function FilaReferencia({
   return (
     <section aria-label={`Referencia ${indice + 1}`} className="flex flex-col gap-3 rounded-2xl border border-borde bg-fondo p-4">
       <div className="flex flex-wrap items-end gap-2">
-        <FotoColor fila={fila} indice={indice} alFoto={alFoto} />
+        <FotoColor fila={fila} indice={indice} referenciaHermana={referenciaHermana} alFoto={alFoto} />
         <label className="min-w-48 flex-1 text-xs text-texto3">
           Descripción
           <input {...campo('descripcion')} list={opcionesDescripcion} onBlur={alReconocer} aria-label={`Descripción de la fila ${indice + 1}`} className={entrada} />
@@ -275,7 +277,12 @@ export function FilaReferencia({
 // Foto de esta referencia y color. Se elige (o se arrastra encima), se encuadra
 // y se sube recortada y liviana con el nombre de la referencia y el color; al
 // guardar queda en todas sus tallas. Si ya tenía, se muestra esa.
-function FotoColor({ fila, indice, alFoto }: { fila: FilaFactura; indice: number; alFoto: (url: string, referencia: string) => void }) {
+function FotoColor({ fila, indice, referenciaHermana, alFoto }: {
+  fila: FilaFactura
+  indice: number
+  referenciaHermana: string
+  alFoto: (url: string, referencia: string) => void
+}) {
   const entradaArchivo = useRef<HTMLInputElement>(null)
   const [archivo, setArchivo] = useState<File | null>(null)
   const [subiendo, setSubiendo] = useState(false)
@@ -303,7 +310,8 @@ function FotoColor({ fila, indice, alFoto }: { fila: FilaFactura; indice: number
     if (!elegido || !puede) return
     setSubiendo(true)
     try {
-      const referencia = fila.referencia.trim() || await referenciaParaModelo(fila.descripcion, fila.marca, fila.categoria)
+      const referencia = fila.referencia.trim() || referenciaHermana
+        || await referenciaParaModelo(fila.descripcion, fila.marca, fila.categoria)
       const nombre = nombreFoto(referencia, fila.descripcion, fila.color)!
       alFoto(await subirFotoCatalogo(nombre, await procesarFotoProducto(elegido, ajuste)), referencia)
     } catch (e) {

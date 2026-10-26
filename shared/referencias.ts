@@ -78,13 +78,34 @@ export function modeloDeDescripcion(
 // nueva, apartada para nombrar la foto).
 export function referenciaPorDescripcion(
   indice: Map<string, ModeloConocido[]>,
-  fila: { referencia: string; descripcion: string; marca: string },
+  fila: FilaConReferencia,
+  hermanas: FilaConReferencia[] = [],
 ): string {
   const m = modeloDeDescripcion(indice, fila.descripcion, fila.marca)
   if (m) return m.referencia
   const actual = plano(fila.referencia)
   const deOtro = !!actual && [...indice.values()].some((ms) => ms.some((x) => plano(x.referencia) === actual))
-  return deOtro ? '' : fila.referencia
+  const propia = deOtro ? '' : fila.referencia
+  return propia.trim() ? propia : referenciaDeHermana(hermanas, fila)
+}
+
+export interface FilaConReferencia {
+  id?: string
+  referencia: string
+  descripcion: string
+  marca: string
+}
+
+// Otra fila del mismo formulario con la misma descripción y marca (otro color
+// escrito aparte) que ya tiene referencia: es el mismo zapato y lleva la misma.
+export function referenciaDeHermana(hermanas: FilaConReferencia[], fila: FilaConReferencia): string {
+  const descripcion = plano(fila.descripcion)
+  if (!descripcion) return ''
+  const marca = plano(fila.marca)
+  const hermana = hermanas.find((h) =>
+    h !== fila && (h.id === undefined || h.id !== fila.id)
+    && plano(h.descripcion) === descripcion && plano(h.marca) === marca && h.referencia.trim())
+  return hermana?.referencia.trim() ?? ''
 }
 
 // Descripciones del inventario para sugerir al escribir (sin repetir).

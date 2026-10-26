@@ -21,8 +21,9 @@ const p = (o: Partial<ProductoCalzado>): ProductoCalzado => ({
 })
 
 beforeEach(() => {
+  localStorage.clear()
   vi.mocked(listarCalzado).mockResolvedValue([
-    p({ id: 'a38' }),
+    p({ id: 'a38', foto_url: 'https://fotos/catalogo/tr-1-negro.webp?v=7', created_at: '2026-10-01T10:00:00Z' }),
     p({ id: 'a39', talla: '39', stock_actual: 0 }),
     p({ id: 'b40', referencia: 'BC-7', descripcion: 'Bota caucho', categoria: 'Botas caucho', marca: 'Andina', color: 'Verde', talla: '40', precio_minimo: 40000, precio_maximo: 50000, stock_actual: 6 }),
   ])
@@ -32,7 +33,7 @@ beforeEach(() => {
 
 function pintar(ruta = '/inventario') {
   const cliente = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  render(
+  return render(
     <QueryClientProvider client={cliente}>
       <MemoryRouter initialEntries={[ruta]}><Inventario /></MemoryRouter>
     </QueryClientProvider>,
@@ -117,6 +118,79 @@ describe('Inventario', () => {
     await userEvent.click(within(dialogo).getByRole('button', { name: 'Ver cómo quedan' }))
     expect(await within(dialogo).findByText('1 con mínimo mayor que el máximo')).toBeInTheDocument()
     expect(within(dialogo).getByRole('button', { name: /Aplicar a/ })).toBeDisabled()
+  })
+})
+
+describe('Inventario: fotos, orden y vistas', () => {
+  const referenciasEnOrden = () =>
+    screen.getAllByRole('checkbox', { name: /^Seleccionar (?!todo)/ }).map((c) => c.getAttribute('aria-label')!.replace('Seleccionar ', ''))
+
+  it('cada fila lleva la miniatura de su foto o un zapato gris si no tiene', async () => {
+    pintar()
+    const fila = (await screen.findByText(/TR-1 · Tennis Running/)).closest('tr')!
+    expect(fila.querySelector('img')).toHaveAttribute('src', 'https://fotos/catalogo/tr-1-negro-mini.webp?v=7')
+    const bota = screen.getByText(/BC-7 · Bota caucho/).closest('tr')!
+    expect(within(bota).getByLabelText('Sin foto')).toBeInTheDocument()
+  })
+
+  it('"Sin foto" muestra solo lo que falta por fotografiar', async () => {
+    pintar()
+    await screen.findByText(/TR-1 · Tennis Running/)
+    await userEvent.click(screen.getByRole('radio', { name: 'Sin foto' }))
+    expect(screen.queryByText(/TR-1 · Tennis Running/)).not.toBeInTheDocument()
+    expect(screen.getByText(/BC-7 · Bota caucho/)).toBeInTheDocument()
+  })
+
+  it('el encabezado ordena de mayor a menor y, otra vez, al revés; el menú también ordena', async () => {
+    pintar()
+    await screen.findByText(/TR-1 · Tennis Running/)
+    expect(referenciasEnOrden()).toEqual(['BC-7', 'TR-1'])
+    // TR-1 tiene 3 pares y BC-7 6.
+    await userEvent.click(screen.getByRole('button', { name: 'Stock' }))
+    expect(screen.getByRole('columnheader', { name: 'Stock' })).toHaveAttribute('aria-sort', 'descending')
+    expect(referenciasEnOrden()).toEqual(['BC-7', 'TR-1'])
+    await userEvent.click(screen.getByRole('button', { name: 'Stock' }))
+    expect(referenciasEnOrden()).toEqual(['TR-1', 'BC-7'])
+    await userEvent.click(screen.getByRole('button', { name: 'Precio' }))
+    expect(referenciasEnOrden()).toEqual(['TR-1', 'BC-7'])
+    // Costo: la bota no tiene, va al final aunque se ordene de menor a mayor.
+    await userEvent.selectOptions(screen.getByLabelText('Ordenar'), 'Costo más bajo')
+    expect(referenciasEnOrden()).toEqual(['TR-1', 'BC-7'])
+    await userEvent.selectOptions(screen.getByLabelText('Ordenar'), 'Referencia Z–A')
+    expect(referenciasEnOrden()).toEqual(['TR-1', 'BC-7'])
+    expect(screen.getByRole('columnheader', { name: 'Referencia' })).toHaveAttribute('aria-sort', 'descending')
+  })
+
+  it('sin permiso de costos no ofrece ordenar por costo ni margen', async () => {
+    vi.mocked(costosPorProducto).mockRejectedValue(new Error('No tienes permiso para ver costos.'))
+    pintar()
+    await screen.findByText(/TR-1 · Tennis Running/)
+    const opciones = within(screen.getByLabelText('Ordenar')).getAllByRole('option').map((o) => o.textContent)
+    expect(opciones).toContain('Más recientes')
+    expect(opciones).not.toContain('Margen más alto')
+  })
+
+  it('tarjetas con foto, precio, stock y tallas; la vista y el orden se recuerdan', async () => {
+    const { unmount } = pintar()
+    await screen.findByText(/TR-1 · Tennis Running/)
+    await userEvent.selectOptions(screen.getByLabelText('Ordenar'), 'Más stock')
+    await userEvent.click(screen.getByRole('radio', { name: 'Tarjetas' }))
+    const tarjetas = within(screen.getByRole('list', { name: 'Tarjetas del inventario' })).getAllByRole('listitem')
+    expect(tarjetas).toHaveLength(2)
+    const tr1 = tarjetas.find((t) => within(t).queryByText('Tennis Running'))!
+    expect(within(tr1).getByText('38–39 · 2 tallas')).toBeInTheDocument()
+    expect(within(tr1).getByText('$90.000 – $120.000')).toBeInTheDocument()
+    expect(within(tr1).getByText('3 pares')).toBeInTheDocument()
+    expect(tr1.querySelector('img')).toHaveAttribute('src', 'https://fotos/catalogo/tr-1-negro-mini.webp?v=7')
+    // Seleccionar desde las tarjetas sirve igual para cambiar precios.
+    await userEvent.click(screen.getByLabelText('Seleccionar todo lo visible'))
+    expect(screen.getByText('2 referencias · 3 tallas')).toBeInTheDocument()
+
+    unmount()
+    pintar()
+    expect(await screen.findByRole('list', { name: 'Tarjetas del inventario' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Tarjetas' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByLabelText('Ordenar')).toHaveValue('stock:desc')
   })
 })
 

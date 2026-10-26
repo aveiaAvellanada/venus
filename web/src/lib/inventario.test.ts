@@ -1,4 +1,6 @@
-import { aCsv, agrupar, compararTallas, costoDeGrupo, filtrar, margen, totales, type ProductoCalzado } from './inventario'
+import {
+  aCsv, agrupar, compararTallas, costoDeGrupo, filtrar, margen, ordenar, resumenTallas, totales, type ProductoCalzado,
+} from './inventario'
 
 let n = 0
 const p = (o: Partial<ProductoCalzado>): ProductoCalzado => ({
@@ -39,6 +41,46 @@ describe('inventario', () => {
     expect(filtrar(grupos, { ...base, estado: 'agotados' }).map((g) => g.referencia)).toEqual(['BC-1'])
     expect(filtrar(grupos, { ...base, estado: 'inactivos' }).map((g) => g.referencia)).toEqual(['OLD'])
     expect(filtrar(grupos, { ...base, marca: 'Kalzado' }).map((g) => g.referencia)).toEqual(['TR-1'])
+  })
+
+  it('la foto del grupo es la de cualquiera de sus tallas; "Sin foto" muestra las activas que no tienen', () => {
+    const grupos = agrupar([
+      p({ talla: '38' }), p({ talla: '39', foto_url: 'https://x/catalogo/tr-1-negro.webp?v=1' }),
+      p({ referencia: 'BC-1', descripcion: 'Bota' }),
+      p({ referencia: 'OLD', descripcion: 'Vieja', activo: false }),
+    ])
+    expect(grupos.find((g) => g.referencia === 'TR-1')!.foto).toBe('https://x/catalogo/tr-1-negro.webp?v=1')
+    const base = { texto: '', categoria: '', marca: '', estado: 'sin_foto' as const }
+    expect(filtrar(grupos, base).map((g) => g.referencia)).toEqual(['BC-1'])
+  })
+
+  it('ordena por stock, precio, costo, margen y lo más reciente; sin costo va al final', () => {
+    const a = p({ referencia: 'A-1', stock_actual: 5, precio_maximo: 100000, created_at: '2026-10-01T10:00:00Z' })
+    const b = p({ referencia: 'B-1', stock_actual: 9, precio_maximo: 80000, created_at: '2026-10-20T10:00:00Z' })
+    const c = p({ referencia: 'C-1', stock_actual: 1, precio_maximo: 150000, created_at: '2026-10-10T10:00:00Z' })
+    const grupos = agrupar([c, a, b])
+    const refs = (orden: Parameters<typeof ordenar>[1], costos?: Parameters<typeof ordenar>[2]) =>
+      ordenar(grupos, orden, costos).map((g) => g.referencia)
+    expect(refs({ campo: 'referencia', dir: 'asc' })).toEqual(['A-1', 'B-1', 'C-1'])
+    expect(refs({ campo: 'referencia', dir: 'desc' })).toEqual(['C-1', 'B-1', 'A-1'])
+    expect(refs({ campo: 'stock', dir: 'desc' })).toEqual(['B-1', 'A-1', 'C-1'])
+    expect(refs({ campo: 'stock', dir: 'asc' })).toEqual(['C-1', 'A-1', 'B-1'])
+    expect(refs({ campo: 'precio', dir: 'desc' })).toEqual(['C-1', 'A-1', 'B-1'])
+    expect(refs({ campo: 'recientes', dir: 'desc' })).toEqual(['B-1', 'C-1', 'A-1'])
+    const costos = new Map([[a.id, { ultimo: 80000, promedio: 80000 }], [b.id, { ultimo: 40000, promedio: 40000 }]])
+    expect(refs({ campo: 'costo', dir: 'desc' }, costos)).toEqual(['A-1', 'B-1', 'C-1'])
+    expect(refs({ campo: 'costo', dir: 'asc' }, costos)).toEqual(['B-1', 'A-1', 'C-1'])
+    // Margen: B 50 %, A 20 %; C sin costo, al final en las dos direcciones.
+    expect(refs({ campo: 'margen', dir: 'desc' }, costos)).toEqual(['B-1', 'A-1', 'C-1'])
+    expect(refs({ campo: 'margen', dir: 'asc' }, costos)).toEqual(['A-1', 'B-1', 'C-1'])
+    // No cambia la lista original.
+    expect(grupos.map((g) => g.referencia)).toEqual(['A-1', 'B-1', 'C-1'])
+  })
+
+  it('resume las tallas activas', () => {
+    expect(resumenTallas(agrupar([p({ talla: '33' }), p({ talla: '25' }), p({ talla: '29' }), p({ talla: '40', activo: false })])[0]))
+      .toBe('25–33 · 3 tallas')
+    expect(resumenTallas(agrupar([p({ talla: null })])[0])).toBe('Única · 1 talla')
   })
 
   it('margen sobre el precio de venta', () => {

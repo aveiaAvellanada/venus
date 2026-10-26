@@ -26,7 +26,7 @@ declare
     'obtener_base_predeterminada', 'obtener_costos_productos', 'obtener_dashboard_dueno', 'obtener_deuda_proveedor',
     'obtener_dias_trabajados', 'obtener_gastos_periodo', 'obtener_reporte_diario',
     'obtener_reporte_periodo', 'obtener_resumen_dia', 'obtener_ventas_por_subperiodo', 'reabrir_caja',
-    'registrar_compra', 'registrar_devolucion', 'registrar_pago_proveedor', 'registrar_venta', 'restablecer_pin_empleado'
+    'referencia_para_modelo', 'registrar_compra', 'registrar_devolucion', 'registrar_pago_proveedor', 'registrar_venta', 'restablecer_pin_empleado'
   ];
 begin
   -- 1. RLS activado en todas las tablas de public.
@@ -108,6 +108,13 @@ begin
     and not exists (select 1 from pg_trigger t
                     where t.tgrelid = c.oid and t.tgname = 'trg_' || c.relname || '_auditoria');
   if v is not null then raise exception 'Tablas sin historial de acciones: %', v; end if;
+
+  -- 8. Referencia automática (20261026120000): todo el calzado tiene la suya
+  --    y ya no hay Deportivo.
+  select count(*) into n from public.productos_calzado where nullif(btrim(referencia), '') is null;
+  if n > 0 then raise exception '% zapatos sin referencia: falta la migración 20261026120000.', n; end if;
+  select count(*) into n from public.productos_calzado where categoria = 'Deportivo';
+  if n > 0 then raise exception '% zapatos en Deportivo: falta la migración 20261026120000.', n; end if;
 
   -- Informativo: con quién entra cada persona y quién debe crear PIN nuevo.
   for v in

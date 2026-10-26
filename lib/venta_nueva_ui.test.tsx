@@ -48,7 +48,7 @@ import { ToastProvider } from '../components/ui'
 import NuevaVenta from '../app/(app)/ventas/nueva'
 
 const ZAPATO = {
-  id: 'z1', tipo: 'calzado' as const, titulo: 'Nike Air 40 Negro', detalle: 'Deportivo',
+  id: 'z1', tipo: 'calzado' as const, titulo: 'Nike Air 40 Negro', detalle: 'Fútbol',
   precio: 180000, precioMin: 150000, precioMax: 220000, stock: 5,
 }
 

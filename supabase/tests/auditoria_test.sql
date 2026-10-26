@@ -64,7 +64,7 @@ begin
   perform pg_temp.como(v_ana);
   insert into public.productos_calzado
     (descripcion, categoria, talla, color, precio_minimo, precio_maximo, stock_actual, stock_minimo)
-    values ('Zapato Auditado', 'Deportivo', '40', 'Negro', 80000, 100000, 5, 1)
+    values ('Zapato Auditado', 'Tennis', '40', 'Negro', 80000, 100000, 5, 1)
     returning id into v_zapato;
   update public.productos_calzado set precio_maximo = 110000 where id = v_zapato;
   -- Mismo valor: no es un cambio y no deja rastro (aunque toque updated_at/updated_by).

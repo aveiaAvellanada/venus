@@ -69,8 +69,9 @@ nombres cambian con el tiempo (se desactivan, entran nuevas).
    de venta. Ventas Separadas / pago parcial = v2.
 2. **Devoluciones** — total, parcial o cambio de producto; restituye stock de
    calzado (Granja no); todo auditado.
-3. **Inventario de Calzado** — 7 categorías fijas (Chanclas, Escolar, Botas caucho,
-   Deportivo, Tennis, Clásico, Otros); precio mín/máx; búsqueda en tiempo real;
+3. **Inventario de Calzado** — 9 categorías fijas (Chanclas, Escolar, Botas caucho,
+   Botas material, Fútbol, Infantil, Tennis, Clásico, Otros); referencia automática
+   (`TEN-NIKE-012`, la pone la base); precio mín/máx; búsqueda en tiempo real;
    "¿Agregar otro similar?".
 4. **Granja** (antes Productos Varios) — productos que no son zapatos; **sin stock**;
    precio se ingresa en el momento de la venta; cálculo por unidad de medida.

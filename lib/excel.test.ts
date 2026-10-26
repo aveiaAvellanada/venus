@@ -50,20 +50,32 @@ describe('CATEGORIAS — valor vs etiqueta', () => {
       'Chanclas',
       'Escolar',
       'Botas caucho',
-      'Deportivo',
+      'Botas material',
+      'Futbol',
+      'Infantil',
       'Tennis',
       'Clasico',
       'Otros',
     ])
   })
 
-  it('"Clasico" se muestra con tilde aunque se guarde sin ella', () => {
-    const clasico = CATEGORIAS.find(c => c.valor === 'Clasico')
-    expect(clasico?.etiqueta).toBe('Clásico')
+  it('"Clasico" y "Futbol" se muestran con tilde aunque se guarden sin ella', () => {
+    expect(CATEGORIAS.find(c => c.valor === 'Clasico')?.etiqueta).toBe('Clásico')
+    expect(CATEGORIAS.find(c => c.valor === 'Futbol')?.etiqueta).toBe('Fútbol')
   })
 })
 
 describe('validarFilas — categoría', () => {
+  it('acepta "Fútbol" y "Botas material" del Excel; "Deportivo" ya no existe', () => {
+    const { validas, errores } = validarFilas([
+      { ...filaBase, categoria: 'Fútbol' },
+      { ...filaBase, categoria: 'botas material', talla: '41' },
+      { ...filaBase, categoria: 'Deportivo', talla: '42' },
+    ])
+    expect(validas.map((v) => v.categoria)).toEqual(['Futbol', 'Botas material'])
+    expect(errores).toHaveLength(1)
+  })
+
   it('acepta "Clásico" del Excel pero devuelve el valor sin tilde que acepta la DB', () => {
     const { validas, errores } = validarFilas([{ ...filaBase, categoria: 'Clásico' }])
     expect(errores).toHaveLength(0)

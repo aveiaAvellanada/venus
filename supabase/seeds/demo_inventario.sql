@@ -69,14 +69,14 @@ with nuevos (referencia, categoria, descripcion, marca, talla, color,
     ('DEMO-BOT-INF', 'Botas caucho', 'Bota caucho infantil',       'Macha',   '28', 'Amarillo', 30000, 42000,  6, 3),
     ('DEMO-BOT-INF', 'Botas caucho', 'Bota caucho infantil',       'Macha',   '30', 'Rojo',     30000, 42000,  1, 3),
 
-    -- Deportivo
-    ('DEMO-DEP-ADI', 'Deportivo', 'Guayos fútbol Adidas',      'Adidas', '39', 'Negro',   95000, 140000,  3, 1),
-    ('DEMO-DEP-ADI', 'Deportivo', 'Guayos fútbol Adidas',      'Adidas', '41', 'Blanco',  95000, 140000,  2, 1),
-    ('DEMO-DEP-ADI', 'Deportivo', 'Guayos fútbol Adidas',      'Adidas', '43', 'Rojo',   100000, 150000,  0, 1),
-    ('DEMO-DEP-NIK', 'Deportivo', 'Tenis running Revolution',  'Nike',   '40', 'Gris',   120000, 175000,  4, 1),
-    ('DEMO-DEP-NIK', 'Deportivo', 'Tenis running Revolution',  'Nike',   '42', 'Negro',  120000, 175000,  2, 1),
-    ('DEMO-DEP-PUM', 'Deportivo', 'Tenis Puma Softride',       'Puma',   '39', 'Azul',   110000, 160000,  3, 1),
-    ('DEMO-DEP-PUM', 'Deportivo', 'Tenis Puma Softride',       'Puma',   '41', 'Negro',  110000, 160000,  1, 1),
+    -- Fútbol y Tennis (antes Deportivo)
+    ('DEMO-FUT-ADI', 'Futbol', 'Guayos fútbol Adidas',      'Adidas', '39', 'Negro',   95000, 140000,  3, 1),
+    ('DEMO-FUT-ADI', 'Futbol', 'Guayos fútbol Adidas',      'Adidas', '41', 'Blanco',  95000, 140000,  2, 1),
+    ('DEMO-FUT-ADI', 'Futbol', 'Guayos fútbol Adidas',      'Adidas', '43', 'Rojo',   100000, 150000,  0, 1),
+    ('DEMO-DEP-NIK', 'Tennis', 'Tenis running Revolution',  'Nike',   '40', 'Gris',   120000, 175000,  4, 1),
+    ('DEMO-DEP-NIK', 'Tennis', 'Tenis running Revolution',  'Nike',   '42', 'Negro',  120000, 175000,  2, 1),
+    ('DEMO-DEP-PUM', 'Tennis', 'Tenis Puma Softride',       'Puma',   '39', 'Azul',   110000, 160000,  3, 1),
+    ('DEMO-DEP-PUM', 'Tennis', 'Tenis Puma Softride',       'Puma',   '41', 'Negro',  110000, 160000,  1, 1),
 
     -- Tennis
     ('DEMO-TEN-AF1', 'Tennis', 'Tenis Nike Air Force 1',      'Nike',     '38', 'Blanco', 150000, 210000,  3, 1),
@@ -130,7 +130,7 @@ with costos (referencia, costo) as (
     ('DEMO-CHA-RIO',  11000), ('DEMO-CHA-HAV', 20000), ('DEMO-CHA-BRA', 13000),
     ('DEMO-CHA-INF',   9000), ('DEMO-ESC-JAG', 38000), ('DEMO-ESC-BAT', 33000),
     ('DEMO-ESC-CRO',  43000), ('DEMO-BOT-VEN', 23000), ('DEMO-BOT-CRO', 32000),
-    ('DEMO-BOT-INF',  18000), ('DEMO-DEP-ADI', 58000), ('DEMO-DEP-NIK', 74000),
+    ('DEMO-BOT-INF',  18000), ('DEMO-FUT-ADI', 58000), ('DEMO-DEP-NIK', 74000),
     ('DEMO-DEP-PUM',  67000), ('DEMO-TEN-AF1', 92000), ('DEMO-TEN-CON', 80000),
     ('DEMO-TEN-VAN',  86000), ('DEMO-TEN-ADS', 89000), ('DEMO-CLA-VEL', 83000),
     ('DEMO-CLA-BOS',  74000), ('DEMO-CLA-DAM', 58000), ('DEMO-OTR-PAN', 15000),

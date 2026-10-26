@@ -151,8 +151,8 @@ describe('subirFotoCalzado', () => {
     Object.defineProperty(Platform, 'OS', { value: plataforma, configurable: true })
   })
 
-  it('sin referencia ni descripción no se puede poner', async () => {
-    await expect(subirFotoCalzado('file:///zapato.jpg', null)).rejects.toThrow('referencia')
+  it('sin nombre (sin referencia ni descripción) no se puede poner', async () => {
+    await expect(subirFotoCalzado('file:///zapato.jpg', null)).rejects.toThrow('descripción')
     expect(mockUpload).not.toHaveBeenCalled()
   })
 

@@ -58,17 +58,17 @@ const tipoPrueba = (rol: string): TipoPerfilPrueba =>
 
 const CALZADO = [
   {
-    id: 'c1', descripcion: 'Nike Air Max', marca: 'Nike', referencia: '4521', categoria: 'Deportivo',
+    id: 'c1', descripcion: 'Nike Air Max', marca: 'Nike', referencia: '4521', categoria: 'Futbol',
     talla: '40', color: 'Negro', precio_minimo: 150000, precio_maximo: 220000, stock_actual: 5,
     stock_minimo: 1, foto_url: null, proveedor_id: null, activo: true,
   },
   {
-    id: 'c2', descripcion: 'Nike Air Max', marca: 'Nike', referencia: '4521', categoria: 'Deportivo',
+    id: 'c2', descripcion: 'Nike Air Max', marca: 'Nike', referencia: '4521', categoria: 'Futbol',
     talla: '41', color: 'Negro', precio_minimo: 150000, precio_maximo: 220000, stock_actual: 0,
     stock_minimo: 1, foto_url: null, proveedor_id: null, activo: true,
   },
   {
-    id: 'c3', descripcion: 'Nike Air Max', marca: 'Nike', referencia: '4521', categoria: 'Deportivo',
+    id: 'c3', descripcion: 'Nike Air Max', marca: 'Nike', referencia: '4521', categoria: 'Futbol',
     talla: '39', color: 'Blanco', precio_minimo: 140000, precio_maximo: 200000, stock_actual: 2,
     stock_minimo: 1, foto_url: null, proveedor_id: null, activo: true,
   },

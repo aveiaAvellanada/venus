@@ -53,7 +53,7 @@ BEGIN
 
   -- 3. Create product (calzado) with stock_actual = 10
   INSERT INTO public.productos_calzado (descripcion, categoria, talla, color, precio_minimo, precio_maximo, stock_actual, stock_minimo, proveedor_id, activo)
-  VALUES ('Zapato Running', 'Deportivo', '40', 'Negro', 80000, 100000, 10, 2, v_proveedor_id, true)
+  VALUES ('Zapato Running', 'Tennis', '40', 'Negro', 80000, 100000, 10, 2, v_proveedor_id, true)
   RETURNING id INTO v_producto_id;
 
   -- Verify initial stock is 10

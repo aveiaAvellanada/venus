@@ -10,7 +10,7 @@ tomado del validador real de la app (`lib/excel.ts` → `validarFilas`) y del su
 - En la app: **Inventario → Carga inicial → Subir Archivo Excel → (revisar resumen) → Confirmar y Subir**.
 - En el panel web: **Carga masiva** (`/carga`). Ahí además:
   - se ve antes de guardar qué tallas son nuevas, cuáles cambian y cuáles quedan igual;
-  - una talla que ya existe (misma referencia —o descripción si no tiene—, color y talla) actualiza descripción, marca, categoría y precios, pero **no su stock**;
+  - una talla que ya existe (misma referencia —o descripción y marca si no la trae—, color y talla) actualiza descripción, marca, categoría y precios, pero **no su stock**;
   - una talla repetida en el archivo es un error;
   - el **costo es opcional**;
   - se puede **descargar el inventario** en este mismo formato, corregir precios en Excel y volver a subirlo.
@@ -34,10 +34,10 @@ en medio**.
 
 | Columna | Obligatoria | Tipo de dato | Restricciones | Encabezados aceptados |
 |---|---|---|---|---|
-| **categoria** | Sí | Texto (lista cerrada) | Debe ser **una de las 7 categorías** (ver abajo). | `categoria`, `Categoría` |
+| **categoria** | Sí | Texto (lista cerrada) | Debe ser **una de las 9 categorías** (ver abajo). | `categoria`, `Categoría` |
 | **descripcion** | Sí | Texto | No puede estar vacía. Se recorta (trim). | `descripcion`, `Descripción` |
 | **marca** | No | Texto | Libre. Vacío → sin marca (null). Se recorta. | `marca`, `Marca` |
-| **referencia** | No | Texto | Libre. Vacío → null. Se recorta. | `referencia`, `ref` |
+| **referencia** | No | Texto | Déjala vacía: la base pone una sola (p. ej. `TEN-NIKE-012`), la misma para todas las tallas y colores con igual descripción y marca. Si la escribes, se usa esa. | `referencia`, `ref` |
 | **talla** | No | Texto o número | Libre. Si pones un número (38) se guarda como texto ("38"). Vacío → null. | `talla`, `Talla` |
 | **color** | No | Texto | Libre. Vacío → null. Se recorta. | `color`, `Color` |
 | **precio_minimo** | Sí | Número | `≥ 0`. Sin símbolos (ver "Formato de números"). | `precio_minimo`, `preciomin`, `precio_min` |
@@ -45,13 +45,14 @@ en medio**.
 | **costo** | Sí | Número | `≥ 0`. Es el costo de compra (dato financiero, solo dueño). | `costo`, `costo_compra` |
 | **stock** | Sí | Número entero | `≥ 0` y **sin decimales** (8 sí, 8.5 no). | `stock`, `cantidad`, `stock_actual` |
 
-### Las 7 categorías válidas (exactas)
+### Las 9 categorías válidas (exactas)
 ```
-Chanclas · Escolar · Botas caucho · Deportivo · Tennis · Clásico · Otros
+Chanclas · Escolar · Botas caucho · Botas material · Fútbol · Infantil · Tennis · Clásico · Otros
 ```
 - La comparación **ignora mayúsculas y tildes**, pero **el espacio sí cuenta**:
-  `Botas caucho` debe llevar el espacio (`Botascaucho` falla).
-- Es **`Tennis`** (doble n), no "Tenis". `Clásico` también vale escrito `Clasico`.
+  `Botas caucho` y `Botas material` llevan el espacio (`Botascaucho` falla).
+- `Deportivo` ya no existe (desde el 2026-10-26): usa `Fútbol`, `Infantil` o `Tennis`.
+- Es **`Tennis`** (doble n), no "Tenis". `Clásico` y `Fútbol` también valen sin tilde.
 - Cualquier otro valor produce el error *"Categoría inválida o no encontrada"*.
 
 ### Formato de números (precios, costo, stock)
@@ -65,7 +66,7 @@ Chanclas · Escolar · Botas caucho · Deportivo · Tennis · Clásico · Otros
 ## Mensajes de error (qué significan)
 | Mensaje | Causa |
 |---|---|
-| `Categoría inválida o no encontrada: X` | La categoría no es una de las 7, o falta. |
+| `Categoría inválida o no encontrada: X` | La categoría no es una de las 9, o falta. |
 | `Descripción vacía` | Falta la descripción o quedó en blanco. |
 | `Precio mínimo inválido` | Falta, no es número, o es negativo. |
 | `Precio máximo inválido` | Falta, no es número, es negativo, o es **menor** que el mínimo. |

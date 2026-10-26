@@ -104,7 +104,7 @@ El vendedor elige qué tipo de producto va a vender:
 
 **Zapatos:**
 - Buscador con texto libre que filtra en tiempo real por descripción, referencia, talla o color
-- Filtros rápidos tocables: Categoría (Chanclas, Escolar, Botas caucho, Deportivo, Tennis, Clásico, Otros), Talla, Color
+- Filtros rápidos tocables: Categoría (Chanclas, Escolar, Botas caucho, Botas material, Fútbol, Infantil, Tennis, Clásico, Otros), Talla, Color
 - Los filtros se combinan entre sí
 - Resultados muestran: foto, descripción, talla, color, precio mínimo–máximo, stock disponible
 - Productos agotados NO aparecen en la búsqueda de ventas
@@ -277,9 +277,9 @@ en otra talla. No hay movimiento de dinero, solo de inventario.
 #### 3.3.1 Catálogo
 
 Cada producto tiene:
-- Categoría (Chanclas, Escolar, Botas caucho, Deportivo, Tennis, Clásico, Otros)
+- Categoría (Chanclas, Escolar, Botas caucho, Botas material, Fútbol, Infantil, Tennis, Clásico, Otros; "Deportivo" salió el 2026-10-26)
 - Descripción
-- Referencia del proveedor (opcional)
+- Referencia: la pone sola la base, `CATEGORÍA-MARCA-NÚMERO` (p. ej. `TEN-NIKE-012`), la misma para todas las tallas y colores con igual descripción y marca; no lleva color ni talla y no cambia después (cambiarla es solo del dueño)
 - Foto (cámara directa o desde galería, comprimida a máx 500KB, opcional)
 - Proveedor vinculado (opcional)
 - Talla

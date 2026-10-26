@@ -152,7 +152,7 @@ export async function procesarFotoCalzado(uri: string, formato: FormatoFoto = fo
  * grande, con versión.
  */
 export async function subirFotoCalzado(uri: string, nombre: string | null): Promise<string> {
-  if (!nombre) throw new Error('Escribe la referencia (o la descripción) para poner la foto.');
+  if (!nombre) throw new Error('Escribe la descripción para poner la foto.');
   const fotos = await procesarFotoCalzado(uri);
   const { extension, tipo } = fotos.formato;
   const opciones = { upsert: true, cacheControl: CACHE_FOTOS, contentType: tipo };

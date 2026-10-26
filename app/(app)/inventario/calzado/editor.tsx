@@ -6,11 +6,12 @@ import * as ImagePicker from 'expo-image-picker'
 import { useAuth, useRequireModulo } from '../../../../lib/auth'
 import { tienePermiso } from '../../../../lib/permisos'
 import { supabase } from '../../../../lib/supabase'
-import { guardarCalzado } from '../../../../lib/inventario'
+import { guardarCalzado, referenciaParaModelo } from '../../../../lib/inventario'
 import { claveReferencia, fijarGarantiaReferencia } from '../../../../lib/tramos'
 import { PreciosPorTalla } from '../../../../components/PreciosPorTalla'
 import { subirFotoCalzado } from '../../../../lib/imagenes'
 import { nombreFoto, urlMiniatura } from '../../../../shared/fotos'
+import { describirReferencia } from '../../../../shared/referencias'
 import { CATEGORIAS } from '../../../../lib/excel'
 import { coloresDeNombre, MAX_COLORES, MENSAJE_MAX_COLORES } from '../../../../lib/productos'
 import { usePaddingInferior, MARGEN_SUPERIOR } from '../../../../hooks/usePaddingInferior'
@@ -46,7 +47,7 @@ export default function CalzadoEditorScreen() {
   const [stockMinimo, setStockMinimo] = useState('1')
   const [fotoUrl, setFotoUrl] = useState<string | null>(null)
   // Foto elegida que falta subir: se sube al guardar, con el nombre de la
-  // referencia (o la descripción) y el color que queden.
+  // referencia y el color que queden.
   const [fotoNueva, setFotoNueva] = useState<string | null>(null)
   const [activo, setActivo] = useState(true)
 
@@ -142,8 +143,8 @@ export default function CalzadoEditorScreen() {
   )
 
   const handleSeleccionarImagen = async () => {
-    if (!nombreFoto(referencia, descripcion, color)) {
-      mostrar('Escribe la referencia (o la descripción) para poner la foto.', 'error')
+    if (!descripcion.trim()) {
+      mostrar('Escribe la descripción para poner la foto.', 'error')
       return
     }
     Alert.alert(
@@ -194,16 +195,28 @@ export default function CalzadoEditorScreen() {
       mostrar(MENSAJE_MAX_COLORES, 'error')
       return
     }
-    if (garantia.trim() && !claveReferencia(referencia)) {
-      mostrar('La garantía se fija por referencia: escribe la referencia.', 'error')
-      return
-    }
 
     setLoading(true)
+    // La referencia la pone la base: la del modelo (misma descripción y marca)
+    // o una nueva. Un zapato nuevo la pide siempre, así "Agregar otro similar"
+    // con otra descripción no queda en el modelo anterior.
+    let ref = referencia.trim()
+    if (!id || !ref) {
+      try {
+        ref = await referenciaParaModelo(descripcion, marca || null, categoria)
+        setReferencia(ref)
+      } catch (err: any) {
+        console.error(err)
+        mostrar('No se pudo poner la referencia: ' + err.message, 'error')
+        setLoading(false)
+        return
+      }
+    }
+
     let foto = fotoUrl
     if (fotoNueva) {
       try {
-        foto = await subirFotoCalzado(fotoNueva, nombreFoto(referencia, descripcion, color))
+        foto = await subirFotoCalzado(fotoNueva, nombreFoto(ref, descripcion, color))
         setFotoUrl(foto)
         setFotoNueva(null)
       } catch (err: any) {
@@ -220,7 +233,7 @@ export default function CalzadoEditorScreen() {
         categoria,
         descripcion,
         marca: marca || null,
-        referencia: referencia || null,
+        referencia: ref,
         talla: talla || null,
         color: color || null,
         precio_minimo: min,
@@ -234,8 +247,8 @@ export default function CalzadoEditorScreen() {
 
       // La garantía es de toda la referencia, no solo de esta talla y color.
       const cambioGarantia = garantia.trim() !== garantiaInicial.trim()
-      if (claveReferencia(referencia) && (cambioGarantia || (!id && garantia.trim()))) {
-        await fijarGarantiaReferencia(referencia.trim(), garantia.trim() ? parseInt(garantia, 10) : null)
+      if (cambioGarantia || (!id && garantia.trim())) {
+        await fijarGarantiaReferencia(ref, garantia.trim() ? parseInt(garantia, 10) : null)
       }
 
       if (!id) {
@@ -359,8 +372,20 @@ export default function CalzadoEditorScreen() {
           <View style={{ marginTop: espacio.m }}>
             <CampoTexto etiqueta="Marca" value={marca} onChangeText={setMarca} placeholder="Ej. Nike" />
           </View>
-          <View style={{ marginTop: espacio.m }}>
-            <CampoTexto etiqueta="Referencia" value={referencia} onChangeText={setReferencia} placeholder="Ej. NK-001" />
+          <View style={{ marginTop: espacio.m, gap: 2 }}>
+            <Text style={[tipografia.etiqueta, { color: paleta.texto2 }]}>Referencia</Text>
+            {referencia.trim() ? (
+              <>
+                <Text style={[tipografia.cuerpoLg, { color: paleta.texto }]} testID="referencia">{referencia.trim()}</Text>
+                {describirReferencia(referencia) ? (
+                  <Text style={[tipografia.caption, { color: paleta.texto3 }]}>{describirReferencia(referencia)}</Text>
+                ) : null}
+              </>
+            ) : (
+              <Text style={[tipografia.caption, { color: paleta.texto3 }]}>
+                Se pone sola al guardar: la misma de las otras tallas y colores de este zapato, o una nueva.
+              </Text>
+            )}
           </View>
           <View style={{ marginTop: espacio.m }}>
             <CampoTexto
@@ -464,9 +489,7 @@ export default function CalzadoEditorScreen() {
           <Tarjeta>
             <Text style={[tipografia.h3, { color: paleta.texto }]}>Precios por talla</Text>
             <Text style={[tipografia.caption, { color: paleta.texto3, marginTop: 4 }]}>
-              {id
-                ? 'Para fijar precios distintos por talla, esta referencia necesita un nombre de referencia.'
-                : 'Guarda el producto con su referencia y luego podrás fijar precios distintos por rango de tallas.'}
+              Guarda el producto y luego podrás fijar precios distintos por rango de tallas.
             </Text>
           </Tarjeta>
         )}

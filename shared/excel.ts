@@ -2,19 +2,22 @@
 // y validación de filas. Puro, sin Expo ni React Native: lo usan la app del
 // celular (lib/excel.ts, que además lee el archivo) y el panel web.
 
-// Las 7 categorías canónicas de calzado (PRD v4.0 §3). Única fuente de verdad:
+// Las 9 categorías de calzado (PRD v4.0 §3; desde 20261026120000 sin
+// Deportivo y con Botas material, Fútbol e Infantil). Única fuente de verdad:
 // cualquier pantalla que muestre chips de categoría debe importar esto.
 //
 // `valor` es lo que acepta el CHECK de productos_calzado.categoria y lo único
-// que puede viajar a la base; `etiqueta` es lo que lee el usuario. Difieren solo
-// en Clasico/Clásico: la tilde nunca puede llegar a la DB.
+// que puede viajar a la base; `etiqueta` es lo que lee el usuario. Difieren en
+// Futbol/Fútbol y Clasico/Clásico: la tilde nunca puede llegar a la DB.
 import { coloresDeNombre, MAX_COLORES, MENSAJE_MAX_COLORES, nombreColores } from './colores';
 
 export const CATEGORIAS = [
   { valor: 'Chanclas', etiqueta: 'Chanclas' },
   { valor: 'Escolar', etiqueta: 'Escolar' },
   { valor: 'Botas caucho', etiqueta: 'Botas caucho' },
-  { valor: 'Deportivo', etiqueta: 'Deportivo' },
+  { valor: 'Botas material', etiqueta: 'Botas material' },
+  { valor: 'Futbol', etiqueta: 'Fútbol' },
+  { valor: 'Infantil', etiqueta: 'Infantil' },
   { valor: 'Tennis', etiqueta: 'Tennis' },
   { valor: 'Clasico', etiqueta: 'Clásico' },
   { valor: 'Otros', etiqueta: 'Otros' }

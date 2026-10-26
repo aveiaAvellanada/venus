@@ -2,25 +2,21 @@ import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 
 import { Camera, CopyPlus, LoaderCircle, Scissors, Trash2, X } from 'lucide-react'
 import { pesos } from '@shared/formato'
 import { nombreFoto, urlMiniatura } from '@shared/fotos'
+import { CATEGORIAS as CATEGORIAS_CALZADO } from '@shared/excel'
+import { describirReferencia } from '@shared/referencias'
 import {
   dividirRango, enRango, fotoDeFila, fotoDesactualizada, partesColor, subtotalFila, TALLAS, unidadesFila, unirColores, unirRango,
   type FilaFactura, type RangoPrecio,
 } from '../../lib/compras'
 import { paresNuevos } from '@shared/cargaInicial'
 import { subirFotoCatalogo } from '../../lib/datos/fotos'
+import { referenciaParaModelo } from '../../lib/datos/inventario'
 import { procesarFotoProducto, type AjusteRecorte } from '../../lib/imagen'
 import { RecortarFoto } from '../../componentes/RecortarFoto'
 import { Insignia, PuntoColor } from '../../componentes/ui'
 
-export const CATEGORIAS = [
-  { valor: 'Chanclas', titulo: 'Chanclas' },
-  { valor: 'Escolar', titulo: 'Escolar' },
-  { valor: 'Botas caucho', titulo: 'Botas caucho' },
-  { valor: 'Deportivo', titulo: 'Deportivo' },
-  { valor: 'Tennis', titulo: 'Tennis' },
-  { valor: 'Clasico', titulo: 'Clásico' },
-  { valor: 'Otros', titulo: 'Otros' },
-]
+// Las mismas de la app y la base (shared/excel.ts).
+export const CATEGORIAS = CATEGORIAS_CALZADO.map((c) => ({ valor: c.valor, titulo: c.etiqueta }))
 
 const entrada = 'w-full rounded-lg border border-borde bg-fondo px-2.5 py-1.5 text-sm outline-none focus:border-primario'
 const soloDigitos = (t: string) => t.replace(/[^\d.]/g, '')
@@ -29,13 +25,14 @@ const soloDigitos = (t: string) => t.replace(/[^\d.]/g, '')
 // talla (20–45) y costo/precios por rango de tallas. La Carga inicial la usa
 // sin costo y con las tallas que ya existen bloqueadas (su stock no cambia ahí).
 export function FilaReferencia({
-  fila, indice, opcionesReferencia, opcionesMarca, opcionesColor, opcionesColorSimple,
+  fila, indice, opcionesDescripcion, opcionesMarca, opcionesColor, opcionesColorSimple,
   alCambiar, alReconocer, alQuitar, alOtroColor, alFoto, alSalirDeTalla,
   conCosto = true, bloquearExistentes = false,
 }: {
   fila: FilaFactura
   indice: number
-  opcionesReferencia: string
+  // Descripciones del inventario: escribir una reconoce el zapato y su referencia.
+  opcionesDescripcion: string
   opcionesMarca: string
   // Colores ya usados (también los de dos, "Rojo y blanco") y los básicos.
   opcionesColor: string
@@ -45,7 +42,7 @@ export function FilaReferencia({
   alReconocer: () => void
   alQuitar: () => void
   alOtroColor: () => void
-  alFoto: (url: string) => void
+  alFoto: (url: string, referencia: string) => void
   alSalirDeTalla: (talla: string, direccion: 'abajo' | 'arriba') => void
   conCosto?: boolean
   bloquearExistentes?: boolean
@@ -78,7 +75,7 @@ export function FilaReferencia({
   }
   const nuevas = TALLAS.filter((t) => Number(fila.cantidades[t]) > 0 && !fila.existentes[t]).length
   const conocida = Object.keys(fila.existentes).length > 0
-  const campo = (clave: 'referencia' | 'descripcion' | 'marca') => ({
+  const campo = (clave: 'descripcion' | 'marca') => ({
     value: fila[clave],
     onChange: (e: { target: { value: string } }) => alCambiar({ ...fila, [clave]: e.target.value }),
   })
@@ -102,9 +99,13 @@ export function FilaReferencia({
     <section aria-label={`Referencia ${indice + 1}`} className="flex flex-col gap-3 rounded-2xl border border-borde bg-fondo p-4">
       <div className="flex flex-wrap items-end gap-2">
         <FotoColor fila={fila} indice={indice} alFoto={alFoto} />
-        <label className="w-36 text-xs text-texto3">
-          Referencia
-          <input {...campo('referencia')} list={opcionesReferencia} onBlur={alReconocer} aria-label={`Referencia de la fila ${indice + 1}`} className={entrada} />
+        <label className="min-w-48 flex-1 text-xs text-texto3">
+          Descripción
+          <input {...campo('descripcion')} list={opcionesDescripcion} onBlur={alReconocer} aria-label={`Descripción de la fila ${indice + 1}`} className={entrada} />
+        </label>
+        <label className="w-32 text-xs text-texto3">
+          Marca
+          <input {...campo('marca')} list={opcionesMarca} onBlur={alReconocer} aria-label={`Marca de la fila ${indice + 1}`} className={entrada} />
         </label>
         <label className="w-32 text-xs text-texto3">
           <span className="flex items-center gap-1">Color {fila.color.trim() ? <PuntoColor color={fila.color} /> : null}</span>
@@ -131,14 +132,6 @@ export function FilaReferencia({
             className={`${entrada} disabled:opacity-50`}
           />
         </label>
-        <label className="min-w-48 flex-1 text-xs text-texto3">
-          Descripción
-          <input {...campo('descripcion')} aria-label={`Descripción de la fila ${indice + 1}`} className={entrada} />
-        </label>
-        <label className="w-32 text-xs text-texto3">
-          Marca
-          <input {...campo('marca')} list={opcionesMarca} aria-label={`Marca de la fila ${indice + 1}`} className={entrada} />
-        </label>
         <label className="w-36 text-xs text-texto3">
           Categoría
           <select
@@ -151,8 +144,18 @@ export function FilaReferencia({
             {CATEGORIAS.map((c) => <option key={c.valor} value={c.valor}>{c.titulo}</option>)}
           </select>
         </label>
+        <div className="w-36 text-xs text-texto3">
+          Referencia
+          <p
+            aria-label={`Referencia de la fila ${indice + 1}`}
+            title={describirReferencia(fila.referencia) ?? 'La referencia se pone sola al guardar'}
+            className="truncate py-1.5 text-sm text-texto"
+          >
+            {fila.referencia.trim() || <span className="text-texto3">Se pone sola</span>}
+          </p>
+        </div>
         <span className="pb-1.5">
-          {conocida ? <Insignia>En inventario</Insignia> : fila.referencia.trim() ? <Insignia tono="primario">Nueva</Insignia> : null}
+          {conocida ? <Insignia>En inventario</Insignia> : fila.descripcion.trim() ? <Insignia tono="primario">Nueva</Insignia> : null}
         </span>
         <button
           type="button"
@@ -272,13 +275,15 @@ export function FilaReferencia({
 // Foto de esta referencia y color. Se elige (o se arrastra encima), se encuadra
 // y se sube recortada y liviana con el nombre de la referencia y el color; al
 // guardar queda en todas sus tallas. Si ya tenía, se muestra esa.
-function FotoColor({ fila, indice, alFoto }: { fila: FilaFactura; indice: number; alFoto: (url: string) => void }) {
+function FotoColor({ fila, indice, alFoto }: { fila: FilaFactura; indice: number; alFoto: (url: string, referencia: string) => void }) {
   const entradaArchivo = useRef<HTMLInputElement>(null)
   const [archivo, setArchivo] = useState<File | null>(null)
   const [subiendo, setSubiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const foto = fotoDeFila(fila)
-  const nombre = nombreFoto(fila.referencia, fila.descripcion, fila.color)
+  // La foto se nombra con la referencia y el color; un zapato nuevo aparta la
+  // suya, que la base arma con la descripción, la marca y la categoría.
+  const puede = !!fila.referencia.trim() || (!!fila.descripcion.trim() && !!fila.categoria)
   const vieja = fotoDesactualizada(fila)
 
   function elegir(elegido: File | undefined) {
@@ -295,10 +300,12 @@ function FotoColor({ fila, indice, alFoto }: { fila: FilaFactura; indice: number
   async function usar(ajuste: AjusteRecorte) {
     const elegido = archivo
     setArchivo(null)
-    if (!elegido || !nombre) return
+    if (!elegido || !puede) return
     setSubiendo(true)
     try {
-      alFoto(await subirFotoCatalogo(nombre, await procesarFotoProducto(elegido, ajuste)))
+      const referencia = fila.referencia.trim() || await referenciaParaModelo(fila.descripcion, fila.marca, fila.categoria)
+      const nombre = nombreFoto(referencia, fila.descripcion, fila.color)!
+      alFoto(await subirFotoCatalogo(nombre, await procesarFotoProducto(elegido, ajuste)), referencia)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo subir la foto.')
     } finally {
@@ -308,11 +315,11 @@ function FotoColor({ fila, indice, alFoto }: { fila: FilaFactura; indice: number
 
   function soltar(e: DragEvent<HTMLButtonElement>) {
     e.preventDefault()
-    if (nombre && !subiendo) elegir(e.dataTransfer.files[0])
+    if (puede && !subiendo) elegir(e.dataTransfer.files[0])
   }
 
-  const titulo = !nombre
-    ? 'Escribe la referencia (o la descripción) para poner la foto'
+  const titulo = !puede
+    ? 'Escribe la descripción y elige la categoría para poner la foto'
     : error ?? (vieja ? 'Cambiaste la referencia o el color: vuelve a poner la foto' : foto ? 'Cambiar la foto de este color (o arrastra otra aquí)' : 'Agregar la foto de este color (o arrastra una aquí)')
 
   return (
@@ -323,7 +330,7 @@ function FotoColor({ fila, indice, alFoto }: { fila: FilaFactura; indice: number
         accept="image/*"
         aria-label={`Foto de la fila ${indice + 1}`}
         className="hidden"
-        disabled={!nombre}
+        disabled={!puede}
         onChange={(e) => elegir(e.target.files?.[0])}
       />
       <button
@@ -331,7 +338,7 @@ function FotoColor({ fila, indice, alFoto }: { fila: FilaFactura; indice: number
         onClick={() => entradaArchivo.current?.click()}
         onDragOver={(e) => e.preventDefault()}
         onDrop={soltar}
-        disabled={!nombre || subiendo}
+        disabled={!puede || subiendo}
         title={titulo}
         className={`relative flex size-16 items-center justify-center overflow-hidden rounded-xl border bg-superficie2 text-texto3 hover:border-borde-fuerte disabled:cursor-not-allowed disabled:opacity-60 ${error || vieja ? 'border-peligro' : 'border-borde'}`}
       >
@@ -345,8 +352,13 @@ function FotoColor({ fila, indice, alFoto }: { fila: FilaFactura; indice: number
       <span className={`text-[10px] ${error || vieja ? 'text-peligro-texto' : 'text-texto3'}`}>
         {subiendo ? 'Subiendo…' : error ? 'No se subió' : vieja ? 'Vuelve a ponerla' : fila.foto ? 'Foto nueva' : foto ? 'Foto' : 'Sin foto'}
       </span>
-      {archivo && nombre ? (
-        <RecortarFoto archivo={archivo} nombre={`${nombre}.webp`} alUsar={usar} alCancelar={() => setArchivo(null)} />
+      {archivo && puede ? (
+        <RecortarFoto
+          archivo={archivo}
+          nombre={fila.referencia.trim() ? `${nombreFoto(fila.referencia, fila.descripcion, fila.color)}.webp` : 'la referencia nueva y el color'}
+          alUsar={usar}
+          alCancelar={() => setArchivo(null)}
+        />
       ) : null}
     </div>
   )

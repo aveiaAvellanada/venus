@@ -59,14 +59,14 @@ export function NuevaCompra() {
   const costos = useQuery({ queryKey: ['costos'], queryFn: costosPorProducto, retry: false })
 
   // Referencias del inventario por referencia + color, con sus tallas y precios.
-  const { conocidas, referencias, marcas, colores, coloresSimples } = useCatalogo(inventario.data)
+  const { conocidas, modelos, descripciones, marcas, colores, coloresSimples } = useCatalogo(inventario.data)
 
   const cambiarFactura = (cambios: Partial<Factura>) => setBorrador((b) => ({ ...b, factura: { ...b.factura, ...cambios } }))
   const cambiarFila = (id: string, fila: FilaFactura) =>
     setBorrador((b) => ({ ...b, factura: { ...b.factura, filas: b.factura.filas.map((x) => (x.id === id ? fila : x)) } }))
   // La foto llega cuando termina de subir: se pone sobre la fila como esté en ese momento.
-  const fijarFoto = (id: string, foto: string) =>
-    setBorrador((b) => ({ ...b, factura: { ...b.factura, filas: b.factura.filas.map((x) => (x.id === id ? { ...x, foto } : x)) } }))
+  const fijarFoto = (id: string, foto: string, referencia: string) =>
+    setBorrador((b) => ({ ...b, factura: { ...b.factura, filas: b.factura.filas.map((x) => (x.id === id ? { ...x, foto, referencia } : x)) } }))
 
   // "Otro color": la misma referencia justo debajo, lista para escribir el color.
   function agregarOtroColor(fila: FilaFactura) {
@@ -79,10 +79,10 @@ export function NuevaCompra() {
     setTimeout(() => document.getElementById(`color-${nueva.id}`)?.focus(), 0)
   }
 
-  // Al escribir referencia y color de algo que ya existe: trae descripción, marca,
-  // categoría, las tallas existentes y sus precios (y el último costo).
+  // Al escribir la descripción y el color de algo que ya existe: toma su
+  // referencia y trae categoría, las tallas existentes y sus precios (y el último costo).
   function reconocer(fila: FilaFactura) {
-    const nueva = reconocerFila(fila, conocidas, costos.data)
+    const nueva = reconocerFila(fila, conocidas, modelos, costos.data)
     if (nueva !== fila) cambiarFila(fila.id, nueva)
   }
 
@@ -215,8 +215,8 @@ export function NuevaCompra() {
         </div>
       </Tarjeta>
 
-      <datalist id="opciones-referencia">
-        {referencias.map((r) => <option key={r} value={r} />)}
+      <datalist id="opciones-descripcion">
+        {descripciones.map((d) => <option key={d} value={d} />)}
       </datalist>
       <datalist id="opciones-color">
         {colores.map((c) => <option key={c} value={c} />)}
@@ -233,13 +233,13 @@ export function NuevaCompra() {
           key={fila.id}
           fila={fila}
           indice={i}
-          opcionesReferencia="opciones-referencia"
+          opcionesDescripcion="opciones-descripcion"
           opcionesMarca="opciones-marca"
           opcionesColor="opciones-color"
           opcionesColorSimple="opciones-color-simple"
           alCambiar={(nueva) => cambiarFila(fila.id, nueva)}
           alOtroColor={() => agregarOtroColor(fila)}
-          alFoto={(url) => fijarFoto(fila.id, url)}
+          alFoto={(url, referencia) => fijarFoto(fila.id, url, referencia)}
           alReconocer={() => reconocer(fila)}
           alQuitar={() => cambiarFactura({ filas: f.filas.length > 1 ? f.filas.filter((x) => x.id !== fila.id) : [filaVacia(nuevoId())] })}
           alSalirDeTalla={(talla, direccion) => moverEntreFilas(i, talla, direccion)}

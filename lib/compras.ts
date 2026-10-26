@@ -6,6 +6,7 @@ import {
   payloadFactura, tallasConCantidad, TALLAS, type Factura, type FilaFactura,
 } from '../shared/compras'
 import { comprimirBajoLimite, subirFotoCalzado } from './imagenes'
+import { referenciaParaModelo } from './inventario'
 import { bytesDesdeUriLocal } from './storage'
 import { supabase } from './supabase'
 
@@ -139,6 +140,10 @@ export async function registrarLlegada(
 // con el nombre de la referencia (o la descripción) y el color. Sin ninguno de
 // los dos todavía no se puede poner.
 export const nombreFotoFila = (fila: FilaFactura): string | null => nombreFoto(fila.referencia, fila.descripcion, fila.color)
+// Un zapato nuevo aparta su referencia (la base la arma con la descripción,
+// la marca y la categoría) para nombrar la foto antes de guardar la compra.
+export const referenciaParaFila = (fila: FilaFactura): Promise<string> =>
+  referenciaParaModelo(fila.descripcion, fila.marca || null, fila.categoria)
 export const subirFotoColor = (uri: string, fila: FilaFactura): Promise<string> => subirFotoCalzado(uri, nombreFotoFila(fila))
 
 // Después de guardar: la foto nueva de cada referencia y color queda en todas

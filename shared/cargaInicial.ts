@@ -26,9 +26,11 @@ export const filaParaGuardar = (fila: FilaFactura): boolean =>
   tallasNuevas(fila).length > 0 || (!!fila.foto && tieneExistentes(fila))
 
 // La misma llave con que cargar_inventario reconoce una talla: referencia (o
-// descripción si no tiene) y color, sin importar mayúsculas ni espacios.
+// descripción y marca si no tiene) y color, sin importar mayúsculas ni espacios.
 export function claveDeFila(fila: FilaFactura): string {
-  const base = fila.referencia.trim() ? `r|${fila.referencia.trim().toLowerCase()}` : `d|${fila.descripcion.trim().toLowerCase()}`
+  const base = fila.referencia.trim()
+    ? `r|${fila.referencia.trim().toLowerCase()}`
+    : `d|${fila.descripcion.trim().toLowerCase()}|${fila.marca.trim().toLowerCase()}`
   return `${base}|${(nombreColores(fila.color) ?? '').toLowerCase()}`
 }
 

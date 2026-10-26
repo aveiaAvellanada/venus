@@ -2257,6 +2257,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      referencia_para_modelo: {
+        Args: { p_categoria: string; p_descripcion: string; p_marca: string }
+        Returns: string
+      }
       registrar_compra: {
         Args: { p_clave_idempotencia?: string; p_compra: Json }
         Returns: Json

@@ -43,7 +43,7 @@ begin
   perform pg_temp.como(v_ana);
   insert into public.productos_calzado
     (descripcion, categoria, talla, color, precio_minimo, precio_maximo, stock_actual, stock_minimo)
-    values ('Zapato Doc', 'Deportivo', '40', 'Negro', 80000, 100000, 5, 1)
+    values ('Zapato Doc', 'Tennis', '40', 'Negro', 80000, 100000, 5, 1)
     returning id into v_zapato;
   perform public.abrir_caja();
 

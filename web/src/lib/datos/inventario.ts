@@ -18,6 +18,16 @@ export async function listarCalzado(): Promise<ProductoCalzado[]> {
   }
 }
 
+// La referencia que tendrá un zapato antes de guardarlo: la de su modelo
+// (misma descripción y marca) si ya existe; si no, una nueva como TEN-NIKE-012.
+export async function referenciaParaModelo(descripcion: string, marca: string, categoria: string): Promise<string> {
+  const { data, error } = await supabase.rpc('referencia_para_modelo', {
+    p_descripcion: descripcion.trim(), p_marca: marca.trim(), p_categoria: categoria,
+  })
+  if (error) throw error
+  return data
+}
+
 export async function costosPorProducto(): Promise<Map<string, Costo>> {
   const { data, error } = await supabase.rpc('obtener_costos_productos')
   if (error) throw error

@@ -1,11 +1,15 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronRight, Download, Search, Tag, X } from 'lucide-react'
-import { pesos } from '@shared/formato'
 import {
-  aCsv, agrupar, costoDeGrupo, filtrar, margen, totales,
-  type EstadoInventario, type GrupoReferencia, type ProductoCalzado,
+  ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRight, Download, Footprints, LayoutGrid, List, Search, Tag, X,
+} from 'lucide-react'
+import { pesos } from '@shared/formato'
+import { urlMiniatura } from '@shared/fotos'
+import { CATEGORIAS } from '@shared/excel'
+import {
+  aCsv, agrupar, costoDeGrupo, direccionInicial, filtrar, margen, ORDEN_INICIAL, ordenar, resumenTallas, totales,
+  type CampoOrden, type EstadoInventario, type GrupoReferencia, type Orden, type ProductoCalzado, type Totales,
 } from '../../lib/inventario'
 import { actualizarTalla, costosPorProducto, listarCalzado } from '../../lib/datos/inventario'
 import { Boton, Cargando, ConColor, Insignia, MensajeError } from '../../componentes/ui'
@@ -15,9 +19,44 @@ const ESTADOS: { valor: EstadoInventario; titulo: string }[] = [
   { valor: 'activos', titulo: 'Activos' },
   { valor: 'bajo_minimo', titulo: 'Bajo mínimo' },
   { valor: 'agotados', titulo: 'Agotados' },
+  { valor: 'sin_foto', titulo: 'Sin foto' },
   { valor: 'inactivos', titulo: 'Inactivos' },
 ]
-const POR_PAGINA = 100
+
+// "Futbol" → "Fútbol", "Clasico" → "Clásico": en la base van sin tilde.
+const tituloCategoria = (c: string) => CATEGORIAS.find((x) => x.valor === c)?.etiqueta ?? c
+
+type Vista = 'lista' | 'tarjetas'
+// Las tarjetas llevan foto grande: se muestran de a menos.
+const POR_PAGINA: Record<Vista, number> = { lista: 100, tarjetas: 48 }
+
+const ORDENES: { valor: Orden; titulo: string; conCostos?: boolean }[] = [
+  { valor: { campo: 'referencia', dir: 'asc' }, titulo: 'Referencia A–Z' },
+  { valor: { campo: 'referencia', dir: 'desc' }, titulo: 'Referencia Z–A' },
+  { valor: { campo: 'recientes', dir: 'desc' }, titulo: 'Más recientes' },
+  { valor: { campo: 'stock', dir: 'desc' }, titulo: 'Más stock' },
+  { valor: { campo: 'stock', dir: 'asc' }, titulo: 'Menos stock' },
+  { valor: { campo: 'precio', dir: 'desc' }, titulo: 'Precio más alto' },
+  { valor: { campo: 'precio', dir: 'asc' }, titulo: 'Precio más bajo' },
+  { valor: { campo: 'costo', dir: 'desc' }, titulo: 'Costo más alto', conCostos: true },
+  { valor: { campo: 'costo', dir: 'asc' }, titulo: 'Costo más bajo', conCostos: true },
+  { valor: { campo: 'margen', dir: 'desc' }, titulo: 'Margen más alto', conCostos: true },
+  { valor: { campo: 'margen', dir: 'asc' }, titulo: 'Margen más bajo', conCostos: true },
+]
+const claveOrden = (o: Orden) => `${o.campo}:${o.dir}`
+
+// La vista y el orden se recuerdan en este navegador (solo comodidad: sin
+// almacenamiento, la pantalla abre como siempre).
+const PREFERENCIAS = 'panel-inventario-vista'
+function leerPreferencias(): { vista: Vista; orden: Orden } {
+  try {
+    const g = JSON.parse(localStorage.getItem(PREFERENCIAS) ?? 'null') as { vista?: unknown; orden?: Orden } | null
+    const orden = ORDENES.find((o) => g?.orden && claveOrden(o.valor) === claveOrden(g.orden))?.valor ?? ORDEN_INICIAL
+    return { vista: g?.vista === 'tarjetas' ? 'tarjetas' : 'lista', orden }
+  } catch {
+    return { vista: 'lista', orden: ORDEN_INICIAL }
+  }
+}
 
 export function Inventario() {
   const [parametros] = useSearchParams()
@@ -28,7 +67,13 @@ export function Inventario() {
   const [abiertos, setAbiertos] = useState<Set<string>>(new Set())
   const [seleccion, setSeleccion] = useState<Set<string>>(new Set())
   const [cambiando, setCambiando] = useState(false)
-  const [visibles, setVisibles] = useState(POR_PAGINA)
+  const [preferencias] = useState(leerPreferencias)
+  const [vista, setVista] = useState<Vista>(preferencias.vista)
+  const [orden, setOrden] = useState<Orden>(preferencias.orden)
+  const [visibles, setVisibles] = useState(POR_PAGINA[preferencias.vista])
+  useEffect(() => {
+    try { localStorage.setItem(PREFERENCIAS, JSON.stringify({ vista, orden })) } catch { /* sin almacenamiento: no se recuerda */ }
+  }, [vista, orden])
 
   const productos = useQuery({ queryKey: ['inventario'], queryFn: listarCalzado })
   // Sin permiso de costos la base responde con error: la pantalla sigue sin esas columnas.
@@ -37,9 +82,10 @@ export function Inventario() {
 
   const grupos = useMemo(() => agrupar(productos.data ?? []), [productos.data])
   const filtrados = useMemo(
-    () => filtrar(grupos, { texto, categoria, marca, estado }),
-    [grupos, texto, categoria, marca, estado],
+    () => ordenar(filtrar(grupos, { texto, categoria, marca, estado }), orden, mapaCostos),
+    [grupos, texto, categoria, marca, estado, orden, mapaCostos],
   )
+  const enPantalla = filtrados.slice(0, visibles)
   const suma = useMemo(() => totales(filtrados, mapaCostos), [filtrados, mapaCostos])
   const categorias = useMemo(() => [...new Set(grupos.map((g) => g.categoria))].sort(), [grupos])
   const marcas = useMemo(
@@ -69,7 +115,17 @@ export function Inventario() {
     URL.revokeObjectURL(enlace.href)
   }
 
-  const todosVisiblesMarcados = filtrados.length > 0 && filtrados.slice(0, visibles).every((g) => seleccion.has(g.clave))
+  const todosVisiblesMarcados = enPantalla.length > 0 && enPantalla.every((g) => seleccion.has(g.clave))
+  const marcarVisibles = () => setSeleccion(todosVisiblesMarcados ? new Set() : new Set(enPantalla.map((g) => g.clave)))
+  function cambiarVista(nueva: Vista) {
+    setVista(nueva)
+    setVisibles(POR_PAGINA[nueva])
+  }
+  // Tocar el encabezado de una columna ordena por ella; tocarlo otra vez, al revés.
+  function ordenarPor(campo: CampoOrden) {
+    setOrden((o) => (o.campo === campo ? { campo, dir: o.dir === 'asc' ? 'desc' : 'asc' } : { campo, dir: direccionInicial(campo) }))
+  }
+  const ordenes = ORDENES.filter((o) => !o.conCostos || mapaCostos)
 
   return (
     <div className="flex flex-col gap-5">
@@ -89,7 +145,7 @@ export function Inventario() {
           <Search aria-hidden className="size-4 text-texto3" />
           <input
             value={texto}
-            onChange={(e) => { setTexto(e.target.value); setVisibles(POR_PAGINA) }}
+            onChange={(e) => { setTexto(e.target.value); setVisibles(POR_PAGINA[vista]) }}
             placeholder="Referencia, descripción, marca o color"
             aria-label="Buscar en el inventario"
             className="w-full bg-transparent text-sm outline-none"
@@ -100,18 +156,42 @@ export function Inventario() {
             </button>
           ) : null}
         </label>
-        <Selector etiqueta="Categoría" valor={categoria} opciones={categorias} alCambiar={setCategoria} />
+        <Selector etiqueta="Categoría" valor={categoria} opciones={categorias} titulo={tituloCategoria} alCambiar={setCategoria} />
         <Selector etiqueta="Marca" valor={marca} opciones={marcas} alCambiar={setMarca} />
-        <div role="radiogroup" aria-label="Estado" className="flex rounded-xl border border-borde bg-fondo p-0.5">
+        <div role="radiogroup" aria-label="Estado" className="flex max-w-full overflow-x-auto rounded-xl border border-borde bg-fondo p-0.5">
           {ESTADOS.map((e) => (
             <button
               key={e.valor}
               role="radio"
               aria-checked={estado === e.valor}
               onClick={() => { setEstado(e.valor); setSeleccion(new Set()) }}
-              className={`rounded-lg px-3 py-1.5 text-sm ${estado === e.valor ? 'bg-primario-soft font-semibold text-primario' : 'text-texto2 hover:text-texto'}`}
+              className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm ${estado === e.valor ? 'bg-primario-soft font-semibold text-primario' : 'text-texto2 hover:text-texto'}`}
             >
               {e.titulo}
+            </button>
+          ))}
+        </div>
+        <select
+          aria-label="Ordenar"
+          value={claveOrden(orden)}
+          onChange={(e) => setOrden(ORDENES.find((o) => claveOrden(o.valor) === e.target.value)!.valor)}
+          className="rounded-xl border border-borde bg-fondo px-3 py-2 text-sm text-texto2"
+        >
+          {ordenes.some((o) => claveOrden(o.valor) === claveOrden(orden)) ? null : <option value={claveOrden(orden)}>Ordenar</option>}
+          {ordenes.map((o) => <option key={claveOrden(o.valor)} value={claveOrden(o.valor)}>{o.titulo}</option>)}
+        </select>
+        <div role="radiogroup" aria-label="Vista" className="flex rounded-xl border border-borde bg-fondo p-0.5">
+          {([['lista', 'Lista', List], ['tarjetas', 'Tarjetas', LayoutGrid]] as const).map(([valor, titulo, Icono]) => (
+            <button
+              key={valor}
+              role="radio"
+              aria-checked={vista === valor}
+              aria-label={titulo}
+              title={titulo}
+              onClick={() => cambiarVista(valor)}
+              className={`rounded-lg px-2.5 py-1.5 ${vista === valor ? 'bg-primario-soft text-primario' : 'text-texto2 hover:text-texto'}`}
+            >
+              <Icono aria-hidden className="size-4" />
             </button>
           ))}
         </div>
@@ -130,7 +210,34 @@ export function Inventario() {
         </div>
       ) : null}
 
-      {productos.isPending ? <Cargando /> : productos.isError ? <MensajeError error={productos.error} /> : (
+      {productos.isPending ? <Cargando /> : productos.isError ? <MensajeError error={productos.error} /> : vista === 'tarjetas' ? (
+        <div className="flex flex-col gap-3">
+          <label className="flex items-center gap-2 self-start text-sm text-texto2">
+            <input type="checkbox" checked={todosVisiblesMarcados} onChange={marcarVisibles} />
+            Seleccionar todo lo visible
+          </label>
+          {filtrados.length === 0 ? (
+            <p className="rounded-2xl border border-borde bg-fondo px-4 py-10 text-center text-texto3">Ningún producto coincide con los filtros.</p>
+          ) : (
+            <ul aria-label="Tarjetas del inventario" className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(13rem,1fr))]">
+              {enPantalla.map((g) => (
+                <TarjetaGrupo
+                  key={g.clave}
+                  grupo={g}
+                  marcado={seleccion.has(g.clave)}
+                  alMarcar={() => setSeleccion((s) => alternar(s, g.clave))}
+                />
+              ))}
+            </ul>
+          )}
+          <p className="text-sm text-texto2"><Resumen suma={suma} conCostos={!!mapaCostos} /></p>
+          {filtrados.length > visibles ? (
+            <Boton variante="fantasma" onClick={() => setVisibles((v) => v + POR_PAGINA.tarjetas)} className="self-center">
+              Mostrar más ({filtrados.length - visibles} restantes)
+            </Boton>
+          ) : null}
+        </div>
+      ) : (
         <div className="overflow-x-auto rounded-2xl border border-borde bg-fondo">
           <table className="w-full min-w-[56rem] text-sm">
             <thead className="border-b border-borde text-left text-xs text-texto3">
@@ -140,22 +247,20 @@ export function Inventario() {
                     type="checkbox"
                     aria-label="Seleccionar todo lo visible"
                     checked={todosVisiblesMarcados}
-                    onChange={() => setSeleccion(todosVisiblesMarcados
-                      ? new Set()
-                      : new Set(filtrados.slice(0, visibles).map((g) => g.clave)))}
+                    onChange={marcarVisibles}
                   />
                 </th>
-                <th className="py-3 pr-3 font-medium">Referencia</th>
+                <Encabezado campo="referencia" orden={orden} alOrdenar={ordenarPor}>Referencia</Encabezado>
                 <th className="py-3 pr-3 font-medium">Categoría</th>
                 <th className="py-3 pr-3 font-medium">Tallas (stock)</th>
-                <th className="py-3 pr-3 text-right font-medium">Stock</th>
-                <th className="py-3 pr-3 text-right font-medium">Precio</th>
-                {mapaCostos ? <th className="py-3 pr-3 text-right font-medium">Costo</th> : null}
-                {mapaCostos ? <th className="py-3 pr-4 text-right font-medium">Margen</th> : null}
+                <Encabezado campo="stock" orden={orden} alOrdenar={ordenarPor} derecha>Stock</Encabezado>
+                <Encabezado campo="precio" orden={orden} alOrdenar={ordenarPor} derecha>Precio</Encabezado>
+                {mapaCostos ? <Encabezado campo="costo" orden={orden} alOrdenar={ordenarPor} derecha>Costo</Encabezado> : null}
+                {mapaCostos ? <Encabezado campo="margen" orden={orden} alOrdenar={ordenarPor} derecha ultima>Margen</Encabezado> : null}
               </tr>
             </thead>
             <tbody>
-              {filtrados.slice(0, visibles).map((g) => (
+              {enPantalla.map((g) => (
                 <Fragment key={g.clave}>
                   <FilaGrupo
                     grupo={g}
@@ -184,14 +289,7 @@ export function Inventario() {
               <tr>
                 <td />
                 <td colSpan={3} className="py-3 pr-3 text-texto2">
-                  {suma.referencias} referencias · {suma.unidades} pares en stock · valor a precio máximo{' '}
-                  <strong className="cifras text-texto">{pesos(suma.valorPrecio)}</strong>
-                  {mapaCostos ? (
-                    <>
-                      {' '}· a costo <strong className="cifras text-texto">{pesos(suma.valorCosto)}</strong>
-                      {suma.sinCosto ? <span className="text-texto3"> ({suma.sinCosto} tallas con stock sin costo registrado)</span> : null}
-                    </>
-                  ) : null}
+                  <Resumen suma={suma} conCostos={!!mapaCostos} />
                 </td>
                 <td colSpan={mapaCostos ? 4 : 2} />
               </tr>
@@ -199,7 +297,7 @@ export function Inventario() {
           </table>
           {filtrados.length > visibles ? (
             <div className="border-t border-borde p-3 text-center">
-              <Boton variante="fantasma" onClick={() => setVisibles((v) => v + POR_PAGINA)}>
+              <Boton variante="fantasma" onClick={() => setVisibles((v) => v + POR_PAGINA.lista)}>
                 Mostrar más ({filtrados.length - visibles} restantes)
               </Boton>
             </div>
@@ -218,10 +316,97 @@ export function Inventario() {
   )
 }
 
-function Selector({ etiqueta, valor, opciones, alCambiar }: {
+function Resumen({ suma, conCostos }: { suma: Totales; conCostos: boolean }) {
+  return (
+    <>
+      {suma.referencias} referencias · {suma.unidades} pares en stock · valor a precio máximo{' '}
+      <strong className="cifras text-texto">{pesos(suma.valorPrecio)}</strong>
+      {conCostos ? (
+        <>
+          {' '}· a costo <strong className="cifras text-texto">{pesos(suma.valorCosto)}</strong>
+          {suma.sinCosto ? <span className="text-texto3"> ({suma.sinCosto} tallas con stock sin costo registrado)</span> : null}
+        </>
+      ) : null}
+    </>
+  )
+}
+
+function Encabezado({ campo, orden, alOrdenar, derecha = false, ultima = false, children }: {
+  campo: CampoOrden
+  orden: Orden
+  alOrdenar: (campo: CampoOrden) => void
+  derecha?: boolean
+  ultima?: boolean
+  children: ReactNode
+}) {
+  const activo = orden.campo === campo
+  const Flecha = !activo ? ArrowUpDown : orden.dir === 'asc' ? ArrowUp : ArrowDown
+  return (
+    <th
+      aria-sort={activo ? (orden.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      className={`py-3 font-medium ${ultima ? 'pr-4' : 'pr-3'} ${derecha ? 'text-right' : ''}`}
+    >
+      <button
+        onClick={() => alOrdenar(campo)}
+        className={`inline-flex items-center gap-1 hover:text-texto ${activo ? 'text-texto' : ''} ${derecha ? 'flex-row-reverse' : ''}`}
+      >
+        {children}
+        <Flecha aria-hidden className={`size-3.5 ${activo ? '' : 'opacity-40'}`} />
+      </button>
+    </th>
+  )
+}
+
+// Miniatura de la foto (la de 400 px del catálogo); sin foto, un zapato gris.
+function Foto({ grupo, className }: { grupo: GrupoReferencia; className: string }) {
+  return grupo.foto ? (
+    <img src={urlMiniatura(grupo.foto) ?? grupo.foto} alt="" loading="lazy" className={`${className} bg-superficie2 object-cover`} />
+  ) : (
+    <span aria-label="Sin foto" className={`${className} flex items-center justify-center bg-superficie2 text-texto3`}>
+      <Footprints aria-hidden className="size-1/3 min-h-4 min-w-4" />
+    </span>
+  )
+}
+
+function TarjetaGrupo({ grupo: g, marcado, alMarcar }: { grupo: GrupoReferencia; marcado: boolean; alMarcar: () => void }) {
+  const nombre = g.referencia ?? g.descripcion
+  return (
+    <li
+      className={`relative flex flex-col overflow-hidden rounded-2xl border bg-fondo ${marcado ? 'border-primario' : 'border-borde'}`}
+    >
+      <input
+        type="checkbox"
+        aria-label={`Seleccionar ${nombre}`}
+        checked={marcado}
+        onChange={alMarcar}
+        className="absolute left-2.5 top-2.5 size-4"
+      />
+      <Foto grupo={g} className="aspect-square w-full" />
+      <div className="flex flex-1 flex-col gap-1 p-3 text-sm">
+        <span className="font-medium leading-snug">{g.descripcion}</span>
+        <span className="text-xs text-texto3">
+          {g.referencia ?? '—'}{g.color ? <> · <ConColor color={g.color} /></> : null}
+        </span>
+        <span className="text-xs text-texto3">{[g.marca, tituloCategoria(g.categoria)].filter(Boolean).join(' · ')}</span>
+        <span className="text-xs text-texto2" title={g.tallas.filter((t) => t.activo).map((t) => `${t.talla ?? 'Única'}: ${t.stock_actual}`).join(' · ')}>
+          {resumenTallas(g)}
+        </span>
+        <span className="mt-auto flex flex-wrap items-end justify-between gap-x-2 pt-1">
+          <span className="cifras font-semibold">
+            {g.precioMin === g.precioMax ? pesos(g.precioMax) : `${pesos(g.precioMin)} – ${pesos(g.precioMax)}`}
+          </span>
+          {g.agotado ? <Insignia tono="peligro">Agotado</Insignia> : <span className="cifras text-xs text-texto2">{g.stock} pares</span>}
+        </span>
+      </div>
+    </li>
+  )
+}
+
+function Selector({ etiqueta, valor, opciones, titulo = (o) => o, alCambiar }: {
   etiqueta: string
   valor: string
   opciones: string[]
+  titulo?: (opcion: string) => string
   alCambiar: (v: string) => void
 }) {
   return (
@@ -232,7 +417,7 @@ function Selector({ etiqueta, valor, opciones, alCambiar }: {
       className="rounded-xl border border-borde bg-fondo px-3 py-2 text-sm text-texto2"
     >
       <option value="">{etiqueta}: todas</option>
-      {opciones.map((o) => <option key={o} value={o}>{o}</option>)}
+      {opciones.map((o) => <option key={o} value={o}>{titulo(o)}</option>)}
     </select>
   )
 }
@@ -254,15 +439,16 @@ function FilaGrupo({ grupo: g, costo, conCostos, abierto, marcado, alAbrir, alMa
         <input type="checkbox" aria-label={`Seleccionar ${nombre}`} checked={marcado} onChange={alMarcar} />
       </td>
       <td className="py-2.5 pr-3">
-        <button onClick={alAbrir} aria-expanded={abierto} className="flex items-start gap-1.5 text-left">
-          {abierto ? <ChevronDown aria-hidden className="mt-0.5 size-4 text-texto3" /> : <ChevronRight aria-hidden className="mt-0.5 size-4 text-texto3" />}
+        <button onClick={alAbrir} aria-expanded={abierto} className="flex items-center gap-2 text-left">
+          {abierto ? <ChevronDown aria-hidden className="size-4 shrink-0 text-texto3" /> : <ChevronRight aria-hidden className="size-4 shrink-0 text-texto3" />}
+          <Foto grupo={g} className="size-10 shrink-0 rounded-lg" />
           <span>
             <span className="block font-medium">{g.referencia ?? '—'} · {g.descripcion}</span>
             <span className="block text-xs text-texto3">{g.marca}{g.marca && g.color ? ' · ' : ''}{g.color ? <ConColor color={g.color} /> : null}</span>
           </span>
         </button>
       </td>
-      <td className="py-2.5 pr-3 text-texto2">{g.categoria}</td>
+      <td className="py-2.5 pr-3 text-texto2">{tituloCategoria(g.categoria)}</td>
       <td className="py-2.5 pr-3">
         <span className="flex flex-wrap gap-1">
           {g.tallas.filter((t) => t.activo).map((t) => (

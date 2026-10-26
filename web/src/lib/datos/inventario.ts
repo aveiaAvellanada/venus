@@ -1,7 +1,7 @@
 import type { Costo, ProductoCalzado } from '../inventario'
 import { supabase } from '../supabase'
 
-const COLUMNAS = 'id, referencia, descripcion, marca, color, categoria, talla, precio_minimo, precio_maximo, stock_actual, stock_minimo, activo, proveedor_id, foto_url'
+const COLUMNAS = 'id, referencia, descripcion, marca, color, categoria, talla, precio_minimo, precio_maximo, stock_actual, stock_minimo, activo, proveedor_id, foto_url, created_at'
 const PAGINA = 1000 // máximo de filas que entrega la API de Supabase por consulta
 
 export async function listarCalzado(): Promise<ProductoCalzado[]> {

@@ -17,6 +17,7 @@ export interface ProductoCalzado {
   activo: boolean
   proveedor_id: string | null
   foto_url?: string | null
+  created_at?: string
 }
 
 export interface Costo {
@@ -31,6 +32,10 @@ export interface GrupoReferencia {
   marca: string | null
   color: string | null
   categoria: string
+  // La foto de esta referencia y color (la misma en todas sus tallas).
+  foto: string | null
+  // Cuándo se creó su primera talla: para ver primero lo último cargado.
+  creado: string
   tallas: ProductoCalzado[]
   stock: number
   precioMin: number
@@ -70,6 +75,8 @@ export function agrupar(productos: ProductoCalzado[]): GrupoReferencia[] {
         marca: tallas[0].marca,
         color: tallas[0].color,
         categoria: tallas[0].categoria,
+        foto: tallas.find((t) => t.foto_url)?.foto_url ?? null,
+        creado: tallas.reduce((min, t) => (t.created_at && (!min || t.created_at < min) ? t.created_at : min), ''),
         tallas,
         stock: activas.reduce((s, t) => s + t.stock_actual, 0),
         precioMin: Math.min(...base.map((t) => Number(t.precio_minimo))),
@@ -82,7 +89,7 @@ export function agrupar(productos: ProductoCalzado[]): GrupoReferencia[] {
     .sort((a, b) => (a.referencia ?? a.descripcion).localeCompare(b.referencia ?? b.descripcion, 'es'))
 }
 
-export type EstadoInventario = 'activos' | 'bajo_minimo' | 'agotados' | 'inactivos'
+export type EstadoInventario = 'activos' | 'bajo_minimo' | 'agotados' | 'sin_foto' | 'inactivos'
 
 export interface Filtros {
   texto: string
@@ -99,12 +106,64 @@ export function filtrar(grupos: GrupoReferencia[], f: Filtros): GrupoReferencia[
     if (f.estado === 'inactivos' ? g.activo : !g.activo) return false
     if (f.estado === 'bajo_minimo' && !g.bajoMinimo) return false
     if (f.estado === 'agotados' && !g.agotado) return false
+    if (f.estado === 'sin_foto' && g.foto) return false
     if (palabras.length) {
       const texto = plano([g.referencia, g.descripcion, g.marca, g.color, g.categoria].filter(Boolean).join(' '))
       if (!palabras.every((p) => texto.includes(p))) return false
     }
     return true
   })
+}
+
+export type CampoOrden = 'referencia' | 'recientes' | 'stock' | 'precio' | 'costo' | 'margen'
+export interface Orden {
+  campo: CampoOrden
+  // asc = A–Z o de menor a mayor; desc = de mayor a menor (o lo más reciente primero).
+  dir: 'asc' | 'desc'
+}
+export const ORDEN_INICIAL: Orden = { campo: 'referencia', dir: 'asc' }
+
+// Al elegir una columna: el texto va de la A a la Z y los números de mayor a menor.
+export const direccionInicial = (campo: CampoOrden): Orden['dir'] => (campo === 'referencia' ? 'asc' : 'desc')
+
+const nombreDe = (g: GrupoReferencia) => g.referencia ?? g.descripcion
+
+// Ordena una copia. Sin costo (o sin margen) va siempre al final, en las dos
+// direcciones; los empates quedan por referencia.
+export function ordenar(grupos: GrupoReferencia[], orden: Orden, costos?: Map<string, Costo>): GrupoReferencia[] {
+  const valor = (g: GrupoReferencia): number | string | null => {
+    switch (orden.campo) {
+      case 'referencia': return nombreDe(g)
+      case 'recientes': return g.creado || null
+      case 'stock': return g.stock
+      case 'precio': return g.precioMax
+      case 'costo': return costoDeGrupo(g, costos) ?? null
+      case 'margen': return margen(g.precioMax, costoDeGrupo(g, costos))
+    }
+  }
+  const signo = orden.dir === 'asc' ? 1 : -1
+  return grupos
+    .map((g) => ({ g, v: valor(g) }))
+    .sort((a, b) => {
+      if (a.v === null || b.v === null) {
+        if (a.v !== b.v) return a.v === null ? 1 : -1
+      } else {
+        const d = typeof a.v === 'string' ? a.v.localeCompare(b.v as string, 'es') : a.v - (b.v as number)
+        if (d) return d * signo
+      }
+      return nombreDe(a.g).localeCompare(nombreDe(b.g), 'es')
+    })
+    .map((x) => x.g)
+}
+
+// "25–33 · 9 tallas" (solo las activas, como en la lista).
+export function resumenTallas(g: GrupoReferencia): string {
+  const activas = g.tallas.filter((t) => t.activo)
+  if (!activas.length) return 'Sin tallas activas'
+  const primera = activas[0].talla ?? 'Única'
+  const ultima = activas[activas.length - 1].talla ?? 'Única'
+  const rango = primera === ultima ? primera : `${primera}–${ultima}`
+  return `${rango} · ${activas.length} talla${activas.length === 1 ? '' : 's'}`
 }
 
 // Margen sobre el precio de venta: (precio − costo) / precio.

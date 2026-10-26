@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { Camera, CopyPlus, LoaderCircle, Scissors, Trash2, X } from 'lucide-react'
 import { pesos } from '@shared/formato'
+import { nombreFoto, urlMiniatura } from '@shared/fotos'
 import {
-  dividirRango, enRango, fotoDeFila, partesColor, subtotalFila, TALLAS, unidadesFila, unirColores, unirRango,
+  dividirRango, enRango, fotoDeFila, fotoDesactualizada, partesColor, subtotalFila, TALLAS, unidadesFila, unirColores, unirRango,
   type FilaFactura, type RangoPrecio,
 } from '../../lib/compras'
-import { subirFotoProducto } from '../../lib/datos/compras'
-import { comprimirFoto } from '../../lib/imagen'
+import { paresNuevos } from '@shared/cargaInicial'
+import { subirFotoCatalogo } from '../../lib/datos/fotos'
+import { procesarFotoProducto, type AjusteRecorte } from '../../lib/imagen'
+import { RecortarFoto } from '../../componentes/RecortarFoto'
 import { Insignia, PuntoColor } from '../../componentes/ui'
 
 export const CATEGORIAS = [
@@ -23,10 +26,12 @@ const entrada = 'w-full rounded-lg border border-borde bg-fondo px-2.5 py-1.5 te
 const soloDigitos = (t: string) => t.replace(/[^\d.]/g, '')
 
 // Una referencia (mismo modelo y color) de la factura: datos, cantidades por
-// talla (20–45) y costo/precios por rango de tallas.
+// talla (20–45) y costo/precios por rango de tallas. La Carga inicial la usa
+// sin costo y con las tallas que ya existen bloqueadas (su stock no cambia ahí).
 export function FilaReferencia({
   fila, indice, opcionesReferencia, opcionesMarca, opcionesColor, opcionesColorSimple,
   alCambiar, alReconocer, alQuitar, alOtroColor, alFoto, alSalirDeTalla,
+  conCosto = true, bloquearExistentes = false,
 }: {
   fila: FilaFactura
   indice: number
@@ -42,6 +47,8 @@ export function FilaReferencia({
   alOtroColor: () => void
   alFoto: (url: string) => void
   alSalirDeTalla: (talla: string, direccion: 'abajo' | 'arriba') => void
+  conCosto?: boolean
+  bloquearExistentes?: boolean
 }) {
   // Los dos campos de color se editan tal cual se escriben; "Rojo y blanco"
   // escrito o elegido en el primero se reparte en los dos al salir del campo.
@@ -171,28 +178,38 @@ export function FilaReferencia({
           Cantidad por talla{nuevas ? <> · <span className="text-primario">{nuevas} talla{nuevas === 1 ? '' : 's'} nueva{nuevas === 1 ? '' : 's'}</span></> : null}
         </p>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] gap-1">
-          {TALLAS.map((t) => (
-            <label key={t} className="flex flex-col items-center gap-0.5">
-              <span className={`text-xs ${fila.existentes[t] ? 'font-semibold text-texto' : 'text-texto3'}`} title={fila.existentes[t] ? 'Ya existe en el inventario' : 'Talla nueva'}>
-                {t}
-              </span>
-              <input
-                id={`talla-${fila.id}-${t}`}
-                aria-label={`Talla ${t} de la fila ${indice + 1}`}
-                inputMode="numeric"
-                value={fila.cantidades[t] ?? ''}
-                onChange={(e) => alCambiar({ ...fila, cantidades: { ...fila.cantidades, [t]: e.target.value.replace(/[^\d]/g, '') } })}
-                onKeyDown={(e) => teclas(e, t)}
-                onFocus={(e) => e.target.select()}
-                className={`cifras w-full rounded-md border px-1 py-1 text-center text-sm outline-none focus:border-primario ${Number(fila.cantidades[t]) > 0 ? 'border-primario bg-primario-soft font-semibold' : 'border-borde bg-fondo'}`}
-              />
-            </label>
-          ))}
+          {TALLAS.map((t) => {
+            const existente = fila.existentes[t]
+            // En la Carga inicial una talla ya cargada muestra su stock y no se edita:
+            // se puede pasar por encima con las flechas, pero no cambia.
+            const bloqueada = bloquearExistentes && !!existente
+            return (
+              <label key={t} className="flex flex-col items-center gap-0.5">
+                <span className={`text-xs ${existente ? 'font-semibold text-texto' : 'text-texto3'}`} title={existente ? 'Ya existe en el inventario' : 'Talla nueva'}>
+                  {t}
+                </span>
+                <input
+                  id={`talla-${fila.id}-${t}`}
+                  aria-label={`Talla ${t} de la fila ${indice + 1}`}
+                  inputMode="numeric"
+                  readOnly={bloqueada}
+                  title={bloqueada ? `Ya cargada: ${existente.stock ?? 0} pares. Para corregir el stock usa Conteo físico.` : undefined}
+                  value={bloqueada ? String(existente.stock ?? 0) : fila.cantidades[t] ?? ''}
+                  onChange={(e) => bloqueada || alCambiar({ ...fila, cantidades: { ...fila.cantidades, [t]: e.target.value.replace(/[^\d]/g, '') } })}
+                  onKeyDown={(e) => teclas(e, t)}
+                  onFocus={(e) => e.target.select()}
+                  className={`cifras w-full rounded-md border px-1 py-1 text-center text-sm outline-none focus:border-primario ${
+                    bloqueada ? 'border-borde bg-superficie2 text-texto3' : Number(fila.cantidades[t]) > 0 ? 'border-primario bg-primario-soft font-semibold' : 'border-borde bg-fondo'
+                  }`}
+                />
+              </label>
+            )
+          })}
         </div>
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-xs text-texto3">Costo y precios por rango de tallas</p>
+        <p className="text-xs text-texto3">{conCosto ? 'Costo y precios por rango de tallas' : 'Precios por rango de tallas'}</p>
         {fila.rangos.map((r, i) => {
           const usadas = TALLAS.filter((t) => enRango(r, t) && Number(fila.cantidades[t]) > 0)
           const posibles = TALLAS.filter((t) => enRango(r, t) && t !== r.desde)
@@ -202,7 +219,7 @@ export function FilaReferencia({
                 {r.desde === r.hasta ? `Talla ${r.desde}` : `Tallas ${r.desde}–${r.hasta}`}
                 <span className="block text-xs font-normal text-texto3">{usadas.length ? `${usadas.length} con cantidad` : 'sin cantidades'}</span>
               </span>
-              {(['costo', 'minimo', 'maximo'] as const).map((c) => (
+              {(conCosto ? (['costo', 'minimo', 'maximo'] as const) : (['minimo', 'maximo'] as const)).map((c) => (
                 <label key={c} className="w-32 text-xs text-texto3">
                   {c === 'costo' ? 'Costo' : c === 'minimo' ? 'Precio mínimo' : 'Precio máximo'}
                   <input
@@ -245,33 +262,58 @@ export function FilaReferencia({
       </div>
 
       <p className="text-right text-sm text-texto2">
-        {unidadesFila(fila)} pares · subtotal <strong className="cifras text-texto">{pesos(subtotalFila(fila))}</strong>
+        {bloquearExistentes ? paresNuevos(fila) : unidadesFila(fila)} pares
+        {conCosto ? <> · subtotal <strong className="cifras text-texto">{pesos(subtotalFila(fila))}</strong></> : null}
       </p>
     </section>
   )
 }
 
-// Foto de esta referencia y color: se comprime a 500 KB y se sube al elegirla;
-// al guardar la compra queda en todas sus tallas. Si ya tenía, se muestra esa.
+// Foto de esta referencia y color. Se elige (o se arrastra encima), se encuadra
+// y se sube recortada y liviana con el nombre de la referencia y el color; al
+// guardar queda en todas sus tallas. Si ya tenía, se muestra esa.
 function FotoColor({ fila, indice, alFoto }: { fila: FilaFactura; indice: number; alFoto: (url: string) => void }) {
   const entradaArchivo = useRef<HTMLInputElement>(null)
+  const [archivo, setArchivo] = useState<File | null>(null)
   const [subiendo, setSubiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const foto = fotoDeFila(fila)
+  const nombre = nombreFoto(fila.referencia, fila.descripcion, fila.color)
+  const vieja = fotoDesactualizada(fila)
 
-  async function elegir(archivo: File | undefined) {
-    if (!archivo) return
-    setSubiendo(true)
+  function elegir(elegido: File | undefined) {
+    if (entradaArchivo.current) entradaArchivo.current.value = ''
+    if (!elegido) return
+    if (!elegido.type.startsWith('image/')) {
+      setError('Ese archivo no es una imagen.')
+      return
+    }
     setError(null)
+    setArchivo(elegido)
+  }
+
+  async function usar(ajuste: AjusteRecorte) {
+    const elegido = archivo
+    setArchivo(null)
+    if (!elegido || !nombre) return
+    setSubiendo(true)
     try {
-      alFoto(await subirFotoProducto(await comprimirFoto(archivo)))
+      alFoto(await subirFotoCatalogo(nombre, await procesarFotoProducto(elegido, ajuste)))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo subir la foto.')
     } finally {
       setSubiendo(false)
-      if (entradaArchivo.current) entradaArchivo.current.value = ''
     }
   }
+
+  function soltar(e: DragEvent<HTMLButtonElement>) {
+    e.preventDefault()
+    if (nombre && !subiendo) elegir(e.dataTransfer.files[0])
+  }
+
+  const titulo = !nombre
+    ? 'Escribe la referencia (o la descripción) para poner la foto'
+    : error ?? (vieja ? 'Cambiaste la referencia o el color: vuelve a poner la foto' : foto ? 'Cambiar la foto de este color (o arrastra otra aquí)' : 'Agregar la foto de este color (o arrastra una aquí)')
 
   return (
     <div className="flex flex-col items-center gap-0.5">
@@ -281,24 +323,31 @@ function FotoColor({ fila, indice, alFoto }: { fila: FilaFactura; indice: number
         accept="image/*"
         aria-label={`Foto de la fila ${indice + 1}`}
         className="hidden"
+        disabled={!nombre}
         onChange={(e) => elegir(e.target.files?.[0])}
       />
       <button
         type="button"
         onClick={() => entradaArchivo.current?.click()}
-        title={error ?? (foto ? 'Cambiar la foto de este color' : 'Agregar la foto de este color')}
-        className={`relative flex size-16 items-center justify-center overflow-hidden rounded-xl border bg-superficie2 text-texto3 hover:border-borde-fuerte ${error ? 'border-peligro' : 'border-borde'}`}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={soltar}
+        disabled={!nombre || subiendo}
+        title={titulo}
+        className={`relative flex size-16 items-center justify-center overflow-hidden rounded-xl border bg-superficie2 text-texto3 hover:border-borde-fuerte disabled:cursor-not-allowed disabled:opacity-60 ${error || vieja ? 'border-peligro' : 'border-borde'}`}
       >
-        {foto ? <img src={foto} alt="" className="size-full object-cover" /> : <Camera aria-hidden className="size-5" />}
+        {foto ? <img src={urlMiniatura(foto) ?? foto} alt="" className="size-full object-cover" /> : <Camera aria-hidden className="size-5" />}
         {subiendo ? (
           <span className="absolute inset-0 flex items-center justify-center bg-overlay">
             <LoaderCircle aria-hidden className="size-5 animate-spin text-white" />
           </span>
         ) : null}
       </button>
-      <span className={`text-[10px] ${error ? 'text-peligro-texto' : 'text-texto3'}`}>
-        {subiendo ? 'Subiendo…' : error ? 'No se subió' : fila.foto ? 'Foto nueva' : foto ? 'Foto' : 'Sin foto'}
+      <span className={`text-[10px] ${error || vieja ? 'text-peligro-texto' : 'text-texto3'}`}>
+        {subiendo ? 'Subiendo…' : error ? 'No se subió' : vieja ? 'Vuelve a ponerla' : fila.foto ? 'Foto nueva' : foto ? 'Foto' : 'Sin foto'}
       </span>
+      {archivo && nombre ? (
+        <RecortarFoto archivo={archivo} nombre={`${nombre}.webp`} alUsar={usar} alCancelar={() => setArchivo(null)} />
+      ) : null}
     </div>
   )
 }

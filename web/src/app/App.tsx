@@ -10,6 +10,7 @@ import { Inventario } from '../paginas/inventario/Inventario'
 import { NoEncontrada } from '../paginas/NoEncontrada'
 import { Proximamente } from '../paginas/Proximamente'
 import { Carga } from '../paginas/carga/Carga'
+import { CargaInicial } from '../paginas/carga/CargaInicial'
 import { Conteos } from '../paginas/conteo/Conteos'
 import { DetalleConteo } from '../paginas/conteo/DetalleConteo'
 import { NuevoConteo } from '../paginas/conteo/NuevoConteo'
@@ -47,6 +48,7 @@ export function Rutas() {
           <Route path="/compras/nueva" element={<NuevaCompra />} />
           <Route path="/compras/:id" element={<DetalleCompra />} />
           <Route path="/carga" element={<Carga />} />
+          <Route path="/carga-inicial" element={<CargaInicial />} />
           <Route path="/proveedores" element={<Proveedores />} />
           <Route path="/proveedores/:id" element={<FichaProveedor />} />
           <Route path="/conteo" element={<Conteos />} />

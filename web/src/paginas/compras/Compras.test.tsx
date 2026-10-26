@@ -6,7 +6,8 @@ import { hoyEn } from '@shared/fechas'
 import type { ProductoCalzado } from '../../lib/inventario'
 import { costosPorProducto, listarCalzado } from '../../lib/datos/inventario'
 import { listarProveedores, subirDocumento } from '../../lib/datos/proveedores'
-import { fijarFotos, listarCompras, obtenerCompra, registrarCompra, subirFotoProducto } from '../../lib/datos/compras'
+import { fijarFotos, listarCompras, obtenerCompra, registrarCompra } from '../../lib/datos/compras'
+import { subirFotoCatalogo } from '../../lib/datos/fotos'
 import { Compras } from './Compras'
 import { DetalleCompra } from './DetalleCompra'
 import { NuevaCompra } from './NuevaCompra'
@@ -19,11 +20,13 @@ vi.mock('../../lib/datos/proveedores', async (original) => ({
   documentosDelProveedor: vi.fn().mockResolvedValue([]),
 }))
 vi.mock('../../lib/datos/compras', () => ({
-  listarCompras: vi.fn(), obtenerCompra: vi.fn(), registrarCompra: vi.fn(), subirFotoProducto: vi.fn(), fijarFotos: vi.fn(),
+  listarCompras: vi.fn(), obtenerCompra: vi.fn(), registrarCompra: vi.fn(), fijarFotos: vi.fn(),
 }))
+vi.mock('../../lib/datos/fotos', () => ({ subirFotoCatalogo: vi.fn() }))
 vi.mock('../../lib/imagen', async (original) => ({
   ...(await original<typeof import('../../lib/imagen')>()),
   comprimirFoto: vi.fn().mockResolvedValue(new Blob(['jpg'], { type: 'image/jpeg' })),
+  procesarFotoProducto: vi.fn().mockResolvedValue({ grande: new Blob(['g']), mini: new Blob(['m']), extension: 'webp' }),
 }))
 
 const HOY = hoyEn()
@@ -41,7 +44,7 @@ beforeEach(() => {
     p({ id: 'a38' }), p({ id: 'a39', talla: '39' }),
     p({ id: 'v1', referencia: 'BV-2', marca: 'Verlon', color: 'Rojo y blanco', talla: '40' }),
   ])
-  vi.mocked(subirFotoProducto).mockResolvedValue('https://fotos/nueva.jpg')
+  vi.mocked(subirFotoCatalogo).mockImplementation(async (nombre) => `https://fotos/catalogo/${nombre}.webp?v=1`)
   vi.mocked(fijarFotos).mockResolvedValue()
   vi.mocked(costosPorProducto).mockResolvedValue(new Map([['a38', { ultimo: 60000, promedio: 60000 }]]))
   vi.mocked(registrarCompra).mockResolvedValue({ compra_id: 'c9', repetida: false })
@@ -181,7 +184,11 @@ describe('Nueva compra', () => {
     await userEvent.type(screen.getByLabelText('Precio máximo tallas 20–45 de la fila 1'), '100000')
     await userEvent.type(screen.getByLabelText('Talla 38 de la fila 1'), '2')
     await userEvent.upload(screen.getByLabelText('Foto de la fila 1'), new File(['x'], 'negro.jpg', { type: 'image/jpeg' }))
+    const encuadre = screen.getByRole('dialog', { name: 'Encuadrar foto' })
+    expect(within(encuadre).getByText('nv-5-negro.webp')).toBeInTheDocument()
+    await userEvent.click(within(encuadre).getByRole('button', { name: 'Usar foto' }))
     expect(await screen.findByText('Foto nueva')).toBeInTheDocument()
+    expect(subirFotoCatalogo).toHaveBeenCalledWith('nv-5-negro', expect.objectContaining({ extension: 'webp' }))
 
     await userEvent.click(screen.getByRole('button', { name: 'Otro color' }))
     expect(screen.getByLabelText('Color de la fila 2')).toHaveFocus()
@@ -200,7 +207,7 @@ describe('Nueva compra', () => {
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Guardar y subir stock' }))
     const [factura] = vi.mocked(registrarCompra).mock.lastCall!
     expect(factura.filas.map((f) => [f.referencia, f.color, f.foto])).toEqual([
-      ['NV-5', 'Negro', 'https://fotos/nueva.jpg'],
+      ['NV-5', 'Negro', 'https://fotos/catalogo/nv-5-negro.webp?v=1'],
       ['NV-5', 'Azul', ''],
     ])
     expect(fijarFotos).toHaveBeenCalledWith('c9', factura)

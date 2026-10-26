@@ -6,6 +6,7 @@ tomado del validador real de la app (`lib/excel.ts` → `validarFilas`) y del su
 
 ## Quién y dónde
 - Quien tenga el permiso **`carga_inicial`** (por defecto el dueño).
+- **Sin Excel y con fotos:** en el panel web, **Carga inicial** (`/carga-inicial`) se llena en pantalla (una fila por referencia y color, los pares de cada talla, el precio y la foto, que se encuadra y se guarda con el nombre de la referencia y el color). Es lo más rápido para la mercancía que ya está en la tienda.
 - En la app: **Inventario → Carga inicial → Subir Archivo Excel → (revisar resumen) → Confirmar y Subir**.
 - En el panel web: **Carga masiva** (`/carga`). Ahí además:
   - se ve antes de guardar qué tallas son nuevas, cuáles cambian y cuáles quedan igual;

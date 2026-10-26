@@ -1,7 +1,6 @@
 import type { Json } from '@shared/database.types'
 import { nombreColores } from '@shared/colores'
 import { payloadFactura, type Factura } from '../compras'
-import { nuevoId } from '../id'
 import { plano } from '../../navegacion'
 import { supabase } from '../supabase'
 
@@ -108,15 +107,6 @@ export async function registrarCompra(factura: Factura, clave: string): Promise<
   })
   if (error) throw new Error(error.message)
   return data as unknown as ResultadoCompra
-}
-
-// Foto del zapato (ya comprimida a 500 KB) en el bucket público `productos`,
-// el mismo que usa la app. Devuelve la URL pública.
-export async function subirFotoProducto(foto: Blob): Promise<string> {
-  const ruta = `${Date.now()}_${nuevoId().slice(0, 8)}.jpg`
-  const { error } = await supabase.storage.from('productos').upload(ruta, foto, { contentType: 'image/jpeg' })
-  if (error) throw new Error(error.message)
-  return supabase.storage.from('productos').getPublicUrl(ruta).data.publicUrl
 }
 
 const claveColor = (referencia: string | null, color: string | null) =>

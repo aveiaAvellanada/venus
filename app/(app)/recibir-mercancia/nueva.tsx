@@ -27,6 +27,7 @@ import { CampoFecha, fechaCorta, Seccion } from '../../../components/compras/Cam
 import { EditorReferencia, type ReferenciaConocida } from '../../../components/compras/EditorReferencia'
 import { SelectorProveedor } from '../../../components/compras/SelectorProveedor'
 import { MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
+import { urlMiniatura } from '../../../shared/fotos'
 
 // Un borrador por persona: el teléfono lo comparte la tienda y no debe pasar
 // la factura de uno (con sus costos) a otro.
@@ -456,7 +457,7 @@ function TarjetaFila({ fila, conCostos, onPress }: { fila: FilaFactura; conCosto
           width: 64, height: 64, borderRadius: radio.sm, overflow: 'hidden',
           backgroundColor: paleta.superficie2, alignItems: 'center', justifyContent: 'center',
         }}>
-          {foto ? <Image source={{ uri: foto }} style={{ width: 64, height: 64 }} /> : <Footprints size={24} color={paleta.texto3} />}
+          {foto ? <Image source={{ uri: urlMiniatura(foto) ?? undefined }} style={{ width: 64, height: 64 }} /> : <Footprints size={24} color={paleta.texto3} />}
         </View>
         <View style={{ flex: 1, gap: 2 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

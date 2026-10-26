@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTema } from '../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../lib/theme'
 import { Boton } from './Boton'
+import { urlMiniatura } from '../../shared/fotos'
 
 export interface ProductoAnadido {
   foto: string | null
@@ -67,7 +68,7 @@ export function HojaProductoAnadido({ producto, onCerrar, onSeguir, onIrAlCarrit
                 }}
               >
                 {producto.foto ? (
-                  <Image source={{ uri: producto.foto }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  <Image source={{ uri: urlMiniatura(producto.foto) ?? undefined }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                 ) : (
                   producto.icono
                 )}

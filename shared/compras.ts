@@ -1,5 +1,6 @@
 import { coloresDeNombre, MAX_COLORES, MENSAJE_MAX_COLORES, nombreColores } from './colores'
 import { leerPesos } from './formato'
+import { nombreDeUrlFoto, nombreFoto } from './fotos'
 
 // Factura de compra (panel web A1 y Recibir mercancía de la app). Lógica pura: la pantalla edita
 // textos tal como se escriben y aquí se calculan totales, validaciones y lo
@@ -28,6 +29,8 @@ export interface TallaExistente {
   // El máximo es opcional (null = sin máximo).
   precio_maximo: number | null
   foto_url?: string | null
+  // Pares que hay hoy (la Carga inicial lo muestra en las tallas ya cargadas).
+  stock?: number
 }
 
 export interface FilaFactura {
@@ -97,6 +100,14 @@ export function otroColor(fila: FilaFactura, id: string): FilaFactura {
 // Foto que se ve en la fila: la nueva o, si no hay, la que ya tiene ese color.
 export function fotoDeFila(fila: FilaFactura): string | null {
   return fila.foto || Object.values(fila.existentes).find((e) => e.foto_url)?.foto_url || null
+}
+
+// La foto nueva se sube con el nombre de la referencia y el color (panel web).
+// Si después se cambió alguno de los dos, quedó con el nombre de antes y hay
+// que volver a ponerla. Las fotos con otro nombre (las de la app) no se revisan.
+export function fotoDesactualizada(fila: FilaFactura): boolean {
+  const subida = nombreDeUrlFoto(fila.foto)
+  return subida !== null && subida !== nombreFoto(fila.referencia, fila.descripcion, fila.color)
 }
 
 // El color se escribe en dos campos (hasta dos colores). Se guarda como
@@ -218,7 +229,7 @@ export function resumenFactura(f: Factura): ResumenFactura {
 }
 
 // "TA-1 Negro": con el color, para distinguir dos colores de la misma referencia.
-const nombreFila = (fila: FilaFactura, i: number) => {
+export const nombreFila = (fila: FilaFactura, i: number) => {
   const nombre = fila.referencia.trim() || fila.descripcion.trim()
   if (!nombre) return `la fila ${i + 1}`
   const color = nombreColores(fila.color)
@@ -244,6 +255,7 @@ export function erroresFactura(f: Factura, hoy: string): string[] {
     if (coloresDeNombre(fila.color).length > MAX_COLORES) {
       errores.push(`En ${fila.referencia.trim() || fila.descripcion.trim() || `la fila ${i + 1}`}: ${MENSAJE_MAX_COLORES}`)
     }
+    if (fotoDesactualizada(fila)) errores.push(`La foto de ${nombreFila(fila, i)} quedó con el nombre de antes: vuelve a ponerla.`)
     const hayNuevas = tallas.some((x) => !fila.existentes[x.talla])
     if (hayNuevas && !fila.descripcion.trim()) errores.push(`Falta la descripción de ${nombreFila(fila, i)}.`)
     if (hayNuevas && !fila.categoria) errores.push(`Falta la categoría de ${nombreFila(fila, i)}.`)

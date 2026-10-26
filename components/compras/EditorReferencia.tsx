@@ -15,6 +15,7 @@ import { Badge, Boton, CampoTexto, Chip, PuntoColor, ScreenWrapper } from '../ui
 import { Seccion, Sugerencias } from './Campos'
 import { BarrasSistema } from '../BarrasSistema'
 import { MARGEN_SUPERIOR } from '../../hooks/usePaddingInferior'
+import { urlMiniatura } from '../../shared/fotos'
 
 export interface ReferenciaConocida {
   referencia: string
@@ -234,7 +235,7 @@ export function EditorReferencia({
               backgroundColor: paleta.superficie2, alignItems: 'center', justifyContent: 'center',
             }}
           >
-            {foto ? <Image source={{ uri: foto }} style={{ width: 96, height: 96 }} /> : (
+            {foto ? <Image source={{ uri: urlMiniatura(foto) ?? undefined }} style={{ width: 96, height: 96 }} /> : (
               <View style={{ alignItems: 'center', gap: 4 }}>
                 <Camera size={26} color={paleta.texto3} />
                 <Text style={[tipografia.caption, { color: paleta.texto3 }]}>Foto</Text>

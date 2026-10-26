@@ -19,6 +19,7 @@ import {
   BarraAccionInferior, Boton, CampoTexto, Chip, OverlayExito, Presionable, ScreenWrapper, SliderPrecio,
 } from '../../../components/ui'
 import { MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
+import { urlMiniatura } from '../../../shared/fotos'
 
 type Etapa = 'carrito' | 'ajustarPrecio' | 'cobrar' | 'confirmacion'
 const METODOS: MetodoPago[] = ['efectivo', 'nequi', 'bre_b', 'otro']
@@ -95,7 +96,7 @@ function Miniatura({ item }: { item: ItemCarrito }) {
       alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
     }}>
       {item.producto.foto ? (
-        <Image source={{ uri: item.producto.foto }} style={{ width: 76, height: 76 }} resizeMode="cover" />
+        <Image source={{ uri: urlMiniatura(item.producto.foto) ?? undefined }} style={{ width: 76, height: 76 }} resizeMode="cover" />
       ) : (
         <Icono size={34} strokeWidth={1.5} color={item.producto.tipo === 'calzado' ? paleta.textoDeshabilitado : paleta.acento} />
       )}

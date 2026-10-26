@@ -1,22 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, ArrowLeft, Paperclip, Plus } from 'lucide-react'
 import { pesos } from '@shared/formato'
 import { hoyEn } from '@shared/fechas'
-import { COLORES_BASE, coloresDeNombre, nombreColores } from '@shared/colores'
 import {
-  avisosFactura, erroresFactura, filaVacia, otroColor, rangosDesdeExistentes, resumenFactura,
-  type Factura, type FilaFactura, type TallaExistente,
+  avisosFactura, erroresFactura, filaVacia, otroColor, resumenFactura,
+  type Factura, type FilaFactura,
 } from '../../lib/compras'
 import { fijarFotos, registrarCompra } from '../../lib/datos/compras'
 import { costosPorProducto, listarCalzado } from '../../lib/datos/inventario'
 import { listarProveedores, subirDocumento } from '../../lib/datos/proveedores'
 import { comprimirFoto, MAX_PDF } from '../../lib/imagen'
-import { plano } from '../../navegacion'
 import { nuevoId } from '../../lib/id'
 import { NEGOCIO } from '../../lib/negocio'
 import { AvisoError, Boton, Cargando, CampoTexto, Dialogo, Tarjeta } from '../../componentes/ui'
+import { reconocerFila, useCatalogo } from './catalogo'
 import { FilaReferencia } from './FilaReferencia'
 
 const BORRADOR = 'panel-compra-borrador'
@@ -39,18 +38,6 @@ function leerBorrador(hoy: string): Borrador {
   }
 }
 
-interface ReferenciaConocida {
-  referencia: string
-  descripcion: string
-  marca: string
-  categoria: string
-  color: string
-  existentes: Record<string, TallaExistente>
-}
-
-// "rojo/blanco" reconoce la referencia guardada como "Rojo y blanco".
-const claveRef = (referencia: string, color: string) => `${plano(referencia)}|${plano(nombreColores(color) ?? '')}`
-
 export function NuevaCompra() {
   const navegar = useNavigate()
   const cliente = useQueryClient()
@@ -72,45 +59,7 @@ export function NuevaCompra() {
   const costos = useQuery({ queryKey: ['costos'], queryFn: costosPorProducto, retry: false })
 
   // Referencias del inventario por referencia + color, con sus tallas y precios.
-  const conocidas = useMemo(() => {
-    const mapa = new Map<string, ReferenciaConocida>()
-    for (const p of inventario.data ?? []) {
-      if (!p.referencia || !p.talla) continue
-      const clave = claveRef(p.referencia, p.color ?? '')
-      const r = mapa.get(clave) ?? {
-        referencia: p.referencia, descripcion: p.descripcion, marca: p.marca ?? '', categoria: p.categoria,
-        color: p.color ?? '', existentes: {},
-      }
-      r.existentes[p.talla] = {
-        id: p.id, precio_minimo: Number(p.precio_minimo), precio_maximo: p.precio_maximo == null ? null : Number(p.precio_maximo), foto_url: p.foto_url ?? null,
-      }
-      mapa.set(clave, r)
-    }
-    return mapa
-  }, [inventario.data])
-  const referencias = useMemo(() => [...new Set([...conocidas.values()].map((r) => r.referencia))].sort(), [conocidas])
-  // Marcas y colores ya usados en el inventario, para elegirlos o escribir uno nuevo.
-  const marcas = useMemo(
-    () => [...new Set((inventario.data ?? []).map((p) => p.marca?.trim()).filter((m): m is string => !!m))].sort((a, b) => a.localeCompare(b, 'es')),
-    [inventario.data],
-  )
-  const coloresUsados = useMemo(
-    () => [...new Set((inventario.data ?? []).map((p) => nombreColores(p.color)).filter((c): c is string => !!c))],
-    [inventario.data],
-  )
-  const coloresSimples = useMemo(() => {
-    const vistos = new Map<string, string>()
-    for (const c of [...COLORES_BASE, ...coloresUsados.flatMap((c) => coloresDeNombre(c))]) {
-      const nombre = nombreColores(c)!
-      if (!vistos.has(plano(nombre))) vistos.set(plano(nombre), nombre)
-    }
-    return [...vistos.values()].sort((a, b) => a.localeCompare(b, 'es'))
-  }, [coloresUsados])
-  // Para el primer color: los de dos colores ya usados ("Rojo y blanco") y los sueltos.
-  const colores = useMemo(
-    () => [...coloresUsados.filter((c) => coloresDeNombre(c).length > 1).sort((a, b) => a.localeCompare(b, 'es')), ...coloresSimples],
-    [coloresUsados, coloresSimples],
-  )
+  const { conocidas, referencias, marcas, colores, coloresSimples } = useCatalogo(inventario.data)
 
   const cambiarFactura = (cambios: Partial<Factura>) => setBorrador((b) => ({ ...b, factura: { ...b.factura, ...cambios } }))
   const cambiarFila = (id: string, fila: FilaFactura) =>
@@ -133,23 +82,8 @@ export function NuevaCompra() {
   // Al escribir referencia y color de algo que ya existe: trae descripción, marca,
   // categoría, las tallas existentes y sus precios (y el último costo).
   function reconocer(fila: FilaFactura) {
-    const r = conocidas.get(claveRef(fila.referencia, fila.color))
-    if (!r) {
-      if (Object.keys(fila.existentes).length) cambiarFila(fila.id, { ...fila, existentes: {} })
-      return
-    }
-    if (fila.existentes === r.existentes) return
-    const sinPrecios = fila.rangos.every((x) => !x.costo && !x.minimo && !x.maximo)
-    cambiarFila(fila.id, {
-      ...fila,
-      referencia: r.referencia,
-      color: r.color,
-      descripcion: fila.descripcion || r.descripcion,
-      marca: fila.marca || r.marca,
-      categoria: fila.categoria || r.categoria,
-      existentes: r.existentes,
-      rangos: sinPrecios ? rangosDesdeExistentes(r.existentes, costos.data) : fila.rangos,
-    })
+    const nueva = reconocerFila(fila, conocidas, costos.data)
+    if (nueva !== fila) cambiarFila(fila.id, nueva)
   }
 
   function moverEntreFilas(indice: number, talla: string, direccion: 'abajo' | 'arriba') {

@@ -7,6 +7,7 @@ import { tabular, tipografia } from '../../lib/theme'
 import { Badge } from './Badge'
 import { PuntoColor } from './PuntoColor'
 import { TarjetaGrid } from './TarjetaGrid'
+import { urlMiniatura } from '../../shared/fotos'
 
 const formatear = (n: number) => '$' + Math.round(n).toLocaleString('es-CO')
 
@@ -46,7 +47,7 @@ export function CardCalzado({
       opaca={agotado}
       imagen={
         tarjeta.foto ? (
-          <Image source={{ uri: tarjeta.foto }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+          <Image source={{ uri: urlMiniatura(tarjeta.foto) ?? undefined }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
         ) : (
           <Footprints size={Math.round(ancho * 0.38)} strokeWidth={1.5} color={paleta.textoDeshabilitado} />
         )

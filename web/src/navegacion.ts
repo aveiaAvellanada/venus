@@ -1,6 +1,6 @@
 import {
   ArrowLeftRight, Barcode, Boxes, CalendarClock, ClipboardCheck, Contact, Database, FileSpreadsheet,
-  History, House, LineChart, type LucideIcon, PackagePlus, Percent, Receipt, Scale, Settings,
+  History, House, ImagePlus, LineChart, type LucideIcon, PackagePlus, Percent, Receipt, Scale, Settings,
   ShoppingBag, Truck, Users, Wallet,
 } from 'lucide-react'
 
@@ -51,6 +51,11 @@ export const NAVEGACION: GrupoNavegacion[] = [
         id: 'proveedores', titulo: 'Proveedores', ruta: '/proveedores', icono: Truck, fase: 1, lista: true,
         descripcion: 'Ficha, cuentas, documentos, deudas, pagos, vencimientos e historial de compras y costos.',
         palabras: ['deudas', 'pagos', 'vencimientos', 'cuentas bancarias'],
+      },
+      {
+        id: 'carga-inicial', titulo: 'Carga inicial', ruta: '/carga-inicial', icono: ImagePlus, fase: 1, lista: true,
+        descripcion: 'Los zapatos que ya están en la tienda, sin proveedor: referencia y color con los pares de cada talla, precio y foto encuadrada que se guarda con su nombre.',
+        palabras: ['inventario inicial', 'fotos', 'imágenes', 'cargar zapatos'],
       },
       {
         id: 'carga', titulo: 'Carga masiva', ruta: '/carga', icono: FileSpreadsheet, fase: 1, lista: true,

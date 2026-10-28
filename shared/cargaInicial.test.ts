@@ -1,5 +1,6 @@
 import {
-  avisosCargaInicial, claveDeFila, erroresCargaInicial, filasParaCargar, paresNuevos, resumenCargaInicial, tallasYaCargadas,
+  avisosCargaInicial, claveDeFila, erroresCargaInicial, filasParaCargar, paresNuevos, paresSumados, resumenCargaInicial,
+  tallasConPrecioNuevo,
 } from './cargaInicial'
 import { filaVacia, rangoCompleto, type FilaFactura } from './compras'
 
@@ -30,17 +31,42 @@ describe('carga inicial: lo que se guarda', () => {
     expect(precios).toEqual([['35', 28000, 32000], ['36', 28000, 32000], ['37', 30000, undefined], ['38', 30000, undefined], ['39', 30000, undefined]])
   })
 
-  it('las tallas que ya existen no se cargan otra vez; con foto nueva van con su precio y stock 0', () => {
-    const existentes = { '38': { id: 'e38', precio_minimo: 31000, precio_maximo: null, stock: 6 } }
-    const sinFoto = diana({ existentes })
-    expect(filasParaCargar([sinFoto]).map((f) => f.talla)).toEqual(['35', '36', '37', '39'])
-    expect(paresNuevos(sinFoto)).toBe(22)
-    expect(tallasYaCargadas(sinFoto)).toEqual(['38'])
+  it('en una talla que ya existe los pares escritos se suman; con foto nueva van todas, con su precio', () => {
+    const existentes = { '38': { id: 'e38', precio_minimo: 30000, precio_maximo: null, stock: 6 } }
+    const conSuma = diana({ existentes })
+    expect(paresNuevos(conSuma)).toBe(22)
+    expect(paresSumados(conSuma)).toBe(10)
+    const filas = filasParaCargar([conSuma])
+    expect(filas.map((f) => f.talla)).toEqual(['35', '36', '37', '39', '38'])
+    expect(filas[4]).toEqual(expect.objectContaining({ talla: '38', stock: 0, sumar: 10, precio_minimo: 30000 }))
+    expect(filas[0]).not.toHaveProperty('sumar')
 
     const soloFoto = diana({ existentes, cantidades: {}, foto: FOTO })
     expect(filasParaCargar([soloFoto])).toEqual([
-      expect.objectContaining({ talla: '38', precio_minimo: 31000, precio_maximo: undefined, stock: 0, foto_url: FOTO }),
+      expect.objectContaining({ talla: '38', precio_minimo: 30000, precio_maximo: undefined, stock: 0, foto_url: FOTO }),
     ])
+    expect(filasParaCargar([soloFoto])[0]).not.toHaveProperty('sumar')
+  })
+
+  it('cambiar el precio de lo que ya existe lo guarda (los provisionales de $1)', () => {
+    const existentes = {
+      '35': { id: 'e35', precio_minimo: 1, precio_maximo: null, stock: 4 },
+      '36': { id: 'e36', precio_minimo: 1, precio_maximo: null, stock: 4 },
+    }
+    // Reconocida: los rangos traen el precio que tiene (sin cambios no hay nada que guardar).
+    const igual = diana({ existentes, cantidades: {}, rangos: [rangoCompleto({ minimo: '1' })] })
+    expect(tallasConPrecioNuevo(igual)).toEqual([])
+    expect(filasParaCargar([igual])).toEqual([])
+    const nuevo = diana({ existentes, cantidades: {}, rangos: [rangoCompleto({ minimo: '45.000', maximo: '55.000' })] })
+    expect(tallasConPrecioNuevo(nuevo)).toEqual(['35', '36'])
+    expect(filasParaCargar([nuevo])).toEqual([
+      expect.objectContaining({ talla: '35', precio_minimo: 45000, precio_maximo: 55000, stock: 0 }),
+      expect.objectContaining({ talla: '36', precio_minimo: 45000, precio_maximo: 55000, stock: 0 }),
+    ])
+    expect(erroresCargaInicial([nuevo])).toEqual([])
+    // Borrar el precio no lo deja vacío: es un error.
+    expect(erroresCargaInicial([diana({ existentes, cantidades: {}, rangos: [rangoCompleto()] })]))
+      .toEqual(['Falta el precio mínimo de 52452601 Rojo (tallas 20–45).'])
   })
 
   it('dos colores se guardan como "Rojo y blanco"', () => {
@@ -48,9 +74,12 @@ describe('carga inicial: lo que se guarda', () => {
     expect(claveDeFila(diana({ color: 'rojo/blanco' }))).toBe(claveDeFila(diana({ referencia: ' 52452601 ', color: 'Rojo y blanco' })))
   })
 
-  it('el resumen cuenta referencias, tallas nuevas, pares y fotos', () => {
+  it('el resumen cuenta referencias, tallas nuevas, pares (también los sumados), precios y fotos', () => {
     expect(resumenCargaInicial([diana({ foto: FOTO }), diana({ id: 'b', color: 'Negro', cantidades: { '40': '3' } }), filaVacia('c')]))
-      .toEqual({ referencias: 2, tallasNuevas: 6, pares: 35, fotos: 1 })
+      .toEqual({ referencias: 2, tallasNuevas: 6, pares: 35, paresSumados: 0, preciosCambiados: 0, fotos: 1 })
+    const existentes = { '40': { id: 'e40', precio_minimo: 1, precio_maximo: null, stock: 2 } }
+    expect(resumenCargaInicial([diana({ id: 'b', color: 'Negro', existentes, cantidades: { '40': '3' } })]))
+      .toEqual({ referencias: 1, tallasNuevas: 0, pares: 3, paresSumados: 3, preciosCambiados: 1, fotos: 0 })
   })
 })
 
@@ -66,7 +95,7 @@ describe('carga inicial: errores y avisos', () => {
   })
 
   it('sin nada que guardar', () => {
-    expect(erroresCargaInicial([filaVacia('a')])).toEqual(['Escribe la cantidad de al menos una talla nueva.'])
+    expect(erroresCargaInicial([filaVacia('a')])).toEqual(['No hay nada que guardar: escribe pares, cambia un precio o pon una foto.'])
   })
 
   it('pide descripción, categoría y precio mínimo; el máximo no puede ser menor', () => {
@@ -89,10 +118,11 @@ describe('carga inicial: errores y avisos', () => {
       .toContain('La foto de 52452601 Negro quedó con el nombre de antes: vuelve a ponerla.')
   })
 
-  it('avisa las tallas ya cargadas', () => {
+  it('avisa lo que cambia en lo ya cargado: pares que se suman y precios', () => {
     const existentes = { '37': { id: 'e', precio_minimo: 1, precio_maximo: null }, '38': { id: 'f', precio_minimo: 1, precio_maximo: null } }
     expect(avisosCargaInicial([diana({ existentes })])).toEqual([
-      'En 52452601 Rojo, las tallas 37 y 38 ya estaban cargadas: su stock no cambia aquí (para corregirlo usa Conteo físico).',
+      'En 52452601 Rojo se suman 20 pares a las tallas 37 y 38, que ya estaban cargadas.',
+      'En 52452601 Rojo cambia el precio de las tallas 37 y 38.',
     ])
   })
 })

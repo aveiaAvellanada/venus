@@ -84,7 +84,7 @@ describe('Carga inicial', () => {
     expect(JSON.parse(localStorage.getItem('panel-carga-inicial-borrador')!)).toHaveLength(1)
   })
 
-  it('lo ya cargado se ve en gris con su stock y no se vuelve a cargar', async () => {
+  it('en lo ya cargado se ven los pares que hay; lo escrito se suma y el precio cambiado se guarda', async () => {
     pintar()
     await userEvent.type(await screen.findByLabelText('Descripción de la fila 1'), 'Tennis running')
     await userEvent.type(screen.getByLabelText('Color de la fila 1'), 'negro')
@@ -92,16 +92,28 @@ describe('Carga inicial', () => {
     expect(screen.getByLabelText('Referencia de la fila 1')).toHaveTextContent('TR-1')
     expect(screen.getByLabelText('Marca de la fila 1')).toHaveValue('Kalzado')
     const t38 = screen.getByLabelText('Talla 38 de la fila 1')
-    expect(t38).toHaveValue('3')
-    expect(t38).toHaveAttribute('readonly')
+    expect(t38).toHaveValue('')
+    expect(screen.getByText('hay 3')).toBeInTheDocument()
+    // Otra caja: 9 pares más de la 38 y 2 de la 39, que es nueva.
     await userEvent.type(t38, '9')
-    expect(t38).toHaveValue('3')
     await userEvent.type(screen.getByLabelText('Talla 39 de la fila 1'), '2')
+    // El precio provisional cambia.
+    const minimo = screen.getByLabelText('Precio mínimo tallas 20–45 de la fila 1')
+    await userEvent.clear(minimo)
+    await userEvent.type(minimo, '95000')
 
     await userEvent.click(screen.getByRole('button', { name: 'Revisar y guardar' }))
-    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Guardar en el inventario' }))
-    const [filas] = vi.mocked(cargarInventario).mock.lastCall!
-    expect(filas).toEqual([expect.objectContaining({ referencia: 'TR-1', color: 'Negro', talla: '39', stock: 2, precio_minimo: 90000, precio_maximo: 120000 })])
+    const dialogo = screen.getByRole('dialog')
+    expect(within(dialogo).getByText('(9 sumados a tallas que ya estaban)')).toBeInTheDocument()
+    expect(within(dialogo).getByText('En TR-1 Negro se suman 9 pares a la talla 38, que ya estaba cargada.')).toBeInTheDocument()
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Guardar en el inventario' }))
+    const [filas, , clave] = vi.mocked(cargarInventario).mock.lastCall!
+    expect(filas).toEqual([
+      expect.objectContaining({ referencia: 'TR-1', color: 'Negro', talla: '39', stock: 2, precio_minimo: 95000, precio_maximo: 120000 }),
+      expect.objectContaining({ referencia: 'TR-1', color: 'Negro', talla: '38', stock: 0, sumar: 9, precio_minimo: 95000, precio_maximo: 120000 }),
+    ])
+    // Una clave por revisión: si se cae la señal, reintentar no suma otra vez.
+    expect(clave).toEqual(expect.any(String))
   })
 
   it('no deja guardar si falta algo y dice qué', async () => {

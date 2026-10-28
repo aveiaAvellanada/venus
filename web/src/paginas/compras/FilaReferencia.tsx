@@ -8,7 +8,7 @@ import {
   dividirRango, enRango, fotoDeFila, fotoDesactualizada, partesColor, subtotalFila, TALLAS, unidadesFila, unirColores, unirRango,
   type FilaFactura, type RangoPrecio,
 } from '../../lib/compras'
-import { paresNuevos } from '@shared/cargaInicial'
+import { paresSumados } from '@shared/cargaInicial'
 import { subirFotoCatalogo } from '../../lib/datos/fotos'
 import { referenciaParaModelo } from '../../lib/datos/inventario'
 import { procesarFotoProducto, type AjusteRecorte } from '../../lib/imagen'
@@ -23,11 +23,11 @@ const soloDigitos = (t: string) => t.replace(/[^\d.]/g, '')
 
 // Una referencia (mismo modelo y color) de la factura: datos, cantidades por
 // talla (20–45) y costo/precios por rango de tallas. La Carga inicial la usa
-// sin costo y con las tallas que ya existen bloqueadas (su stock no cambia ahí).
+// sin costo; en las tallas que ya existen muestra los pares que hay y lo escrito se suma.
 export function FilaReferencia({
   fila, indice, opcionesDescripcion, opcionesMarca, referenciaHermana = '', opcionesColor, opcionesColorSimple,
   alCambiar, alReconocer, alQuitar, alOtroColor, alFoto, alSalirDeTalla,
-  conCosto = true, bloquearExistentes = false,
+  conCosto = true, sumarExistentes = false,
 }: {
   fila: FilaFactura
   indice: number
@@ -47,7 +47,8 @@ export function FilaReferencia({
   alFoto: (url: string, referencia: string) => void
   alSalirDeTalla: (talla: string, direccion: 'abajo' | 'arriba') => void
   conCosto?: boolean
-  bloquearExistentes?: boolean
+  // Carga inicial: en una talla que ya existe lo escrito se suma a su stock.
+  sumarExistentes?: boolean
 }) {
   // Los dos campos de color se editan tal cual se escriben; "Rojo y blanco"
   // escrito o elegido en el primero se reparte en los dos al salir del campo.
@@ -185,9 +186,9 @@ export function FilaReferencia({
         <div className="grid grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] gap-1">
           {TALLAS.map((t) => {
             const existente = fila.existentes[t]
-            // En la Carga inicial una talla ya cargada muestra su stock y no se edita:
-            // se puede pasar por encima con las flechas, pero no cambia.
-            const bloqueada = bloquearExistentes && !!existente
+            // En la Carga inicial una talla ya cargada muestra debajo los pares
+            // que tiene; lo que se escriba se suma.
+            const suma = sumarExistentes && !!existente
             return (
               <label key={t} className="flex flex-col items-center gap-0.5">
                 <span className={`text-xs ${existente ? 'font-semibold text-texto' : 'text-texto3'}`} title={existente ? 'Ya existe en el inventario' : 'Talla nueva'}>
@@ -197,16 +198,17 @@ export function FilaReferencia({
                   id={`talla-${fila.id}-${t}`}
                   aria-label={`Talla ${t} de la fila ${indice + 1}`}
                   inputMode="numeric"
-                  readOnly={bloqueada}
-                  title={bloqueada ? `Ya cargada: ${existente.stock ?? 0} pares. Para corregir el stock usa Conteo físico.` : undefined}
-                  value={bloqueada ? String(existente.stock ?? 0) : fila.cantidades[t] ?? ''}
-                  onChange={(e) => bloqueada || alCambiar({ ...fila, cantidades: { ...fila.cantidades, [t]: e.target.value.replace(/[^\d]/g, '') } })}
+                  placeholder={suma ? '+' : undefined}
+                  title={suma ? `Ya hay ${existente.stock ?? 0} pares: lo que escribas se suma.` : undefined}
+                  value={fila.cantidades[t] ?? ''}
+                  onChange={(e) => alCambiar({ ...fila, cantidades: { ...fila.cantidades, [t]: e.target.value.replace(/[^\d]/g, '') } })}
                   onKeyDown={(e) => teclas(e, t)}
                   onFocus={(e) => e.target.select()}
                   className={`cifras w-full rounded-md border px-1 py-1 text-center text-sm outline-none focus:border-primario ${
-                    bloqueada ? 'border-borde bg-superficie2 text-texto3' : Number(fila.cantidades[t]) > 0 ? 'border-primario bg-primario-soft font-semibold' : 'border-borde bg-fondo'
+                    Number(fila.cantidades[t]) > 0 ? 'border-primario bg-primario-soft font-semibold' : suma ? 'border-borde bg-superficie2' : 'border-borde bg-fondo'
                   }`}
                 />
+                {suma ? <span className="cifras text-[10px] leading-none text-texto3" title="Pares que ya hay">hay {existente.stock ?? 0}</span> : null}
               </label>
             )
           })}
@@ -267,7 +269,7 @@ export function FilaReferencia({
       </div>
 
       <p className="text-right text-sm text-texto2">
-        {bloquearExistentes ? paresNuevos(fila) : unidadesFila(fila)} pares
+        {unidadesFila(fila)} pares{sumarExistentes && paresSumados(fila) ? ` (${paresSumados(fila)} se suman a lo que hay)` : ''}
         {conCosto ? <> · subtotal <strong className="cifras text-texto">{pesos(subtotalFila(fila))}</strong></> : null}
       </p>
     </section>

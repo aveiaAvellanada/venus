@@ -8,7 +8,7 @@ import { pesos } from '@shared/formato'
 import { urlMiniatura } from '@shared/fotos'
 import { CATEGORIAS } from '@shared/excel'
 import {
-  aCsv, agrupar, costoDeGrupo, direccionInicial, filtrar, margen, ORDEN_INICIAL, ordenar, resumenTallas, totales,
+  aCsv, agrupar, costoDeGrupo, direccionInicial, filtrar, margen, ORDEN_INICIAL, ordenar, totales,
   type CampoOrden, type EstadoInventario, type GrupoReferencia, type Orden, type ProductoCalzado, type Totales,
 } from '../../lib/inventario'
 import { actualizarTalla, costosPorProducto, listarCalzado } from '../../lib/datos/inventario'
@@ -210,6 +210,12 @@ export function Inventario() {
         </div>
       ) : null}
 
+      {productos.data ? (
+        <p aria-label="Totales" className="rounded-xl border border-borde bg-fondo px-4 py-2.5 text-sm text-texto2">
+          <Resumen suma={suma} conCostos={!!mapaCostos} />
+        </p>
+      ) : null}
+
       {productos.isPending ? <Cargando /> : productos.isError ? <MensajeError error={productos.error} /> : vista === 'tarjetas' ? (
         <div className="flex flex-col gap-3">
           <label className="flex items-center gap-2 self-start text-sm text-texto2">
@@ -230,7 +236,6 @@ export function Inventario() {
               ))}
             </ul>
           )}
-          <p className="text-sm text-texto2"><Resumen suma={suma} conCostos={!!mapaCostos} /></p>
           {filtrados.length > visibles ? (
             <Boton variante="fantasma" onClick={() => setVisibles((v) => v + POR_PAGINA.tarjetas)} className="self-center">
               Mostrar más ({filtrados.length - visibles} restantes)
@@ -285,15 +290,6 @@ export function Inventario() {
                 <tr><td colSpan={8} className="px-4 py-10 text-center text-texto3">Ningún producto coincide con los filtros.</td></tr>
               ) : null}
             </tbody>
-            <tfoot className="border-t border-borde text-sm">
-              <tr>
-                <td />
-                <td colSpan={3} className="py-3 pr-3 text-texto2">
-                  <Resumen suma={suma} conCostos={!!mapaCostos} />
-                </td>
-                <td colSpan={mapaCostos ? 4 : 2} />
-              </tr>
-            </tfoot>
           </table>
           {filtrados.length > visibles ? (
             <div className="border-t border-borde p-3 text-center">
@@ -388,9 +384,7 @@ function TarjetaGrupo({ grupo: g, marcado, alMarcar }: { grupo: GrupoReferencia;
           {g.referencia ?? '—'}{g.color ? <> · <ConColor color={g.color} /></> : null}
         </span>
         <span className="text-xs text-texto3">{[g.marca, tituloCategoria(g.categoria)].filter(Boolean).join(' · ')}</span>
-        <span className="text-xs text-texto2" title={g.tallas.filter((t) => t.activo).map((t) => `${t.talla ?? 'Única'}: ${t.stock_actual}`).join(' · ')}>
-          {resumenTallas(g)}
-        </span>
+        <ChipsTallas grupo={g} />
         <span className="mt-auto flex flex-wrap items-end justify-between gap-x-2 pt-1">
           <span className="cifras font-semibold">
             {g.precioMin === g.precioMax ? pesos(g.precioMax) : `${pesos(g.precioMin)} – ${pesos(g.precioMax)}`}
@@ -399,6 +393,27 @@ function TarjetaGrupo({ grupo: g, marcado, alMarcar }: { grupo: GrupoReferencia;
         </span>
       </div>
     </li>
+  )
+}
+
+// "25: 3" por cada talla activa: sin pares en rojo, en el mínimo o por debajo en amarillo.
+function ChipsTallas({ grupo: g }: { grupo: GrupoReferencia }) {
+  return (
+    <span className="flex flex-wrap gap-1">
+      {g.tallas.filter((t) => t.activo).map((t) => (
+        <span
+          key={t.id}
+          title={`Talla ${t.talla ?? 'Única'}: ${t.stock_actual} (mínimo ${t.stock_minimo})`}
+          className={`cifras rounded-md px-1.5 py-0.5 text-xs ${
+            t.stock_actual === 0 ? 'bg-peligro-soft text-peligro-texto'
+              : t.stock_actual <= t.stock_minimo ? 'bg-advertencia-soft text-advertencia-texto'
+                : 'bg-superficie2 text-texto2'
+          }`}
+        >
+          {t.talla ?? 'Única'}: {t.stock_actual}
+        </span>
+      ))}
+    </span>
   )
 }
 
@@ -450,21 +465,7 @@ function FilaGrupo({ grupo: g, costo, conCostos, abierto, marcado, alAbrir, alMa
       </td>
       <td className="py-2.5 pr-3 text-texto2">{tituloCategoria(g.categoria)}</td>
       <td className="py-2.5 pr-3">
-        <span className="flex flex-wrap gap-1">
-          {g.tallas.filter((t) => t.activo).map((t) => (
-            <span
-              key={t.id}
-              title={`Talla ${t.talla}: ${t.stock_actual} (mínimo ${t.stock_minimo})`}
-              className={`cifras rounded-md px-1.5 py-0.5 text-xs ${
-                t.stock_actual === 0 ? 'bg-peligro-soft text-peligro-texto'
-                  : t.stock_actual <= t.stock_minimo ? 'bg-advertencia-soft text-advertencia-texto'
-                    : 'bg-superficie2 text-texto2'
-              }`}
-            >
-              {t.talla ?? 'Única'}: {t.stock_actual}
-            </span>
-          ))}
-        </span>
+        <ChipsTallas grupo={g} />
       </td>
       <td className="cifras py-2.5 pr-3 text-right font-medium">
         {g.agotado ? <Insignia tono="peligro">Agotado</Insignia> : g.stock}

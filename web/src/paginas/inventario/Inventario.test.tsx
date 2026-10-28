@@ -49,7 +49,10 @@ describe('Inventario', () => {
     expect(within(fila).getByText('$90.000 – $120.000')).toBeInTheDocument()
     expect(within(fila).getByText('$60.000')).toBeInTheDocument()
     expect(within(fila).getByText('50 %')).toBeInTheDocument()
-    expect(screen.getByText(/2 referencias · 9 pares en stock/)).toBeInTheDocument()
+    // Los totales van arriba, antes de la tabla.
+    const totales = screen.getByLabelText('Totales')
+    expect(totales).toHaveTextContent(/2 referencias · 9 pares en stock/)
+    expect(totales.compareDocumentPosition(screen.getByRole('table')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('sin permiso de costos no muestra costo ni margen', async () => {
@@ -178,7 +181,8 @@ describe('Inventario: fotos, orden y vistas', () => {
     const tarjetas = within(screen.getByRole('list', { name: 'Tarjetas del inventario' })).getAllByRole('listitem')
     expect(tarjetas).toHaveLength(2)
     const tr1 = tarjetas.find((t) => within(t).queryByText('Tennis Running'))!
-    expect(within(tr1).getByText('38–39 · 2 tallas')).toBeInTheDocument()
+    expect(within(tr1).getByText('38: 3')).toBeInTheDocument()
+    expect(within(tr1).getByText('39: 0')).toBeInTheDocument()
     expect(within(tr1).getByText('$90.000 – $120.000')).toBeInTheDocument()
     expect(within(tr1).getByText('3 pares')).toBeInTheDocument()
     expect(tr1.querySelector('img')).toHaveAttribute('src', 'https://fotos/catalogo/tr-1-negro-mini.webp?v=7')

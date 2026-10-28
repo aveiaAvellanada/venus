@@ -1,5 +1,5 @@
 import {
-  aCsv, agrupar, compararTallas, costoDeGrupo, filtrar, margen, ordenar, resumenTallas, totales, type ProductoCalzado,
+  aCsv, agrupar, compararTallas, costoDeGrupo, filtrar, margen, ordenar, totales, type ProductoCalzado,
 } from './inventario'
 
 let n = 0
@@ -75,12 +75,6 @@ describe('inventario', () => {
     expect(refs({ campo: 'margen', dir: 'asc' }, costos)).toEqual(['A-1', 'B-1', 'C-1'])
     // No cambia la lista original.
     expect(grupos.map((g) => g.referencia)).toEqual(['A-1', 'B-1', 'C-1'])
-  })
-
-  it('resume las tallas activas', () => {
-    expect(resumenTallas(agrupar([p({ talla: '33' }), p({ talla: '25' }), p({ talla: '29' }), p({ talla: '40', activo: false })])[0]))
-      .toBe('25–33 · 3 tallas')
-    expect(resumenTallas(agrupar([p({ talla: null })])[0])).toBe('Única · 1 talla')
   })
 
   it('margen sobre el precio de venta', () => {

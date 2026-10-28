@@ -18,7 +18,10 @@ function encadenar(data: unknown) {
 }
 
 describe('obtenerGastosFijosPorVencer', () => {
-  const HOY = new Date().getDate()
+  // Fecha fija: con la de hoy, "hoy + 10" se pasaba del 31 desde el día 28 del mes.
+  const HOY = 10
+  beforeAll(() => jest.useFakeTimers({ now: new Date(2026, 9, HOY, 12) }))
+  afterAll(() => jest.useRealTimers())
 
   it('incluye gastos sin pago registrado con dia_pago dentro de los próximos 3 días', () => {
     const diaCercano = Math.min(HOY + 2, 31)

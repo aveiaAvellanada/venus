@@ -98,6 +98,8 @@ Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app c
 
 - Un zapato, una referencia y foto obligatoria (2026-10-26, migración `20261026150000_referencia_unica_y_foto_heredada` aplicada al remoto con el conector y registrada con esa versión, probada con rollback): en la carga inicial dos colores del mismo zapato escritos en filas aparte apartaron cada uno su código (Ilario V quedó como `ESC-VERL-004` y `-005`; corregido en el remoto: el azul pasó a `ESC-VERL-004`, era el único caso). Ahora la app y el panel usan la referencia de la otra fila con la misma descripción y marca (`referenciaDeHermana`), y la base, al crear una talla con un código que nadie usa para un zapato que ya existe, le pone el del zapato. Una talla nueva sin foto toma la de su color. Un zapato nuevo no se crea sin foto (`erroresFactura`, `erroresCargaInicial`, editor de calzado con `fotoDeModeloColor`); la carga masiva por Excel no lleva fotos y no la pide.
 
+- Carga inicial editable (2026-10-28, migración `20261028120000_carga_inicial_sumar_y_precios` aplicada al remoto con el conector, registrada con esa versión y probada con rollback): en lo ya cargado cada talla muestra "hay N" y lo escrito se **suma** (`sumar` en `cargar_inventario`; `stock` sigue siendo el de una talla nueva y la carga por Excel no cambia); cambiar el rango de precios de lo que ya existe lo guarda (`tallasConPrecioNuevo`). `cargar_inventario(p_filas, p_proveedor_id, p_clave_idempotencia)`: un reintento con la misma clave (`private.cargas_inventario`) no suma dos veces. Inventario y precios: totales arriba y tallas con sus pares también en las tarjetas.
+
 ## No construir en esta versión
 - Facturación electrónica DIAN
 - E-commerce o catálogo por WhatsApp

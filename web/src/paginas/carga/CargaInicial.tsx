@@ -29,14 +29,16 @@ function leerBorrador(): FilaFactura[] {
 
 // Carga inicial: la mercancía que ya está en la tienda, sin proveedor ni costo.
 // Una fila por referencia y color con la cantidad de cada talla, sus precios y
-// su foto. Se guarda todo junto (cargar_inventario); lo que ya estaba cargado
-// no cambia su stock.
+// su foto. Se guarda todo junto (cargar_inventario). En lo que ya estaba
+// cargado, los pares escritos se suman y los precios se pueden cambiar.
 export function CargaInicial() {
   const cliente = useQueryClient()
   const [filas, setFilas] = useState<FilaFactura[]>(leerBorrador)
   const [revisando, setRevisando] = useState(false)
   const [intentoGuardar, setIntentoGuardar] = useState(false)
   const [listo, setListo] = useState<ResultadoCarga | null>(null)
+  // Una clave por revisión: reintentar desde la misma ventana no suma otra vez.
+  const [clave, setClave] = useState('')
 
   // El borrador vive en este navegador: se puede seguir otro día.
   useEffect(() => {
@@ -79,7 +81,7 @@ export function CargaInicial() {
   const avisos = avisosCargaInicial(filas)
 
   const guardar = useMutation({
-    mutationFn: () => cargarInventario(filasParaCargar(filas), null),
+    mutationFn: () => cargarInventario(filasParaCargar(filas), null, clave),
     onSuccess: async (r) => {
       try { localStorage.removeItem(BORRADOR) } catch { /* nada */ }
       setRevisando(false)
@@ -115,6 +117,7 @@ export function CargaInicial() {
         <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl bg-exito-soft px-4 py-3 text-sm text-exito-texto">
           <CheckCircle2 aria-hidden className="size-5" />
           <span className="flex-1">
+            {listo.repetida ? 'Ya estaba guardado: no se sumó nada otra vez. ' : ''}
             Guardado: {plural(listo.creados, 'talla nueva', 'tallas nuevas')}
             {listo.actualizados ? `, ${plural(listo.actualizados, 'talla actualizada', 'tallas actualizadas')}` : ''}. Sigue con la siguiente tanda.
           </span>
@@ -127,7 +130,7 @@ export function CargaInicial() {
           <li>Escribe la descripción, la marca y el color: si el zapato ya existe se reconoce solo, y si es nuevo la referencia se pone sola. Las flechas y Enter mueven entre tallas y filas.</li>
           <li><strong>Foto:</strong> toca la cámara o arrastra la foto encima. La encuadras en cuadrado y se guarda liviana con el nombre de la referencia y el color, en todas sus tallas.</li>
           <li><strong>Otro color</strong> copia la referencia con sus precios para escribir solo el color, las cantidades y su foto.</li>
-          <li>Lo que ya está cargado aparece en gris con su stock y no cambia aquí; para corregir un stock usa <Link to="/conteo" className="font-semibold underline">Conteo físico</Link>.</li>
+          <li><strong>Lo que ya está cargado</strong> se reconoce solo y muestra bajo cada talla los pares que hay. Lo que escribas en esas tallas <strong>se suma</strong> (otra caja del mismo zapato), y si cambias el precio, se guarda el nuevo. Para bajar un stock o dejarlo exacto usa <Link to="/conteo" className="font-semibold underline">Conteo físico</Link>.</li>
           <li>El borrador se guarda en este navegador: puedes cerrar y seguir otro día. Conviene guardar por tandas (por ejemplo, una caja o una categoría).</li>
         </ul>
       </Tarjeta>
@@ -151,7 +154,7 @@ export function CargaInicial() {
           fila={fila}
           indice={i}
           conCosto={false}
-          bloquearExistentes
+          sumarExistentes
           opcionesDescripcion="opciones-descripcion"
           opcionesMarca="opciones-marca"
           opcionesColor="opciones-color"
@@ -182,7 +185,10 @@ export function CargaInicial() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-texto2">
             {plural(resumen.referencias, 'referencia', 'referencias')} · {plural(resumen.tallasNuevas, 'talla nueva', 'tallas nuevas')} ·{' '}
-            <strong className="cifras text-lg text-texto">{resumen.pares}</strong> pares · {plural(resumen.fotos, 'foto', 'fotos')}
+            <strong className="cifras text-lg text-texto">{resumen.pares}</strong> pares
+            {resumen.paresSumados ? ` (${resumen.paresSumados} sumados)` : ''}
+            {resumen.preciosCambiados ? ` · ${plural(resumen.preciosCambiados, 'precio cambiado', 'precios cambiados')}` : ''}
+            {' '}· {plural(resumen.fotos, 'foto', 'fotos')}
             {avisos.length ? (
               <span className="ml-2 inline-flex items-center gap-1 text-advertencia-texto" title={avisos.join('\n')}>
                 <AlertTriangle aria-hidden className="size-4" />
@@ -190,7 +196,14 @@ export function CargaInicial() {
               </span>
             ) : null}
           </p>
-          <Boton onClick={() => { setIntentoGuardar(true); setListo(null); if (!errores.length) setRevisando(true) }} disabled={!resumen.referencias}>
+          <Boton
+            onClick={() => {
+              setIntentoGuardar(true)
+              setListo(null)
+              if (!errores.length) { setClave(nuevoId()); setRevisando(true) }
+            }}
+            disabled={!resumen.referencias}
+          >
             Revisar y guardar
           </Boton>
         </div>
@@ -210,7 +223,12 @@ export function CargaInicial() {
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
             <dt className="text-texto3">Referencias</dt><dd className="font-medium">{resumen.referencias} (contando cada color)</dd>
             <dt className="text-texto3">Tallas nuevas</dt><dd>{resumen.tallasNuevas}</dd>
-            <dt className="text-texto3">Pares</dt><dd className="cifras text-lg font-bold">{resumen.pares}</dd>
+            <dt className="text-texto3">Pares</dt>
+            <dd>
+              <span className="cifras text-lg font-bold">{resumen.pares}</span>
+              {resumen.paresSumados ? <span className="text-texto2"> ({resumen.paresSumados} sumados a tallas que ya estaban)</span> : null}
+            </dd>
+            {resumen.preciosCambiados ? <><dt className="text-texto3">Precios</dt><dd>{plural(resumen.preciosCambiados, 'talla cambia', 'tallas cambian')} de precio</dd></> : null}
             <dt className="text-texto3">Fotos</dt><dd>{resumen.fotos}</dd>
           </dl>
           {avisos.length ? (

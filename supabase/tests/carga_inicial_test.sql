@@ -33,7 +33,7 @@ do $$
 declare
   v_dueno uuid := gen_random_uuid();
   v_carga uuid; v_ventas uuid; v_t38 uuid; v_obj uuid;
-  r jsonb; v_err text; v_n bigint; v_stock int; v_foto text; v_max numeric;
+  r jsonb; v_err text; v_n bigint; v_stock int; v_foto text; v_max numeric; v_clave uuid; v_lote jsonb;
   v_foto1 text := 'https://x.supabase.co/storage/v1/object/public/productos/catalogo/dg-1-rojo.webp?v=1';
   v_foto2 text := 'https://x.supabase.co/storage/v1/object/public/productos/catalogo/dg-1-rojo.webp?v=2';
 begin
@@ -94,6 +94,63 @@ begin
   if (select foto_url from public.productos_calzado where id = v_t38) <> v_foto2 then
     raise exception 'FALLO: sin foto debía conservar la que tenía';
   end if;
+
+  -- ===== Otra caja del mismo zapato: los pares se suman (20261028120000) =====
+  perform pg_temp.como(v_carga);
+  v_clave := gen_random_uuid();
+  v_lote := jsonb_build_array(
+    -- la 38 ya tiene 4 pares: se suman 3; el precio provisional cambia
+    jsonb_build_object('fila', 1, 'categoria', 'Chanclas', 'descripcion', 'Diana Gold', 'marca', 'Manisol', 'referencia', 'DG-1',
+                       'color', 'Rojo', 'talla', '38', 'precio_minimo', 30000, 'precio_maximo', 35000, 'stock', 0, 'sumar', 3),
+    -- una talla nueva en la misma carga
+    jsonb_build_object('fila', 2, 'categoria', 'Chanclas', 'descripcion', 'Diana Gold', 'marca', 'Manisol', 'referencia', 'DG-1',
+                       'color', 'Rojo', 'talla', '39', 'precio_minimo', 30000, 'stock', 2)
+  );
+  r := public.cargar_inventario(v_lote, null, v_clave);
+  if r <> '{"creados": 1, "actualizados": 1, "sin_cambios": 0}'::jsonb then
+    raise exception 'FALLO: sumar pares debía contar como actualizada: %', r;
+  end if;
+  -- Se cayó la señal y se reintenta con la misma clave: no suma otra vez.
+  r := public.cargar_inventario(v_lote, null, v_clave);
+  if not coalesce((r ->> 'repetida')::boolean, false) or (r ->> 'creados')::int <> 1 then
+    raise exception 'FALLO: el reintento debía devolver la misma respuesta marcada como repetida: %', r;
+  end if;
+  execute 'reset role';
+  if (select stock_actual from public.productos_calzado where id = v_t38) <> 7 then
+    raise exception 'FALLO: la 38 debía quedar con 4 + 3 = 7 pares (quedó %)', (select stock_actual from public.productos_calzado where id = v_t38);
+  end if;
+  if (select count(*) from public.productos_calzado where referencia = 'DG-1' and talla = '39') <> 1 then
+    raise exception 'FALLO: el reintento no debía crear la 39 otra vez';
+  end if;
+  -- Sin clave, la carga masiva por Excel sigue como antes: el stock de lo existente no cambia.
+  perform pg_temp.como(v_carga);
+  r := public.cargar_inventario(jsonb_build_array(
+    jsonb_build_object('fila', 1, 'categoria', 'Chanclas', 'descripcion', 'Diana Gold', 'marca', 'Manisol', 'referencia', 'DG-1',
+                       'color', 'Rojo', 'talla', '38', 'precio_minimo', 30000, 'precio_maximo', 35000, 'stock', 99)));
+  execute 'reset role';
+  if (select stock_actual from public.productos_calzado where id = v_t38) <> 7 then
+    raise exception 'FALLO: sin `sumar` el stock de lo existente no debía cambiar';
+  end if;
+
+  -- ===== Precios provisionales: se cambian desde la carga (con permiso de inventario) =====
+  perform pg_temp.como(v_dueno);
+  r := public.cargar_inventario(jsonb_build_array(
+    jsonb_build_object('fila', 1, 'categoria', 'Chanclas', 'descripcion', 'Diana Gold', 'marca', 'Manisol', 'referencia', 'DG-1',
+                       'color', 'Rojo', 'talla', '38', 'precio_minimo', 42000, 'stock', 0)));
+  execute 'reset role';
+  if not exists (select 1 from public.productos_calzado where id = v_t38 and precio_minimo = 42000 and precio_maximo is null and stock_actual = 7) then
+    raise exception 'FALLO: el precio debía cambiar sin tocar el stock';
+  end if;
+  perform pg_temp.como(v_carga);
+  v_err := pg_temp.error_de(format('select public.cargar_inventario(%L)', jsonb_build_array(
+    jsonb_build_object('fila', 9, 'categoria', 'Chanclas', 'descripcion', 'Diana Gold', 'marca', 'Manisol', 'referencia', 'DG-1',
+                       'color', 'Rojo', 'talla', '38', 'precio_minimo', 1, 'stock', 0))));
+  if v_err not like '%no tienes permiso para cambiar precios%' then raise exception 'FALLO: sin inventario cambió un precio (%)', v_err; end if;
+  v_err := pg_temp.error_de(format('select public.cargar_inventario(%L)', jsonb_build_array(
+    jsonb_build_object('fila', 8, 'categoria', 'Chanclas', 'descripcion', 'Diana Gold', 'marca', 'Manisol', 'referencia', 'DG-1',
+                       'color', 'Rojo', 'talla', '38', 'precio_minimo', 42000, 'stock', 0, 'sumar', -2))));
+  if v_err not like 'Fila 8: los pares que se suman%' then raise exception 'FALLO: sumar negativo (%)', v_err; end if;
+  execute 'reset role';
 
   -- ===== Errores =====
   perform pg_temp.como(v_dueno);

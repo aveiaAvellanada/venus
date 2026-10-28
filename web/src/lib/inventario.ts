@@ -156,16 +156,6 @@ export function ordenar(grupos: GrupoReferencia[], orden: Orden, costos?: Map<st
     .map((x) => x.g)
 }
 
-// "25–33 · 9 tallas" (solo las activas, como en la lista).
-export function resumenTallas(g: GrupoReferencia): string {
-  const activas = g.tallas.filter((t) => t.activo)
-  if (!activas.length) return 'Sin tallas activas'
-  const primera = activas[0].talla ?? 'Única'
-  const ultima = activas[activas.length - 1].talla ?? 'Única'
-  const rango = primera === ultima ? primera : `${primera}–${ultima}`
-  return `${rango} · ${activas.length} talla${activas.length === 1 ? '' : 's'}`
-}
-
 // Margen sobre el precio de venta: (precio − costo) / precio.
 export function margen(precio: number, costo: number | undefined): number | null {
   if (costo === undefined || !precio) return null

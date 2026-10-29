@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Image, Text, TextInput, View } from 'react-na
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, Egg, Footprints, Lock, Minus, Package, Plus, ShoppingBag, X } from 'lucide-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useRequireModulo } from '../../../lib/auth'
+import { useAuth, useRequireModulo } from '../../../lib/auth'
 import { useCarrito } from '../../../lib/carrito-contexto'
 import {
   calcularCambio, montoEfectivo, numArticulos, pagosCuadran, puedeCobrar, rangoDeslizador,
@@ -13,6 +13,8 @@ import {
 import { registrarVenta, type RegistrarVentaInput } from '../../../lib/ventas'
 import { intentoVenta } from '../../../lib/intentoVenta'
 import { obtenerCajaHoy } from '../../../lib/caja'
+import { SinConexionError, esErrorDeRed } from '../../../lib/conexion'
+import { useVentasPendientes } from '../../../lib/ventasPendientes-contexto'
 import { useTema } from '../../../lib/tema'
 import { espacio, radio, tabular, tipografiaCompacta as tc } from '../../../lib/theme'
 import {
@@ -284,16 +286,31 @@ export default function NuevaVenta() {
   const [cliente, setCliente] = useState(CLIENTE_VACIO)
   const [guardando, setGuardando] = useState(false)
   const [overlayVisible, setOverlayVisible] = useState(false)
-  const [cajaEstado, setCajaEstado] = useState<'loading' | 'ok' | 'bloqueado'>('loading')
+  // 'sinConexion': no se sabe cómo está la caja; se vende igual y la venta se
+  // guarda en el teléfono hasta que vuelva la red (lib/ventasPendientes.ts).
+  const [cajaEstado, setCajaEstado] = useState<'loading' | 'ok' | 'bloqueado' | 'sinConexion'>('loading')
+  const [guardadaEnTelefono, setGuardadaEnTelefono] = useState(false)
+  const { perfil } = useAuth()
+  const { sinConexion, guardar } = useVentasPendientes()
 
   useEffect(() => {
-    obtenerCajaHoy()
+    if (sinConexion) {
+      setCajaEstado('sinConexion')
+      return
+    }
+    let vigente = true
+    Promise.race([
+      obtenerCajaHoy(),
+      new Promise<never>((_, rechazar) => setTimeout(() => rechazar(new Error('timeout')), 8000)),
+    ])
       .then(c => {
+        if (!vigente) return
         if (!c || c.estado !== 'abierta') setCajaEstado('bloqueado')
         else setCajaEstado('ok')
       })
-      .catch(() => setCajaEstado('bloqueado'))
-  }, [])
+      .catch((e) => { if (vigente) setCajaEstado(esErrorDeRed(e) ? 'sinConexion' : 'bloqueado') })
+    return () => { vigente = false }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (redir) return redir
 
@@ -350,18 +367,40 @@ export default function NuevaVenta() {
     }
     const intento = intentoVenta(intentoRef.current, venta)
     intentoRef.current = intento
-    try {
-      await registrarVenta(venta, intento.clave)
+    const lista = (enTelefono: boolean) => {
       intentoRef.current = null
       // La venta ya existe: vaciar el carrito y el pago YA (no al tocar "Nueva venta"),
       // así salir con "Listo" o con atrás no deja lo vendido listo para venderse otra vez.
       // Si el registro falla, no se limpia: el reintento usa la misma clave.
       dispatch({ tipo: 'limpiar' })
       limpiarPago()
+      setGuardadaEnTelefono(enTelefono)
       setOverlayVisible(true)
       setEtapa('confirmacion')
+    }
+    // Sin conexión (o si se cae al confirmar): se guarda en el teléfono con la
+    // misma clave y la hora de ahora; si alcanzó a llegar, no se duplica.
+    const guardarEnTelefono = async () => {
+      if (!perfil) return
+      await guardar({ clave: intento.clave, usuarioId: perfil.id, vendidaEn: new Date().toISOString(), input: venta })
+      lista(true)
+    }
+    try {
+      if (sinConexion) await guardarEnTelefono()
+      else {
+        await registrarVenta(venta, intento.clave)
+        lista(false)
+      }
     } catch (e) {
-      Alert.alert('No se registró', e instanceof Error ? e.message : 'Intenta de nuevo.')
+      if (e instanceof SinConexionError) {
+        try {
+          await guardarEnTelefono()
+        } catch {
+          Alert.alert('No se registró', e.message)
+        }
+      } else {
+        Alert.alert('No se registró', e instanceof Error ? e.message : 'Intenta de nuevo.')
+      }
     } finally {
       setGuardando(false)
     }
@@ -419,7 +458,11 @@ export default function NuevaVenta() {
   if (etapa === 'confirmacion') {
     return (
       <View style={{ flex: 1, backgroundColor: paleta.fondo }}>
-        <OverlayExito visible={overlayVisible} mensaje="Venta exitosa" onFin={() => { setOverlayVisible(false); router.replace('/') }} />
+        <OverlayExito
+          visible={overlayVisible}
+          mensaje={guardadaEnTelefono ? 'Guardada en el teléfono' : 'Venta exitosa'}
+          onFin={() => { setOverlayVisible(false); router.replace('/') }}
+        />
       </View>
     )
   }

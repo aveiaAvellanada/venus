@@ -28,7 +28,14 @@ jest.mock('expo-router', () => ({
 
 jest.mock('./supabase', () => ({ supabase: {} }))
 jest.mock('../lib/supabase', () => ({ supabase: {} }))
-jest.mock('../lib/auth', () => ({ useRequireModulo: () => null }))
+jest.mock('../lib/auth', () => ({ useRequireModulo: () => null, useAuth: () => ({ perfil: { id: 'u1' } }) }))
+
+// Ventas sin conexión: el teléfono sabe si hay red, y guarda la venta.
+let mockSinConexion = false
+const mockGuardar = jest.fn(async (_v: unknown) => {})
+jest.mock('../lib/ventasPendientes-contexto', () => ({
+  useVentasPendientes: () => ({ sinConexion: mockSinConexion, guardar: mockGuardar }),
+}))
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
@@ -46,6 +53,7 @@ import { TemaProvider } from './tema'
 import { CarritoProvider, useCarrito } from './carrito-contexto'
 import { ToastProvider } from '../components/ui'
 import NuevaVenta from '../app/(app)/ventas/nueva'
+import { SinConexionError } from './conexion'
 
 const ZAPATO = {
   id: 'z1', tipo: 'calzado' as const, titulo: 'Nike Air 40 Negro', detalle: 'Fútbol',
@@ -109,6 +117,7 @@ describe('Nueva Venta restilizada', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockParams = {}
+    mockSinConexion = false
   })
 
   test('caja cerrada muestra estado bloqueado con acción a Caja', async () => {
@@ -163,7 +172,7 @@ describe('Nueva Venta restilizada', () => {
     expect(mockReplace).toHaveBeenCalledWith('/')
   })
 
-  test('reintentar tras un fallo de red reusa la clave de la venta (no duplica)', async () => {
+  test('reintentar tras un fallo reusa la clave de la venta (no duplica)', async () => {
     mockRegistrar
       .mockRejectedValueOnce(new Error('Sin conexión: no sabemos si la venta se guardó.'))
       .mockResolvedValueOnce({ numero: 43, repetida: true })
@@ -301,5 +310,54 @@ describe('Nueva Venta restilizada', () => {
     await act(async () => { presionarPorLabel(arbol, 'Confirmar venta') })
     expect(mockRegistrar.mock.calls[0][0].cliente.documento).toBe('1117123456')
     expect(todoElTexto(arbol)).toContain('Venta exitosa')
+  })
+
+  // ── Sin conexión (2026-10-29) ──
+
+  const cobrarEnEfectivo = async (arbol: renderer.ReactTestRenderer) => {
+    presionarPorLabel(arbol, 'Cobrar $150.000')
+    presionarPorLabel(arbol, 'Efectivo')
+    const inputs = arbol.root.findAll(
+      (n: renderer.ReactTestInstance) => n.props?.placeholder === '¿Con cuánto paga?'
+    )
+    act(() => { inputs[0].props.onChangeText('150000') })
+    await act(async () => { presionarPorLabel(arbol, 'Confirmar venta') })
+  }
+
+  test('sin conexión se vende igual: la venta se guarda en el teléfono con su hora y se vacía el carrito', async () => {
+    mockSinConexion = true
+    const arbol = await montar({ conItem: true })
+    expect(mockObtenerCajaHoy).not.toHaveBeenCalled()
+    await cobrarEnEfectivo(arbol)
+    expect(mockRegistrar).not.toHaveBeenCalled()
+    expect(mockGuardar).toHaveBeenCalledTimes(1)
+    const guardada = mockGuardar.mock.calls[0][0] as { clave: string; usuarioId: string; vendidaEn: string; input: { items: unknown[]; pagos: unknown[] } }
+    expect(guardada).toMatchObject({ usuarioId: 'u1', clave: expect.any(String) })
+    expect(Math.abs(Date.parse(guardada.vendidaEn) - Date.now())).toBeLessThan(60_000)
+    expect(guardada.input.pagos).toEqual([{ metodo: 'efectivo', monto: 150000 }])
+    expect(itemsEnCarrito).toBe(0)
+    expect(todoElTexto(arbol)).toContain('Guardada en el teléfono')
+  })
+
+  test('si la red se cae al confirmar, la guarda en el teléfono con la misma clave del intento', async () => {
+    mockRegistrar.mockRejectedValueOnce(new SinConexionError('Sin conexión'))
+    const arbol = await montar({ conItem: true })
+    await cobrarEnEfectivo(arbol)
+    expect(mockRegistrar).toHaveBeenCalledTimes(1)
+    expect((mockGuardar.mock.calls[0][0] as { clave: string }).clave).toBe(mockRegistrar.mock.calls[0][1])
+    expect(itemsEnCarrito).toBe(0)
+    expect(todoElTexto(arbol)).toContain('Guardada en el teléfono')
+  })
+
+  test('si no se puede leer la caja por la red, no la da por cerrada: deja vender', async () => {
+    mockObtenerCajaHoy.mockRejectedValue(new TypeError('Network request failed'))
+    let arbol: renderer.ReactTestRenderer
+    await act(async () => {
+      arbol = renderer.create(
+        <TemaProvider><CarritoProvider><ToastProvider><NuevaVenta /></ToastProvider></CarritoProvider></TemaProvider>
+      )
+    })
+    expect(todoElTexto(arbol!)).not.toContain('Caja cerrada')
+    expect(todoElTexto(arbol!)).toContain('Tu carrito está vacío')
   })
 })

@@ -1949,6 +1949,7 @@ export type Database = {
       }
       ventas: {
         Row: {
+          aviso_sincronizacion: string | null
           cambio: number
           cancelacion_motivo: string | null
           clave_idempotencia: string | null
@@ -1964,10 +1965,12 @@ export type Database = {
           created_by: string | null
           efectivo_recibido: number | null
           estado: string
+          hecha_sin_conexion: boolean
           id: string
           monto_pagado: number
           nota: string | null
           numero: number
+          recibida_at: string | null
           saldo_pendiente: number
           total: number
           updated_at: string
@@ -1975,6 +1978,7 @@ export type Database = {
           vendedor_id: string | null
         }
         Insert: {
+          aviso_sincronizacion?: string | null
           cambio?: number
           cancelacion_motivo?: string | null
           clave_idempotencia?: string | null
@@ -1990,10 +1994,12 @@ export type Database = {
           created_by?: string | null
           efectivo_recibido?: number | null
           estado?: string
+          hecha_sin_conexion?: boolean
           id?: string
           monto_pagado?: number
           nota?: string | null
           numero?: never
+          recibida_at?: string | null
           saldo_pendiente?: number
           total: number
           updated_at?: string
@@ -2001,6 +2007,7 @@ export type Database = {
           vendedor_id?: string | null
         }
         Update: {
+          aviso_sincronizacion?: string | null
           cambio?: number
           cancelacion_motivo?: string | null
           clave_idempotencia?: string | null
@@ -2016,10 +2023,12 @@ export type Database = {
           created_by?: string | null
           efectivo_recibido?: number | null
           estado?: string
+          hecha_sin_conexion?: boolean
           id?: string
           monto_pagado?: number
           nota?: string | null
           numero?: never
+          recibida_at?: string | null
           saldo_pendiente?: number
           total?: number
           updated_at?: string
@@ -2112,7 +2121,11 @@ export type Database = {
         Returns: undefined
       }
       cargar_inventario: {
-        Args: { p_clave_idempotencia?: string; p_filas: Json; p_proveedor_id?: string }
+        Args: {
+          p_clave_idempotencia?: string
+          p_filas: Json
+          p_proveedor_id?: string
+        }
         Returns: Json
       }
       cerrar_caja: {
@@ -2301,6 +2314,7 @@ export type Database = {
           p_efectivo_recibido?: number
           p_items: Json
           p_pagos: Json
+          p_vendida_en?: string
         }
         Returns: Json
       }

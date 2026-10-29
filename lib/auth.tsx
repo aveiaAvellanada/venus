@@ -1,10 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type PropsWithChildren } from 'react'
 import { AppState } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Redirect } from 'expo-router'
 import { isAuthApiError, isAuthRetryableFetchError, type Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import { puedeAcceder, type Rol } from './permisos'
 import { correoDeUsuario, recordarUsuario } from './usuarios'
+import { borrarCache, fijarUsuarioCache } from './cacheLocal'
+import { leerPendientes } from './ventasPendientes'
 
 export interface Perfil {
   id: string
@@ -59,6 +62,35 @@ async function fetchPerfil(userId: string): Promise<ResultadoPerfil> {
   }
 }
 
+// El perfil de cada persona queda en el teléfono: sin conexión la app arranca
+// con él (los permisos los vuelve a exigir la base al mandar las ventas).
+const clavePerfil = (id: string) => `venus.perfil.${id}`
+
+async function perfilGuardado(id: string): Promise<Perfil | null> {
+  try {
+    const texto = await AsyncStorage.getItem(clavePerfil(id))
+    const p = texto ? (JSON.parse(texto) as Perfil) : null
+    return p && p.id === id && p.activo ? p : null
+  } catch {
+    return null
+  }
+}
+
+// La sesión que supabase-js dejó en el teléfono. Al arrancar sin conexión con
+// el token vencido, INITIAL_SESSION llega vacía aunque la sesión siga ahí (no
+// se pudo renovar); la app la usa para entrar y supabase-js la renueva sola
+// cuando vuelve la red. Si se cerró sesión o la base la anuló, ya no está.
+async function sesionGuardada(): Promise<Session | null> {
+  try {
+    const clave = (supabase.auth as unknown as { storageKey?: string }).storageKey
+    const texto = clave ? await AsyncStorage.getItem(clave) : null
+    const s = texto ? JSON.parse(texto) : null
+    return s && s.user?.id && s.refresh_token ? (s as Session) : null
+  } catch {
+    return null
+  }
+}
+
 export function mismoPerfil(a: Perfil, b: Perfil): boolean {
   return (
     a.id === b.id &&
@@ -79,6 +111,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [cargando, setCargando] = useState(true)
   const perfilRef = useRef<Perfil | null>(null)
   const sesionRef = useRef<Session | null>(null)
+  // Se entró con la sesión guardada en el teléfono (sin conexión).
+  const desdeTelefonoRef = useRef(false)
 
   const aplicarPerfil = useCallback((userId: string, res: ResultadoPerfil) => {
     if ('perfil' in res) {
@@ -92,9 +126,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setPerfil(res.perfil)
       setMotivoSinPerfil(null)
       recordarUsuario({ usuario: res.perfil.usuario, nombre: res.perfil.nombre })
+      AsyncStorage.setItem(clavePerfil(userId), JSON.stringify(res.perfil)).catch(() => {})
     } else if (res.motivo === 'error' && perfilRef.current?.id === userId) {
       // Un fallo de red no saca a quien ya estaba trabajando (ni le borra el carrito).
     } else {
+      if (res.motivo === 'desactivado') AsyncStorage.removeItem(clavePerfil(userId)).catch(() => {})
       perfilRef.current = null
       setPerfil(null)
       setMotivoSinPerfil(res.motivo)
@@ -107,7 +143,26 @@ export function AuthProvider({ children }: PropsWithChildren) {
     // así que es la única fuente de verdad: evita el doble fetch y la condición de carrera.
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, nuevaSesion) => {
       if (!montado) return
+      if (!nuevaSesion && event === 'INITIAL_SESSION') {
+        // Sin conexión y con el token vencido: entra con la sesión y el perfil
+        // guardados en el teléfono (solo quien ya había entrado aquí).
+        const guardada = await sesionGuardada()
+        const perfilPrevio = guardada ? await perfilGuardado(guardada.user.id) : null
+        if (!montado) return
+        if (guardada && perfilPrevio) {
+          sesionRef.current = guardada
+          perfilRef.current = perfilPrevio
+          desdeTelefonoRef.current = true
+          fijarUsuarioCache(guardada.user.id)
+          setSession(guardada)
+          setPerfil(perfilPrevio)
+          setMotivoSinPerfil(null)
+          setCargando(false)
+          return
+        }
+      }
       sesionRef.current = nuevaSesion
+      fijarUsuarioCache(nuevaSesion?.user.id ?? null)
       if (!nuevaSesion) {
         perfilRef.current = null
         setSession(null)
@@ -119,11 +174,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
       // Renovar el token no cambia el perfil: no hace falta ir a la red cada hora.
       if (event === 'TOKEN_REFRESHED' && perfilRef.current?.id === nuevaSesion.user.id) {
         setSession(nuevaSesion)
+        // Había entrado sin conexión: con la red de vuelta se releen los permisos.
+        if (desdeTelefonoRef.current) {
+          desdeTelefonoRef.current = false
+          aplicarPerfil(nuevaSesion.user.id, await fetchPerfil(nuevaSesion.user.id))
+        }
         return
       }
       // Resolver el perfil ANTES de comitear la sesión, para que session y perfil
       // queden siempre consistentes (sin un render intermedio session-sí/perfil-no).
-      const res = await fetchPerfil(nuevaSesion.user.id)
+      let res = await fetchPerfil(nuevaSesion.user.id)
+      // Sin conexión (token aún vigente): el perfil guardado en el teléfono.
+      if ('motivo' in res && res.motivo === 'error' && perfilRef.current?.id !== nuevaSesion.user.id) {
+        const previo = await perfilGuardado(nuevaSesion.user.id)
+        if (previo) res = { perfil: previo }
+      }
       if (!montado) return
       setSession(nuevaSesion)
       aplicarPerfil(nuevaSesion.user.id, res)
@@ -165,8 +230,20 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return { error: null }
   }
 
+  // Con ventas hechas sin conexión que aún no llegan a la base no se sale:
+  // solo quien las hizo puede mandarlas.
   async function cerrarSesion() {
-    await supabase.auth.signOut()
+    const id = sesionRef.current?.user.id
+    if (id && (await leerPendientes()).some((v) => v.usuarioId === id)) {
+      throw new VentasSinMandarError()
+    }
+    const { error } = await supabase.auth.signOut()
+    // Sin conexión no se cierra: la sesión (y lo guardado) sigue en el teléfono.
+    if (error) throw error
+    if (id) {
+      await borrarCache(id)
+      await AsyncStorage.removeItem(clavePerfil(id)).catch(() => {})
+    }
   }
 
   return (
@@ -176,6 +253,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
       {children}
     </AuthContext.Provider>
   )
+}
+
+export class VentasSinMandarError extends Error {
+  constructor() {
+    super('Tienes ventas hechas sin conexión que aún no llegan a la base. Espera a que vuelva la conexión y se manden antes de cerrar sesión.')
+    this.name = 'VentasSinMandarError'
+  }
 }
 
 export function useAuth(): AuthState {

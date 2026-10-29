@@ -2,7 +2,7 @@ import React from 'react'
 import { Alert, ScrollView, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { CalendarClock, Camera, ChartColumn, KeyRound, LogOut, PackagePlus, ReceiptText, Scale, Sparkles, SunMoon, Truck, Users, Wallet } from 'lucide-react-native'
-import { useAuth } from '../../../lib/auth'
+import { useAuth, VentasSinMandarError } from '../../../lib/auth'
 import { esDueno as esDuenoPerfil, puedeAcceder, resumenPermisos, tienePermiso } from '../../../lib/permisos'
 import { useTema } from '../../../lib/tema'
 import type { ModoTema } from '../../../lib/theme'
@@ -43,8 +43,9 @@ export default function Perfil() {
         text: 'Salir',
         style: 'destructive',
         onPress: () => {
-          cerrarSesion().catch(() => {
-            Alert.alert('Error', 'No se pudo cerrar sesión. Intenta de nuevo.')
+          cerrarSesion().catch((e) => {
+            if (e instanceof VentasSinMandarError) Alert.alert('Ventas por mandar', e.message)
+            else Alert.alert('Error', 'No se pudo cerrar sesión. Revisa la conexión e intenta de nuevo.')
           })
         },
       },

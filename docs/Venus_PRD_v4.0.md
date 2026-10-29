@@ -739,7 +739,7 @@ de empezar a operar con Venus.
 - **Stack:** React Native / Expo SDK 57, expo-router, TypeScript, Supabase, Supabase Auth
 - **Base de datos:** Supabase (PostgreSQL 17) con RLS activado en todas las tablas
 - **Storage:** Supabase Storage para fotos (plan gratuito: 1GB)
-- **Conectividad:** Online-first en esta versión. Offline-first diferido.
+- **Conectividad:** Online-first. Las ventas funcionan sin conexión y se mandan al volver la red (decisión del dueño, 2026-10-29). Offline-first completo diferido.
 - **Auditoría:** Todas las tablas tienen created_by (usuario que creó) y campo de auditoría en acciones críticas
 
 ---
@@ -754,7 +754,7 @@ de empezar a operar con Venus.
 - App para iOS
 - ~~Panel web~~ — en alcance desde el 2026-10-09: panel de administración solo para el dueño, para el back-office (ver `docs/panel-web.md`)
 - Ventas a crédito formal con intereses
-- Offline-first (diferido)
+- Offline-first completo (diferido; solo las ventas funcionan sin conexión)
 
 ---
 

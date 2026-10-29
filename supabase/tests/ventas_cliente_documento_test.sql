@@ -74,9 +74,9 @@ begin
     raise exception 'FALLO: hay % versiones de registrar_venta (debe quedar una)', v_n;
   end if;
   if not has_function_privilege('authenticated',
-       'public.registrar_venta(jsonb, jsonb, numeric, text, text, text, uuid, text)', 'execute')
+       'public.registrar_venta(jsonb, jsonb, numeric, text, text, text, uuid, text, timestamptz)', 'execute')
      or has_function_privilege('anon',
-       'public.registrar_venta(jsonb, jsonb, numeric, text, text, text, uuid, text)', 'execute') then
+       'public.registrar_venta(jsonb, jsonb, numeric, text, text, text, uuid, text, timestamptz)', 'execute') then
     raise exception 'FALLO: permisos de registrar_venta (authenticated sí, anon no)';
   end if;
 

@@ -19,6 +19,7 @@ import { DetalleCompra } from '../paginas/compras/DetalleCompra'
 import { NuevaCompra } from '../paginas/compras/NuevaCompra'
 import { FichaProveedor } from '../paginas/proveedores/FichaProveedor'
 import { Proveedores } from '../paginas/proveedores/Proveedores'
+import { Precios } from '../paginas/precios/Precios'
 
 const cliente = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
@@ -44,6 +45,7 @@ export function Rutas() {
         <Route element={<Estructura />}>
           <Route index element={<Inicio />} />
           <Route path="/inventario" element={<Inventario />} />
+          <Route path="/precios" element={<Precios />} />
           <Route path="/compras" element={<Compras />} />
           <Route path="/compras/nueva" element={<NuevaCompra />} />
           <Route path="/compras/:id" element={<DetalleCompra />} />

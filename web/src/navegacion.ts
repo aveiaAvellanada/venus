@@ -1,7 +1,7 @@
 import {
   ArrowLeftRight, Barcode, Boxes, CalendarClock, ClipboardCheck, Contact, Database, FileSpreadsheet,
   History, House, ImagePlus, LineChart, type LucideIcon, PackagePlus, Percent, Receipt, Scale, Settings,
-  ShoppingBag, Truck, Users, Wallet,
+  ShoppingBag, Tags, Truck, Users, Wallet,
 } from 'lucide-react'
 
 // Mapa del panel (docs/panel-web.md). Cada sección dice en qué fase llega;
@@ -46,6 +46,11 @@ export const NAVEGACION: GrupoNavegacion[] = [
         id: 'inventario', titulo: 'Inventario y precios', ruta: '/inventario', icono: Boxes, fase: 1, lista: true,
         descripcion: 'Tabla editable de calzado y Granja con filtros, margen, precio mínimo y máximo, stock mínimo, cambios en lote y valor del inventario.',
         palabras: ['productos', 'calzado', 'granja', 'stock', 'precio'],
+      },
+      {
+        id: 'precios', titulo: 'Precios por referencia', ruta: '/precios', icono: Tags, fase: 1, lista: true,
+        descripcion: 'Hoja en PDF con todo el calzado por categoría y referencia (pares de cada color por talla) para escribir a mano los precios, y la pantalla para pasarlos por rango de tallas con la garantía.',
+        palabras: ['hoja de precios', 'imprimir', 'pdf', 'rangos', 'tallas', 'garantía'],
       },
       {
         id: 'proveedores', titulo: 'Proveedores', ruta: '/proveedores', icono: Truck, fase: 1, lista: true,

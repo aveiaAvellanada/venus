@@ -2121,7 +2121,11 @@ export type Database = {
         Returns: undefined
       }
       cargar_inventario: {
-        Args: { p_clave_idempotencia?: string; p_filas: Json; p_proveedor_id?: string }
+        Args: {
+          p_clave_idempotencia?: string
+          p_filas: Json
+          p_proveedor_id?: string
+        }
         Returns: Json
       }
       cerrar_caja: {

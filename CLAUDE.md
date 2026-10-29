@@ -22,7 +22,7 @@ TODA acción registra quién la hizo, cuándo y qué cambió. El dueño puede ve
 - React Native 0.86 con Expo SDK 57 (TypeScript estricto) — la versión que corre Expo Go actual
 - expo-router (navegación basada en archivos)
 - Supabase (PostgreSQL 17, Auth, Storage) con RLS activado en todas las tablas
-- Online-first en esta versión. Offline-first diferido.
+- Online-first, con modo sin conexión solo para vender (ver el estado del 2026-10-29). Offline-first completo diferido.
 - Cliente Supabase en: `lib/supabase.ts`. Tipos generados en `shared/database.types.ts` (`lib/database.types.ts` los re-exporta). Código puro común a la app y al panel web en `shared/`.
 
 ## Módulos del sistema (15)
@@ -100,6 +100,8 @@ Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app c
 
 - Carga inicial editable (2026-10-28, migración `20261028120000_carga_inicial_sumar_y_precios` aplicada al remoto con el conector, registrada con esa versión y probada con rollback): en lo ya cargado cada talla muestra "hay N" y lo escrito se **suma** (`sumar` en `cargar_inventario`; `stock` sigue siendo el de una talla nueva y la carga por Excel no cambia); cambiar el rango de precios de lo que ya existe lo guarda (`tallasConPrecioNuevo`). `cargar_inventario(p_filas, p_proveedor_id, p_clave_idempotencia)`: un reintento con la misma clave (`private.cargas_inventario`) no suma dos veces. Inventario y precios: totales arriba y tallas con sus pares también en las tarjetas.
 
+- Ventas sin conexión (2026-10-29, migración `20261029120000_ventas_sin_conexion`): si se va la luz o el internet se sigue vendiendo (calzado y Granja, carrito, pagos y cliente) y la venta queda en el teléfono (`lib/ventasPendientes.ts`, `venus.ventas.pendientes`) con su clave de intento y la hora en que se hizo; se manda sola al volver la red (`VentasPendientesProvider` en `app/(app)/_layout.tsx`: al reconectar, al volver a la app y cada minuto), en orden y solo por quien la hizo, con `registrar_venta(..., p_vendida_en)`. La base la cuenta en su día y hora (`created_at`), no exige la caja de hoy abierta, y si faltaba stock la guarda igual con el stock en 0; avisa (también en `ventas.aviso_sincronizacion`) si faltaba stock o si la caja de ese día ya estaba cerrada o no se abrió. Marca `hecha_sin_conexion` y `recibida_at`. Hora del teléfono en el futuro (>10 min) o de hace más de 30 días se rechaza. Un rechazo del servidor queda en el teléfono con su error (Movimientos → Reintentar o Descartar). Píldora arriba "Sin conexión · N ventas por mandar" (`components/AvisoSinConexion.tsx`). Sin conexión se ve el inventario (con el stock de las ventas por mandar ya descontado) y Movimientos como se leyeron por última vez (`lib/cacheLocal.ts`, por persona) y las ventas por mandar. Arranque sin red: con la sesión y el perfil guardados (`venus.perfil.<id>`), solo si esa persona ya entró en ese teléfono. No se cierra sesión con ventas por mandar. Red: `expo-network` + `lib/conexion.ts` (tiempo límite de 15 s al confirmar; si se cae, se guarda con la misma clave y no se duplica). Pruebas: `ventas_sin_conexion_test.sql`.
+
 ## No construir en esta versión
 - Facturación electrónica DIAN
 - E-commerce o catálogo por WhatsApp
@@ -108,4 +110,4 @@ Entre paréntesis, el acceso por defecto según el PRD (plantillas). En la app c
 - Múltiples sucursales
 - App para iOS
 - Ventas a crédito formal con intereses
-- Offline-first (diferido)
+- Offline-first completo (solo las ventas funcionan sin conexión)

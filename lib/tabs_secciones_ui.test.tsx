@@ -56,6 +56,15 @@ jest.mock('../lib/inventario', () => ({
   listarVarios: (...args: unknown[]) => mockListarVarios(...args),
 }))
 
+// Ventas hechas sin conexión que siguen en el teléfono.
+let mockPendientes: unknown[] = []
+const mockReintentar = jest.fn()
+const mockDescartar = jest.fn()
+jest.mock('../lib/ventasPendientes-contexto', () => ({
+  useVentasPendientes: () => ({ pendientes: mockPendientes, reintentar: mockReintentar, descartar: mockDescartar }),
+}))
+
+import { Alert } from 'react-native'
 import { rangoParaPeriodo } from './dashboard'
 import { TemaProvider } from './tema'
 import { CarritoProvider } from './carrito-contexto'
@@ -153,6 +162,7 @@ describe('Movimientos', () => {
     mockListarVentas.mockResolvedValue(VENTAS)
     mockListarDevs.mockResolvedValue(DEVS)
     mockGastosPeriodo.mockResolvedValue(GASTOS)
+    mockPendientes = []
   })
 
   it('Ventas: una fila por producto que abre su venta; arriba productos y ventas, sin el total en dinero', async () => {
@@ -221,6 +231,33 @@ describe('Movimientos', () => {
     mockUseAuth.mockReturnValue({ perfil: perfilPrueba('operativo', 'Prueba', ['ventas', 'devoluciones']), cerrarSesion: jest.fn() })
     const arbol = await montar(<Movimientos />)
     expect(existeTexto(arbol, 'Semana')).toBe(true)
+  })
+
+  it('las ventas hechas sin conexión salen POR MANDAR y cuentan; una con error se puede reintentar', async () => {
+    conRol('dueno')
+    const item = (id: string, titulo: string, detalle: string, precio: number) => ({
+      producto: { tipo: 'calzado', id, titulo, detalle, precio, stock: 3 }, cantidad: 1, precio, subtotal: precio,
+    })
+    mockPendientes = [
+      { clave: 'k1', usuarioId: 'u1', vendidaEn: new Date().toISOString(),
+        input: { items: [item('z9', 'Bota Luz', 'Brahma · Talla 38 · Verde', 70000)], pagos: [{ metodo: 'efectivo', monto: 70000 }], efectivoRecibido: 70000 } },
+      { clave: 'k2', usuarioId: 'u1', vendidaEn: new Date().toISOString(), error: 'No tienes permiso para vender.',
+        input: { items: [item('z8', 'Chancla Sol', 'Talla 36', 20000)], pagos: [{ metodo: 'nequi', monto: 20000 }], efectivoRecibido: null } },
+    ]
+    const arbol = await montar(<Movimientos />)
+    expect(existeTexto(arbol, 'POR MANDAR')).toBe(true)
+    expect(existeTexto(arbol, 'CON ERROR')).toBe(true)
+    // la de error no cuenta; la por mandar sí
+    expect(existeTexto(arbol, '4 productos · 2 ventas')).toBe(true)
+    const alerta = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const fila = botones(arbol).find((n: Nodo) => n.props.accessibilityLabel === 'Chancla Sol')
+    await act(async () => fila!.props.onPress!())
+    expect(mockPush).not.toHaveBeenCalled()
+    const botonesAlerta = alerta.mock.calls[0][2] as { text: string; onPress?: () => void }[]
+    expect(alerta.mock.calls[0][1]).toBe('No tienes permiso para vender.')
+    botonesAlerta.find((b) => b.text === 'Reintentar')!.onPress!()
+    expect(mockReintentar).toHaveBeenCalledWith('k2')
+    alerta.mockRestore()
   })
 
   it('sin reportes ni devoluciones: sin chips de período y consulta solo hoy', async () => {

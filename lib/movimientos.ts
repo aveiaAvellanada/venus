@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { conCache } from './cacheLocal'
 
 // Capa de datos del hub Movimientos (rediseño §7.3). Selects directos:
 // la RLS ya limita lo que ve cada persona (sin `reportes` ni `devoluciones`,
@@ -158,7 +159,12 @@ const clienteDe = (v: any): ClienteVenta | null =>
 
 const CAMPOS_CLIENTE = 'cliente_nombre, cliente_apellido, cliente_documento, cliente_telefono'
 
-export async function listarVentasPeriodo(desde: string, hasta: string): Promise<VentaListado[]> {
+// Sin conexión se muestra lo último que se leyó de ese período (cacheLocal).
+export function listarVentasPeriodo(desde: string, hasta: string): Promise<VentaListado[]> {
+  return conCache(`${desde}.${hasta}`, () => leerVentasPeriodo(desde, hasta), { familia: 'ventas' })
+}
+
+async function leerVentasPeriodo(desde: string, hasta: string): Promise<VentaListado[]> {
   const { data, error } = await supabase
     .from('ventas')
     .select(
@@ -327,6 +333,9 @@ export function estadoProducto(
   p: ProductoVendido
 ): { texto: string; tipo: TipoBadgeMovimiento } | null {
   if (estadoVenta === 'cancelada') return { texto: 'CANCELADA', tipo: 'peligro' }
+  // Hechas sin conexión (lib/ventasPendientes.ts): aún en el teléfono.
+  if (estadoVenta === 'por_mandar') return { texto: 'POR MANDAR', tipo: 'advertencia' }
+  if (estadoVenta === 'rechazada') return { texto: 'CON ERROR', tipo: 'peligro' }
   if (p.devuelto <= 0) return null
   if (p.devuelto >= p.cantidad) {
     return p.cambiado ? { texto: 'CAMBIADO', tipo: 'neutro' } : { texto: 'DEVUELTO', tipo: 'peligro' }

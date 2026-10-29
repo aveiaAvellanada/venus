@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { type ItemCarrito, type PagoInput } from './carrito'
+import { SinConexionError, conTiempoLimite, esErrorDeRed } from './conexion'
 
 export interface VentaResumen {
   id: string
@@ -27,29 +28,48 @@ export interface RegistrarVentaInput {
 
 // `clave` identifica el intento (ver lib/intentoVenta.ts): reintentar con la
 // misma clave devuelve la venta ya guardada (repetida = true) sin duplicarla.
+// `vendidaEn`: la venta se hizo sin conexión a esa hora (ISO) y llega después
+// (lib/ventasPendientes.ts); el servidor la cuenta en ese día y devuelve avisos
+// (faltaba stock, la caja de ese día ya estaba cerrada…).
+// Un fallo de red lanza SinConexionError: la venta puede o no haberse guardado.
 export async function registrarVenta(
   input: RegistrarVentaInput,
   clave?: string,
-): Promise<{ numero: number; repetida: boolean }> {
-  const { data, error } = await supabase.rpc('registrar_venta', {
-    p_items: input.items.map(i => ({
-      tipo: i.producto.tipo,
-      producto_id: i.producto.id,
-      cantidad: i.cantidad,
-      precio: i.precio,
-    })),
-    p_pagos: input.pagos.map(p => ({ metodo: p.metodo, monto: p.monto })),
-    p_efectivo_recibido: input.efectivoRecibido ?? undefined,
-    p_cliente_nombre: input.cliente?.nombre ?? undefined,
-    p_cliente_apellido: input.cliente?.apellido ?? undefined,
-    p_cliente_telefono: input.cliente?.telefono ?? undefined,
-    p_cliente_documento: input.cliente?.documento ?? undefined,
-    p_clave_idempotencia: clave,
-  })
-  if (error) throw new Error(traducirError(error.message))
-  const res = data as { numero: number; repetida?: boolean }
-  return { numero: res.numero, repetida: res.repetida === true }
+  opciones: { vendidaEn?: string; tiempoLimiteMs?: number } = {},
+): Promise<{ numero: number; repetida: boolean; avisos: string[] }> {
+  let data: unknown
+  let error: { message: string } | null
+  try {
+    ;({ data, error } = await conTiempoLimite((senal) => supabase.rpc('registrar_venta', {
+      p_items: input.items.map(i => ({
+        tipo: i.producto.tipo,
+        producto_id: i.producto.id,
+        cantidad: i.cantidad,
+        precio: i.precio,
+      })),
+      p_pagos: input.pagos.map(p => ({ metodo: p.metodo, monto: p.monto })),
+      p_efectivo_recibido: input.efectivoRecibido ?? undefined,
+      p_cliente_nombre: input.cliente?.nombre ?? undefined,
+      p_cliente_apellido: input.cliente?.apellido ?? undefined,
+      p_cliente_telefono: input.cliente?.telefono ?? undefined,
+      p_cliente_documento: input.cliente?.documento ?? undefined,
+      p_clave_idempotencia: clave,
+      p_vendida_en: opciones.vendidaEn,
+    }).abortSignal(senal), opciones.tiempoLimiteMs ?? 15000))
+  } catch (e) {
+    error = { message: e instanceof Error ? `${e.name}: ${e.message}` : String(e) }
+  }
+  if (error) {
+    if (esErrorDeRed(error)) throw new SinConexionError(MENSAJE_SIN_CONEXION)
+    throw new Error(traducirError(error.message))
+  }
+  const res = data as { numero: number; repetida?: boolean; avisos?: string[] }
+  return { numero: res.numero, repetida: res.repetida === true, avisos: res.avisos ?? [] }
 }
+
+// No sabemos si la venta alcanzó a guardarse; reintentar es seguro (misma clave).
+const MENSAJE_SIN_CONEXION =
+  'Sin conexión: no sabemos si la venta se guardó. Confirma de nuevo sin cambiar nada; si ya se guardó, no se duplicará.'
 
 function traducirError(msg: string): string {
   if (msg.includes('Stock insuficiente')) {
@@ -62,10 +82,8 @@ function traducirError(msg: string): string {
   // Rango de regateo: el servidor ya lo explica ("El precio de X debe estar entre ...").
   if (msg.includes('debe estar entre')) return msg
   if (msg.includes('caja de hoy no está abierta')) return 'La caja está cerrada. Ábrela para vender.'
-  if (/network|fetch|failed to fetch|timeout|conexión|conexion/i.test(msg)) {
-    // No sabemos si la venta alcanzó a guardarse; reintentar es seguro (misma clave).
-    return 'Sin conexión: no sabemos si la venta se guardó. Confirma de nuevo sin cambiar nada; si ya se guardó, no se duplicará.'
-  }
+  if (msg.includes('hora de la venta hecha sin conexión')) return 'La fecha y la hora del teléfono no son válidas: revísalas.'
+  if (msg.includes('permiso')) return 'No tienes permiso para vender.'
   return 'No se pudo registrar la venta. Intenta de nuevo.'
 }
 

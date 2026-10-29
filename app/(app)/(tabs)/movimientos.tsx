@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native'
+import { Alert, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { ChevronRight, CircleX, Search, ShoppingCart, Undo2 } from 'lucide-react-native'
 import { useAuth } from '../../../lib/auth'
@@ -22,6 +22,8 @@ import {
 } from '../../../lib/movimientos'
 import type { DevolucionListado, Pieza, ProductoVendido, VentaListado } from '../../../lib/movimientos'
 import { useTema } from '../../../lib/tema'
+import { useVentasPendientes } from '../../../lib/ventasPendientes-contexto'
+import { ventaListadoDePendiente } from '../../../lib/ventasPendientes'
 import { espacio, fuentes, radio, tabular, tipografia } from '../../../lib/theme'
 import {
   Badge,
@@ -146,6 +148,7 @@ export default function Movimientos() {
   const [refrescando, setRefrescando] = useState(false)
   const [ventas, setVentas] = useState<VentaListado[]>([])
   const [devoluciones, setDevoluciones] = useState<DevolucionListado[]>([])
+  const { pendientes, reintentar, descartar } = useVentasPendientes()
 
   const rango =
     verPeriodos && periodo === 'rango' && rangoCustom
@@ -179,13 +182,19 @@ export default function Movimientos() {
   const q = busqueda.trim()
   const consulta = q ? analizarConsulta(q) : null
 
-  const ventasValidas = ventas.filter((v) => v.estado !== 'cancelada')
+  // Las hechas sin conexión que aún están en el teléfono, en su día.
+  const ventasPendientes = pendientes
+    .map(ventaListadoDePendiente)
+    .filter((v) => v.dia >= rango.desde && v.dia <= rango.hasta)
+    .reverse()
+  const todasLasVentas = [...ventasPendientes, ...ventas].sort((a, b) => b.dia.localeCompare(a.dia))
+  const ventasValidas = todasLasVentas.filter((v) => v.estado !== 'cancelada' && v.estado !== 'rechazada')
   const unidades = ventasValidas.reduce((s, v) => s + v.items.reduce((u, i) => u + i.cantidad, 0), 0)
   const totalDevuelto = devoluciones.reduce((s, d) => s + d.monto_devuelto, 0)
 
   const filasVentas = consulta
-    ? buscarProductos(ventas, consulta)
-    : ventas.flatMap((v) => v.items.map((producto) => ({ venta: v, producto, marcas: [] as string[], extra: [] as Pieza[] })))
+    ? buscarProductos(todasLasVentas, consulta)
+    : todasLasVentas.flatMap((v) => v.items.map((producto) => ({ venta: v, producto, marcas: [] as string[], extra: [] as Pieza[] })))
   const filasDevoluciones = consulta
     ? buscarDevoluciones(devoluciones, consulta)
     : devoluciones.map((d) => ({ devolucion: d, piezas: null as Pieza[] | null }))
@@ -201,6 +210,28 @@ export default function Movimientos() {
     setRefrescando(true)
     await cargar()
     setRefrescando(false)
+  }
+
+  // Una venta que aún está en el teléfono no tiene detalle en la base.
+  const abrirPendiente = (v: VentaListado) => {
+    const clave = v.id.slice('pendiente:'.length)
+    if (v.estado !== 'rechazada') {
+      Alert.alert('Venta por mandar', `Se hizo sin conexión a las ${v.hora} y se manda sola cuando vuelva el internet.`)
+      return
+    }
+    Alert.alert('No se pudo registrar', v.nota ?? 'El servidor no recibió esta venta.', [
+      { text: 'Cerrar', style: 'cancel' },
+      {
+        text: 'Descartar',
+        style: 'destructive',
+        onPress: () =>
+          Alert.alert('¿Descartar la venta?', 'No quedará registrada en ningún lado. Hazlo solo si ya la registraste de otra forma.', [
+            { text: 'No', style: 'cancel' },
+            { text: 'Descartar', style: 'destructive', onPress: () => { descartar(clave) } },
+          ]),
+      },
+      { text: 'Reintentar', onPress: () => { reintentar(clave) } },
+    ])
   }
 
   const cambiarVista = (i: number) => {
@@ -352,7 +383,7 @@ export default function Movimientos() {
                   producto={x.producto}
                   marcas={x.marcas}
                   extra={x.extra}
-                  onPress={() => router.push(`/ventas/${x.venta.id}`)}
+                  onPress={() => (x.venta.id.startsWith('pendiente:') ? abrirPendiente(x.venta) : router.push(`/ventas/${x.venta.id}`))}
                 />
               ),
               0

@@ -68,6 +68,13 @@ begin
   ) then
     raise exception 'registrar_venta no tiene p_cliente_documento: falta la migración 20261011120100.';
   end if;
+  if not exists (
+    select 1 from pg_proc p join pg_namespace s on s.oid = p.pronamespace
+    where s.nspname = 'public' and p.proname = 'registrar_venta'
+      and 'p_vendida_en' = any (p.proargnames)
+  ) then
+    raise exception 'registrar_venta no tiene p_vendida_en: falta la migración 20261029120000 (ventas sin conexión).';
+  end if;
   select count(*) into n from pg_proc p join pg_namespace s on s.oid = p.pronamespace
   where s.nspname = 'public' and p.proname = 'registrar_venta';
   if n <> 1 then raise exception 'Hay % versiones de registrar_venta (debe quedar una).', n; end if;

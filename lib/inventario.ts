@@ -1,5 +1,7 @@
 import { supabase } from './supabase'
 import { orIlike } from './busqueda'
+import { conCache } from './cacheLocal'
+import { aplicarPendientes, leerPendientes } from './ventasPendientes'
 import { nombreColores } from './productos'
 import type { Database } from './database.types'
 
@@ -29,9 +31,17 @@ export async function listarCalzado(filtros?: {
     query = query.lte('stock_actual', 0)
   }
   
-  const { data, error } = await query
-  if (error) throw error
-  return data
+  const traer = async () => {
+    const { data, error } = await query
+    if (error) throw error
+    return data
+  }
+  // Todo el inventario (lo que piden Productos y el cambio) queda guardado en
+  // el teléfono para vender sin conexión; el stock descuenta las ventas que
+  // aún no llegan a la base.
+  const sinFiltros = !filtros?.categoria && !filtros?.busqueda && !filtros?.estado
+  const productos = sinFiltros ? await conCache('calzado', traer) : await traer()
+  return aplicarPendientes(productos, await leerPendientes())
 }
 
 export async function guardarCalzado(datos: {
@@ -112,9 +122,12 @@ export async function listarVarios(busqueda?: string): Promise<ProductoVarios[]>
     query = query.ilike('nombre', `%${busqueda}%`)
   }
   
-  const { data, error } = await query
-  if (error) throw error
-  return data
+  const traer = async () => {
+    const { data, error } = await query
+    if (error) throw error
+    return data
+  }
+  return busqueda ? traer() : conCache('varios', traer)
 }
 
 export async function guardarVarios(datos: InsertVarios & { id?: string }): Promise<ProductoVarios> {

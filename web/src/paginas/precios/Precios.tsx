@@ -3,14 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Download, Footprints, Plus, Search, Trash2, X } from 'lucide-react'
 import { CATEGORIAS } from '@shared/excel'
 import { urlMiniatura } from '@shared/fotos'
-import { pesos } from '@shared/formato'
+import { conPuntosDeMiles as conMiles, pesos, soloDigitos } from '@shared/formato'
 import { tallaNumerica, tramoDeTalla, tramoDesdeBorrador, validarTramos, type TramoBorrador } from '@shared/tramos'
 import { guardarPreciosReferencia, listarTallasPrecios, listarTodosLosTramos } from '../../lib/datos/precios'
 import { contarModelos, hojaDePrecios, rangosIniciales, type FiltrosPrecios, type ModeloPrecios } from '../../lib/precios'
 import { Boton, Cargando, Insignia, MensajeError } from '../../componentes/ui'
 
-const soloDigitos = (t: string) => t.replace(/[^0-9]/g, '')
-const conMiles = (t: string) => (t ? Number(t).toLocaleString('es-CO') : '')
 const soloTalla = (t: string) => t.replace(/[^0-9.,]/g, '').replace(',', '.')
 
 export function Precios() {

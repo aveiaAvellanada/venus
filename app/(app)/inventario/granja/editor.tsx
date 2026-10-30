@@ -252,8 +252,8 @@ export default function GranjaEditorScreen() {
               etiqueta="Precio sugerido (opcional)"
               value={precioSugerido}
               onChangeText={setPrecioSugerido}
-              placeholder="0.00"
-              keyboardType="number-pad"
+              placeholder="0"
+              dinero
             />
           </View>
         </Tarjeta>

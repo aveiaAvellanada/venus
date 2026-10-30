@@ -263,8 +263,8 @@ export default function GastosVariablesScreen() {
               etiqueta="Monto"
               value={monto}
               onChangeText={setMonto}
-              placeholder="0.00"
-              keyboardType="number-pad"
+              placeholder="0"
+              dinero
             />
 
             <Tarjeta>

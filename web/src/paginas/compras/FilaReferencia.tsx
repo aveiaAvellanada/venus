@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { Camera, CopyPlus, LoaderCircle, Scissors, Trash2, X } from 'lucide-react'
-import { pesos } from '@shared/formato'
+import { conPuntosDeMiles, pesos } from '@shared/formato'
 import { nombreFoto, urlMiniatura } from '@shared/fotos'
 import { CATEGORIAS as CATEGORIAS_CALZADO } from '@shared/excel'
 import { describirReferencia } from '@shared/referencias'
@@ -19,7 +19,6 @@ import { Insignia, PuntoColor } from '../../componentes/ui'
 export const CATEGORIAS = CATEGORIAS_CALZADO.map((c) => ({ valor: c.valor, titulo: c.etiqueta }))
 
 const entrada = 'w-full rounded-lg border border-borde bg-fondo px-2.5 py-1.5 text-sm outline-none focus:border-primario'
-const soloDigitos = (t: string) => t.replace(/[^\d.]/g, '')
 
 // Una referencia (mismo modelo y color) de la factura: datos, cantidades por
 // talla (20–45) y costo/precios por rango de tallas. La Carga inicial la usa
@@ -230,9 +229,9 @@ export function FilaReferencia({
                 <label key={c} className="w-32 text-xs text-texto3">
                   {c === 'costo' ? 'Costo' : c === 'minimo' ? 'Precio mínimo' : 'Precio máximo'}
                   <input
-                    value={r[c]}
+                    value={conPuntosDeMiles(r[c])}
                     inputMode="numeric"
-                    onChange={(e) => cambiarRango(i, { [c]: soloDigitos(e.target.value) })}
+                    onChange={(e) => cambiarRango(i, { [c]: e.target.value.replace(/\D/g, '') })}
                     aria-label={`${c === 'costo' ? 'Costo' : c === 'minimo' ? 'Precio mínimo' : 'Precio máximo'} tallas ${r.desde}–${r.hasta} de la fila ${indice + 1}`}
                     className={`cifras ${entrada}`}
                   />

@@ -105,7 +105,7 @@ export function HojaVenderGranja({ visible, producto, icono, onCerrar, onAgregar
                 <View style={{ flex: 1 }}>
                   <CampoTexto
                     etiqueta={`Precio por ${producto.unidad_medida}`}
-                    keyboardType="number-pad"
+                    dinero
                     value={precio}
                     onChangeText={(t) => setPrecio(t.replace(/[^0-9]/g, ''))}
                     placeholder="$0"

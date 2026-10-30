@@ -1,5 +1,5 @@
 import { coloresDeNombre, MAX_COLORES, MENSAJE_MAX_COLORES, nombreColores } from './colores'
-import { leerPesos } from './formato'
+import { conPuntosDeMiles, leerPesos } from './formato'
 import { nombreDeUrlFoto, nombreFoto } from './fotos'
 
 // Factura de compra (panel web A1 y Recibir mercancía de la app). Lógica pura: la pantalla edita
@@ -63,7 +63,7 @@ export interface Factura {
 
 const n = (talla: string) => Number(talla)
 // Como se escribe un monto en pantalla: "60.000".
-export const miles = (v: number): string => Math.round(v).toLocaleString('es-CO')
+export const miles = (v: number): string => (v < 0 ? '-' : '') + conPuntosDeMiles(Math.abs(Math.round(v)))
 // Máximo de un rango: vacío = sin máximo (null).
 export const maximoDe = (r: RangoPrecio): number | null => {
   const v = leerPesos(r.maximo)

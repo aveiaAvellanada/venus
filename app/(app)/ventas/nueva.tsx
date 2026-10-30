@@ -22,6 +22,7 @@ import {
 } from '../../../components/ui'
 import { MARGEN_SUPERIOR } from '../../../hooks/usePaddingInferior'
 import { urlMiniatura } from '../../../shared/fotos'
+import { conPuntosDeMiles } from '../../../shared/formato'
 
 type Etapa = 'carrito' | 'ajustarPrecio' | 'cobrar' | 'confirmacion'
 const METODOS: MetodoPago[] = ['efectivo', 'nequi', 'bre_b', 'otro']
@@ -148,7 +149,7 @@ function AjustePrecio({ item, dispatch }: { item: ItemCarrito; dispatch: (a: Acc
           <TextInput
             accessibilityLabel="Precio"
             keyboardType="number-pad"
-            value={texto}
+            value={conPuntosDeMiles(texto)}
             onFocus={() => { setEditando(true); setTexto(soloEntero(texto)) }}
             onBlur={() => setEditando(false)}
             onChangeText={(t) => {
@@ -192,7 +193,7 @@ function CamposGranja({ item, dispatch }: { item: ItemCarrito; dispatch: (a: Acc
         accessibilityLabel="Precio unitario"
         style={caja}
         keyboardType="number-pad"
-        value={precioTxt}
+        value={conPuntosDeMiles(precioTxt)}
         onChangeText={(t) => {
           const limpio = soloEntero(t)
           setPrecioTxt(limpio)
@@ -531,7 +532,7 @@ export default function NuevaVenta() {
                 key={m}
                 compacto
                 etiqueta={ETIQUETA[m]}
-                keyboardType="number-pad"
+                dinero
                 value={montos[m]}
                 onChangeText={t => setMontos(mm => ({ ...mm, [m]: soloEntero(t) }))}
                 placeholder="0"
@@ -554,7 +555,7 @@ export default function NuevaVenta() {
                 <CampoTexto
                   compacto
                   etiqueta="Efectivo recibido"
-                  keyboardType="number-pad"
+                  dinero
                   value={recibido}
                   onChangeText={t => setRecibido(soloEntero(t))}
                   placeholder="¿Con cuánto paga?"

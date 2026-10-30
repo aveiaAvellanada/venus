@@ -213,7 +213,7 @@ describe('Nueva compra', () => {
     expect(screen.getByLabelText('Descripción de la fila 2')).toHaveValue('Tennis nuevo')
     expect(screen.getByLabelText('Marca de la fila 2')).toHaveValue('Verlon')
     expect(screen.getByLabelText('Categoría de la fila 2')).toHaveValue('Tennis')
-    expect(screen.getByLabelText('Precio mínimo tallas 20–45 de la fila 2')).toHaveValue('80000')
+    expect(screen.getByLabelText('Precio mínimo tallas 20–45 de la fila 2')).toHaveValue('80.000')
     expect(screen.getByLabelText('Talla 38 de la fila 2')).toHaveValue('')
     expect(screen.getAllByText('Sin foto')).toHaveLength(1)
 

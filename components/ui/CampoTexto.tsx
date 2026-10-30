@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Text, TextInput, TextInputProps, View } from 'react-native'
 import { useTema } from '../../lib/tema'
 import { espacio, radio, tabular, tipografia, tipografiaCompacta } from '../../lib/theme'
+import { conPuntosDeMiles, soloDigitos } from '../../shared/formato'
 
 interface Props extends TextInputProps {
   etiqueta?: string
@@ -9,9 +10,12 @@ interface Props extends TextInputProps {
   gigante?: boolean
   // Más bajo y con letra de 14 (carrito y cobro, rediseño del carrito B5).
   compacto?: boolean
+  // Pesos: se ve con punto de miles ("1.500.000") y onChangeText recibe solo
+  // los dígitos ("1500000"), así se ve claro cuántos ceros lleva.
+  dinero?: boolean
 }
 
-export function CampoTexto({ etiqueta, error, gigante = false, compacto = false, onFocus, onBlur, ...resto }: Props) {
+export function CampoTexto({ etiqueta, error, gigante = false, compacto = false, dinero = false, onFocus, onBlur, ...resto }: Props) {
   const { paleta } = useTema()
   const [enfocado, setEnfocado] = useState(false)
 
@@ -57,6 +61,13 @@ export function CampoTexto({ etiqueta, error, gigante = false, compacto = false,
             : null,
         ]}
         {...resto}
+        {...(dinero
+          ? {
+              keyboardType: 'number-pad' as const,
+              value: conPuntosDeMiles(resto.value),
+              onChangeText: (t: string) => resto.onChangeText?.(soloDigitos(t)),
+            }
+          : null)}
       />
       {error ? (
         <Text accessibilityLiveRegion="polite" style={[tipografia.caption, { color: paleta.peligroTexto }]}>

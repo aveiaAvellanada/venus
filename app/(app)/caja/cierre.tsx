@@ -178,7 +178,7 @@ export default function CierreCaja() {
         <CampoTexto
           etiqueta="¿Cuánto efectivo hay en gaveta?"
           gigante
-          keyboardType="number-pad"
+          dinero
           placeholder="0"
           value={efectivoContado}
           onChangeText={setEfectivoContado}

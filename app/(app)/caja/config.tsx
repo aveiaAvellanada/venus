@@ -172,7 +172,7 @@ export default function CajaConfig() {
         <Text style={[tipografia.h3, { color: paleta.texto, marginTop: espacio.m }]}>Base de caja</Text>
         <CampoTexto
           etiqueta="Base predeterminada (sencillo con que abre el cajón)"
-          keyboardType="number-pad"
+          dinero
           placeholder="0"
           value={basePredeterminada}
           onChangeText={(v) => setBasePredeterminada(v.replace(/[^0-9]/g, ''))}

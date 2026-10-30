@@ -654,7 +654,7 @@ export default function NuevaDevolucionScreen() {
                           <View style={{ marginTop: espacio.xs, gap: espacio.xs }}>
                             <CampoTexto
                               etiqueta="Precio de reemplazo ($) *"
-                              keyboardType="number-pad"
+                              dinero
                               placeholder="Ingresa el precio"
                               value={ei.precio_reemplazo !== undefined ? String(ei.precio_reemplazo) : ''}
                               onChangeText={(v) => actualizarPrecioReemplazo(idx, v)}

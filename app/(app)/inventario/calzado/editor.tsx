@@ -472,8 +472,8 @@ export default function CalzadoEditorScreen() {
                 etiqueta="Costo de compra"
                 value={costoCompra}
                 onChangeText={setCostoCompra}
-                placeholder="0.00"
-                keyboardType="number-pad"
+                placeholder="0"
+                dinero
               />
             </View>
           )}
@@ -483,8 +483,8 @@ export default function CalzadoEditorScreen() {
                 etiqueta="Precio mínimo *"
                 value={precioMinimo}
                 onChangeText={setPrecioMinimo}
-                placeholder="0.00"
-                keyboardType="number-pad"
+                placeholder="0"
+                dinero
               />
             </View>
             <View style={{ flex: 1 }}>
@@ -492,8 +492,8 @@ export default function CalzadoEditorScreen() {
                 etiqueta="Precio máximo (opcional)"
                 value={precioMaximo}
                 onChangeText={setPrecioMaximo}
-                placeholder="0.00"
-                keyboardType="number-pad"
+                placeholder="0"
+                dinero
               />
             </View>
           </View>

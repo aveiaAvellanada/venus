@@ -117,7 +117,7 @@ export function PreciosPorTalla({ referencia }: { referencia: string }) {
                     value={t.minimo}
                     onChangeText={(v) => cambiar(i, 'minimo', v)}
                     placeholder="0"
-                    keyboardType="number-pad"
+                    dinero
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -126,7 +126,7 @@ export function PreciosPorTalla({ referencia }: { referencia: string }) {
                     value={t.maximo}
                     onChangeText={(v) => cambiar(i, 'maximo', v)}
                     placeholder="Opcional"
-                    keyboardType="number-pad"
+                    dinero
                   />
                 </View>
               </View>

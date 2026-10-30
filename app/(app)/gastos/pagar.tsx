@@ -99,8 +99,8 @@ export default function PagarGastoFijoScreen() {
           etiqueta="Monto exacto pagado *"
           value={montoPagado}
           onChangeText={setMontoPagado}
-          placeholder="0.00"
-          keyboardType="number-pad"
+          placeholder="0"
+          dinero
         />
 
         <View>

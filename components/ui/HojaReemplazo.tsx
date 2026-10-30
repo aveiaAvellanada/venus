@@ -9,6 +9,7 @@ import {
 } from '../../lib/productos'
 import { useTema } from '../../lib/tema'
 import { espacio, radio, tabular, tipografia } from '../../lib/theme'
+import { conPuntosDeMiles } from '../../shared/formato'
 import { Boton } from './Boton'
 import { CampoTexto } from './CampoTexto'
 import { CardCalzado } from './CardCalzado'
@@ -260,7 +261,7 @@ export function HojaReemplazo({ visible, onCerrar, onElegir }: Props) {
                       accessibilityLabel="Precio del reemplazo"
                       testID="input-precio-hoja-reemplazo"
                       keyboardType="number-pad"
-                      value={precioTxt === '' ? '' : Number(soloEntero(precioTxt)).toLocaleString('es-CO')}
+                      value={conPuntosDeMiles(soloEntero(precioTxt))}
                       onChangeText={(t) => setPrecioTxt(soloEntero(t))}
                       style={[tipografia.cuerpo, tabular, { color: paleta.texto, width: 96, textAlign: 'right', padding: 0 }]}
                     />

@@ -111,7 +111,7 @@ export default function GastosFijosEditorScreen() {
           value={montoAproximado}
           onChangeText={setMontoAproximado}
           placeholder="1500000"
-          keyboardType="number-pad"
+          dinero
         />
 
         <CampoTexto

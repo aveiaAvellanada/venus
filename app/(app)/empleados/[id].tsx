@@ -414,7 +414,7 @@ export default function EmpleadoDetalleScreen() {
                 value={sueldoTexto}
                 onChangeText={(t) => setSueldoTexto(t.replace(/[^0-9]/g, ''))}
                 placeholder="Ej. 1300000"
-                keyboardType="number-pad"
+                dinero
                 testID="input-sueldo"
               />
 
@@ -596,7 +596,7 @@ export default function EmpleadoDetalleScreen() {
               etiqueta="Monto a pagar (COP) *"
               value={montoTexto}
               onChangeText={(t) => setMontoTexto(t.replace(/[^0-9]/g, ''))}
-              keyboardType="number-pad"
+              dinero
               placeholder="Ej. 650000"
               testID="input-monto-pago"
             />

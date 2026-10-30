@@ -146,7 +146,7 @@ describe('Ficha del proveedor', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Registrar pago' }))
     const dialogo = screen.getByRole('dialog', { name: 'Registrar pago' })
     const monto = within(dialogo).getByLabelText('Monto')
-    expect(monto).toHaveValue('300000')
+    expect(monto).toHaveValue('300.000')
     await userEvent.clear(monto)
     await userEvent.type(monto, '300001')
     expect(within(dialogo).getByText('No puede pasar del saldo ($300.000).')).toBeInTheDocument()

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, X } from 'lucide-react'
-import { pesos } from '@shared/formato'
+import { conPuntosDeMiles, pesos, soloDigitos } from '@shared/formato'
 import { cambiarPrecios, type CamposPrecio, type ReglaPrecio, type ResultadoPrecios } from '../../lib/datos/inventario'
 import { Boton, Insignia } from '../../componentes/ui'
 
@@ -101,14 +101,15 @@ export function CambiarPrecios({ ids, alCerrar, alAplicar }: { ids: string[]; al
 
           {tipo === 'fijo' ? (
             <>
-              {campos !== 'maximo' ? <Campo etiqueta="Precio mínimo" valor={minimo} alCambiar={cambiar(setMinimo)} /> : null}
-              {campos !== 'minimo' ? <Campo etiqueta="Precio máximo" valor={maximo} alCambiar={cambiar(setMaximo)} /> : null}
+              {campos !== 'maximo' ? <Campo etiqueta="Precio mínimo" valor={minimo} alCambiar={cambiar(setMinimo)} enPesos /> : null}
+              {campos !== 'minimo' ? <Campo etiqueta="Precio máximo" valor={maximo} alCambiar={cambiar(setMaximo)} enPesos /> : null}
             </>
           ) : (
             <Campo
               etiqueta={tipo === 'porcentaje' ? 'Porcentaje (negativo para bajar)' : 'Valor en pesos (negativo para restar)'}
               valor={valor}
               alCambiar={cambiar(setValor)}
+              enPesos={tipo === 'suma'}
             />
           )}
 
@@ -188,14 +189,20 @@ export function CambiarPrecios({ ids, alCerrar, alAplicar }: { ids: string[]; al
   )
 }
 
-function Campo({ etiqueta, valor, alCambiar }: { etiqueta: string; valor: string; alCambiar: (v: string) => void }) {
+// enPesos: se ve con punto de miles ("-5.000") y guarda solo el signo y los dígitos.
+function Campo({ etiqueta, valor, alCambiar, enPesos = false }: {
+  etiqueta: string; valor: string; alCambiar: (v: string) => void; enPesos?: boolean
+}) {
+  const negativo = valor.trim().startsWith('-')
   return (
     <label className="block text-sm">
       <span className="mb-1.5 block font-medium">{etiqueta}</span>
       <input
-        value={valor}
-        onChange={(e) => alCambiar(e.target.value.replace(/[^\d,.-]/g, ''))}
-        inputMode="decimal"
+        value={enPesos ? `${negativo ? '-' : ''}${conPuntosDeMiles(soloDigitos(valor))}` : valor}
+        onChange={(e) => alCambiar(enPesos
+          ? `${e.target.value.trim().startsWith('-') ? '-' : ''}${soloDigitos(e.target.value)}`
+          : e.target.value.replace(/[^\d,.-]/g, ''))}
+        inputMode={enPesos ? 'numeric' : 'decimal'}
         className="cifras w-full rounded-xl border border-borde bg-fondo px-3 py-2"
       />
     </label>

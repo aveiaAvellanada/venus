@@ -480,7 +480,7 @@ export default function ProveedorDetailScreen() {
                   value={montoPago}
                   onChangeText={setMontoPago}
                   placeholder="Monto en COP"
-                  keyboardType="number-pad"
+                  dinero
                   testID="input-monto-pago"
                 />
 

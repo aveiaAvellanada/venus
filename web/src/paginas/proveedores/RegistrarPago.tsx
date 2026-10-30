@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { pesos } from '@shared/formato'
+import { conPuntosDeMiles, pesos, soloDigitos } from '@shared/formato'
 import { registrarPago } from '../../lib/datos/proveedores'
 import { leerPesos, type CompraResumen } from '../../lib/proveedores'
 import { AvisoError, Boton, CampoTexto, Dialogo } from '../../componentes/ui'
@@ -9,7 +9,7 @@ import { AvisoError, Boton, CampoTexto, Dialogo } from '../../componentes/ui'
 // (registrar_pago_proveedor); aquí solo se evita mandar algo que ya sabemos inválido.
 export function RegistrarPago({ compra, hoy, alCerrar }: { compra: CompraResumen; hoy: string; alCerrar: () => void }) {
   const cliente = useQueryClient()
-  const [monto, setMonto] = useState(String(compra.saldo_pendiente))
+  const [monto, setMonto] = useState(String(Math.round(Number(compra.saldo_pendiente))))
   const [fecha, setFecha] = useState(hoy)
   const [notas, setNotas] = useState('')
   const valor = leerPesos(monto)
@@ -56,8 +56,8 @@ export function RegistrarPago({ compra, hoy, alCerrar }: { compra: CompraResumen
         </p>
         <CampoTexto
           etiqueta="Monto"
-          value={monto}
-          onChange={(e) => setMonto(e.target.value.replace(/[^\d.]/g, ''))}
+          value={conPuntosDeMiles(monto)}
+          onChange={(e) => setMonto(soloDigitos(e.target.value))}
           inputMode="numeric"
           autoFocus
         />

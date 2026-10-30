@@ -102,11 +102,18 @@ export default function CajaDashboard() {
     return <Redirect href="/caja/cierre" />
   }
 
+  // Al abrir (o reabrir) se vuelve al Menú, como al terminar una venta: la
+  // opción de cerrar solo aparece cuando se toca el estado ABIERTA de la caja.
+  function alMenu(mensaje: string) {
+    mostrar(mensaje, 'exito')
+    router.replace('/')
+  }
+
   async function handleAbrir() {
     setAbriendo(true)
     try {
       await abrirCaja(base.trim() === '' ? 0 : Number(base))
-      await cargarDatos()
+      alMenu('Caja abierta')
     } catch (e) {
       mostrar(e instanceof Error ? e.message : 'No se pudo actualizar la caja.', 'error')
     } finally {
@@ -118,7 +125,7 @@ export default function CajaDashboard() {
     setAbriendo(true)
     try {
       await reabrirCaja()
-      await cargarDatos()
+      alMenu('Caja abierta de nuevo')
     } catch (e) {
       mostrar(e instanceof Error ? e.message : 'No se pudo actualizar la caja.', 'error')
     } finally {
@@ -139,10 +146,10 @@ export default function CajaDashboard() {
           <View style={{ alignSelf: 'stretch', gap: espacio.l }}>
             <CampoTexto
               etiqueta="Base en el cajón (sencillo)"
-              keyboardType="number-pad"
+              dinero
               placeholder="0"
               value={base}
-              onChangeText={(v) => setBase(v.replace(/[^0-9]/g, ''))}
+              onChangeText={setBase}
             />
             <Boton titulo="Abrir Caja del Día" onPress={handleAbrir} cargando={abriendo} deshabilitado={abriendo} />
           </View>

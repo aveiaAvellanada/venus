@@ -240,7 +240,7 @@ export default function RecepcionDetalleFinancieroScreen() {
 
                 <CampoTexto
                   etiqueta="Costo Unitario ($)"
-                  keyboardType="number-pad"
+                  dinero
                   placeholder="0"
                   value={unitCost > 0 ? String(unitCost) : ''}
                   onChangeText={(text) => handleCostoChange(item.id, text)}
